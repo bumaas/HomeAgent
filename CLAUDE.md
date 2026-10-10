@@ -89,6 +89,8 @@ Weitere Regeln, die nicht offensichtlich sind:
 - **Namenssuche** in Stufen: genauer Name oder Alias, dann die Anfrage als Teil des Namens, dann der
   Name in der Anfrage, aber nur an einem Wortanfang („Esstischlampe“ trifft „Esstisch“,
   „Außentemperatur“ trifft „Temperatur“ nicht). Nur die beste Stufe zählt.
+- **Räume als Vokabular:** Die Beschreibung von `room` nennt die Räume der Geräte und der Raumliste
+  („Known rooms: …“), sonst kürzt ein Modell „Bad oben“ zu `room=Bad`.
 - **Nur-Lese-Zugang:** `instructions` und die Beschreibung von `get_state` sagen dem Assistenten, dass
   der Zugang nicht schalten kann, damit er eine Absage richtig begründet.
 - **Ein neues Feld** von `set_state` kostet: eine Fähigkeit in `ROLES`/`TYPE_ROLES`, einen Eintrag in

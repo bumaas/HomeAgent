@@ -248,7 +248,7 @@ pruefe($info->invoke($m, null)['name'] === 'Symcon Sprachsteuerung (Test)', 'der
 $schema = array_column($werkzeuge->invoke($m, $zugaenge[0]), 'inputSchema', 'name');
 pruefe(str_contains($schema['set_state']['properties']['room']['description'] ?? '', 'the room Küche is meant; "all" means the whole house') && str_contains($schema['get_state']['properties']['room']['description'], 'the room Küche is meant'), 'die Beschreibung von room nennt Standardraum und all: ' . ($schema['set_state']['properties']['room']['description'] ?? '?'));
 $schema = array_column($werkzeuge->invoke($m, null), 'inputSchema', 'name');
-pruefe($schema['get_state']['properties']['room']['description'] === 'Room as the user calls it, e.g. Küche. Empty = all rooms.' && ($schema['set_state']['properties']['room']['description'] ?? '') === 'Room as the user calls it, e.g. Küche.', 'ohne Standardraum bleiben die Beschreibungen, wie sie waren');
+pruefe($schema['get_state']['properties']['room']['description'] === 'Room as the user calls it, e.g. Küche. Known rooms: Küche. Empty = all rooms.' && ($schema['set_state']['properties']['room']['description'] ?? '') === 'Room as the user calls it, e.g. Küche. Known rooms: Küche.', 'ohne Standardraum: Beispiel, bekannte Räume, bei get_state „leer = alle“: ' . $schema['get_state']['properties']['room']['description']);
 pruefe(!isset($schema['get_state']['properties']['floor']) && !isset($schema['set_state']['properties']['floor']), 'ohne Etagen gibt es den Parameter floor nicht');
 $test = $m->RunSelfTest();
 pruefe(str_contains($test, 'Note: access "HA" also accepts its token as the last part of the address') && !str_contains($test, 'access "Küche" also'), 'Selbsttest nennt den Zugang mit Token im Pfad: ' . $test);
@@ -268,6 +268,9 @@ $setze('Rooms', [['Name' => 'Küche', 'Aliases' => 'Kochbereich', 'Floor' => 'EG
 pruefe($status() === IS_ACTIVE, 'gültige Raumliste: aktiv');
 $schema = array_column($werkzeuge->invoke($m, null), 'inputSchema', 'name');
 pruefe(str_ends_with($schema['get_state']['properties']['floor']['description'] ?? '', 'Known floors: EG, OG.') && isset($schema['set_state']['properties']['floor']), 'mit Etagen nennen die Werkzeuge den Parameter floor samt den bekannten Etagen');
+// HA Assist am nuc (10.10.2026): „Rollladen im Bad oben“ wurde zu room=Bad, das Modell kannte die
+// Raumnamen nicht. room nennt die Räume der Geräte und der Raumliste, sortiert und ohne Doppelte.
+pruefe(str_contains($schema['get_state']['properties']['room']['description'], 'Known rooms: Bad, Küche.') && str_contains($schema['set_state']['properties']['room']['description'] ?? '', 'Known rooms: Bad, Küche.'), 'room nennt die Räume aus Geräten und Raumliste: ' . $schema['get_state']['properties']['room']['description']);
 pruefe(str_contains(array_column($werkzeuge->invoke($m, null), 'description', 'name')['set_state'] ?? '', 'Give at least one of room, floor, type and name.'), 'die Auswahlregel nennt die Etage');
 $r = $aufruf->invoke($m, 'get_state', ['floor' => 'eg'], null);
 pruefe(str_starts_with($r['text'], '2 device(s) found (floor=eg).'), 'Etage über das Werkzeug: ' . $r['text']);

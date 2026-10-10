@@ -693,6 +693,14 @@ class HomeAgent extends IPSModuleStrict
         $floors = $this->roomIndex()->floors();
         $floor = $floors === [] ? [] : ['floor' => ['type' => 'string', 'description' => 'Floor, for all rooms of a floor. Known floors: ' . implode(', ', $floors) . '.']];
         $defaultRule = $defaultRoom === '' ? '' : 'Without room, name and floor the room ' . $defaultRoom . ' is meant; "all" means the whole house.';
+        // HA Assist am nuc (10.10.2026): „Rollladen im Bad oben“ wurde zu room=Bad, weil das Modell
+        // die Raumnamen nicht kannte. Räume sind Vokabular wie die Etagen.
+        $knownRooms = array_values(array_unique(array_filter(array_merge(
+            array_map(static fn (array $row): string => trim((string)($row['Room'] ?? '')), $this->deviceList()),
+            $this->roomIndex()->names()
+        ), static fn (string $room): bool => $room !== '')));
+        sort($knownRooms, SORT_STRING | SORT_FLAG_CASE);
+        $roomsText = $knownRooms === [] ? '' : 'Known rooms: ' . implode(', ', $knownRooms) . '. ';
         // Verbrauch über Zeiträume nur, wenn ein freigegebenes Gerät einen Zähler hat oder die
         // Energiebilanz eingetragen ist. Ohne Bilanz muss die Beschreibung die Grenze nennen: HA Assist
         // gab die Summe der Geräte sonst als Hausverbrauch aus (09.10.2026).
@@ -732,7 +740,7 @@ class HomeAgent extends IPSModuleStrict
             'inputSchema' => [
                 'type'                 => 'object',
                 'properties'           => [
-                    'room'        => ['type' => 'string', 'description' => 'Room as the user calls it, e.g. Küche. ' . ($defaultRule === '' ? 'Empty = all rooms.' : $defaultRule)],
+                    'room'        => ['type' => 'string', 'description' => 'Room as the user calls it, e.g. Küche. ' . $roomsText . ($defaultRule === '' ? 'Empty = all rooms.' : $defaultRule)],
                 ] + $floor + [
                     'type'        => ['type' => 'string', 'enum' => array_keys(DeviceIndex::TYPES), 'description' => 'Device type. Empty = all types.'],
                     'name'        => ['type' => 'string', 'description' => 'Device name or alias, a partial word is enough.'],
@@ -764,7 +772,7 @@ class HomeAgent extends IPSModuleStrict
             $hasTiltWindows = array_filter($devices, static fn (array $row): bool => ($row['Type'] ?? '') === 'window' && ($row['Tilt'] ?? false) === true && DeviceIndex::abilitiesOf($row) !== []) !== [];
             $types = array_values(array_intersect(array_keys(DeviceIndex::TYPES), array_column(array_filter($devices, static fn (array $row): bool => DeviceIndex::abilitiesOf($row) !== []), 'Type')));
             $properties = [
-                'room' => ['type' => 'string', 'description' => rtrim('Room as the user calls it, e.g. Küche. ' . $defaultRule)],
+                'room' => ['type' => 'string', 'description' => rtrim('Room as the user calls it, e.g. Küche. ' . $roomsText . $defaultRule)],
             ] + $floor + [
                 'type' => ['type' => 'string', 'enum' => $types, 'description' => 'Device type, for groups such as all lights of a room.'],
                 'name' => ['type' => 'string', 'description' => 'Name or alias of one single device, a partial word is enough.'],
