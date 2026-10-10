@@ -52,6 +52,29 @@ final class DeviceIndex
         'energy'   => 'EnergyVariableID',
         'setpoint' => 'SetpointVariableID',
         'colortemp' => 'ColorTempVariableID',
+        'color'     => 'ColorVariableID',
+    ];
+
+    /**
+     * Farben, die „set_state“ mit „color“ annimmt, als RGB (0xRRGGBB). Eine feste Liste wie bei Home
+     * Assistant: Namen trifft ein Sprachmodell zuverlässiger als Zahlen (Entscheidung Burkhard, 10.10.2026).
+     */
+    public const COLORS = [
+        'red'       => 0xFF0000,
+        'orange'    => 0xFF8000,
+        'yellow'    => 0xFFFF00,
+        'green'     => 0x00FF00,
+        'turquoise' => 0x00FFFF,
+        'blue'      => 0x0000FF,
+        'purple'    => 0x8000FF,
+        'pink'      => 0xFF00FF,
+        'white'     => 0xFFFFFF,
+    ];
+
+    /** Deutsche Namen der Farben in normalisierter Form, falls ein Assistent sie unübersetzt schickt. */
+    private const COLOR_WORDS = [
+        'rot' => 'red', 'gelb' => 'yellow', 'gruen' => 'green', 'tuerkis' => 'turquoise', 'blau' => 'blue',
+        'lila' => 'purple', 'violett' => 'purple', 'rosa' => 'pink', 'weiss' => 'white',
     ];
 
     /**
@@ -59,7 +82,7 @@ final class DeviceIndex
      * eine gesetzt sein muss („required“). Was nicht zum Typ gehört, wird beim Einlesen verworfen.
      */
     public const TYPE_ROLES = [
-        'light'       => ['roles' => ['state', 'level', 'power', 'energy', 'colortemp'], 'required' => ['state', 'level']],
+        'light'       => ['roles' => ['state', 'level', 'power', 'energy', 'colortemp', 'color'], 'required' => ['state', 'level']],
         'switch'      => ['roles' => ['state', 'power', 'energy'], 'required' => ['state']],
         'socket'      => ['roles' => ['state', 'power', 'energy'], 'required' => ['state']],
         'appliance'   => ['roles' => ['state', 'power', 'energy'], 'required' => ['state', 'power']],
@@ -757,6 +780,18 @@ final class DeviceIndex
         $percent = $arguments['percent'] ?? null;
         $temperature = $arguments['temperature'] ?? null;
         $kelvin = $arguments['color_temperature'] ?? null;
+        $color = $arguments['color'] ?? null;
+        if ($color !== null) {
+            $key = DeviceIndex::normalize((string)$color);
+            $key = self::COLOR_WORDS[$key] ?? $key;
+            if (!isset(self::COLORS[$key])) {
+                return $this->fail(sprintf($this->t('Unknown colour "%s". Allowed: %s.'), (string)$color, implode(', ', array_keys(self::COLORS))));
+            }
+            if ($command !== '' || $percent !== null || $temperature !== null || $kelvin !== null) {
+                return $this->fail($this->t('Nothing was changed. Give color alone, without command, percent, temperature or color_temperature.'));
+            }
+            $color = $key;
+        }
         if ($kelvin !== null && ((!is_int($kelvin) && !is_float($kelvin)) || $kelvin < 1000 || $kelvin > 20000)) {
             return $this->fail($this->t('Parameter "color_temperature" must be a number in Kelvin from 1000 to 20000.'));
         }
@@ -775,7 +810,7 @@ final class DeviceIndex
         if ($percent !== null && ((!is_int($percent) && !is_float($percent)) || $percent < 0 || $percent > 100)) {
             return $this->fail($this->t('Parameter "percent" must be a number from 0 to 100.'));
         }
-        if ($command === '' && $percent === null && $temperature === null && $kelvin === null) {
+        if ($command === '' && $percent === null && $temperature === null && $kelvin === null && $color === null) {
             return $this->fail(sprintf($this->t('Nothing was changed: give a command (%s), a percent value or a temperature.'), implode(', ', self::COMMANDS)));
         }
         // Nur „on“ verträgt einen Wert, und dann einen über 0: „an und 0 %“ wäre zugleich aus.
@@ -792,7 +827,7 @@ final class DeviceIndex
         $type = trim((string)($arguments['type'] ?? ''));
 
         // Was verlangt ist, heißt wie das Feld des Werkzeugs; so kann der Assistent es korrigieren.
-        $ability = $kelvin !== null ? 'color_temperature' : ($temperature !== null ? 'temperature' : ($percent !== null ? 'percent' : $command));
+        $ability = $color !== null ? 'color' : ($kelvin !== null ? 'color_temperature' : ($temperature !== null ? 'temperature' : ($percent !== null ? 'percent' : $command)));
         $understand = array_filter($selection['entries'], static fn (array $e): bool => in_array($ability, self::abilitiesOf($e), true));
         $skipped = count($selection['entries']) - count($understand) + ($selection['windowsWithoutDrive'] ?? 0);
         if ($understand === []) {
@@ -818,6 +853,14 @@ final class DeviceIndex
         }
 
         $closing = $skipped > 0 ? [sprintf($this->t('%d device(s) of the selection do not understand "%s" and were left out.'), $skipped, $ability)] : [];
+        if ($color !== null) {
+            $result = $this->runColor($understand, self::COLORS[$color]);
+            $value = $this->t($color);
+            $head = $result['pending'] > 0
+                ? sprintf($this->t('%d of %d devices set to %s, %d not confirmed yet (%s).'), $result['reached'], $result['total'], $value, $result['pending'], $filter)
+                : sprintf($this->t('%d of %d devices set to %s (%s).'), $result['reached'], $result['total'], $value, $filter);
+            return $this->answer($head, $result, $closing);
+        }
         if ($kelvin !== null) {
             return $this->setpointAnswer($this->runColorTemperature($understand, (float)$kelvin), $filter, $closing);
         }
@@ -883,7 +926,13 @@ final class DeviceIndex
             return [];
         }
         $abilities = isset($roles['level']) ? ['on', 'off', 'percent'] : ['on', 'off'];
-        return $type === 'light' && isset($roles['colortemp']) ? [...$abilities, 'color_temperature'] : $abilities;
+        if ($type === 'light' && isset($roles['colortemp'])) {
+            $abilities[] = 'color_temperature';
+        }
+        if ($type === 'light' && isset($roles['color'])) {
+            $abilities[] = 'color';
+        }
+        return $abilities;
     }
 
     /**
@@ -899,7 +948,7 @@ final class DeviceIndex
         foreach ($rows as $row) {
             $found = array_merge($found, self::abilitiesOf($row));
         }
-        return array_values(array_intersect(array_merge(self::COMMANDS, ['percent', 'temperature', 'color_temperature']), $found));
+        return array_values(array_intersect(array_merge(self::COMMANDS, ['percent', 'temperature', 'color_temperature', 'color']), $found));
     }
 
     /**
@@ -1255,6 +1304,94 @@ final class DeviceIndex
         $result['target'] = count(array_unique($sent)) === 1 ? (float)$sent[0] : $kelvin;
         $result['unit'] = 'K';
         return $result;
+    }
+
+    /**
+     * Stellt die Farbe der Lichter als RGB-Ganzzahl und schaltet ausgeschaltete mit eigenem Schalter
+     * ein. Eine Farbe als Text (Darstellung Farbe mit Kodierung) geht nicht hinaus: Die Doku nennt
+     * das Textformat nicht (Doku-Feedback 10.10.2026).
+     *
+     * @param array<int, array<string, mixed>> $entries
+     * @return array{lines: array<int, string>, total: int, reached: int, pending: int, failed: int}
+     */
+    private function runColor(array $entries, int $rgb): array
+    {
+        $jobs = [];
+        foreach ($entries as $index => $entry) {
+            $variable = $entry['roles']['color'];
+            $job = ['entry' => $entry, 'variable' => $variable, 'note' => null];
+            $current = $this->backend->read($variable);
+            if ($current === null) {
+                $job['note'] = sprintf($this->t('not available (variable %d is missing)'), $variable);
+            } elseif (!is_int($current['value'])) {
+                $job['note'] = $this->t('not set: colour as text is not supported yet');
+            } elseif (!$this->backend->hasAction($variable)) {
+                $job['note'] = $this->t('cannot be set (the colour has no action)');
+            } else {
+                $error = $this->backend->request($variable, $rgb);
+                if ($error !== null) {
+                    $job['note'] = sprintf($this->t('failed: %s'), $error);
+                } elseif (isset($entry['roles']['state']) && ($this->backend->read($entry['roles']['state'])['value'] ?? null) === false) {
+                    $this->backend->request($entry['roles']['state'], true);
+                }
+            }
+            $jobs[$index] = $job;
+        }
+
+        $reached = fn (array $job): bool => ($this->backend->read($job['variable'])['value'] ?? null) === $rgb;
+        $this->waitUntil(function () use ($jobs, $reached): bool {
+            foreach ($jobs as $job) {
+                if ($job['note'] === null && !$reached($job) && $this->backend->failure($job['variable']) === null) {
+                    return false;
+                }
+            }
+            return true;
+        });
+
+        $result = ['lines' => [], 'total' => count($jobs), 'reached' => 0, 'pending' => 0, 'failed' => 0];
+        foreach ($jobs as $index => $job) {
+            if ($job['note'] === null) {
+                $error = $reached($job) ? null : $this->backend->failure($job['variable']);
+                if ($error !== null) {
+                    $job['note'] = sprintf($this->t('failed: %s'), $error);
+                    $result['failed']++;
+                } elseif ($reached($job)) {
+                    $job['note'] = $this->stateOf($job['entry'])['text'];
+                    $result['reached']++;
+                } else {
+                    $job['note'] = sprintf($this->t('sent, but the device has not confirmed yet (currently %s)'), $this->stateOf($job['entry'])['text']);
+                    $result['pending']++;
+                }
+            } else {
+                $result['failed']++;
+            }
+            $result['lines'][$index] = $this->line($job['entry'], $job['note']);
+        }
+        return $result;
+    }
+
+    /**
+     * Name der nächstliegenden Farbe der Liste. Verglichen wird nach Aufhellen auf volle Stärke, so
+     * gilt ein dunkles Rot (0x7D0000, WLED an der Testbox) als Rot. Schwarz (0) hat keinen Namen.
+     */
+    public static function colorName(int $rgb): ?string
+    {
+        $channels = [($rgb >> 16) & 0xFF, ($rgb >> 8) & 0xFF, $rgb & 0xFF];
+        $max = max($channels);
+        if ($max === 0) {
+            return null;
+        }
+        $channels = array_map(static fn (int $c): float => $c * 255 / $max, $channels);
+        $best = null;
+        $bestDistance = INF;
+        foreach (self::COLORS as $name => $value) {
+            $distance = ($channels[0] - (($value >> 16) & 0xFF)) ** 2 + ($channels[1] - (($value >> 8) & 0xFF)) ** 2 + ($channels[2] - ($value & 0xFF)) ** 2;
+            if ($distance < $bestDistance) {
+                $best = $name;
+                $bestDistance = $distance;
+            }
+        }
+        return $best;
     }
 
     /** Mired statt Kelvin: ein Bereich bis 1000 (Hue über Matter 153 bis 454), ohne Bereich die Einheit. */
@@ -1912,6 +2049,13 @@ final class DeviceIndex
             $raw = $this->backend->read($entry['roles']['colortemp'])['value'] ?? null;
             if ((is_int($raw) || is_float($raw)) && $raw > 0) {
                 $state = $append($state, $this->kelvinOf($entry['roles']['colortemp'], (float)$raw) . ' K');
+            }
+        }
+        if ($state['active'] === true && isset($entry['roles']['color'])) {
+            $rgb = $this->backend->read($entry['roles']['color'])['value'] ?? null;
+            $name = is_int($rgb) ? self::colorName($rgb) : null;
+            if ($name !== null) {
+                $state = $append($state, $this->t($name));
             }
         }
         $power = isset($entry['roles']['power']) && $this->backend->read($this->mainVariable($entry)) !== null ? $this->backend->read($entry['roles']['power']) : null;

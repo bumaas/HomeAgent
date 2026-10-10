@@ -8,7 +8,7 @@ spricht, bedient damit Symcon, ob gesprochen, getippt oder aus einem eigenen Abl
 Rollladen halb schließen und bekommt eine kurze, eindeutige Antwort. Er sieht und schaltet dabei nur
 die Geräte, die Sie freigeben.
 
-> **Stand:** frühe Vorschau. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Position und
+> **Stand:** frühe Vorschau. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Farbe, Position und
 > Heizungs-Sollwert, das Anhalten von Rollläden, Verbrauch und Leistung, der Verlauf von Messwerten
 > und das Starten von Szenen gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen. Erprobt ist das Modul bisher
 > auf drei Anlagen.
@@ -139,6 +139,7 @@ zeigt der Dialog nur die Variablen, die zu diesem Typ gehören.
 | Zustand oder Messwert | Die Variable für an/aus, offen/zu oder erkannt, bei Messwerten der Wert selbst. Beim Thermostat die Ist-Temperatur. |
 | Sollwert | Nur beim Thermostat: die Variable mit der Solltemperatur. Sie braucht eine Aktion. |
 | Farbtemperatur | Nur beim Licht, wahlweise: die Variable mit der Farbtemperatur in Kelvin oder Mired. Sie braucht eine Aktion. |
+| Farbe | Nur beim Licht, wahlweise: die Variable mit der Farbe als Ganzzahl (RGB, etwa Profil `~HexColor`). Sie braucht eine Aktion. |
 | Helligkeit/Position | Beim Licht die Helligkeit. Sie wird bei eingeschaltetem Licht mit angesagt und lässt sich in Prozent stellen. Beim Rollladen die Position, beim Fenster der Antrieb. |
 | Fahrstatus | Nur bei Rollladen und Fenster mit Antrieb und nur, wenn es so eine Variable gibt: sie meldet, ob er gerade fährt, etwa `WORKING` bei Homematic oder der Laufstatus beim Velux KLF200. Dann antwortet das Modul sofort mit „fährt“, auch wenn die Position erst am Ziel kommt. |
 | Stopp | Nur bei Rollladen und Fenster mit Antrieb, wahlweise: eine Variable, die die Fahrt anhält, also ein Wahrheitswert mit Aktion oder eine Auswahl mit dem Eintrag „Stop“ (etwa „Aktion“ beim HomeAssistant-Modul). Homematic- und Velux-KLF200-Geräte hält das Modul auch ohne sie an. |
@@ -152,7 +153,7 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 
 | Typ | Variablen |
 |---|---|
-| Licht | Schaltzustand, Helligkeit oder beides. Ein Dimmer ohne eigenen Schalter hat nur die Helligkeit. Wahlweise Leistung, Zähler und Farbtemperatur. |
+| Licht | Schaltzustand, Helligkeit oder beides. Ein Dimmer ohne eigenen Schalter hat nur die Helligkeit. Wahlweise Leistung, Zähler, Farbtemperatur und Farbe. |
 | Schalter, Steckdose | Schaltzustand, wahlweise Leistung und Zähler |
 | Gerät | Schaltzustand oder Leistung, wahlweise der Zähler. Ein Gerät nur mit Leistung, etwa eine Wärmepumpe, lässt sich abfragen, aber nicht schalten. |
 | Rollladen | Position, dazu wahlweise Fahrstatus und Stopp |
@@ -261,6 +262,7 @@ aus und gibt dazu einen Befehl oder einen Prozentwert an:
 | `percent` | stellt die Helligkeit eines Lichts oder die Öffnung eines Rollladens oder Fensters |
 | `temperature` | stellt den Sollwert eines Thermostats in °C |
 | `color_temperature` | stellt die Farbtemperatur eines Lichts in Kelvin, etwa 2700 für warmweiß |
+| `color` | stellt die Farbe eines Lichts: rot, orange, gelb, grün, türkis, blau, lila, pink oder weiß |
 
 Bei Lichtern schaltet 0 Prozent aus, jeder andere Wert schaltet ein. Ein Licht, für das nur eine
 Helligkeit eingetragen ist und dessen kleinste Stufe über 0 liegt (bei Matter etwa 1 bis 254), lässt
@@ -285,6 +287,11 @@ Die Farbtemperatur nimmt der Assistent in Kelvin an. Zählt die Variable in Mire
 etwa Hue über Matter), rechnet das Modul um. Ein Wert außerhalb des Bereichs der Lampe geht auf das
 nächste Ende, und die Antwort nennt den gesendeten Wert. Ein ausgeschaltetes Licht wird dabei
 eingeschaltet. Bei eingeschaltetem Licht nennt die Abfrage die Farbtemperatur, etwa „an (100 %, 2700 K)“.
+
+Eine Farbe wählt der Assistent aus einer festen Liste von neun Namen. Das Modul schreibt sie als RGB in
+die Variable und schaltet ein ausgeschaltetes Licht dabei ein. Die Abfrage nennt bei eingeschaltetem
+Licht die nächstliegende Farbe der Liste. Eine Farbvariable mit Text (Darstellung Farbe mit Kodierung,
+etwa beim HomeAssistant-Modul) stellt das Modul noch nicht, die Antwort sagt das.
 
 Ein Befehl für eine Gruppe erreicht nur die Geräte, die ihn verstehen. „Wohnzimmer aus“ schaltet
 Lichter und Steckdosen und lässt die Rollläden in Ruhe; die Antwort nennt am Ende, wie viele Geräte
@@ -375,7 +382,7 @@ echo HAGT_RunScene($InstanzID, '', 'Filmabend');
   landen. Setzen Sie den Haken nur bei Zugängen, deren Client die Anmeldung nicht im Header
   mitschicken kann.
 - Die Skriptfunktionen kennen weder Standardraum noch Etage. Es gibt sie für Zustand, Schalten,
-  Stellen und Szenen, für Stopp, Sollwert, Farbtemperatur, Verbrauch, Leistung und Verlauf nicht.
+  Stellen und Szenen, für Stopp, Sollwert, Farbtemperatur, Farbe, Verbrauch, Leistung und Verlauf nicht.
 
 ## Begriffe
 

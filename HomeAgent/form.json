@@ -243,6 +243,23 @@
               }
             },
             {
+              "caption": "Colour",
+              "name": "ColorLabel",
+              "width": "220px",
+              "add": "-",
+              "visible": false
+            },
+            {
+              "caption": "Colour",
+              "name": "ColorVariableID",
+              "width": "200px",
+              "add": 1,
+              "visible": false,
+              "edit": {
+                "type": "SelectVariable"
+              }
+            },
+            {
               "caption": "Brightness/position",
               "name": "LevelLabel",
               "width": "220px",
@@ -377,14 +394,14 @@
               "name": "Type",
               "caption": "Type",
               "options": [],
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID);"
             },
             {
               "type": "SelectVariable",
               "name": "StateVariableID",
               "caption": "State or measured value",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -397,7 +414,7 @@
               "name": "SetpointVariableID",
               "caption": "Setpoint",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -410,7 +427,7 @@
               "name": "ColorTempVariableID",
               "caption": "Colour temperature",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -420,10 +437,23 @@
             },
             {
               "type": "SelectVariable",
+              "name": "ColorVariableID",
+              "caption": "Colour",
+              "width": "600px",
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID);"
+            },
+            {
+              "type": "ValidationTextBox",
+              "name": "ColorLabel",
+              "caption": "Colour",
+              "visible": false
+            },
+            {
+              "type": "SelectVariable",
               "name": "LevelVariableID",
               "caption": "Brightness/position",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -436,7 +466,7 @@
               "name": "MovingVariableID",
               "caption": "Moving state",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -449,7 +479,7 @@
               "name": "StopVariableID",
               "caption": "Stop",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -462,7 +492,7 @@
               "name": "PowerVariableID",
               "caption": "Power",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -475,7 +505,7 @@
               "name": "EnergyVariableID",
               "caption": "Energy meter (archived as counter)",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID);"
             },
             {
               "type": "ValidationTextBox",

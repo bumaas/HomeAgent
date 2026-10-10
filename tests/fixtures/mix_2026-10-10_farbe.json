@@ -1,0 +1,20 @@
+{
+    "_quelle": "10.10.2026 abends, gelesen an Testbox (Symcon 9.1) und nuc (9.1): Lichter mit Farbe als Ganzzahl (RGB, laut Doku bei Integer fest Kodierung RGB). WLED-Segment (Testbox, Hardware\\WLED Segment): Farbe 1 #41119, Darstellung Farbe mit ENCODING 0, Wert 8192000 (0x7D0000); der Streifen ist stromlos, gemessen: RequestAction(41119, 255) nach 19 ms zurück, die Variable blieb stehen. Philips-Hue-Modul (Testbox, Hue Aurelle Panel 1 Light): Farbe #48366 mit Profil ~HexColor, Wert 0; gemessen: RequestAction(48366, 255) bei ausgeschalteter Lampe nach 1830 ms zurück, die Variable blieb 0 (weißes Panel). RGBW-Leiste IPS-868 (nuc, Hardware\\IPS 868\\RGBW-868 ID144): Color #54728 mit ~HexColor, White #19752 mit ~Intensity.255, beide 0; nicht gestellt, wie sie auf eine Aktion reagiert ist hier als „sofort“ angenommen. Zum Vergleich eine Farbe als Text: HomeAssistant-Modul an der Testbox, RGB-Farbe #11687 (String, ENCODING 0, leer). Die Geräteliste ist für den Test zusammengestellt.",
+    "variablen": {
+        "37242": {"name": "Testbox: WLED Segment Ein", "wert": false, "formatiert": "Aus", "formate": {"true": "An", "false": "Aus"}, "aktion": true, "verhalten": "stumm"},
+        "56513": {"name": "Testbox: WLED Segment Helligkeit", "wert": 255, "formatiert": "100 %", "aktion": true, "verhalten": "stumm", "bereich": {"min": 0, "max": 255}},
+        "41119": {"name": "Testbox: WLED Segment Farbe 1", "wert": 8192000, "formatiert": "", "aktion": true, "verhalten": "stumm"},
+        "15792": {"name": "Testbox: Philips Hue Aurelle Panel Status", "wert": false, "formatiert": "Aus", "formate": {"true": "An", "false": "Aus"}, "aktion": true, "verhalten": "stumm"},
+        "18769": {"name": "Testbox: Philips Hue Aurelle Panel Helligkeit", "wert": 100, "formatiert": "100 %", "aktion": true, "bereich": {"min": 0, "max": 100}},
+        "48366": {"name": "Testbox: Philips Hue Aurelle Panel Farbe", "wert": 0, "formatiert": "000000", "aktion": true, "verhalten": "stumm"},
+        "19752": {"name": "nuc: RGBW-868 ID144 White", "wert": 0, "formatiert": "0 %", "aktion": true, "bereich": {"min": 0, "max": 255}},
+        "54728": {"name": "nuc: RGBW-868 ID144 Color", "wert": 0, "formatiert": "000000", "aktion": true},
+        "11687": {"name": "Testbox: HomeAssistant-Modul Wohnzimmer.Licht.Esstisch RGB-Farbe (Text)", "wert": "", "formatiert": "", "aktion": true}
+    },
+    "geraete": [
+        {"Room": "Wohnzimmer", "Name": "WLED", "Aliases": "", "Type": "light", "StateVariableID": 37242, "LevelVariableID": 56513, "ColorVariableID": 41119, "Invert": false},
+        {"Room": "Küche", "Name": "Panel", "Aliases": "", "Type": "light", "StateVariableID": 15792, "LevelVariableID": 18769, "ColorVariableID": 48366, "Invert": false},
+        {"Room": "Wohnzimmer", "Name": "Leiste", "Aliases": "", "Type": "light", "LevelVariableID": 19752, "ColorVariableID": 54728, "Invert": false},
+        {"Room": "Esszimmer", "Name": "Esstisch", "Aliases": "", "Type": "light", "LevelVariableID": 19752, "ColorVariableID": 11687, "Invert": false}
+    ]
+}
