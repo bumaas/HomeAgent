@@ -234,6 +234,14 @@ pruefe(str_ends_with($info->invoke($m, $zugaenge[0])['instructions'], ' You are 
 pruefe(!str_contains($info->invoke($m, $zugaenge[1])['instructions'], 'You are in room') && !str_contains($info->invoke($m, null)['instructions'], 'You are in room'), 'ohne Standardraum kein solcher Satz');
 // HA Assist am nuc (09.10.2026): Nach „fährt“ sagte das Modell „ist jetzt ganz aufgemacht“.
 pruefe(str_contains($info->invoke($m, null)['instructions'], '"moving" or "command sent" means the device has not arrived yet; then say that it is still moving.'), 'instructions erklären „fährt“: ' . $info->invoke($m, null)['instructions']);
+// Claude-App (10.10.2026): Über den Nur-Lese-Zugang lehnte Claude das Schalten ab, nannte als Grund aber
+// ein fehlendes Werkzeug. Instructions und Beschreibung von get_state sagen es jetzt beim Nur-Lese-Zugang.
+$nurLesen = 'This access can only read the house, it cannot switch or set anything.';
+pruefe(str_contains($info->invoke($m, $zugaenge[1])['instructions'], ' ' . $nurLesen), 'instructions nennen den Nur-Lese-Zugang: ' . $info->invoke($m, $zugaenge[1])['instructions']);
+pruefe(!str_contains($info->invoke($m, $zugaenge[0])['instructions'], $nurLesen) && !str_contains($info->invoke($m, null)['instructions'], $nurLesen), 'ein voller Zugang bekommt den Satz nicht');
+$beschreibung = static fn (?array $z): string => array_column($werkzeuge->invoke($m, $z), 'description', 'name')['get_state'];
+pruefe(str_contains($beschreibung($zugaenge[1]), $nurLesen), 'get_state nennt beim Nur-Lese-Zugang den Grund: ' . $beschreibung($zugaenge[1]));
+pruefe(!str_contains($beschreibung($zugaenge[0]), $nurLesen), 'beim vollen Zugang nicht');
 // Zwei Instanzen hießen in HA gleich („symcon-voicecontrol“); der Servername trägt jetzt den Namen der Instanz.
 IPS_SetName($iid, 'Sprachsteuerung (Test)');
 pruefe($info->invoke($m, null)['name'] === 'Symcon Sprachsteuerung (Test)', 'der Servername nennt die Instanz: ' . $info->invoke($m, null)['name']);

@@ -86,6 +86,11 @@ Weitere Regeln, die nicht offensichtlich sind:
   gestern stündlich, Wochen und Monate täglich, Jahre monatlich; `from`/`to` bis 2 Tage stündlich, bis
   100 Tage täglich), höchstens `HISTORY_MAX` Messwerte, jede Variable nur einmal (ein Thermostat kann
   den Raumfühler als Ist-Temperatur lesen). Als Zähler aggregierte Variablen haben keinen Verlauf.
+- **Namenssuche** in Stufen: genauer Name oder Alias, dann die Anfrage als Teil des Namens, dann der
+  Name in der Anfrage, aber nur an einem Wortanfang („Esstischlampe“ trifft „Esstisch“,
+  „Außentemperatur“ trifft „Temperatur“ nicht). Nur die beste Stufe zählt.
+- **Nur-Lese-Zugang:** `instructions` und die Beschreibung von `get_state` sagen dem Assistenten, dass
+  der Zugang nicht schalten kann, damit er eine Absage richtig begründet.
 - **Ein neues Feld** von `set_state` kostet: eine Fähigkeit in `ROLES`/`TYPE_ROLES`, einen Eintrag in
   `abilitiesOf()`, einen Zweig in `setState()`, eine Eigenschaft im Schema und ein Dialogfeld.
 

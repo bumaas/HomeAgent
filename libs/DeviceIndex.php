@@ -1745,7 +1745,9 @@ final class DeviceIndex
             }
             if (str_contains($key, $nameKey)) {
                 $best = max($best, 2);
-            } elseif (str_contains($nameKey, $key)) {
+            } elseif (preg_match('/(^| )' . preg_quote($key, '/') . '/u', $nameKey) === 1) {
+                // Der Name muss in der Anfrage an einem Wortanfang stehen: „Esstischlampe“ trifft
+                // „Esstisch“, „Außentemperatur“ trifft „Temperatur“ nicht (nuc, 14 Geräte).
                 $best = max($best, 1);
             }
         }

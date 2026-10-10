@@ -106,7 +106,7 @@ Zugänge einer Instanz sehen dieselbe Freigabeliste.
 | Name | Frei wählbar, zum Beispiel „Küche“ oder „Gäste“. Er erscheint im Debug der Instanz. |
 | Token | Das Kennwort dieses Zugangs, mindestens 24 Zeichen. Jeder Zugang braucht ein eigenes. |
 | Standardraum | Der Raum, in dem der Assistent steht. „Mach das Licht an“ ohne Raum meint dann diesen Raum, und bei gleichen Gerätenamen gewinnt das Gerät dort. Für das ganze Haus sagt der Assistent `room=all`. |
-| Nur abfragen | Dieser Zugang darf fragen, aber nichts schalten. Er sieht nur das Werkzeug zum Abfragen. |
+| Nur abfragen | Dieser Zugang darf fragen, aber nichts schalten. Er sieht nur das Werkzeug zum Abfragen, und der Assistent erfährt, dass der Zugang nur lesen darf. |
 | Token auch in der Adresse | Für Clients, die keine Anmeldung mitschicken können. Das Token hängt dann an der Adresse. |
 
 Ohne Zugang mit Token zeigt die Instanz den Status 104 und weist alle Anfragen ab.

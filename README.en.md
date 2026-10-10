@@ -100,7 +100,7 @@ an instance see the same release list.
 | Name | Free text, for example "Kitchen" or "Guests". It appears in the debug of the instance. |
 | Token | The password of this access, at least 24 characters. Each access needs its own. |
 | Default room | The room the assistant is in. "Turn on the light" without a room then means this room, and with equal device names the device there wins. For the whole house the assistant says `room=all`. |
-| Query only | This access may ask but not switch anything. It only sees the query tool. |
+| Query only | This access may ask but not switch anything. It only sees the query tool, and the assistant is told that the access can only read. |
 | Token also in the address | For clients that cannot send a login. The token is then appended to the address. |
 
 Without an access that has a token, the instance shows status 104 and rejects all requests.

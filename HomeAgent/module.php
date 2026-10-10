@@ -40,6 +40,9 @@ class HomeAgent extends IPSModuleStrict
     /** Kürzere Tokens sind ein Fehler der Zugangsliste; der Knopf „Token erzeugen“ liefert 64 Zeichen. */
     private const TOKEN_MIN_LENGTH = 24;
 
+    /** Satz für Instructions und get_state beim Nur-Lese-Zugang. */
+    private const READ_ONLY_NOTE = 'This access can only read the house, it cannot switch or set anything.';
+
     /** Farben für Fehler im Formular: „Rot“ der Doku für Listenzeilen (#FFC0C0), dazu ein dunkles Rot für Text. */
     private const ROW_COLOR_ERROR = '#FFC0C0';
 
@@ -686,6 +689,7 @@ class HomeAgent extends IPSModuleStrict
         // Der Standardraum des Zugangs und die Etagen der Raumliste stehen in den Beschreibungen,
         // damit der Assistent sie ohne eigenen Aufruf kennt. Ohne Etagen gibt es den Parameter nicht.
         $defaultRoom = (string)($access['DefaultRoom'] ?? '');
+        $readOnly = ($access['ReadOnly'] ?? false) === true;
         $floors = $this->roomIndex()->floors();
         $floor = $floors === [] ? [] : ['floor' => ['type' => 'string', 'description' => 'Floor, for all rooms of a floor. Known floors: ' . implode(', ', $floors) . '.']];
         $defaultRule = $defaultRoom === '' ? '' : 'Without room, name and floor the room ' . $defaultRoom . ' is meant; "all" means the whole house.';
@@ -723,7 +727,8 @@ class HomeAgent extends IPSModuleStrict
                 . ($hasBalance ? '"How much electricity did we use yesterday?" → period=yesterday. ' : '')
                 . ($hasPower ? '"How much power are we using right now?" → period=now. ' : '')
                 . ($hasHistory ? '"How warm was it in the guest room over the last 30 days?" → room=Gast, type=temperature, from=' . date('Y-m-d', strtotime('-29 days')) . ', to=' . date('Y-m-d') . '. ' : '')
-                . 'If nothing matches, the answer lists the known rooms and types.',
+                . 'If nothing matches, the answer lists the known rooms and types.'
+                . ($readOnly ? ' ' . self::READ_ONLY_NOTE : ''),
             'inputSchema' => [
                 'type'                 => 'object',
                 'properties'           => [
@@ -839,6 +844,11 @@ class HomeAgent extends IPSModuleStrict
         $instructions = $this->Translate('You control a smart home by voice. Answer briefly and in the language of the user. Use the room names and types from the tool answers. Do not count yourself, the first line of every answer gives the count.');
         // HA Assist am nuc (09.10.2026): Nach „fährt“ meldete das Modell „ist jetzt ganz aufgemacht“.
         $instructions .= ' ' . $this->Translate('"moving" or "command sent" means the device has not arrived yet; then say that it is still moving.');
+        // Claude-App (10.10.2026): Über den Nur-Lese-Zugang begründete Claude eine Absage mit einem
+        // fehlenden Werkzeug statt mit dem Zugang.
+        if (($access['ReadOnly'] ?? false) === true) {
+            $instructions .= ' ' . $this->Translate(self::READ_ONLY_NOTE);
+        }
         $defaultRoom = (string)($access['DefaultRoom'] ?? '');
         if ($defaultRoom !== '') {
             $instructions .= ' ' . sprintf($this->Translate('You are in room %s. Commands and questions without a room mean this room; use room=all for the whole house.'), $defaultRoom);
