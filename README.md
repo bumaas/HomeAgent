@@ -10,7 +10,7 @@ die Geräte, die Sie freigeben.
 
 > **Stand:** frühe Vorschau. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Farbe, Position und
 > Heizungs-Sollwert, das Anhalten von Rollläden, Verbrauch und Leistung, der Verlauf von Messwerten
-> und das Starten von Szenen gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen. Erprobt ist das Modul bisher
+> und das Starten von Szenen gehen, Mediaplayer lassen sich abfragen. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen. Erprobt ist das Modul bisher
 > auf drei Anlagen.
 
 ## Wann brauche ich das?
@@ -135,11 +135,12 @@ zeigt der Dialog nur die Variablen, die zu diesem Typ gehören.
 |---|---|
 | Raum | So, wie Sie den Raum nennen. Groß- und Kleinschreibung und Umlaute sind egal („Küche“ = „kueche“). |
 | Name, Aliase | Der Name und weitere Bezeichnungen, durch Komma getrennt. Ein Teilwort genügt beim Suchen. Wird ein Gerät über einen Alias gefunden, steht er in der Antwort in Klammern hinter dem Namen. |
-| Typ | Licht, Schalter, Steckdose, Gerät, Rollladen, Thermostat, Fenster, Tür, Anwesenheit, Wasserleck, Temperatur, Luftfeuchte, Luftqualität oder sonstiger Messwert. |
+| Typ | Licht, Schalter, Steckdose, Gerät, Rollladen, Thermostat, Mediaplayer, Fenster, Tür, Anwesenheit, Wasserleck, Temperatur, Luftfeuchte, Luftqualität oder sonstiger Messwert. |
 | Zustand oder Messwert | Die Variable für an/aus, offen/zu oder erkannt, bei Messwerten der Wert selbst. Beim Thermostat die Ist-Temperatur. |
 | Sollwert | Nur beim Thermostat: die Variable mit der Solltemperatur. Sie braucht eine Aktion. |
 | Farbtemperatur | Nur beim Licht, wahlweise: die Variable mit der Farbtemperatur in Kelvin oder Mired. Sie braucht eine Aktion. |
 | Farbe | Nur beim Licht, wahlweise: die Variable mit der Farbe als Ganzzahl (RGB, etwa Profil `~HexColor`). Sie braucht eine Aktion. |
+| Wiedergabe, Lautstärke, Stumm, Titel, Interpret | Nur beim Mediaplayer. Es sind die Variablen, die Symcon in der Darstellung „Media Player“ zusammenfasst: die Wiedergabe mit einem der Profile `~Playback`, `~PlaybackNoStop`, `~PlaybackPreviousNext`, `~PlaybackPreviousNextNoStop` oder `~PlayerStatus`, die Lautstärke (in Prozent ihres Bereichs angesagt), Stumm als Wahrheitswert, Titel und Interpret als Text. Beim Mediaplayer heißt der Zustand „Ein/Aus“. |
 | Helligkeit/Position | Beim Licht die Helligkeit. Sie wird bei eingeschaltetem Licht mit angesagt und lässt sich in Prozent stellen. Beim Rollladen die Position, beim Fenster der Antrieb. |
 | Fahrstatus | Nur bei Rollladen und Fenster mit Antrieb und nur, wenn es so eine Variable gibt: sie meldet, ob er gerade fährt, etwa `WORKING` bei Homematic oder der Laufstatus beim Velux KLF200. Dann antwortet das Modul sofort mit „fährt“, auch wenn die Position erst am Ziel kommt. |
 | Stopp | Nur bei Rollladen und Fenster mit Antrieb, wahlweise: eine Variable, die die Fahrt anhält, also ein Wahrheitswert mit Aktion oder eine Auswahl mit dem Eintrag „Stop“ (etwa „Aktion“ beim HomeAssistant-Modul). Homematic- und Velux-KLF200-Geräte hält das Modul auch ohne sie an. |
@@ -158,6 +159,7 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 | Gerät | Schaltzustand oder Leistung, wahlweise der Zähler. Ein Gerät nur mit Leistung, etwa eine Wärmepumpe, lässt sich abfragen, aber nicht schalten. |
 | Rollladen | Position, dazu wahlweise Fahrstatus und Stopp |
 | Thermostat | Sollwert, wahlweise die Ist-Temperatur |
+| Mediaplayer | Ein/Aus, Wiedergabe oder Lautstärke, wahlweise Stumm, Titel und Interpret |
 | Fenster | Kontakt, Antrieb oder beides, zum Antrieb wahlweise Fahrstatus und Stopp |
 | Tür | Kontakt |
 | Anwesenheit, Wasserleck | Melder |
@@ -192,6 +194,11 @@ Ein Thermostat nennt Soll- und Ist-Temperatur, etwa „Soll 21 °C (derzeit 20.6
 Assistent nach `type=temperature`, findet er auch die Thermostate mit Ist-Temperatur; eine eigene
 Temperaturzeile auf derselben Variable brauchen Sie dafür nicht. Steht der Sollwert außerhalb seines
 Bereichs, heißt er Sonder-Sollwert: Manche Homematic-Thermostate nutzen 100 für „Ventil ganz offen“.
+
+Ein Mediaplayer meldet sich etwa mit „spielt „Can't Get Enough“ von Bad Company (Lautstärke 20 %)“,
+„pausiert (Lautstärke 37 %, stumm)“ oder „aus“. Als aktiv zählt er, wenn er spielt. Hat er keinen
+Wiedergabezustand (das HomeAssistant-Modul kennt nur eine Befehlsvariable), steht dort nur der Titel, und
+er zählt bei den aktiven Geräten nicht mit.
 
 Mit `period` fragt **get_state** nach dem Verbrauch statt nach dem Zustand: `today`, `yesterday`,
 `this_week`, `last_week`, `this_month`, `last_month`, `this_year` oder `last_year`. Statt `period` geht
@@ -364,7 +371,8 @@ echo HAGT_RunScene($InstanzID, '', 'Filmabend');
 
 ## Grenzen
 
-- Farben und die Betriebsart von Thermostaten (aus, heizen, automatisch) gehen noch nicht.
+- Farbe als Text und die Betriebsart von Thermostaten (aus, heizen, automatisch) gehen noch nicht.
+- Mediaplayer lassen sich bisher nur abfragen, nicht steuern.
 - Ein batteriebetriebenes Thermostat übernimmt einen neuen Sollwert oft erst beim nächsten Funkkontakt.
   Die Zentrale meldet ihn trotzdem sofort zurück, „gestellt“ heißt dann „an die Zentrale übergeben“.
 - Bei einem Rollladen, der sich erst am Ziel meldet und keinen Fahrstatus hat, weiß das Modul nach

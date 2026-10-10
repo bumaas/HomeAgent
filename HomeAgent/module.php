@@ -617,14 +617,15 @@ class HomeAgent extends IPSModuleStrict
      * ein anderer Gerätetyp oder eine andere Variable gewählt wird. Die Felder folgen dem Typ, und
      * die Texte für die Spalten der Liste folgen den gewählten Variablen.
      */
-    public function UIDeviceChanged(string $Type, int $StateVariableID, int $LevelVariableID, int $MovingVariableID = 0, int $PowerVariableID = 0, int $EnergyVariableID = 0, int $StopVariableID = 0, int $SetpointVariableID = 0, int $ColorTempVariableID = 0, int $ColorVariableID = 0): void
+    public function UIDeviceChanged(string $Type, int $StateVariableID, int $LevelVariableID, int $MovingVariableID = 0, int $PowerVariableID = 0, int $EnergyVariableID = 0, int $StopVariableID = 0, int $SetpointVariableID = 0, int $ColorTempVariableID = 0, int $ColorVariableID = 0, int $PlaybackVariableID = 0, int $VolumeVariableID = 0, int $MuteVariableID = 0, int $TitleVariableID = 0, int $ArtistVariableID = 0): void
     {
         $type = array_key_exists($Type, DeviceIndex::TYPES) ? $Type : array_key_first(DeviceIndex::TYPES);
         foreach ($this->deviceDialogFields($type) as $name => $field) {
             $this->UpdateFormField($name, 'visible', $field['visible']);
             $this->UpdateFormField($name, 'caption', $field['caption']);
         }
-        foreach ($this->deviceLabels(['Type' => $type, 'StateVariableID' => $StateVariableID, 'LevelVariableID' => $LevelVariableID, 'MovingVariableID' => $MovingVariableID, 'PowerVariableID' => $PowerVariableID, 'EnergyVariableID' => $EnergyVariableID, 'StopVariableID' => $StopVariableID, 'SetpointVariableID' => $SetpointVariableID, 'ColorTempVariableID' => $ColorTempVariableID, 'ColorVariableID' => $ColorVariableID]) as $name => $label) {
+        foreach ($this->deviceLabels(['Type' => $type, 'StateVariableID' => $StateVariableID, 'LevelVariableID' => $LevelVariableID, 'MovingVariableID' => $MovingVariableID, 'PowerVariableID' => $PowerVariableID, 'EnergyVariableID' => $EnergyVariableID, 'StopVariableID' => $StopVariableID, 'SetpointVariableID' => $SetpointVariableID, 'ColorTempVariableID' => $ColorTempVariableID, 'ColorVariableID' => $ColorVariableID,
+            'PlaybackVariableID' => $PlaybackVariableID, 'VolumeVariableID' => $VolumeVariableID, 'MuteVariableID' => $MuteVariableID, 'TitleVariableID' => $TitleVariableID, 'ArtistVariableID' => $ArtistVariableID]) as $name => $label) {
             $this->UpdateFormField($name, 'value', $label);
         }
     }
@@ -1259,6 +1260,7 @@ class HomeAgent extends IPSModuleStrict
             $type === 'window'                                 => ['state' => $this->Translate('Contact'), 'level' => $this->Translate('Drive (opening)'), 'moving' => $this->Translate('Moving state'), 'stop' => $this->Translate('Stop')],
             $type === 'door'                                   => ['state' => $this->Translate('Contact')],
             $type === 'thermostat'                             => ['state' => $this->Translate('Current temperature'), 'setpoint' => $this->Translate('Setpoint')],
+            $type === 'media'                                  => ['state' => $this->Translate('On/off')],
             in_array($type, ['presence', 'water_leak'], true)  => ['state' => $this->Translate('Detector')],
             DeviceIndex::TYPES[$type] === null                 => ['state' => $this->Translate('Measured value')],
             default                                            => ['state' => $this->Translate('Switching state')],
@@ -1266,7 +1268,8 @@ class HomeAgent extends IPSModuleStrict
         // Fähigkeiten, die der Typ nicht hat, bleiben im Dialog unsichtbar und behalten ihren allgemeinen Namen.
         return $captions + ['state' => $this->Translate('State or measured value'), 'level' => $this->Translate('Brightness/position'), 'moving' => $this->Translate('Moving state'),
             'stop' => $this->Translate('Stop'), 'power' => $this->Translate('Power'), 'energy' => $this->Translate('Energy meter (archived as counter)'), 'setpoint' => $this->Translate('Setpoint'),
-            'colortemp' => $this->Translate('Colour temperature'), 'color' => $this->Translate('Colour')];
+            'colortemp' => $this->Translate('Colour temperature'), 'color' => $this->Translate('Colour'), 'playback' => $this->Translate('Playback'),
+            'volume' => $this->Translate('Volume'), 'mute' => $this->Translate('Mute'), 'title' => $this->Translate('Title'), 'artist' => $this->Translate('Artist')];
     }
 
     /**

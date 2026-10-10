@@ -1,0 +1,260 @@
+{
+    "_quelle": "10.10.2026, 23:14, nur gelesen am nuc (9.1 Rust) über SymconDeviceBackend::read/hasAction/range: Mediaplayer aus fünf Modulen. Sonos Wintergarten über das HomeAssistant-Modul (#24294): die Wiedergabe ist eine reine Befehlsvariable (Wert -1, Anzeige leer, ~PlaybackPreviousNext), der Zustand „Pausiert“ steht nur im Text #45169; Lautstärke als Schieberegler mit Verwendung 3 (0 bis 1), Stumm als Schalter mit Verwendung 1. Echo Dot Musikzimmer (EchoRemote #31762): ~PlaybackPreviousNextNoStop auf 3 = Pause, ~Volume, ~Mute, Titel und Interpret leer. Sonos Wohnzimmer (Sonos-Modul #58639): Status ~PlaybackPreviousNext 3 = Pause; die Lautstärke #41075 hat keine Aktion, nur die Gruppenlautstärke #10169. Eingebauter Media Player (#25632): ~PlayerStatus mit eigener Zählung (0 Prev, 1 Play, 2 Pause, 3 Stop, 4 Weiter), Wert 3 = Stop. Sony TV (#36393): Ein/Aus als Ganzzahl STV.PowerStatus_my (1 = Standby), Lautstärke Schieberegler Verwendung 3, Stumm Verwendung 1. Denon Zone 1 (#42150): Power als Wahrheitswert. Zu dieser Zeit spielte kein Player; „spielt“ ist im Test angenommen. Die Geräteliste ist für den Test zusammengestellt, die Räume sind die am nuc.",
+    "variablen": {
+        "11085": {
+            "name": "Wintergarten (Sonos): Wiedergabe",
+            "wert": -1,
+            "formatiert": "",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 4,
+                "profil": "~PlaybackPreviousNext"
+            }
+        },
+        "31588": {
+            "name": "Wintergarten (Sonos): Lautstärke",
+            "wert": 0.2,
+            "formatiert": "20 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 1
+            }
+        },
+        "21842": {
+            "name": "Wintergarten (Sonos): Stumm",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true
+        },
+        "53862": {
+            "name": "Wintergarten (Sonos): Titel",
+            "wert": "Can't Get Enough",
+            "formatiert": "Can't Get Enough...",
+            "aktion": false
+        },
+        "12831": {
+            "name": "Wintergarten (Sonos): Interpret",
+            "wert": "Bad Company",
+            "formatiert": "Bad Company...",
+            "aktion": false
+        },
+        "28976": {
+            "name": "Echo Dot Musikzimmer: Fernbedienung",
+            "wert": 3,
+            "formatiert": "Pause",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 4,
+                "profil": "~PlaybackPreviousNextNoStop"
+            }
+        },
+        "24835": {
+            "name": "Echo Dot Musikzimmer: Lautstärke",
+            "wert": 37,
+            "formatiert": "37 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 100,
+                "profil": "~Volume"
+            }
+        },
+        "30516": {
+            "name": "Echo Dot Musikzimmer: Stummschaltung",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 1,
+                "profil": "~Mute"
+            }
+        },
+        "52178": {
+            "name": "Echo Dot Musikzimmer: Titel",
+            "wert": "",
+            "formatiert": "...",
+            "aktion": false
+        },
+        "50164": {
+            "name": "Echo Dot Musikzimmer: Interpret (Untertitel 1)",
+            "wert": "",
+            "formatiert": "...",
+            "aktion": false
+        },
+        "39247": {
+            "name": "Wohnzimmer: Status",
+            "wert": 3,
+            "formatiert": "Pause",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 4,
+                "profil": "~PlaybackPreviousNext"
+            }
+        },
+        "41075": {
+            "name": "Wohnzimmer: Lautstärke",
+            "wert": 100,
+            "formatiert": "100 %",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 100,
+                "profil": "~Volume"
+            }
+        },
+        "10169": {
+            "name": "Wohnzimmer: Gruppenlautstärke",
+            "wert": 100,
+            "formatiert": "100 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 100,
+                "profil": "~Volume"
+            }
+        },
+        "46718": {
+            "name": "Wohnzimmer: Titel",
+            "wert": "",
+            "formatiert": "...",
+            "aktion": false
+        },
+        "29233": {
+            "name": "Wohnzimmer: Künstler",
+            "wert": "",
+            "formatiert": "...",
+            "aktion": false
+        },
+        "27982": {
+            "name": "Media Player: Status",
+            "wert": 3,
+            "formatiert": "Stop",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 4,
+                "profil": "~PlayerStatus"
+            }
+        },
+        "12415": {
+            "name": "Media Player: Lautstärke",
+            "wert": 22,
+            "formatiert": "22 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 100,
+                "profil": "~Volume"
+            }
+        },
+        "39501": {
+            "name": "Media Player: Titel",
+            "wert": "",
+            "formatiert": "...",
+            "aktion": false
+        },
+        "21758": {
+            "name": "Sony TV: Status",
+            "wert": 1,
+            "formatiert": "Standby",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 2,
+                "profil": "STV.PowerStatus_my"
+            }
+        },
+        "44498": {
+            "name": "Sony TV: Lautstärke Lautsprecher",
+            "wert": 65,
+            "formatiert": "65 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "32690": {
+            "name": "Sony TV: Mute",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true
+        },
+        "35575": {
+            "name": "Zone 1: Power",
+            "wert": true,
+            "formatiert": "An",
+            "aktion": true
+        }
+    },
+    "geraete": [
+        {
+            "Room": "Wintergarten",
+            "Name": "Sonos",
+            "Aliases": "",
+            "Type": "media",
+            "Invert": false,
+            "PlaybackVariableID": 11085,
+            "VolumeVariableID": 31588,
+            "MuteVariableID": 21842,
+            "TitleVariableID": 53862,
+            "ArtistVariableID": 12831
+        },
+        {
+            "Room": "Musikzimmer",
+            "Name": "Echo",
+            "Aliases": "",
+            "Type": "media",
+            "Invert": false,
+            "PlaybackVariableID": 28976,
+            "VolumeVariableID": 24835,
+            "MuteVariableID": 30516,
+            "TitleVariableID": 52178,
+            "ArtistVariableID": 50164
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Sonos",
+            "Aliases": "",
+            "Type": "media",
+            "Invert": false,
+            "PlaybackVariableID": 39247,
+            "VolumeVariableID": 41075,
+            "TitleVariableID": 46718,
+            "ArtistVariableID": 29233
+        },
+        {
+            "Room": "",
+            "Name": "Media Player",
+            "Aliases": "",
+            "Type": "media",
+            "Invert": false,
+            "PlaybackVariableID": 27982,
+            "VolumeVariableID": 12415,
+            "TitleVariableID": 39501
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Fernseher",
+            "Aliases": "",
+            "Type": "media",
+            "Invert": false,
+            "StateVariableID": 21758,
+            "VolumeVariableID": 44498,
+            "MuteVariableID": 32690
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Receiver",
+            "Aliases": "",
+            "Type": "media",
+            "Invert": false,
+            "StateVariableID": 35575
+        }
+    ]
+}

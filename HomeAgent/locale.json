@@ -306,7 +306,20 @@
             "blue": "blau",
             "purple": "lila",
             "pink": "pink",
-            "white": "weiß"
+            "white": "weiß",
+            "playing": "spielt",
+            "paused": "pausiert",
+            "muted": "stumm",
+            "volume %s": "Lautstärke %s",
+            "\"%s\"": "„%s“",
+            "\"%s\" by %s": "„%s“ von %s",
+            "Media player": "Mediaplayer",
+            "On/off": "Ein/Aus",
+            "Playback": "Wiedergabe",
+            "Volume": "Lautstärke",
+            "Mute": "Stumm",
+            "Title": "Titel",
+            "Artist": "Interpret"
         }
     }
 }

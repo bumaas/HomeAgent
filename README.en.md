@@ -8,7 +8,7 @@ still open?", say "Turn off the lights in the living room" or close a blind half
 unambiguous answer. It only sees and switches the devices you release.
 
 > **Status:** early preview. Querying, switching, setting brightness, colour temperature, colour, position and heating setpoint,
-> stopping blinds, consumption and power, the history of measured values and starting scenes work. The device list can be proposed from
+> stopping blinds, consumption and power, the history of measured values and starting scenes work, media players can be queried. The device list can be proposed from
 > an Alexa instance. So far the module has been tried on three systems.
 
 ## When do I need this?
@@ -127,11 +127,12 @@ then shows only the variables that belong to this type.
 |---|---|
 | Room | The way you call the room. Case and umlauts do not matter ("Küche" = "kueche"). |
 | Name, aliases | The name and further names, separated by commas. A partial word is enough when searching. If a device is found through an alias, the answer shows it in brackets after the name. |
-| Type | Light, switch, socket, appliance, blind, thermostat, window, door, presence, water leak, temperature, humidity, air quality or other measured value. |
+| Type | Light, switch, socket, appliance, blind, thermostat, media player, window, door, presence, water leak, temperature, humidity, air quality or other measured value. |
 | State or measured value | The variable for on/off, open/closed or detected, for measured values the value itself. For a thermostat the current temperature. |
 | Setpoint | Only for a thermostat: the variable with the target temperature. It needs an action. |
 | Colour temperature | Only for a light, optional: the variable with the colour temperature in Kelvin or mired. It needs an action. |
 | Colour | Only for a light, optional: the variable with the colour as an integer (RGB, for example profile `~HexColor`). It needs an action. |
+| Playback, volume, mute, title, artist | Only for a media player. These are the variables Symcon combines in the "Media Player" presentation: playback with one of the profiles `~Playback`, `~PlaybackNoStop`, `~PlaybackPreviousNext`, `~PlaybackPreviousNextNoStop` or `~PlayerStatus`, the volume (announced in percent of its range), mute as a boolean, title and artist as text. For a media player the state is called "On/off". |
 | Brightness/position | For a light the brightness. It is announced together with a light that is on and can be set in percent. For a blind the position, for a window the drive. |
 | Moving state | Only for blinds and windows with a drive, and only if such a variable exists: it reports whether the blind is moving, for example `WORKING` on Homematic or the run status on the Velux KLF200. The module then answers "moving" at once, even if the position only arrives at the end. |
 | Stop | Only for blinds and windows with a drive, optional: a variable that stops the travel, that is a boolean with an action or a selection with the entry "Stop" (such as "Aktion" in the HomeAssistant module). Homematic and Velux KLF200 devices are stopped by the module even without it. |
@@ -150,6 +151,7 @@ Which variables a device needs depends on its type:
 | Appliance | Switching state or power, optionally the energy meter. An appliance with power only, such as a heat pump, can be queried but not switched. |
 | Blind | Position, optionally moving state and stop |
 | Thermostat | Setpoint, optionally the current temperature |
+| Media player | On/off, playback or volume, optionally mute, title and artist |
 | Window | Contact, drive or both, optionally moving state and stop for the drive |
 | Door | Contact |
 | Presence, water leak | Detector |
@@ -182,6 +184,11 @@ A thermostat reports target and current temperature, for example "setpoint 21 °
 If the assistant asks for `type=temperature`, it also finds thermostats with a current temperature; you
 do not need a separate temperature entry on the same variable. A setpoint outside its range is called a
 special setpoint: some Homematic thermostats use 100 for "valve fully open".
+
+A media player reports for example "playing "Can't Get Enough" by Bad Company (volume 20 %)",
+"paused (volume 37 %, muted)" or "off". It counts as active while it plays. Without a playback state
+(the HomeAssistant module only has a command variable) only the title is shown, and it is not counted
+among the active devices.
 
 With `period`, **get_state** reports consumption instead of the state: `today`, `yesterday`,
 `this_week`, `last_week`, `this_month`, `last_month`, `this_year` or `last_year`. Instead of `period`, a
@@ -348,7 +355,8 @@ echo HAGT_RunScene($InstanceID, '', 'Filmabend');
 
 ## Limits
 
-- Colours and the operating mode of thermostats (off, heat, auto) are not supported yet.
+- Colour as text and the operating mode of thermostats (off, heat, auto) are not supported yet.
+- Media players can only be queried so far, not controlled.
 - A battery-powered thermostat often takes a new setpoint only at its next radio contact. The central
   unit still confirms it right away, so "set" then means "handed over to the central unit".
 - For a blind that reports only on arrival and has no moving state, the module does not know after

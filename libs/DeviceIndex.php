@@ -21,6 +21,7 @@ final class DeviceIndex
         'appliance'   => ['on', 'off'],
         'blind'       => null,
         'thermostat'  => null,
+        'media'       => ['on', 'off'],
         'window'      => ['open', 'closed'],
         'door'        => ['open', 'closed'],
         'presence'    => ['detected', 'not detected'],
@@ -53,6 +54,11 @@ final class DeviceIndex
         'setpoint' => 'SetpointVariableID',
         'colortemp' => 'ColorTempVariableID',
         'color'     => 'ColorVariableID',
+        'playback'  => 'PlaybackVariableID',
+        'volume'    => 'VolumeVariableID',
+        'mute'      => 'MuteVariableID',
+        'title'     => 'TitleVariableID',
+        'artist'    => 'ArtistVariableID',
     ];
 
     /**
@@ -69,6 +75,19 @@ final class DeviceIndex
         'purple'    => 0x8000FF,
         'pink'      => 0xFF00FF,
         'white'     => 0xFFFFFF,
+    ];
+
+    /**
+     * Werte einer Wiedergabevariable je Profil (an der Anlage gelesen, nuc 10.10.2026). Die Profile
+     * ~Playback… nennt die Doku für die Darstellung Media Player; der eingebaute Media Player von Symcon
+     * nutzt ~PlayerStatus und zählt anders. Ein anderes Profil gilt als unbekannt.
+     */
+    private const PLAYBACK_CODES = [
+        '~Playback'                   => ['stop' => 1, 'play' => 2, 'pause' => 3],
+        '~PlaybackNoStop'             => ['play' => 2, 'pause' => 3],
+        '~PlaybackPreviousNext'       => ['previous' => 0, 'stop' => 1, 'play' => 2, 'pause' => 3, 'next' => 4],
+        '~PlaybackPreviousNextNoStop' => ['previous' => 0, 'play' => 2, 'pause' => 3, 'next' => 4],
+        '~PlayerStatus'               => ['previous' => 0, 'play' => 1, 'pause' => 2, 'stop' => 3, 'next' => 4],
     ];
 
     /** Deutsche Namen der Farben in normalisierter Form, falls ein Assistent sie unübersetzt schickt. */
@@ -88,6 +107,7 @@ final class DeviceIndex
         'appliance'   => ['roles' => ['state', 'power', 'energy'], 'required' => ['state', 'power']],
         'blind'       => ['roles' => ['level', 'moving', 'stop'], 'required' => ['level']],
         'thermostat'  => ['roles' => ['state', 'setpoint'], 'required' => ['setpoint']],
+        'media'       => ['roles' => ['state', 'playback', 'volume', 'mute', 'title', 'artist'], 'required' => ['state', 'playback', 'volume']],
         'window'      => ['roles' => ['state', 'level', 'moving', 'stop'], 'required' => ['state', 'level']],
         'door'        => ['roles' => ['state'], 'required' => ['state']],
         'presence'    => ['roles' => ['state'], 'required' => ['state']],
@@ -1993,7 +2013,73 @@ final class DeviceIndex
     /** Die Variable, an der sich zeigt, ob es das Gerät gibt: der Zustand, sonst die Stufe (0 = keine). */
     private function mainVariable(array $entry): int
     {
-        return $entry['roles']['state'] ?? $entry['roles']['level'] ?? 0;
+        return $entry['roles']['state'] ?? $entry['roles']['level'] ?? $entry['roles']['playback'] ?? $entry['roles']['volume'] ?? 0;
+    }
+
+    /**
+     * Zustand eines Mediaplayers: „aus“, sonst Wiedergabe mit Titel und Interpret, dahinter Lautstärke
+     * und Stumm („spielt „Titel“ von Interpret (Lautstärke 20 %, stumm)“). Aktiv ist ein Player, der
+     * spielt, oder einer, der an ist und keinen Wiedergabezustand meldet. Das HomeAssistant-Modul hat
+     * nur eine Befehlsvariable (Wert -1); dann steht kein Zustandswort da, wohl aber der Titel.
+     *
+     * @return array{text: string, active: ?bool}
+     */
+    private function mediaText(array $entry): array
+    {
+        $roles = $entry['roles'];
+        $active = null;
+        $words = [];
+        if (isset($roles['state'])) {
+            $power = $this->backend->read($roles['state']);
+            if ($power === null) {
+                return ['text' => sprintf($this->t('not available (variable %d is missing)'), $roles['state']), 'active' => null];
+            }
+            if (is_bool($power['value'])) {
+                $active = $power['value'] !== $entry['Invert'];
+                if (!$active) {
+                    return ['text' => $this->t('off'), 'active' => false];
+                }
+            } else {
+                // Ein/Aus als Zahl (Sony TV: „Standby“) bleibt der Anzeigetext.
+                $words[] = $power['formatted'];
+            }
+        }
+        $playing = null;
+        if (isset($roles['playback'])) {
+            $value = $this->backend->read($roles['playback'])['value'] ?? null;
+            $codes = self::PLAYBACK_CODES[(string)($this->backend->range($roles['playback'])['profile'] ?? '')] ?? [];
+            $playing = is_int($value) ? array_search($value, array_intersect_key($codes, ['play' => 0, 'pause' => 0, 'stop' => 0]), true) : false;
+            if ($playing !== false) {
+                $words[] = $this->t(['play' => 'playing', 'pause' => 'paused', 'stop' => 'stopped'][$playing]);
+                $active = $playing === 'play';
+            }
+        }
+        $title = isset($roles['title']) ? trim((string)($this->backend->read($roles['title'])['value'] ?? '')) : '';
+        $artist = isset($roles['artist']) ? trim((string)($this->backend->read($roles['artist'])['value'] ?? '')) : '';
+        if ($title !== '' && $playing !== 'stop') {
+            $words[] = $artist !== '' ? sprintf($this->t('"%s" by %s'), $title, $artist) : sprintf($this->t('"%s"'), $title);
+        }
+        $extras = [];
+        if (isset($roles['volume'])) {
+            $volume = $this->backend->read($roles['volume']);
+            $range = $this->backend->range($roles['volume']);
+            if ($volume !== null && $range !== null && $range['max'] > $range['min'] && (is_int($volume['value']) || is_float($volume['value']))) {
+                $extras[] = sprintf($this->t('volume %s'), self::formatNumber(round(($volume['value'] - $range['min']) / ($range['max'] - $range['min']) * 100.0)) . ' %');
+            } elseif ($volume !== null) {
+                $extras[] = sprintf($this->t('volume %s'), $volume['formatted']);
+            }
+        }
+        if (isset($roles['mute']) && ($this->backend->read($roles['mute'])['value'] ?? false) === true) {
+            $extras[] = $this->t('muted');
+        }
+        if ($words === [] && $active === true) {
+            $words[] = $this->t('on');
+        }
+        $text = implode(' ', $words);
+        if ($extras !== []) {
+            $text = trim($text . ' (' . implode(', ', $extras) . ')');
+        }
+        return ['text' => $text === '' ? '-' : $text, 'active' => $active];
     }
 
     /**
@@ -2111,6 +2197,9 @@ final class DeviceIndex
     {
         if ($entry['Type'] === 'thermostat') {
             return ['text' => $this->thermostatText($entry), 'active' => null];
+        }
+        if ($entry['Type'] === 'media') {
+            return $this->mediaText($entry);
         }
         $main = $this->backend->read($this->mainVariable($entry));
         if ($main === null) {

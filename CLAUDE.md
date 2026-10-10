@@ -109,6 +109,13 @@ Weitere Regeln, die nicht offensichtlich sind:
   Ein Licht ohne Schaltzustand gilt als an, solange die Farbe nicht schwarz ist; `off` setzt sie auf 0,
   und zwar erst nach der bestätigten Stufe (IPS-868 schreibt bei jedem Weißbefehl den alten Farbwert mit;
   `FakeBackend` bildet das über `schreibtAltwert` nach).
+- **Mediaplayer** (Typ `media`, Stufe 1 nur abfragen): Fähigkeiten `state` (Ein/Aus), `playback`, `volume`,
+  `mute`, `title`, `artist`, wie sie Symcon in der Darstellung „Media Player“ zusammenfasst. Die Werte der
+  Wiedergabe hängen am Profil (`DeviceIndex::PLAYBACK_CODES`, an der Anlage gelesen): `~Playback…` zählt
+  0 Zurück, 1 Stop, 2 Play, 3 Pause, 4 Weiter, der eingebaute Media Player (`~PlayerStatus`) 1 Play, 2 Pause,
+  3 Stop. Das HomeAssistant-Modul hat nur eine Befehlsvariable (Wert -1), dann gibt es keinen Zustand. Aktiv
+  ist, was spielt oder an ist ohne Wiedergabezustand. Geplant nach HA: Play/Pause/Stop/Weiter/Zurück,
+  `volume`, `volume_change`, `mute`, Ein/Aus; das Sonos-Modul hat an `Volume` keine Aktion.
 - **Ein neues Feld** von `set_state` kostet: eine Fähigkeit in `ROLES`/`TYPE_ROLES`, einen Eintrag in
   `abilitiesOf()`, einen Zweig in `setState()`, eine Eigenschaft im Schema und ein Dialogfeld.
 
@@ -153,4 +160,4 @@ Weitere Regeln, die nicht offensichtlich sind:
 ## Versionen
 
 Version, Build und Datum stehen in der `library.json`. Jede inhaltliche Änderung zählt den Build hoch,
-der Betreff lautet `<version> build <NN>: <kurze Beschreibung>`. `compatibility.version` ist 9.0 (seit build 53; erprobt unter 9.0 C++ und 9.1, 8.1 nie). Symcon 9.0 bringt PHP 8.5 mit, die CI prüft mit 8.5.
+der Betreff lautet `<version> build <NN>: <kurze Beschreibung>`. `compatibility.version` ist 9.0 (seit build 53; erprobt unter 9.0 C++ und 9.1). Symcon 9.0 bringt PHP 8.5 mit, die CI prüft mit 8.5.
