@@ -1,0 +1,156 @@
+{
+    "_quelle": "nuc 09.10.2026 23:37 (Europe/Berlin), nur gelesen: aktuelle Leistungen der Energiebilanz (SMA Home Manager Netzbezug #24942 und Einspeisung #35568, PV-Wechselrichter AC-Wirkleistung #14114, Batteriewechselrichter momentane Ladung #55001 und Entladung #25414, alle in W), Wärmepumpe #10025 (kW, HMU) und die drei Kellergeräte; dazu der Netzbezug-Zähler #43989 (kWh) für die Einheitenprüfung. „aktualisiert“ ist die Uhrzeit der letzten Aktualisierung. Hausleistung zu diesem Zeitpunkt: 7,7 + 0 + 1888 − 0 − 0 = 1895,7 W (Batterie deckt den Abend).",
+    "jetzt": 1791581827,
+    "zeitzone": "Europe/Berlin",
+    "bilanzLeistung": {
+        "import": 24942,
+        "export": 35568,
+        "solar": 14114,
+        "charge": 55001,
+        "discharge": 25414
+    },
+    "variablen": {
+        "24942": {
+            "name": "nuc: SMA Home Manager, Netzbezug (Wirkleistung(+) gesamt)",
+            "wert": 7.7,
+            "formatiert": "7.7 W",
+            "einheit": "W",
+            "aktualisiert": "23:37:05"
+        },
+        "35568": {
+            "name": "nuc: SMA Home Manager, Netzeinspeisung (Wirkleistung(-) gesamt)",
+            "wert": 0,
+            "formatiert": "0.0 W",
+            "einheit": "W",
+            "aktualisiert": "23:37:05"
+        },
+        "14114": {
+            "name": "nuc: SMA STP 20000TL-30, AC Wirkleistung über alle Phasen",
+            "wert": 0,
+            "formatiert": "0 W",
+            "einheit": "W",
+            "aktualisiert": "23:36:21"
+        },
+        "55001": {
+            "name": "nuc: SMA SBS6.0-10, Momentane Batterieladung (W)",
+            "wert": 0,
+            "formatiert": "0 W",
+            "einheit": "W",
+            "aktualisiert": "23:36:30"
+        },
+        "25414": {
+            "name": "nuc: SMA SBS6.0-10, Momentane Batterieentladung (W)",
+            "wert": 1888,
+            "formatiert": "1888 W",
+            "einheit": "W",
+            "aktualisiert": "23:37:01"
+        },
+        "10025": {
+            "name": "nuc: eBUS HMU, elektrische Leistungsaufnahme",
+            "wert": 0.9,
+            "formatiert": "0.9 kW",
+            "einheit": "kW",
+            "aktualisiert": "23:36:55"
+        },
+        "43989": {
+            "name": "nuc: SMA Home Manager, Netzbezug Zähler (kWh, für die Einheitenprüfung)",
+            "wert": 31964.3888,
+            "formatiert": "31.9 MWh",
+            "einheit": "kWh",
+            "aktualisiert": "23:37:05"
+        },
+        "51561": {
+            "name": "nuc: Raumentfeuchter:1 / STATE",
+            "wert": true,
+            "formatiert": "An",
+            "aktion": true,
+            "verhalten": "sofort",
+            "aktualisiert": "16:07:37"
+        },
+        "40189": {
+            "name": "nuc: Keller Entfeuchter, Leistung",
+            "wert": 25.84,
+            "formatiert": "25.8 W",
+            "einheit": "W",
+            "aktualisiert": "23:37:00"
+        },
+        "41006": {
+            "name": "nuc: Keller.Energie.Waschmaschine:3 / STATE",
+            "wert": true,
+            "formatiert": "An",
+            "aktion": true,
+            "verhalten": "sofort",
+            "aktualisiert": "22:44:24"
+        },
+        "29351": {
+            "name": "nuc: Keller Waschmaschine, Leistung",
+            "wert": 0.02,
+            "formatiert": "0.0 W",
+            "einheit": "W",
+            "aktualisiert": "22:44:24"
+        },
+        "56941": {
+            "name": "nuc: Keller.Aktorgruppe3.Kühlschrank:1 / STATE",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "verhalten": "sofort",
+            "aktualisiert": "23:30:00"
+        },
+        "53389": {
+            "name": "nuc: Keller Kühlschrank, Leistung",
+            "wert": 0,
+            "formatiert": "0.0 W",
+            "einheit": "W",
+            "aktualisiert": "23:34:53"
+        }
+    },
+    "geraete": [
+        {
+            "Room": "Keller",
+            "Name": "Entfeuchter",
+            "Aliases": "Raumentfeuchter",
+            "Type": "switch",
+            "StateVariableID": 51561,
+            "PowerVariableID": 40189,
+            "Invert": false
+        },
+        {
+            "Room": "Keller",
+            "Name": "Waschmaschine",
+            "Aliases": "",
+            "Type": "switch",
+            "StateVariableID": 41006,
+            "PowerVariableID": 29351,
+            "Invert": false
+        },
+        {
+            "Room": "Keller",
+            "Name": "Kühlschrank",
+            "Aliases": "",
+            "Type": "switch",
+            "StateVariableID": 56941,
+            "PowerVariableID": 53389,
+            "Invert": false,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Keller",
+            "Name": "Wärmepumpe",
+            "Aliases": "Heizung, WP",
+            "Type": "appliance",
+            "StateVariableID": 0,
+            "PowerVariableID": 10025,
+            "Invert": false,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Flur",
+            "Name": "Wandlicht",
+            "Aliases": "",
+            "Type": "light",
+            "StateVariableID": 51561,
+            "Invert": false
+        }
+    ]
+}

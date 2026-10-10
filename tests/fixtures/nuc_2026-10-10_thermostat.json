@@ -1,0 +1,89 @@
+{
+    "_quelle": "nuc 10.10.2026, 12:20 (Europe/Berlin). Gästezimmer: Homematic HM-CC-TC (GEQ0170969, Empfangsmodus 12, also kein Dauerempfang) mit Stellantrieb HM-CC-VD. SETPOINT #10028 laut CCU (getParamsetDescription) 6 bis 30 °C, Sonderwerte 0 = VENT_CLOSED und 100 = VENT_OPEN; Profil ~Temperature.HM 6 bis 30, Schritt 0,5. Mitschnitt alle 250 ms (siehe „mitschnitt“): RequestAction 21 kehrt nach 20 ms zurück, SETPOINT zeigt 21 nach 311 ms; zurück auf 100 nach 376 ms. Diese frühe Bestätigung kommt von CCU bzw. Symcon, nicht vom Gerät: 21 s nach dem ersten Befehl meldet das Thermostat beim nächsten Funkkontakt erst 21, dann 100, zusammen mit seiner Temperatur. Wintergarten: Wandthermostat SET_TEMPERATURE #11093 mit Profil Temperature.HM_30.5 (6 bis 30,5, Schritt 0,5, Zuordnungen 16 „16,0“, 17 „17,0“, 21 „21,0“, 30.5 „On“; „On“ ist ein Sonderwert, der Bereich endet deshalb bei 30), nur gelesen, Schreibverhalten nicht gemessen. Übrige Geräte aus der Freigabeliste von #15877, nur gelesen.",
+    "jetzt": 1791627600,
+    "zeitzone": "Europe/Berlin",
+    "variablen": {
+        "10028": {
+            "name": "nuc: Gast.Heizung.Thermostat:2 SETPOINT (HM-CC-TC)",
+            "wert": 100,
+            "formatiert": "100.0 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "verhalten": "traege",
+            "verzoegerungMs": 311,
+            "sollbereich": { "min": 6, "max": 30, "schritt": 0.5 }
+        },
+        "41351": {
+            "name": "nuc: Gast.Heizung.Thermostat:1 TEMPERATURE",
+            "wert": 21.7,
+            "formatiert": "21.7 °C",
+            "einheit": "°C"
+        },
+        "21744": {
+            "name": "nuc: Gast.Heizung.Thermostat:1 HUMIDITY",
+            "wert": 57,
+            "formatiert": "57 %",
+            "einheit": "%"
+        },
+        "59648": {
+            "name": "nuc: Gast.Verschluss.Rollladen:1 LEVEL",
+            "wert": 1,
+            "formatiert": "Geöffnet",
+            "aktion": true,
+            "bereich": { "min": 0, "max": 1, "offen": 1, "geschlossen": 0, "herkunft": "presentation" }
+        },
+        "51390": {
+            "name": "nuc: Gast.Verschluss.Rollladen:1 WORKING",
+            "wert": false,
+            "formatiert": "Aus"
+        },
+        "24052": {
+            "name": "nuc: Gast.Verschluss.Fenster Links:1 STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen"
+        },
+        "53129": {
+            "name": "nuc: Gast.Verschluss.Fenster Rechts:1 STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen"
+        },
+        "11093": {
+            "name": "nuc: Wintergarten.Heizung.Wandthermostat:2 SET_TEMPERATURE",
+            "wert": 21,
+            "formatiert": "21,0 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": { "min": 6, "max": 30, "schritt": 0.5 }
+        },
+        "19960": {
+            "name": "nuc: Wintergarten.Heizung.Wandthermostat:2 ACTUAL_TEMPERATURE",
+            "wert": 20.6,
+            "formatiert": "20.6 °C",
+            "einheit": "°C"
+        },
+        "28691": {
+            "name": "nuc: Wintergarten.Heizung.Wandthermostat:2 ACTUAL_HUMIDITY",
+            "wert": 53,
+            "formatiert": "53 %",
+            "einheit": "%"
+        }
+    },
+    "geraete": [
+        { "Room": "Gast", "Name": "Rollladen", "Aliases": "", "Type": "blind", "LevelVariableID": 59648, "MovingVariableID": 51390 },
+        { "Room": "Gast", "Name": "Luftfeuchte", "Aliases": "", "Type": "humidity", "StateVariableID": 21744 },
+        { "Room": "Gast", "Name": "Temperatur", "Aliases": "", "Type": "temperature", "StateVariableID": 41351 },
+        { "Room": "Gast", "Name": "Fenster links", "Aliases": "", "Type": "window", "StateVariableID": 24052 },
+        { "Room": "Gast", "Name": "Fenster rechts", "Aliases": "", "Type": "window", "StateVariableID": 53129 },
+        { "Room": "Gast", "Name": "Heizung", "Aliases": "Thermostat, Heizkörper", "Type": "thermostat", "SetpointVariableID": 10028, "StateVariableID": 41351 },
+        { "Room": "Wintergarten", "Name": "Luftfeuchte", "Aliases": "", "Type": "humidity", "StateVariableID": 28691 },
+        { "Room": "Wintergarten", "Name": "Heizung", "Aliases": "Wandthermostat", "Type": "thermostat", "SetpointVariableID": 11093, "StateVariableID": 19960 }
+    ],
+    "mitschnitt": [
+        { "seit_befehl_ms": 0, "ereignis": "RequestAction(10028, 21) → true nach 20 ms, vorher SETPOINT 100" },
+        { "seit_befehl_ms": 311, "ereignis": "SETPOINT 21" },
+        { "seit_befehl_ms": 15587, "ereignis": "RequestAction(10028, 100) → true nach 23 ms" },
+        { "seit_befehl_ms": 15963, "ereignis": "SETPOINT 100" },
+        { "seit_befehl_ms": 21651, "ereignis": "SETPOINT 21 (Gerät meldet beim Funkkontakt den ersten Befehl)" },
+        { "seit_befehl_ms": 22513, "ereignis": "SETPOINT 100 und TEMPERATURE 21.7 aktualisiert (Gerät meldet den zweiten Befehl)" }
+    ]
+}

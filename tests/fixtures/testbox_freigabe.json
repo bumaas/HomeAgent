@@ -1,0 +1,26 @@
+{
+  "_hinweis": "Freigabeliste für die Tests mit den echten Variablen der Testbox (Werte: testbox_2026-10-06_werte.json). Räume und Aliase sind Testkonfiguration; Wohnzimmer stammt aus den Gerätenamen, Küche aus dem Standort von FP300 und Hue Aurelle (die Fensterleuchte der Küche), Schlafzimmer aus dem Standort des ALPSTUGA; Büro und Keller sind Platzhalter.",
+  "Devices": [
+    {"Room":"Küche","Name":"Fensterleuchte","Aliases":"Aurelle, Panel, Deckenpanel","Type":"light","StateVariableID":20946,"LevelVariableID":50038,"Invert":false},
+    {"Room":"Wohnzimmer","Name":"Esstisch","Aliases":"Esstischlampe, Lampe über dem Tisch","Type":"light","StateVariableID":36578,"LevelVariableID":0,"Invert":false},
+    {"Room":"Wohnzimmer","Name":"LED-Streifen","Aliases":"WLED","Type":"light","StateVariableID":40438,"LevelVariableID":30690,"Invert":false},
+    {"Room":"Wohnzimmer","Name":"Verstärker","Aliases":"Denon, Receiver","Type":"appliance","StateVariableID":49916,"LevelVariableID":0,"Invert":false},
+    {"Room":"Büro","Name":"Steckdose","Aliases":"Shelly","Type":"socket","StateVariableID":53880,"LevelVariableID":0,"Invert":false},
+    {"Room":"Küche","Name":"Fenster","Aliases":"Küchenfenster","Type":"window","StateVariableID":45892,"LevelVariableID":0,"Invert":true},
+    {"Room":"Keller","Name":"Wassermelder","Aliases":"","Type":"water_leak","StateVariableID":27044,"LevelVariableID":0,"Invert":false},
+    {"Room":"Küche","Name":"Bewegungsmelder","Aliases":"Präsenz","Type":"presence","StateVariableID":16982,"LevelVariableID":0,"Invert":false},
+    {"Room":"Küche","Name":"Temperatur","Aliases":"","Type":"temperature","StateVariableID":33071,"LevelVariableID":0,"Invert":false},
+    {"Room":"Küche","Name":"Luftfeuchte","Aliases":"","Type":"humidity","StateVariableID":44040,"LevelVariableID":0,"Invert":false},
+    {"Room":"Schlafzimmer","Name":"Temperatur","Aliases":"","Type":"temperature","StateVariableID":46546,"LevelVariableID":0,"Invert":false},
+    {"Room":"Schlafzimmer","Name":"Luftqualität","Aliases":"Luft","Type":"air_quality","StateVariableID":19090,"LevelVariableID":0,"Invert":false}
+  ],
+  "_hinweisRooms": "Raumliste für die Tests: reine Testkonfiguration, kein Mitschnitt. Aliase und Etagen sind ausgedacht; der Testraum trägt absichtlich keine Etage.",
+  "Rooms": [
+    {"Name":"Küche","Aliases":"Kochbereich","Floor":"Erdgeschoss"},
+    {"Name":"Wohnzimmer","Aliases":"Stube, Wohnraum","Floor":"Erdgeschoss"},
+    {"Name":"Büro","Aliases":"Arbeitszimmer","Floor":"Erdgeschoss"},
+    {"Name":"Schlafzimmer","Aliases":"","Floor":"Obergeschoss"},
+    {"Name":"Keller","Aliases":"","Floor":"Keller"},
+    {"Name":"Testraum","Aliases":"","Floor":""}
+  ]
+}

@@ -1,0 +1,530 @@
+{
+    "_quelle": "nuc 09.10.2026 19:49 (Europe/Berlin), nur gelesen: Zustand, Leistung und Zähler von Entfeuchter, Waschmaschine und Kühlschrank im Keller (archiviert, Zähler mit Aggregationstyp 1, Einheit Wh) und vom Deckenlicht im Flur (nicht archiviert). Aggregate über AC_GetAggregatedValues: Stufe 1 (Tag) ab 28.09.2026, 2 (Woche) ab 31.08.2026, 3 (Monat) ab 01.01.2026, 4 (Jahr) ab 01.01.2025, jeweils bis jetzt; „summe“ ist Avg, beim Zähler die Summe der positiven Deltas in Wh. Der laufende Zeitraum ist enthalten (bis zum Zeitpunkt der Abfrage).",
+    "jetzt": 1791568153,
+    "zeitzone": "Europe/Berlin",
+    "variablen": {
+        "30955": {
+            "name": "nuc: Flur.Licht.Decke:4 / STATE",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "verhalten": "sofort"
+        },
+        "51561": {
+            "name": "nuc: Raumentfeuchter:1 / STATE",
+            "wert": true,
+            "formatiert": "An",
+            "aktion": true,
+            "verhalten": "sofort"
+        },
+        "56941": {
+            "name": "nuc: Keller.Aktorgruppe3.Kühlschrank:1 / STATE",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "verhalten": "sofort"
+        },
+        "41006": {
+            "name": "nuc: Keller.Energie.Waschmaschine:3 / STATE",
+            "wert": true,
+            "formatiert": "An",
+            "aktion": true,
+            "verhalten": "sofort"
+        },
+        "40189": {
+            "name": "nuc: Keller Entfeuchter, Leistung",
+            "wert": 26.1,
+            "formatiert": "26.1 W",
+            "einheit": "W",
+            "archiviert": true,
+            "aggregationstyp": 0
+        },
+        "49570": {
+            "name": "nuc: Keller Entfeuchter, Zähler",
+            "wert": 427530.6,
+            "formatiert": "427.5 kWh",
+            "einheit": "Wh",
+            "archiviert": true,
+            "aggregationstyp": 1,
+            "aggregate": {
+                "1": [
+                    {
+                        "zeit": 1791496800,
+                        "summe": 1387.2
+                    },
+                    {
+                        "zeit": 1791410400,
+                        "summe": 2868.4
+                    },
+                    {
+                        "zeit": 1791324000,
+                        "summe": 2949.3
+                    },
+                    {
+                        "zeit": 1791237600,
+                        "summe": 2935.1
+                    },
+                    {
+                        "zeit": 1791151200,
+                        "summe": 3022.1
+                    },
+                    {
+                        "zeit": 1791064800,
+                        "summe": 1875.7
+                    },
+                    {
+                        "zeit": 1790978400,
+                        "summe": 1096.2
+                    },
+                    {
+                        "zeit": 1790892000,
+                        "summe": 3198.3
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 3203.3
+                    },
+                    {
+                        "zeit": 1790719200,
+                        "summe": 3108.5
+                    },
+                    {
+                        "zeit": 1790632800,
+                        "summe": 2986.8
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "summe": 2936.7
+                    }
+                ],
+                "2": [
+                    {
+                        "zeit": 1791151200,
+                        "summe": 13162.1
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "summe": 18405.5
+                    },
+                    {
+                        "zeit": 1789941600,
+                        "summe": 12011.6
+                    },
+                    {
+                        "zeit": 1789336800,
+                        "summe": 17183.8
+                    },
+                    {
+                        "zeit": 1788732000,
+                        "summe": 19544.1
+                    },
+                    {
+                        "zeit": 1788127200,
+                        "summe": 18577.7
+                    }
+                ],
+                "3": [
+                    {
+                        "zeit": 1790805600,
+                        "summe": 22535.6
+                    },
+                    {
+                        "zeit": 1788213600,
+                        "summe": 74052.5
+                    },
+                    {
+                        "zeit": 1785535200,
+                        "summe": 71555.4
+                    },
+                    {
+                        "zeit": 1782856800,
+                        "summe": 74802.3
+                    },
+                    {
+                        "zeit": 1780264800,
+                        "summe": 78354.4
+                    },
+                    {
+                        "zeit": 1777586400,
+                        "summe": 40995.7
+                    },
+                    {
+                        "zeit": 1774994400,
+                        "summe": 25712.3
+                    },
+                    {
+                        "zeit": 1772319600,
+                        "summe": 30852.9
+                    },
+                    {
+                        "zeit": 1769900400,
+                        "summe": 13056.8
+                    },
+                    {
+                        "zeit": 1767222000,
+                        "summe": 10481.8
+                    }
+                ],
+                "4": [
+                    {
+                        "zeit": 1767222000,
+                        "summe": 442399.7
+                    },
+                    {
+                        "zeit": 1735686000,
+                        "summe": 225228.2
+                    }
+                ]
+            }
+        },
+        "29351": {
+            "name": "nuc: Keller Waschmaschine, Leistung",
+            "wert": 0.01,
+            "formatiert": "0.0 W",
+            "einheit": "W",
+            "archiviert": true,
+            "aggregationstyp": 0
+        },
+        "41402": {
+            "name": "nuc: Keller Waschmaschine, Zähler",
+            "wert": 186343.6,
+            "formatiert": "186.3 kWh",
+            "einheit": "Wh",
+            "archiviert": true,
+            "aggregationstyp": 1,
+            "aggregate": {
+                "1": [
+                    {
+                        "zeit": 1791496800,
+                        "summe": 0.3
+                    },
+                    {
+                        "zeit": 1791410400,
+                        "summe": 0.5
+                    },
+                    {
+                        "zeit": 1791324000,
+                        "summe": 0.4
+                    },
+                    {
+                        "zeit": 1791237600,
+                        "summe": 0.3
+                    },
+                    {
+                        "zeit": 1791151200,
+                        "summe": 0.4
+                    },
+                    {
+                        "zeit": 1791064800,
+                        "summe": 427.5
+                    },
+                    {
+                        "zeit": 1790978400,
+                        "summe": 0.3
+                    },
+                    {
+                        "zeit": 1790892000,
+                        "summe": 0.3
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 0.3
+                    },
+                    {
+                        "zeit": 1790719200,
+                        "summe": 10.3
+                    },
+                    {
+                        "zeit": 1790632800,
+                        "summe": 184.1
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "summe": 0.4
+                    }
+                ],
+                "2": [
+                    {
+                        "zeit": 1791151200,
+                        "summe": 1.9
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "summe": 623.2
+                    },
+                    {
+                        "zeit": 1789941600,
+                        "summe": 2180.1
+                    },
+                    {
+                        "zeit": 1789336800,
+                        "summe": 351.3
+                    },
+                    {
+                        "zeit": 1788732000,
+                        "summe": 1994
+                    },
+                    {
+                        "zeit": 1788127200,
+                        "summe": 1050.9
+                    }
+                ],
+                "3": [
+                    {
+                        "zeit": 1790805600,
+                        "summe": 430.3
+                    },
+                    {
+                        "zeit": 1788213600,
+                        "summe": 5428.1
+                    },
+                    {
+                        "zeit": 1785535200,
+                        "summe": 5685.7
+                    },
+                    {
+                        "zeit": 1782856800,
+                        "summe": 11789.8
+                    },
+                    {
+                        "zeit": 1780264800,
+                        "summe": 5658
+                    },
+                    {
+                        "zeit": 1777586400,
+                        "summe": 6040.3
+                    },
+                    {
+                        "zeit": 1774994400,
+                        "summe": 14236.9
+                    },
+                    {
+                        "zeit": 1772319600,
+                        "summe": 8461.1
+                    },
+                    {
+                        "zeit": 1769900400,
+                        "summe": 10142.7
+                    },
+                    {
+                        "zeit": 1767222000,
+                        "summe": 10421.4
+                    }
+                ],
+                "4": [
+                    {
+                        "zeit": 1767222000,
+                        "summe": 78294.3
+                    },
+                    {
+                        "zeit": 1735686000,
+                        "summe": 111024.7
+                    }
+                ]
+            }
+        },
+        "53389": {
+            "name": "nuc: Keller Kühlschrank, Leistung",
+            "wert": 0,
+            "formatiert": "0.0 W",
+            "einheit": "W",
+            "archiviert": true,
+            "aggregationstyp": 0
+        },
+        "57576": {
+            "name": "nuc: Keller Kühlschrank, Zähler",
+            "wert": 10448.6,
+            "formatiert": "10.4 kWh",
+            "einheit": "Wh",
+            "archiviert": true,
+            "aggregationstyp": 1,
+            "aggregate": {
+                "1": [
+                    {
+                        "zeit": 1791496800,
+                        "summe": 244.4
+                    },
+                    {
+                        "zeit": 1791410400,
+                        "summe": 306.8
+                    },
+                    {
+                        "zeit": 1791324000,
+                        "summe": 307.9
+                    },
+                    {
+                        "zeit": 1791237600,
+                        "summe": 293.1
+                    },
+                    {
+                        "zeit": 1791151200,
+                        "summe": 295.1
+                    },
+                    {
+                        "zeit": 1791064800,
+                        "summe": 257.7
+                    },
+                    {
+                        "zeit": 1790978400,
+                        "summe": 262.9
+                    },
+                    {
+                        "zeit": 1790892000,
+                        "summe": 271.6
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 309.3
+                    },
+                    {
+                        "zeit": 1790719200,
+                        "summe": 283.5
+                    },
+                    {
+                        "zeit": 1790632800,
+                        "summe": 297.4
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "summe": 296.4
+                    }
+                ],
+                "2": [
+                    {
+                        "zeit": 1791151200,
+                        "summe": 1447.3
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "summe": 1978.8
+                    },
+                    {
+                        "zeit": 1789941600,
+                        "summe": 2113
+                    },
+                    {
+                        "zeit": 1789336800,
+                        "summe": 2061
+                    },
+                    {
+                        "zeit": 1788732000,
+                        "summe": 2135.4
+                    },
+                    {
+                        "zeit": 1788127200,
+                        "summe": 2150.7
+                    }
+                ],
+                "3": [
+                    {
+                        "zeit": 1790805600,
+                        "summe": 2548.8
+                    },
+                    {
+                        "zeit": 1788213600,
+                        "summe": 9008.2
+                    },
+                    {
+                        "zeit": 1785535200,
+                        "summe": 9526.7
+                    },
+                    {
+                        "zeit": 1782856800,
+                        "summe": 9647.3
+                    },
+                    {
+                        "zeit": 1780264800,
+                        "summe": 8167
+                    },
+                    {
+                        "zeit": 1777586400,
+                        "summe": 7522.1
+                    },
+                    {
+                        "zeit": 1774994400,
+                        "summe": 7089.7
+                    },
+                    {
+                        "zeit": 1772319600,
+                        "summe": 6719.7
+                    },
+                    {
+                        "zeit": 1769900400,
+                        "summe": 10296.8
+                    },
+                    {
+                        "zeit": 1767222000,
+                        "summe": 7666.5
+                    }
+                ],
+                "4": [
+                    {
+                        "zeit": 1767222000,
+                        "summe": 78192.8
+                    },
+                    {
+                        "zeit": 1735686000,
+                        "summe": 95314.2
+                    }
+                ]
+            }
+        },
+        "21010": {
+            "name": "nuc: Flur Deckenlicht, Leistung",
+            "wert": 0,
+            "formatiert": "0.0 W",
+            "einheit": "W",
+            "archiviert": false
+        },
+        "36867": {
+            "name": "nuc: Flur Deckenlicht, Zähler",
+            "wert": 18930,
+            "formatiert": "18.9 kWh",
+            "einheit": "Wh",
+            "archiviert": false
+        }
+    },
+    "geraete": [
+        {
+            "Room": "Keller",
+            "Name": "Entfeuchter",
+            "Aliases": "Raumentfeuchter",
+            "Type": "switch",
+            "StateVariableID": 51561,
+            "PowerVariableID": 40189,
+            "EnergyVariableID": 49570,
+            "Invert": false
+        },
+        {
+            "Room": "Keller",
+            "Name": "Waschmaschine",
+            "Aliases": "",
+            "Type": "switch",
+            "StateVariableID": 41006,
+            "PowerVariableID": 29351,
+            "EnergyVariableID": 41402,
+            "Invert": false
+        },
+        {
+            "Room": "Keller",
+            "Name": "Kühlschrank",
+            "Aliases": "",
+            "Type": "switch",
+            "StateVariableID": 56941,
+            "PowerVariableID": 53389,
+            "EnergyVariableID": 57576,
+            "Invert": false,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Flur",
+            "Name": "Deckenlicht",
+            "Aliases": "",
+            "Type": "light",
+            "StateVariableID": 30955,
+            "PowerVariableID": 21010,
+            "EnergyVariableID": 36867,
+            "Invert": false
+        }
+    ]
+}

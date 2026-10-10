@@ -1,0 +1,13 @@
+{
+  "id":            "{CCE778D0-CD66-41BB-A3B2-4748AD7F50E6}",
+  "author":        "bumaas",
+  "name":          "Home Agent",
+  "url":           "https://github.com/bumaas/HomeAgent",
+  "compatibility": {
+    "version": "8.1",
+    "date":    0
+  },
+  "version":       "0.1",
+  "build":         50,
+  "date":          1791639555
+}

@@ -1,0 +1,716 @@
+{
+  "elements": [
+    {
+      "type": "Label",
+      "caption": "Assistants query and control your home through this module. They only see what you release under \"Devices\" and \"Scenes\"; to set up, first create an access under \"Endpoint and accesses\"."
+    },
+    {
+      "type": "ExpansionPanel",
+      "name": "PanelAccesses",
+      "caption": "Endpoint and accesses",
+      "onClick": "HAGT_UITogglePanel($id, 'PanelAccesses');",
+      "items": [
+        {
+          "type": "Label",
+          "name": "Endpoint",
+          "caption": "Endpoint"
+        },
+        {
+          "type": "Label",
+          "caption": "Accesses with the token in the address use the endpoint followed by /<Token>. The address then contains the token and can end up in logs."
+        },
+        {
+          "type": "List",
+          "name": "Accesses",
+          "caption": "Accesses (one per assistant, each with its own token)",
+          "add": true,
+          "delete": true,
+          "rowCount": 4,
+          "columns": [
+            {
+              "caption": "Name",
+              "name": "Name",
+              "width": "180px",
+              "add": "",
+              "edit": {
+                "type": "ValidationTextBox"
+              }
+            },
+            {
+              "caption": "Token (at least 24 characters, sent as \"Authorization: Bearer <token>\")",
+              "name": "Token",
+              "width": "auto",
+              "add": "",
+              "edit": {
+                "type": "PasswordTextBox",
+                "validate": "^\\s*\\S.{22,}\\S\\s*$"
+              }
+            },
+            {
+              "caption": "Default room",
+              "name": "DefaultRoom",
+              "width": "160px",
+              "add": "",
+              "edit": {
+                "type": "ValidationTextBox"
+              }
+            },
+            {
+              "caption": "Query only",
+              "name": "ReadOnly",
+              "width": "120px",
+              "add": false,
+              "edit": {
+                "type": "CheckBox"
+              }
+            },
+            {
+              "caption": "Token also in the address",
+              "name": "InPath",
+              "width": "200px",
+              "add": false,
+              "edit": {
+                "type": "CheckBox"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "name": "PanelRooms",
+      "caption": "Rooms",
+      "onClick": "HAGT_UITogglePanel($id, 'PanelRooms');",
+      "items": [
+        {
+          "type": "List",
+          "name": "Rooms",
+          "caption": "Rooms (optional: aliases and floor per room)",
+          "add": true,
+          "delete": true,
+          "rowCount": 6,
+          "columns": [
+            {
+              "caption": "Name",
+              "name": "Name",
+              "width": "180px",
+              "add": "",
+              "edit": {
+                "type": "ValidationTextBox"
+              }
+            },
+            {
+              "caption": "Aliases (comma separated)",
+              "name": "Aliases",
+              "width": "auto",
+              "add": "",
+              "edit": {
+                "type": "ValidationTextBox"
+              }
+            },
+            {
+              "caption": "Floor",
+              "name": "Floor",
+              "width": "180px",
+              "add": "",
+              "edit": {
+                "type": "ValidationTextBox"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "name": "PanelDevices",
+      "caption": "Devices",
+      "onClick": "HAGT_UITogglePanel($id, 'PanelDevices');",
+      "items": [
+        {
+          "type": "List",
+          "name": "Devices",
+          "caption": "Released devices",
+          "add": true,
+          "delete": true,
+          "rowCount": 12,
+          "sort": {
+            "column": "Room",
+            "direction": "ascending"
+          },
+          "columns": [
+            {
+              "caption": "Room",
+              "name": "Room",
+              "width": "140px",
+              "add": "",
+              "edit": {
+                "type": "ValidationTextBox"
+              }
+            },
+            {
+              "caption": "Name",
+              "name": "Name",
+              "width": "180px",
+              "add": "",
+              "edit": {
+                "type": "ValidationTextBox"
+              }
+            },
+            {
+              "caption": "Aliases (comma separated)",
+              "name": "Aliases",
+              "width": "auto",
+              "add": "",
+              "edit": {
+                "type": "ValidationTextBox"
+              }
+            },
+            {
+              "caption": "Type",
+              "name": "Type",
+              "width": "140px",
+              "add": "light",
+              "edit": {
+                "type": "Select",
+                "options": [
+                  { "caption": "Light", "value": "light" },
+                  { "caption": "Switch", "value": "switch" },
+                  { "caption": "Socket", "value": "socket" },
+                  { "caption": "Appliance", "value": "appliance" },
+                  { "caption": "Blind", "value": "blind" },
+                  { "caption": "Thermostat", "value": "thermostat" },
+                  { "caption": "Window", "value": "window" },
+                  { "caption": "Door", "value": "door" },
+                  { "caption": "Presence", "value": "presence" },
+                  { "caption": "Water leak", "value": "water_leak" },
+                  { "caption": "Temperature", "value": "temperature" },
+                  { "caption": "Humidity", "value": "humidity" },
+                  { "caption": "Air quality", "value": "air_quality" },
+                  { "caption": "Other measured value", "value": "measurement" }
+                ]
+              }
+            },
+            {
+              "caption": "State or measured value",
+              "name": "StateLabel",
+              "width": "220px",
+              "add": "-"
+            },
+            {
+              "caption": "State or measured value",
+              "name": "StateVariableID",
+              "width": "200px",
+              "add": 1,
+              "visible": false,
+              "edit": {
+                "type": "SelectVariable"
+              }
+            },
+            {
+              "caption": "Setpoint",
+              "name": "SetpointLabel",
+              "width": "220px",
+              "add": "-",
+              "visible": false
+            },
+            {
+              "caption": "Setpoint",
+              "name": "SetpointVariableID",
+              "width": "200px",
+              "add": 1,
+              "visible": false,
+              "edit": {
+                "type": "SelectVariable"
+              }
+            },
+            {
+              "caption": "Brightness/position",
+              "name": "LevelLabel",
+              "width": "220px",
+              "add": "-"
+            },
+            {
+              "caption": "Brightness/position",
+              "name": "LevelVariableID",
+              "width": "200px",
+              "add": 1,
+              "visible": false,
+              "edit": {
+                "type": "SelectVariable"
+              }
+            },
+            {
+              "caption": "Moving state",
+              "name": "MovingLabel",
+              "width": "200px",
+              "add": "-",
+              "visible": false
+            },
+            {
+              "caption": "Moving state",
+              "name": "MovingVariableID",
+              "width": "200px",
+              "add": 1,
+              "visible": false,
+              "edit": {
+                "type": "SelectVariable"
+              }
+            },
+            {
+              "caption": "Stop",
+              "name": "StopLabel",
+              "width": "200px",
+              "add": "-",
+              "visible": false
+            },
+            {
+              "caption": "Stop",
+              "name": "StopVariableID",
+              "width": "200px",
+              "add": 1,
+              "visible": false,
+              "edit": {
+                "type": "SelectVariable"
+              }
+            },
+            {
+              "caption": "Power",
+              "name": "PowerLabel",
+              "width": "200px",
+              "add": "-",
+              "visible": false
+            },
+            {
+              "caption": "Power",
+              "name": "PowerVariableID",
+              "width": "200px",
+              "add": 1,
+              "visible": false,
+              "edit": {
+                "type": "SelectVariable"
+              }
+            },
+            {
+              "caption": "Energy meter (archived as counter)",
+              "name": "EnergyLabel",
+              "width": "200px",
+              "add": "-",
+              "visible": false
+            },
+            {
+              "caption": "Energy meter (archived as counter)",
+              "name": "EnergyVariableID",
+              "width": "200px",
+              "add": 1,
+              "visible": false,
+              "edit": {
+                "type": "SelectVariable"
+              }
+            },
+            {
+              "caption": "Inverted",
+              "name": "Invert",
+              "width": "120px",
+              "add": false,
+              "edit": {
+                "type": "CheckBox"
+              }
+            },
+            {
+              "caption": "Tilt window",
+              "name": "Tilt",
+              "width": "120px",
+              "add": false,
+              "visible": false,
+              "edit": {
+                "type": "CheckBox"
+              }
+            },
+            {
+              "caption": "Query only",
+              "name": "ReadOnly",
+              "width": "120px",
+              "add": false,
+              "edit": {
+                "type": "CheckBox"
+              }
+            }
+          ],
+          "form": [
+            {
+              "type": "ValidationTextBox",
+              "name": "Room",
+              "caption": "Room"
+            },
+            {
+              "type": "ValidationTextBox",
+              "name": "Name",
+              "caption": "Name"
+            },
+            {
+              "type": "ValidationTextBox",
+              "name": "Aliases",
+              "caption": "Aliases (comma separated)",
+              "width": "600px"
+            },
+            {
+              "type": "Select",
+              "name": "Type",
+              "caption": "Type",
+              "options": [],
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID);"
+            },
+            {
+              "type": "SelectVariable",
+              "name": "StateVariableID",
+              "caption": "State or measured value",
+              "width": "600px",
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID);"
+            },
+            {
+              "type": "ValidationTextBox",
+              "name": "StateLabel",
+              "caption": "State or measured value",
+              "visible": false
+            },
+            {
+              "type": "SelectVariable",
+              "name": "SetpointVariableID",
+              "caption": "Setpoint",
+              "width": "600px",
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID);"
+            },
+            {
+              "type": "ValidationTextBox",
+              "name": "SetpointLabel",
+              "caption": "Setpoint",
+              "visible": false
+            },
+            {
+              "type": "SelectVariable",
+              "name": "LevelVariableID",
+              "caption": "Brightness/position",
+              "width": "600px",
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID);"
+            },
+            {
+              "type": "ValidationTextBox",
+              "name": "LevelLabel",
+              "caption": "Brightness/position",
+              "visible": false
+            },
+            {
+              "type": "SelectVariable",
+              "name": "MovingVariableID",
+              "caption": "Moving state",
+              "width": "600px",
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID);"
+            },
+            {
+              "type": "ValidationTextBox",
+              "name": "MovingLabel",
+              "caption": "Moving state",
+              "visible": false
+            },
+            {
+              "type": "SelectVariable",
+              "name": "StopVariableID",
+              "caption": "Stop",
+              "width": "600px",
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID);"
+            },
+            {
+              "type": "ValidationTextBox",
+              "name": "StopLabel",
+              "caption": "Stop",
+              "visible": false
+            },
+            {
+              "type": "SelectVariable",
+              "name": "PowerVariableID",
+              "caption": "Power",
+              "width": "600px",
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID);"
+            },
+            {
+              "type": "ValidationTextBox",
+              "name": "PowerLabel",
+              "caption": "Power",
+              "visible": false
+            },
+            {
+              "type": "SelectVariable",
+              "name": "EnergyVariableID",
+              "caption": "Energy meter (archived as counter)",
+              "width": "600px",
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID);"
+            },
+            {
+              "type": "ValidationTextBox",
+              "name": "EnergyLabel",
+              "caption": "Energy meter (archived as counter)",
+              "visible": false
+            },
+            {
+              "type": "CheckBox",
+              "name": "Invert",
+              "caption": "Inverted"
+            },
+            {
+              "type": "CheckBox",
+              "name": "Tilt",
+              "caption": "Tilt window (fully open means tilted)"
+            },
+            {
+              "type": "CheckBox",
+              "name": "ReadOnly",
+              "caption": "Query only (the assistant must not switch this device)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "name": "PanelScenes",
+      "caption": "Scenes",
+      "onClick": "HAGT_UITogglePanel($id, 'PanelScenes');",
+      "items": [
+        {
+          "type": "List",
+          "name": "Scenes",
+          "caption": "Released scenes (scripts the assistant may start)",
+          "add": true,
+          "delete": true,
+          "rowCount": 5,
+          "columns": [
+            {
+              "caption": "Room",
+              "name": "Room",
+              "width": "140px",
+              "add": "",
+              "edit": {
+                "type": "ValidationTextBox"
+              }
+            },
+            {
+              "caption": "Name",
+              "name": "Name",
+              "width": "180px",
+              "add": "",
+              "edit": {
+                "type": "ValidationTextBox"
+              }
+            },
+            {
+              "caption": "Aliases (comma separated)",
+              "name": "Aliases",
+              "width": "auto",
+              "add": "",
+              "edit": {
+                "type": "ValidationTextBox"
+              }
+            },
+            {
+              "caption": "Script",
+              "name": "ScriptID",
+              "width": "300px",
+              "add": 1,
+              "edit": {
+                "type": "SelectScript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "name": "PanelBalance",
+      "caption": "Energy balance (for the house consumption)",
+      "onClick": "HAGT_UITogglePanel($id, 'PanelBalance');",
+      "items": [
+        {
+          "type": "Label",
+          "caption": "Counters archived as counters. The house consumption is grid import + solar production + battery discharge - grid export - battery charge. Without solar and battery the grid import is enough."
+        },
+        {
+          "type": "SelectVariable",
+          "name": "GridImportVariableID",
+          "caption": "Grid import",
+          "width": "600px"
+        },
+        {
+          "type": "SelectVariable",
+          "name": "GridExportVariableID",
+          "caption": "Grid export",
+          "width": "600px"
+        },
+        {
+          "type": "SelectVariable",
+          "name": "SolarVariableID",
+          "caption": "Solar production",
+          "width": "600px"
+        },
+        {
+          "type": "SelectVariable",
+          "name": "BatteryChargeVariableID",
+          "caption": "Battery charge",
+          "width": "600px"
+        },
+        {
+          "type": "SelectVariable",
+          "name": "BatteryDischargeVariableID",
+          "caption": "Battery discharge",
+          "width": "600px"
+        },
+        {
+          "type": "Label",
+          "caption": "Current power in W or kW, for \"How much power are we using right now?\". A single signed grid sensor goes into grid import (negative = export), a single signed battery sensor into battery discharge (negative = charging)."
+        },
+        {
+          "type": "SelectVariable",
+          "name": "GridImportPowerVariableID",
+          "caption": "Grid import power",
+          "width": "600px"
+        },
+        {
+          "type": "SelectVariable",
+          "name": "GridExportPowerVariableID",
+          "caption": "Grid export power",
+          "width": "600px"
+        },
+        {
+          "type": "SelectVariable",
+          "name": "SolarPowerVariableID",
+          "caption": "Solar power",
+          "width": "600px"
+        },
+        {
+          "type": "SelectVariable",
+          "name": "BatteryChargePowerVariableID",
+          "caption": "Battery charge power",
+          "width": "600px"
+        },
+        {
+          "type": "SelectVariable",
+          "name": "BatteryDischargePowerVariableID",
+          "caption": "Battery discharge power",
+          "width": "600px"
+        }
+      ]
+    },
+    {
+      "type": "Label",
+      "visible": false,
+      "caption": "Hint for scripts and AI assistants: HAGT_QueryState(int $InstanceID, string $Room, string $Type, string $Name, bool $ActiveOnly): string returns the same text as the tool get_state (first line = count, then room | name | type | state). $Type is one of light, switch, socket, appliance, blind, thermostat, window, door, presence, water_leak, temperature, humidity, air_quality, measurement. Empty parameters mean no restriction. The property Accesses is a JSON list of accesses, one per assistant: Name, Token, DefaultRoom, ReadOnly, InPath. Each assistant logs in with its own token as Authorization: Bearer <token>; with InPath the endpoint also accepts that token without Authorization header at <hook path>/<token>. An access with ReadOnly only gets the tool get_state. DefaultRoom applies when a tool call names neither room nor name nor floor; room=all then means the whole house. The script functions have no access and therefore no default room. The property Rooms is an optional JSON list (Name, Aliases, Floor) that gives rooms aliases and a floor; with floors the tools also accept the parameter floor. The property Devices is a JSON list of devices with their capabilities: Room, Name, Aliases, Type, Invert, ReadOnly (true = the assistant may query the device but not switch it), StateVariableID (state or measured value; for a thermostat the current temperature), LevelVariableID (brightness or position) and SetpointVariableID (setpoint of a thermostat). A blind only uses LevelVariableID, a light needs at least one of the two, a thermostat needs SetpointVariableID, all other types use StateVariableID; an ID of 0 or 1 means not set. HAGT_UIDeviceForm and HAGT_UIDeviceChanged only serve the edit dialog of this list, HAGT_UIImportAlexa opens a window with devices proposed from an Alexa instance, HAGT_UISetAlexaTakes ticks all or none of them, HAGT_UIApplyAlexa releases the ticked ones. The assistant has three tools: get_state, set_state (command on, off, open, close, stop, or percent, or temperature in °C for a thermostat; only what a released device can do is offered, and devices of a group that do not understand a command are left out) and run_scene. HAGT_SwitchDevices(int $InstanceID, string $Room, string $Type, string $Name, bool $On): string switches the matching devices on or off, HAGT_SetLevel(int $InstanceID, string $Room, string $Type, string $Name, float $Percent): string sets brightness or position in percent (0 switches a light off; blinds and windows: 0 = closed, 100 = open). Both need at least one filter, a name must match exactly one device, and they return one line per device with the result. HAGT_RunScene(int $InstanceID, string $Room, string $Name): string starts exactly one scene of the scene list (empty name = nothing is started, the answer lists the scenes; the room may stay empty). HAGT_GetEndpoint(int $InstanceID): string returns the hook path. HAGT_RunSelfTest(int $InstanceID): string checks accesses, lists and endpoint without side effects (first line OK or ERROR). Status 104 = no access with a token, 201 = one of the lists has errors (details in the log)."
+    }
+  ],
+  "actions": [
+    {
+      "type": "Button",
+      "caption": "Show state of all released devices",
+      "onClick": "echo HAGT_QueryState($id, '', '', '', false);"
+    },
+    {
+      "type": "Button",
+      "caption": "Run self-test",
+      "onClick": "echo HAGT_RunSelfTest($id);"
+    },
+    {
+      "type": "Button",
+      "caption": "Generate token",
+      "onClick": "HAGT_UIGenerateToken($id);"
+    },
+    {
+      "type": "ValidationTextBox",
+      "name": "GeneratedToken",
+      "caption": "New token to copy (not stored)",
+      "width": "600px",
+      "visible": false
+    },
+    {
+      "type": "RowLayout",
+      "items": [
+        {
+          "type": "Select",
+          "name": "AlexaInstance",
+          "caption": "Alexa instance",
+          "options": [],
+          "visible": false
+        },
+        {
+          "type": "Button",
+          "name": "ImportAlexa",
+          "caption": "Propose devices from Alexa",
+          "onClick": "HAGT_UIImportAlexa($id, $AlexaInstance);",
+          "visible": false
+        }
+      ]
+    },
+    {
+      "type": "PopupAlert",
+      "name": "AlexaPopup",
+      "visible": false,
+      "popup": {
+        "caption": "Proposals from Alexa",
+        "width": "80%",
+        "closeCaption": "Cancel",
+        "items": [
+          {
+            "type": "Label",
+            "name": "AlexaSummary",
+            "caption": ""
+          },
+          {
+            "type": "Label",
+            "caption": "Released devices are saved right away; unsaved changes in the form are lost."
+          },
+          {
+            "type": "RowLayout",
+            "items": [
+              { "type": "Button", "caption": "Tick all", "onClick": "HAGT_UISetAlexaTakes($id, true);" },
+              { "type": "Button", "caption": "Tick none", "onClick": "HAGT_UISetAlexaTakes($id, false);" }
+            ]
+          },
+          {
+            "type": "List",
+            "name": "AlexaProposals",
+            "rowCount": 15,
+            "add": false,
+            "delete": false,
+            "columns": [
+              { "caption": "Release", "name": "Take", "width": "90px", "add": true, "edit": { "type": "CheckBox" } },
+              { "caption": "Room", "name": "Room", "width": "160px", "edit": { "type": "ValidationTextBox" } },
+              { "caption": "Name", "name": "Name", "width": "auto" },
+              { "caption": "Type", "name": "Type", "width": "140px" },
+              { "caption": "Aliases", "name": "Aliases", "width": "320px" },
+              { "caption": "Index", "name": "Index", "width": "60px", "visible": false }
+            ],
+            "values": []
+          }
+        ],
+        "buttons": [
+          {
+            "caption": "Release selected",
+            "onClick": "$ausgewaehlt = []; foreach ($AlexaProposals as $zeile) { if ($zeile['Take']) { $ausgewaehlt[] = [$zeile['Index'], $zeile['Room']]; } } echo HAGT_UIApplyAlexa($id, json_encode($ausgewaehlt));"
+          }
+        ]
+      }
+    }
+  ],
+  "status": [
+    {
+      "code": 104,
+      "icon": "inactive",
+      "caption": "No access with a token: add an access with a token so that the assistant can log in"
+    },
+    {
+      "code": 201,
+      "icon": "error",
+      "caption": "One of the lists has errors, the log names the affected entries"
+    }
+  ]
+}

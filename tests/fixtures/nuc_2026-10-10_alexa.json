@@ -1,0 +1,2049 @@
+{
+    "_quelle": "nuc 10.10.2026, nur gelesen: Konfiguration der Alexa-Instanz #10110 (Modul {CC759EB6-7821-4AA5-9267-EF08C6A6A5B3}), je referenzierter Variable Eltern-Instanz, Pfad und Ident, dazu Raumliste und Geräteliste (149 Zeilen, mit den beiden Thermostaten von build 36) der Home-Agent-Instanz #15877.",
+    "alexaModul": "{CC759EB6-7821-4AA5-9267-EF08C6A6A5B3}",
+    "alexa": {
+        "DeviceDeactivatableScene": "[]",
+        "DeviceGenericSlider": "[]",
+        "DeviceGenericSwitch": "[{\"Status\":\"OK\",\"ID\":\"84\",\"Name\":\"PC Wintergarten\",\"PowerControllerID\":12432},{\"Status\":\"OK\",\"ID\":\"86\",\"Name\":\"Sparmodus Waschmaschine\",\"PowerControllerID\":59154},{\"Status\":\"OK\",\"ID\":\"87\",\"Name\":\"Sparmodus Wäschetrockner\",\"PowerControllerID\":48984}]",
+        "DeviceLightColor": "[{\"ID\":\"46\",\"Name\":\"LED Wohnzimmer Nachbar\",\"ColorControllerID\":54728}]",
+        "DeviceLightDimmer": "[{\"Status\":\"OK\",\"ID\":\"47\",\"Name\":\"Weiß Wohnzimmer Nachbar\",\"BrightnessControllerID\":19752}]",
+        "DeviceLightExpert": "[{\"ID\":\"94\",\"Name\":\"Deckenlicht Gästezimmer\",\"PowerControllerID\":15165,\"BrightnessOnlyControllerID\":15288,\"ColorOnlyControllerID\":0,\"ColorTemperatureOnlyControllerID\":0},{\"ID\":\"68\",\"Name\":\"Deckenlicht Wintergarten\",\"PowerControllerID\":16893,\"BrightnessOnlyControllerID\":49785,\"ColorOnlyControllerID\":0,\"ColorTemperatureOnlyControllerID\":0},{\"ID\":\"91\",\"Name\":\"Fensterlicht Küche\",\"PowerControllerID\":33255,\"BrightnessOnlyControllerID\":59411,\"ColorOnlyControllerID\":0,\"ColorTemperatureOnlyControllerID\":53701},{\"ID\":\"95\",\"Name\":\"Wandlicht Gästezimmer links\",\"PowerControllerID\":53640,\"BrightnessOnlyControllerID\":0,\"ColorOnlyControllerID\":0,\"ColorTemperatureOnlyControllerID\":0},{\"ID\":\"96\",\"Name\":\"Wandlicht Gästezimmer rechts\",\"PowerControllerID\":40902,\"BrightnessOnlyControllerID\":0,\"ColorOnlyControllerID\":0,\"ColorTemperatureOnlyControllerID\":0}]",
+        "DeviceLightSwitch": "[{\"Status\":\"OK\",\"ID\":\"85\",\"Name\":\"Arbeitslicht Küche\",\"PowerControllerID\":39283},{\"Status\":\"OK\",\"ID\":\"2\",\"Name\":\"Deckenlicht Bad\",\"PowerControllerID\":26758},{\"Status\":\"OK\",\"ID\":\"3\",\"Name\":\"Deckenlicht Flur\",\"PowerControllerID\":30955},{\"Status\":\"OK\",\"ID\":\"45\",\"Name\":\"Deckenlicht Gartenhaus\",\"PowerControllerID\":27315},{\"Status\":\"OK\",\"ID\":\"4\",\"Name\":\"Deckenlicht Heike\",\"PowerControllerID\":38890},{\"Status\":\"OK\",\"ID\":\"16\",\"Name\":\"Deckenlicht Keller\",\"PowerControllerID\":50745},{\"Status\":\"OK\",\"ID\":\"5\",\"Name\":\"Deckenlicht Küche\",\"PowerControllerID\":49127},{\"Status\":\"OK\",\"ID\":\"6\",\"Name\":\"Deckenlicht Schlafzimmer\",\"PowerControllerID\":57575},{\"Status\":\"OK\",\"ID\":\"15\",\"Name\":\"Heizungslicht Keller\",\"PowerControllerID\":54295},{\"Status\":\"OK\",\"ID\":\"14\",\"Name\":\"Nischen Licht Bad\",\"PowerControllerID\":40147},{\"Status\":\"OK\",\"ID\":\"13\",\"Name\":\"Nischen Licht Flur\",\"PowerControllerID\":39774},{\"Status\":\"OK\",\"ID\":\"12\",\"Name\":\"Schranklicht Schlafzimmer\",\"PowerControllerID\":48033},{\"Status\":\"OK\",\"ID\":\"11\",\"Name\":\"Spiegellicht Bad\",\"PowerControllerID\":15604},{\"Status\":\"OK\",\"ID\":\"69\",\"Name\":\"Testlicht\",\"PowerControllerID\":16893},{\"Status\":\"OK\",\"ID\":\"10\",\"Name\":\"Tischlicht Küche\",\"PowerControllerID\":10021},{\"Status\":\"OK\",\"ID\":\"9\",\"Name\":\"Wandlicht Flur\",\"PowerControllerID\":45373}]",
+        "DeviceLock": "[{\"Status\":\"OK\",\"ID\":\"22\",\"Name\":\"Tür Wintergarten\",\"LockControllerID\":18065},{\"Status\":\"OK\",\"ID\":\"23\",\"Name\":\"Tür Gartenhaus\",\"LockControllerID\":46099},{\"Status\":\"OK\",\"ID\":\"24\",\"Name\":\"Tür Atelier\",\"LockControllerID\":42867},{\"Status\":\"Action required\",\"ID\":\"40\",\"Name\":\"Tür Flur\",\"LockControllerID\":11941}]",
+        "DeviceMediaPlayer": "[]",
+        "DeviceShutter": "[{\"Status\":\"OK\",\"ID\":\"70\",\"Name\":\"Rollladen Küche\",\"RangeControllerShutterID\":33220},{\"Status\":\"OK\",\"ID\":\"71\",\"Name\":\"Rollladen Gästezimmer\",\"RangeControllerShutterID\":59648},{\"Status\":\"OK\",\"ID\":\"72\",\"Name\":\"Rollladen Wohnzimmer Blumenfenster\",\"RangeControllerShutterID\":36600},{\"Status\":\"OK\",\"ID\":\"73\",\"Name\":\"Rollladen Wohnzimmer Sportplatz\",\"RangeControllerShutterID\":38528},{\"Status\":\"OK\",\"ID\":\"74\",\"Name\":\"Rollladen Wohnzimmer Nachbar\",\"RangeControllerShutterID\":43178},{\"Status\":\"OK\",\"ID\":\"75\",\"Name\":\"Rollladen Heike\",\"RangeControllerShutterID\":46932},{\"Status\":\"OK\",\"ID\":\"76\",\"Name\":\"Rollladen Bad\",\"RangeControllerShutterID\":54584},{\"Status\":\"OK\",\"ID\":\"77\",\"Name\":\"Rollladen Schlafzimmer\",\"RangeControllerShutterID\":13137},{\"Status\":\"OK\",\"ID\":\"78\",\"Name\":\"Rollladen Musikzimmer\",\"RangeControllerShutterID\":32004},{\"Status\":\"OK\",\"ID\":\"79\",\"Name\":\"Fenster Bad\",\"RangeControllerShutterID\":24234},{\"Status\":\"OK\",\"ID\":\"80\",\"Name\":\"Fenster Küche\",\"RangeControllerShutterID\":57075},{\"Status\":\"OK\",\"ID\":\"81\",\"Name\":\"Fenster Wohnzimmer Sportplatz\",\"RangeControllerShutterID\":32587},{\"Status\":\"OK\",\"ID\":\"82\",\"Name\":\"Fenster Wohnzimmer Nachbar\",\"RangeControllerShutterID\":10517},{\"Status\":\"OK\",\"ID\":\"83\",\"Name\":\"Fenster Flur\",\"RangeControllerShutterID\":20009},{\"Status\":\"OK\",\"ID\":\"92\",\"Name\":\"Fenster Schlafzimmer\",\"RangeControllerShutterID\":22996}]",
+        "DeviceSimpleScene": "[{\"Status\":\"OK\",\"Name\":\"TriggerLastActivity\",\"SceneControllerSimpleAction\":\"{\\\"actionID\\\":\\\"{28E92DFA-1640-2F3B-74F6-4B2AAE21CE22}\\\",\\\"parameters\\\":{\\\"FUNCTION\\\":\\\"ECHOIO_GetLastActivity\\\",\\\"SAVE_RETURN_VALUE\\\":false,\\\"VARIABLE\\\":1,\\\"TARGET\\\":47662}}\",\"ID\":\"97\"},{\"Status\":\"OK\",\"ID\":\"93\",\"Name\":\"Warmwasserpumpe\",\"SceneControllerSimpleAction\":\"{\\\"actionID\\\":\\\"{7938A5A2-0981-5FE0-BE6C-8AA610D654EB}\\\",\\\"parameters\\\":{\\\"TARGET\\\":47101}}\"}]",
+        "DeviceSpeaker": "[]",
+        "DeviceSpeakerMuteable": "[]",
+        "DeviceTelevision": "[{\"Status\":\"OK\",\"ID\":\"90\",\"Name\":\"Fernseher\",\"PowerControllerID\":59064,\"ChannelControllerID\":0,\"SpeakerMuteableVolumeID\":0,\"SpeakerMuteableMuteID\":0,\"InputControllerID\":0,\"InputControllerSupported\":[{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false},{\"selected\":false}]}]",
+        "DeviceTemperatureSensor": "[{\"Status\":\"OK\",\"ID\":\"19\",\"Name\":\"Temperatursensor Flur\",\"TemperatureSensorID\":20417},{\"Status\":\"OK\",\"ID\":\"18\",\"Name\":\"Temperatursensor Wintergarten\",\"TemperatureSensorID\":19960},{\"Status\":\"OK\",\"ID\":\"25\",\"Name\":\"Temperatursensor Wohnzimmer\",\"TemperatureSensorID\":38498},{\"Status\":\"OK\",\"ID\":\"26\",\"Name\":\"Temperatursensor Gästezimmer\",\"TemperatureSensorID\":41351},{\"Status\":\"OK\",\"ID\":\"27\",\"Name\":\"Temperatursensor Heike\",\"TemperatureSensorID\":49120},{\"Status\":\"OK\",\"ID\":\"28\",\"Name\":\"Temperatursensor Badezimmer\",\"TemperatureSensorID\":45568},{\"Status\":\"OK\",\"ID\":\"29\",\"Name\":\"Temperatursensor Schlafzimmer\",\"TemperatureSensorID\":41417},{\"Status\":\"OK\",\"ID\":\"30\",\"Name\":\"Temperatursensor Musikzimmer\",\"TemperatureSensorID\":41945},{\"Status\":\"OK\",\"ID\":\"31\",\"Name\":\"Temperatursensor Küche\",\"TemperatureSensorID\":36203},{\"Status\":\"OK\",\"ID\":\"41\",\"Name\":\"Temperatursensor Atelier\",\"TemperatureSensorID\":30145},{\"Status\":\"OK\",\"ID\":\"42\",\"Name\":\"Temperatursensor Dachboden\",\"TemperatureSensorID\":51410},{\"Status\":\"OK\",\"ID\":\"43\",\"Name\":\"Temperatursensor Dachgeschoss Küche\",\"TemperatureSensorID\":55817},{\"Status\":\"OK\",\"ID\":\"44\",\"Name\":\"Temperatursensor Dachgeschoss Bad\",\"TemperatureSensorID\":16439},{\"Status\":\"OK\",\"ID\":\"51\",\"Name\":\"Temperatursensor Keller\",\"TemperatureSensorID\":26722},{\"Status\":\"OK\",\"ID\":\"52\",\"Name\":\"Temperatursensor Garten\",\"TemperatureSensorID\":53076}]",
+        "DeviceThermostat": "[{\"Status\":\"OK\",\"ID\":\"55\",\"Name\":\"Thermostat Wintergarten\",\"ThermostatControllerID\":11093},{\"Status\":\"OK\",\"ID\":\"56\",\"Name\":\"Thermostat Wohnzimmer\",\"ThermostatControllerID\":48140},{\"Status\":\"OK\",\"ID\":\"57\",\"Name\":\"Thermostat Flur\",\"ThermostatControllerID\":24071},{\"Status\":\"OK\",\"ID\":\"58\",\"Name\":\"Thermostat Gästezimmer\",\"ThermostatControllerID\":10028},{\"Status\":\"OK\",\"ID\":\"59\",\"Name\":\"Thermostat Heike\",\"ThermostatControllerID\":28616},{\"Status\":\"OK\",\"ID\":\"60\",\"Name\":\"Thermostat Bad\",\"ThermostatControllerID\":16206},{\"Status\":\"OK\",\"ID\":\"61\",\"Name\":\"Thermostat Schlafzimmer\",\"ThermostatControllerID\":50167},{\"Status\":\"OK\",\"ID\":\"62\",\"Name\":\"Thermostat Musik\",\"ThermostatControllerID\":48076},{\"Status\":\"OK\",\"ID\":\"63\",\"Name\":\"Thermostat Küche\",\"ThermostatControllerID\":53537},{\"Status\":\"OK\",\"ID\":\"64\",\"Name\":\"Thermostat DG Atelier\",\"ThermostatControllerID\":11218},{\"Status\":\"OK\",\"ID\":\"65\",\"Name\":\"Thermostat DG Dachboden\",\"ThermostatControllerID\":26569},{\"Status\":\"OK\",\"ID\":\"66\",\"Name\":\"Thermostat DG Küche\",\"ThermostatControllerID\":45107},{\"Status\":\"OK\",\"ID\":\"67\",\"Name\":\"Thermostat DG Bad\",\"ThermostatControllerID\":55269}]"
+    },
+    "objekte": {
+        "12432": {
+            "eltern": 42968,
+            "pfad": "Program\\WOL\\WOL\\Wintergarten PC",
+            "ident": ""
+        },
+        "59154": {
+            "eltern": 12184,
+            "pfad": "Program\\Photovoltaik\\Prognose\\Sparmodus Waschgeräete regeln\\Sparmodus Waschmaschine",
+            "ident": ""
+        },
+        "48984": {
+            "eltern": 12184,
+            "pfad": "Program\\Photovoltaik\\Prognose\\Sparmodus Waschgeräete regeln\\Sparmodus Wäschetrockner",
+            "ident": ""
+        },
+        "54728": {
+            "eltern": 19765,
+            "pfad": "Hardware\\IPS 868\\RGBW-868 ID144 (Decke Nachbar)\\Color",
+            "ident": "Color"
+        },
+        "19752": {
+            "eltern": 19765,
+            "pfad": "Hardware\\IPS 868\\RGBW-868 ID144 (Decke Nachbar)\\White",
+            "ident": "White"
+        },
+        "15165": {
+            "eltern": 20390,
+            "pfad": "Hardware\\Matter\\Gast\\Gast.Licht.Decke\\Status",
+            "ident": "E1_OnOff_Status"
+        },
+        "15288": {
+            "eltern": 20390,
+            "pfad": "Hardware\\Matter\\Gast\\Gast.Licht.Decke\\Helligkeit",
+            "ident": "E1_LevelControl_Level"
+        },
+        "16893": {
+            "eltern": 24857,
+            "pfad": "Hardware\\Homematic\\Wintergarten\\Licht\\Wintergarten.Licht.Decke:1\\SWITCH",
+            "ident": ""
+        },
+        "49785": {
+            "eltern": 24857,
+            "pfad": "Hardware\\Homematic\\Wintergarten\\Licht\\Wintergarten.Licht.Decke:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "33255": {
+            "eltern": 31022,
+            "pfad": "Hardware\\Home Assistant\\Küche\\Küche.Deckenpanel\\Status",
+            "ident": "light_status"
+        },
+        "59411": {
+            "eltern": 31022,
+            "pfad": "Hardware\\Home Assistant\\Küche\\Küche.Deckenpanel\\Helligkeit",
+            "ident": "light_brightness"
+        },
+        "53701": {
+            "eltern": 31022,
+            "pfad": "Hardware\\Home Assistant\\Küche\\Küche.Deckenpanel\\Farbtemperatur K",
+            "ident": "light_color_temp_kelvin"
+        },
+        "53640": {
+            "eltern": 31388,
+            "pfad": "Hardware\\Shelly\\Gast\\Gast.Licht.Wand\\Status",
+            "ident": "switch_0_output"
+        },
+        "40902": {
+            "eltern": 31388,
+            "pfad": "Hardware\\Shelly\\Gast\\Gast.Licht.Wand\\Status 1",
+            "ident": "switch_1_output"
+        },
+        "39283": {
+            "eltern": 52291,
+            "pfad": "Hardware\\Homematic\\Küche\\Licht\\Küche.Licht.Arbeitsfläche:1\\STATE",
+            "ident": "STATE"
+        },
+        "26758": {
+            "eltern": 50819,
+            "pfad": "Hardware\\Homematic\\Bad\\Licht\\Bad.Licht.Decke:1\\STATE",
+            "ident": "STATE"
+        },
+        "30955": {
+            "eltern": 45823,
+            "pfad": "Hardware\\Homematic\\Flur\\Licht\\Flur.Licht.Decke:4\\STATE",
+            "ident": "STATE"
+        },
+        "27315": {
+            "eltern": 58295,
+            "pfad": "Hardware\\Homematic\\Gartenhaus\\Licht\\Gartenhaus.Licht.Decke:1\\STATE",
+            "ident": "STATE"
+        },
+        "38890": {
+            "eltern": 10817,
+            "pfad": "Hardware\\Homematic\\Heike\\Licht\\Heike.Licht.Decke:1\\STATE",
+            "ident": "STATE"
+        },
+        "50745": {
+            "eltern": 24067,
+            "pfad": "Hardware\\Homematic\\Keller\\Licht\\Keller.Licht.Decke:1\\STATE",
+            "ident": "STATE"
+        },
+        "49127": {
+            "eltern": 15988,
+            "pfad": "Hardware\\Homematic\\Küche\\Licht\\Küche.Licht.Schalter_Decke:1\\STATE",
+            "ident": "STATE"
+        },
+        "57575": {
+            "eltern": 31907,
+            "pfad": "Hardware\\Homematic\\Schlafen\\Licht\\Schlafen.Licht.Decke:1\\STATE",
+            "ident": "STATE"
+        },
+        "54295": {
+            "eltern": 36899,
+            "pfad": "Hardware\\Homematic\\Keller\\Licht\\Keller.Licht.Heizung:1\\STATE",
+            "ident": "STATE"
+        },
+        "40147": {
+            "eltern": 36547,
+            "pfad": "Hardware\\Homematic\\Bad\\Licht\\Bad.Licht.Nischen:2\\STATE",
+            "ident": "STATE"
+        },
+        "39774": {
+            "eltern": 14637,
+            "pfad": "Hardware\\Homematic\\Flur\\Licht\\Flur.Licht.Nische:1\\STATE",
+            "ident": "STATE"
+        },
+        "48033": {
+            "eltern": 32023,
+            "pfad": "Hardware\\Homematic\\Schlafen\\Licht\\Schlafen.Licht.Schalter_Schrank:1\\STATE",
+            "ident": "STATE"
+        },
+        "15604": {
+            "eltern": 58759,
+            "pfad": "Hardware\\Homematic\\Bad\\Licht\\Bad.Licht.Spiegel:1\\STATE",
+            "ident": "STATE"
+        },
+        "10021": {
+            "eltern": 54061,
+            "pfad": "Hardware\\Homematic\\Küche\\Licht\\Küche.Licht.Schalter_Tisch:1\\STATE",
+            "ident": "STATE"
+        },
+        "45373": {
+            "eltern": 28020,
+            "pfad": "Hardware\\Homematic\\Flur\\Licht\\Flur.Licht.Wand:1\\STATE",
+            "ident": "STATE"
+        },
+        "18065": {
+            "eltern": 35452,
+            "pfad": "Hardware\\Homematic\\Wintergarten\\Verschluss\\Wintergarten.Verschluss.Türschloss:1\\STATE",
+            "ident": "STATE"
+        },
+        "46099": {
+            "eltern": 57227,
+            "pfad": "Hardware\\Homematic\\Gartenhaus\\Verschluss\\Gartenhaus.Verschluss.Türschloss:1\\STATE",
+            "ident": "STATE"
+        },
+        "42867": {
+            "eltern": 10020,
+            "pfad": "Hardware\\Homematic\\DG_Atelier\\Verschluss\\Atelier.Verschluss.Türschloss:1\\STATE",
+            "ident": "STATE"
+        },
+        "11941": {
+            "eltern": 12751,
+            "pfad": "Hardware\\Homematic\\Flur\\Verschluss\\Flur.Verschluss.Tür Verriegelung:2\\STATE",
+            "ident": "STATE"
+        },
+        "33220": {
+            "eltern": 22376,
+            "pfad": "Hardware\\Homematic\\Küche\\Verschluss\\Küche.Verschluss.Rollladen:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "59648": {
+            "eltern": 19652,
+            "pfad": "Hardware\\Homematic\\Gast\\Verschluss\\Gast.Verschluss.Rollladen:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "36600": {
+            "eltern": 39110,
+            "pfad": "Hardware\\Homematic\\Wohnzimmer\\Verschluss\\Wohnzimmer.Verschluss.Rollladen Terrasse:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "38528": {
+            "eltern": 55913,
+            "pfad": "Hardware\\Homematic\\Wohnzimmer\\Verschluss\\Wohnzimmer.Verschluss.Rollladen_SP:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "43178": {
+            "eltern": 47933,
+            "pfad": "Hardware\\Homematic\\Wohnzimmer\\Verschluss\\Wohnzimmer.Verschluss.Rollladen_NB:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "46932": {
+            "eltern": 34267,
+            "pfad": "Hardware\\Homematic\\Heike\\Verschluss\\Heike.Verschluss.Rollladen:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "54584": {
+            "eltern": 59233,
+            "pfad": "Hardware\\Homematic\\Bad\\Verschluss\\Bad.Verschluss.Rollladen:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "13137": {
+            "eltern": 15649,
+            "pfad": "Hardware\\Homematic\\Schlafen\\Verschluss\\Schlafen.Verschluss.Rollladen Süd:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "32004": {
+            "eltern": 41707,
+            "pfad": "Hardware\\Homematic\\Musik\\Verschluss\\Musik.Verschluss.Rollladen:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "24234": {
+            "eltern": 57263,
+            "pfad": "Hardware\\Homematic\\Bad\\Verschluss\\Bad.Verschluss.Fenster:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "57075": {
+            "eltern": 36120,
+            "pfad": "Hardware\\Homematic\\Küche\\Verschluss\\Küche.Verschluss.Fenster links:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "32587": {
+            "eltern": 32170,
+            "pfad": "Hardware\\Homematic\\Wohnzimmer\\Verschluss\\Wohnzimmer.Verschluss.Fenster_SP:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "10517": {
+            "eltern": 29262,
+            "pfad": "Hardware\\Homematic\\Wohnzimmer\\Verschluss\\Wohnzimmer.Verschluss.Fenster_NB:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "20009": {
+            "eltern": 25749,
+            "pfad": "Hardware\\Homematic\\Flur\\Verschluss\\Flur.Verschluss.Fenster:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "22996": {
+            "eltern": 57627,
+            "pfad": "Hardware\\Homematic\\Schlafen\\Verschluss\\Schlafen.Verschluss.Fenster West:1\\LEVEL",
+            "ident": "LEVEL"
+        },
+        "59064": {
+            "eltern": 22553,
+            "pfad": "Program\\Alexa\\Schalter Fernseher",
+            "ident": ""
+        },
+        "20417": {
+            "eltern": 59972,
+            "pfad": "Hardware\\Homematic\\Flur\\Heizung\\Flur.Heizung.Thermostat:1\\TEMPERATURE",
+            "ident": "TEMPERATURE"
+        },
+        "19960": {
+            "eltern": 56560,
+            "pfad": "Hardware\\Homematic\\Wintergarten\\Heizung\\Wintergarten.Heizung.Wandthermostat:2\\ACTUAL_TEMPERATURE",
+            "ident": "ACTUAL_TEMPERATURE"
+        },
+        "38498": {
+            "eltern": 22332,
+            "pfad": "Hardware\\Homematic\\Wohnzimmer\\Heizung\\Wohnzimmer.Heizung.Thermostat:1\\TEMPERATURE",
+            "ident": "TEMPERATURE"
+        },
+        "41351": {
+            "eltern": 47604,
+            "pfad": "Hardware\\Homematic\\Gast\\Heizung\\Gast.Heizung.Thermostat:1\\TEMPERATURE",
+            "ident": "TEMPERATURE"
+        },
+        "49120": {
+            "eltern": 49657,
+            "pfad": "Hardware\\Homematic\\Heike\\Heizung\\Heike.Heizung.Thermostat:1\\TEMPERATURE",
+            "ident": "TEMPERATURE"
+        },
+        "45568": {
+            "eltern": 48610,
+            "pfad": "Hardware\\Homematic\\Bad\\Heizung\\Bad.Heizung.Thermostat:1\\TEMPERATURE",
+            "ident": "TEMPERATURE"
+        },
+        "41417": {
+            "eltern": 33783,
+            "pfad": "Hardware\\Homematic\\Schlafen\\Heizung\\Schlafen.Heizung.Thermostat:1\\TEMPERATURE",
+            "ident": "TEMPERATURE"
+        },
+        "41945": {
+            "eltern": 11313,
+            "pfad": "Hardware\\Homematic\\Musik\\Heizung\\Musik.Heizung.Thermostat:1\\TEMPERATURE",
+            "ident": "TEMPERATURE"
+        },
+        "36203": {
+            "eltern": 31456,
+            "pfad": "Hardware\\Homematic\\Küche\\Heizung\\Küche.Heizung.Thermostat:1\\TEMPERATURE",
+            "ident": "TEMPERATURE"
+        },
+        "30145": {
+            "eltern": 32877,
+            "pfad": "Hardware\\Homematic\\DG_Atelier\\Heizung\\Atelier.Heizung.Thermostat:1\\TEMPERATURE",
+            "ident": "TEMPERATURE"
+        },
+        "51410": {
+            "eltern": 15541,
+            "pfad": "Hardware\\Homematic\\DG_Boden\\Heizung\\Dachboden.Heizung.Thermostat:1\\TEMPERATURE",
+            "ident": "TEMPERATURE"
+        },
+        "55817": {
+            "eltern": 32546,
+            "pfad": "Hardware\\Homematic\\DG_Küche\\Heizung\\DG_Küche.Heizung.Thermostat:1\\TEMPERATURE",
+            "ident": "TEMPERATURE"
+        },
+        "16439": {
+            "eltern": 45943,
+            "pfad": "Hardware\\Homematic\\DG_Bad\\Heizung\\DG_Bad.Heizung.Thermostat:1\\TEMPERATURE",
+            "ident": "TEMPERATURE"
+        },
+        "26722": {
+            "eltern": 49698,
+            "pfad": "Hardware\\Homematic\\Keller\\Heizung\\Keller.Heizung.Thermostat:1\\TEMPERATURE",
+            "ident": "TEMPERATURE"
+        },
+        "53076": {
+            "eltern": 33383,
+            "pfad": "Hardware\\WeatherFlow\\Tempest\\Air Temperature",
+            "ident": "ST_00144936_obs_st_7"
+        },
+        "11093": {
+            "eltern": 56560,
+            "pfad": "Hardware\\Homematic\\Wintergarten\\Heizung\\Wintergarten.Heizung.Wandthermostat:2\\SET_TEMPERATURE",
+            "ident": "SET_TEMPERATURE"
+        },
+        "48140": {
+            "eltern": 14228,
+            "pfad": "Hardware\\Homematic\\Wohnzimmer\\Heizung\\Wohnzimmer.Heizung.Thermostat:2\\SETPOINT",
+            "ident": "SETPOINT"
+        },
+        "24071": {
+            "eltern": 43625,
+            "pfad": "Hardware\\Homematic\\Flur\\Heizung\\Flur.Heizung.Thermostat:2\\SETPOINT",
+            "ident": "SETPOINT"
+        },
+        "10028": {
+            "eltern": 25107,
+            "pfad": "Hardware\\Homematic\\Gast\\Heizung\\Gast.Heizung.Thermostat:2\\SETPOINT",
+            "ident": "SETPOINT"
+        },
+        "28616": {
+            "eltern": 58256,
+            "pfad": "Hardware\\Homematic\\Heike\\Heizung\\Heike.Heizung.Thermostat:2\\SETPOINT",
+            "ident": "SETPOINT"
+        },
+        "16206": {
+            "eltern": 15363,
+            "pfad": "Hardware\\Homematic\\Bad\\Heizung\\Bad.Heizung.Thermostat:2\\SETPOINT",
+            "ident": "SETPOINT"
+        },
+        "50167": {
+            "eltern": 17636,
+            "pfad": "Hardware\\Homematic\\Schlafen\\Heizung\\Schlafen.Heizung.Thermostat:2\\SETPOINT",
+            "ident": "SETPOINT"
+        },
+        "48076": {
+            "eltern": 19047,
+            "pfad": "Hardware\\Homematic\\Musik\\Heizung\\Musik.Heizung.Thermostat:2\\SETPOINT",
+            "ident": "SETPOINT"
+        },
+        "53537": {
+            "eltern": 24075,
+            "pfad": "Hardware\\Homematic\\Küche\\Heizung\\Küche.Heizung.Thermostat:2\\SETPOINT",
+            "ident": "SETPOINT"
+        },
+        "11218": {
+            "eltern": 17963,
+            "pfad": "Hardware\\Homematic\\DG_Atelier\\Heizung\\Atelier.Heizung.Thermostat:2\\SETPOINT",
+            "ident": "SETPOINT"
+        },
+        "26569": {
+            "eltern": 35876,
+            "pfad": "Hardware\\Homematic\\DG_Boden\\Heizung\\Dachboden.Heizung.Thermostat:2\\SETPOINT",
+            "ident": "SETPOINT"
+        },
+        "45107": {
+            "eltern": 48399,
+            "pfad": "Hardware\\Homematic\\DG_Küche\\Heizung\\DG_Küche.Heizung.Thermostat:2\\SETPOINT",
+            "ident": "SETPOINT"
+        },
+        "55269": {
+            "eltern": 42900,
+            "pfad": "Hardware\\Homematic\\DG_Bad\\Heizung\\DG_Bad.Heizung.Thermostat:2\\SETPOINT",
+            "ident": "SETPOINT"
+        }
+    },
+    "raeume": [
+        {
+            "Name": "Bad",
+            "Aliases": "",
+            "Floor": "Erdgeschoss"
+        },
+        {
+            "Name": "Flur",
+            "Aliases": "",
+            "Floor": "Erdgeschoss"
+        },
+        {
+            "Name": "Gast",
+            "Aliases": "Gästezimmer",
+            "Floor": "Erdgeschoss"
+        },
+        {
+            "Name": "Heike",
+            "Aliases": "Heikes Zimmer",
+            "Floor": "Erdgeschoss"
+        },
+        {
+            "Name": "Küche",
+            "Aliases": "",
+            "Floor": "Erdgeschoss"
+        },
+        {
+            "Name": "Musikzimmer",
+            "Aliases": "Musik",
+            "Floor": "Erdgeschoss"
+        },
+        {
+            "Name": "Schlafen",
+            "Aliases": "Schlafzimmer",
+            "Floor": "Erdgeschoss"
+        },
+        {
+            "Name": "Wintergarten",
+            "Aliases": "",
+            "Floor": "Erdgeschoss"
+        },
+        {
+            "Name": "Wohnzimmer",
+            "Aliases": "Wohnen",
+            "Floor": "Erdgeschoss"
+        },
+        {
+            "Name": "Bad oben",
+            "Aliases": "Bad_DG, Bad im Dachgeschoss",
+            "Floor": "Dachgeschoss"
+        },
+        {
+            "Name": "Küche oben",
+            "Aliases": "Küche_DG, Küche im Dachgeschoss",
+            "Floor": "Dachgeschoss"
+        },
+        {
+            "Name": "Dachboden",
+            "Aliases": "",
+            "Floor": "Dachgeschoss"
+        },
+        {
+            "Name": "Atelier",
+            "Aliases": "Atelierzimmer",
+            "Floor": "Dachgeschoss"
+        },
+        {
+            "Name": "Keller",
+            "Aliases": "",
+            "Floor": "Keller"
+        },
+        {
+            "Name": "Garten",
+            "Aliases": "",
+            "Floor": "Außen"
+        },
+        {
+            "Name": "Gartenhaus",
+            "Aliases": "",
+            "Floor": "Außen"
+        },
+        {
+            "Name": "Treppenhaus",
+            "Aliases": "Treppe",
+            "Floor": "Dachgeschoss"
+        }
+    ],
+    "geraete": [
+        {
+            "Room": "Bad",
+            "Name": "Rollladen",
+            "Aliases": "Rollo",
+            "Type": "blind",
+            "StateVariableID": 0,
+            "LevelVariableID": 54584,
+            "Invert": false,
+            "ReadOnly": false,
+            "MovingVariableID": 49954
+        },
+        {
+            "Room": "Bad",
+            "Name": "Luftfeuchte",
+            "Aliases": "Feuchtigkeit",
+            "Type": "humidity",
+            "StateVariableID": 16706,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Bad",
+            "Name": "Deckenlicht",
+            "Aliases": "Decke",
+            "Type": "light",
+            "StateVariableID": 26758,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Bad",
+            "Name": "Nischenlicht",
+            "Aliases": "Nischen",
+            "Type": "light",
+            "StateVariableID": 40147,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Bad",
+            "Name": "Spiegellicht",
+            "Aliases": "Spiegel",
+            "Type": "light",
+            "StateVariableID": 15604,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Bad",
+            "Name": "Fußbodenheizung",
+            "Aliases": "",
+            "Type": "switch",
+            "StateVariableID": 51565,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Bad",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 45568,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Bad oben",
+            "Name": "Luftfeuchte",
+            "Aliases": "Feuchtigkeit",
+            "Type": "humidity",
+            "StateVariableID": 20124,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Bad oben",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 16439,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Bad oben",
+            "Name": "Dachfenster",
+            "Aliases": "Fenster",
+            "Type": "window",
+            "StateVariableID": 42936,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Dachboden",
+            "Name": "Luftfeuchte",
+            "Aliases": "Feuchtigkeit",
+            "Type": "humidity",
+            "StateVariableID": 56266,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Dachboden",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 51410,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Dachboden",
+            "Name": "Dachfenster",
+            "Aliases": "",
+            "Type": "window",
+            "StateVariableID": 57490,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Dachboden",
+            "Name": "Giebelfenster",
+            "Aliases": "Fenster, Giebel",
+            "Type": "window",
+            "StateVariableID": 34258,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Flur",
+            "Name": "Haustür",
+            "Aliases": "Eingangstür",
+            "Type": "door",
+            "StateVariableID": 50705,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Flur",
+            "Name": "Haustürschloss",
+            "Aliases": "Verriegelung, Haustür verriegelt",
+            "Type": "door",
+            "StateVariableID": 11941,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Flur",
+            "Name": "Luftfeuchte",
+            "Aliases": "Feuchtigkeit",
+            "Type": "humidity",
+            "StateVariableID": 23284,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Flur",
+            "Name": "Deckenlicht",
+            "Aliases": "Decke",
+            "Type": "light",
+            "StateVariableID": 30955,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false,
+            "PowerVariableID": 21010,
+            "EnergyVariableID": 36867
+        },
+        {
+            "Room": "Flur",
+            "Name": "Nischenlicht",
+            "Aliases": "Nische",
+            "Type": "light",
+            "StateVariableID": 39774,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Flur",
+            "Name": "Wandleuchte",
+            "Aliases": "Wandlicht",
+            "Type": "light",
+            "StateVariableID": 45373,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Flur",
+            "Name": "Klingel",
+            "Aliases": "Türklingel",
+            "Type": "switch",
+            "StateVariableID": 40787,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Flur",
+            "Name": "Tagesfalle",
+            "Aliases": "",
+            "Type": "switch",
+            "StateVariableID": 31890,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Flur",
+            "Name": "Türöffner",
+            "Aliases": "Haustüröffner",
+            "Type": "switch",
+            "StateVariableID": 51265,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Flur",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 20417,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Beet am Musikzimmer",
+            "Aliases": "Beet Musikzimmer",
+            "Type": "light",
+            "StateVariableID": 51111,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Beet am Wintergarten",
+            "Aliases": "Beet Wintergarten",
+            "Type": "light",
+            "StateVariableID": 34788,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Beete links",
+            "Aliases": "Treppe links",
+            "Type": "light",
+            "StateVariableID": 30840,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Carport Wand",
+            "Aliases": "Carport außen",
+            "Type": "light",
+            "StateVariableID": 51178,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Carport innen",
+            "Aliases": "Carportlicht",
+            "Type": "light",
+            "StateVariableID": 15562,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Eingang Wintergarten",
+            "Aliases": "Wintergarteneingang",
+            "Type": "light",
+            "StateVariableID": 11310,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Flieder",
+            "Aliases": "",
+            "Type": "light",
+            "StateVariableID": 17656,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Hausbaum",
+            "Aliases": "",
+            "Type": "light",
+            "StateVariableID": 21887,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Hauseingang",
+            "Aliases": "Haustürlicht",
+            "Type": "light",
+            "StateVariableID": 20327,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Klingellicht",
+            "Aliases": "Licht an der Klingel",
+            "Type": "light",
+            "StateVariableID": 41704,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Sitzplatzbeet",
+            "Aliases": "Sitzplatz",
+            "Type": "light",
+            "StateVariableID": 51811,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Terrassenbeet",
+            "Aliases": "",
+            "Type": "light",
+            "StateVariableID": 35001,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Terrassennische",
+            "Aliases": "",
+            "Type": "light",
+            "StateVariableID": 55384,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Terrassentreppe",
+            "Aliases": "",
+            "Type": "light",
+            "StateVariableID": 58567,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Weg Nachbarseite",
+            "Aliases": "Weg Nachbar, Hauswand Nachbarseite",
+            "Type": "light",
+            "StateVariableID": 54532,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Weg Treppe",
+            "Aliases": "Treppe rechts",
+            "Type": "light",
+            "StateVariableID": 12368,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Weg Wohnzimmer",
+            "Aliases": "Außengang",
+            "Type": "light",
+            "StateVariableID": 33645,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Weg zum Kamin",
+            "Aliases": "Kaminweg",
+            "Type": "light",
+            "StateVariableID": 26449,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Bewegungsmelder",
+            "Aliases": "Bewegungsmelder Carport",
+            "Type": "presence",
+            "StateVariableID": 46130,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Steckdose Carport",
+            "Aliases": "",
+            "Type": "socket",
+            "StateVariableID": 15151,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Steckdose Küche",
+            "Aliases": "Steckdose an der Küche",
+            "Type": "socket",
+            "StateVariableID": 25207,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Terrassensteckdosen",
+            "Aliases": "Steckdosen Terrassenbeete",
+            "Type": "socket",
+            "StateVariableID": 54998,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Wasser Eingangsweg",
+            "Aliases": "Bewässerung Eingangsweg",
+            "Type": "switch",
+            "StateVariableID": 38084,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Wasser Gartenhaus",
+            "Aliases": "Bewässerung Gartenhaus",
+            "Type": "switch",
+            "StateVariableID": 43487,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Wasser Hauswand",
+            "Aliases": "Bewässerung Hauswand",
+            "Type": "switch",
+            "StateVariableID": 54059,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Wasser Nachbarseite",
+            "Aliases": "Bewässerung Nachbarseite",
+            "Type": "switch",
+            "StateVariableID": 53431,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Garten",
+            "Name": "Wasser Sportplatzseite",
+            "Aliases": "Bewässerung Sportplatz",
+            "Type": "switch",
+            "StateVariableID": 47899,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Gartenhaus",
+            "Name": "Gartenhaustür",
+            "Aliases": "Tür",
+            "Type": "door",
+            "StateVariableID": 30386,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Gartenhaus",
+            "Name": "Deckenlicht",
+            "Aliases": "Decke",
+            "Type": "light",
+            "StateVariableID": 27315,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Gartenhaus",
+            "Name": "Klingelknopflicht",
+            "Aliases": "Klingelknopf",
+            "Type": "light",
+            "StateVariableID": 26961,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Gartenhaus",
+            "Name": "Steckdose links",
+            "Aliases": "Dose 1",
+            "Type": "socket",
+            "StateVariableID": 31489,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Gartenhaus",
+            "Name": "Steckdose rechts",
+            "Aliases": "Dose 2",
+            "Type": "socket",
+            "StateVariableID": 56034,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Gast",
+            "Name": "Rollladen",
+            "Aliases": "Rollo",
+            "Type": "blind",
+            "StateVariableID": 0,
+            "LevelVariableID": 59648,
+            "Invert": false,
+            "ReadOnly": false,
+            "MovingVariableID": 51390
+        },
+        {
+            "Room": "Gast",
+            "Name": "Luftfeuchte",
+            "Aliases": "Feuchtigkeit",
+            "Type": "humidity",
+            "StateVariableID": 21744,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Gast",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 41351,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Gast",
+            "Name": "Fenster links",
+            "Aliases": "",
+            "Type": "window",
+            "StateVariableID": 24052,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Gast",
+            "Name": "Fenster rechts",
+            "Aliases": "",
+            "Type": "window",
+            "StateVariableID": 53129,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Heike",
+            "Name": "Rollladen",
+            "Aliases": "Rollo",
+            "Type": "blind",
+            "StateVariableID": 0,
+            "LevelVariableID": 46932,
+            "Invert": false,
+            "ReadOnly": false,
+            "MovingVariableID": 26806
+        },
+        {
+            "Room": "Heike",
+            "Name": "Luftfeuchte",
+            "Aliases": "Feuchtigkeit",
+            "Type": "humidity",
+            "StateVariableID": 22214,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Heike",
+            "Name": "Deckenlicht",
+            "Aliases": "Decke",
+            "Type": "light",
+            "StateVariableID": 38890,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Heike",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 49120,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Heike",
+            "Name": "Fenster",
+            "Aliases": "",
+            "Type": "window",
+            "StateVariableID": 12203,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Keller",
+            "Name": "Kellertür",
+            "Aliases": "Tür",
+            "Type": "door",
+            "StateVariableID": 41745,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Keller",
+            "Name": "Luftfeuchte",
+            "Aliases": "Feuchtigkeit",
+            "Type": "humidity",
+            "StateVariableID": 56003,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Keller",
+            "Name": "Deckenlicht",
+            "Aliases": "Kellerlicht",
+            "Type": "light",
+            "StateVariableID": 50745,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Keller",
+            "Name": "Heizungsraum",
+            "Aliases": "Licht Heizung",
+            "Type": "light",
+            "StateVariableID": 54295,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Keller",
+            "Name": "Steckdose Heizkreisverteiler",
+            "Aliases": "Steckdose HKV",
+            "Type": "socket",
+            "StateVariableID": 45367,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Keller",
+            "Name": "Entfeuchter",
+            "Aliases": "Raumentfeuchter",
+            "Type": "switch",
+            "StateVariableID": 51561,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false,
+            "PowerVariableID": 40189,
+            "EnergyVariableID": 49570
+        },
+        {
+            "Room": "Keller",
+            "Name": "Kühlschrank",
+            "Aliases": "",
+            "Type": "switch",
+            "StateVariableID": 56941,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": true,
+            "PowerVariableID": 53389,
+            "EnergyVariableID": 57576
+        },
+        {
+            "Room": "Keller",
+            "Name": "Kühltruhe",
+            "Aliases": "Gefriertruhe",
+            "Type": "switch",
+            "StateVariableID": 41438,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": true,
+            "PowerVariableID": 29008,
+            "EnergyVariableID": 17393
+        },
+        {
+            "Room": "Keller",
+            "Name": "Therme",
+            "Aliases": "Heizbetrieb",
+            "Type": "switch",
+            "StateVariableID": 31029,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Keller",
+            "Name": "Trockner",
+            "Aliases": "Wäschetrockner",
+            "Type": "switch",
+            "StateVariableID": 40179,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false,
+            "PowerVariableID": 46928,
+            "EnergyVariableID": 39246
+        },
+        {
+            "Room": "Keller",
+            "Name": "Warmwasserpumpe",
+            "Aliases": "Zirkulationspumpe",
+            "Type": "switch",
+            "StateVariableID": 32522,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Keller",
+            "Name": "Waschmaschine",
+            "Aliases": "",
+            "Type": "switch",
+            "StateVariableID": 41006,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false,
+            "PowerVariableID": 29351,
+            "EnergyVariableID": 41402
+        },
+        {
+            "Room": "Keller",
+            "Name": "Weinkühlschrank",
+            "Aliases": "Weinkühler",
+            "Type": "switch",
+            "StateVariableID": 58967,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": true,
+            "PowerVariableID": 25376,
+            "EnergyVariableID": 36893
+        },
+        {
+            "Room": "Keller",
+            "Name": "alle Rauchmelder",
+            "Aliases": "Rauchmelder-Schalter",
+            "Type": "switch",
+            "StateVariableID": 52060,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Keller",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 26722,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Keller",
+            "Name": "Fenster",
+            "Aliases": "Kellerfenster",
+            "Type": "window",
+            "StateVariableID": 25360,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Küche",
+            "Name": "Rollladen",
+            "Aliases": "Rollo",
+            "Type": "blind",
+            "StateVariableID": 0,
+            "LevelVariableID": 33220,
+            "Invert": false,
+            "ReadOnly": false,
+            "MovingVariableID": 39980
+        },
+        {
+            "Room": "Küche",
+            "Name": "Luftfeuchte",
+            "Aliases": "Feuchtigkeit",
+            "Type": "humidity",
+            "StateVariableID": 44454,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Küche",
+            "Name": "Arbeitslicht",
+            "Aliases": "Arbeitsfläche",
+            "Type": "light",
+            "StateVariableID": 39283,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Küche",
+            "Name": "Deckenlicht",
+            "Aliases": "Decke",
+            "Type": "light",
+            "StateVariableID": 49127,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Küche",
+            "Name": "Tischlicht",
+            "Aliases": "Licht über dem Tisch",
+            "Type": "light",
+            "StateVariableID": 10021,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Küche",
+            "Name": "Bewegungsmelder",
+            "Aliases": "",
+            "Type": "presence",
+            "StateVariableID": 53958,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Küche",
+            "Name": "Dunstabzug",
+            "Aliases": "Dunstabzugshaube",
+            "Type": "switch",
+            "StateVariableID": 28107,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false,
+            "PowerVariableID": 38565,
+            "EnergyVariableID": 42446
+        },
+        {
+            "Room": "Küche",
+            "Name": "Fußbodenheizung",
+            "Aliases": "",
+            "Type": "switch",
+            "StateVariableID": 37389,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Küche",
+            "Name": "Spülmaschine",
+            "Aliases": "Geschirrspüler",
+            "Type": "switch",
+            "StateVariableID": 23567,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false,
+            "PowerVariableID": 42418,
+            "EnergyVariableID": 45489
+        },
+        {
+            "Room": "Küche",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 36203,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Küche",
+            "Name": "Fenster rechts",
+            "Aliases": "",
+            "Type": "window",
+            "StateVariableID": 58059,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Küche oben",
+            "Name": "Luftfeuchte",
+            "Aliases": "Feuchtigkeit",
+            "Type": "humidity",
+            "StateVariableID": 44964,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Küche oben",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 55817,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Musikzimmer",
+            "Name": "Rollladen",
+            "Aliases": "Rollo",
+            "Type": "blind",
+            "StateVariableID": 0,
+            "LevelVariableID": 32004,
+            "Invert": false,
+            "ReadOnly": false,
+            "MovingVariableID": 50725
+        },
+        {
+            "Room": "Musikzimmer",
+            "Name": "Luftfeuchte",
+            "Aliases": "Feuchtigkeit",
+            "Type": "humidity",
+            "StateVariableID": 54999,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Musikzimmer",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 41945,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Musikzimmer",
+            "Name": "Fenster links",
+            "Aliases": "",
+            "Type": "window",
+            "StateVariableID": 18510,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Musikzimmer",
+            "Name": "Fenster rechts",
+            "Aliases": "",
+            "Type": "window",
+            "StateVariableID": 34463,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Schlafen",
+            "Name": "Rollladen",
+            "Aliases": "Rollladen Süd, Rollo",
+            "Type": "blind",
+            "StateVariableID": 0,
+            "LevelVariableID": 13137,
+            "Invert": false,
+            "ReadOnly": false,
+            "MovingVariableID": 43458
+        },
+        {
+            "Room": "Schlafen",
+            "Name": "Luftfeuchte",
+            "Aliases": "Feuchtigkeit",
+            "Type": "humidity",
+            "StateVariableID": 39153,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Schlafen",
+            "Name": "Deckenlicht",
+            "Aliases": "Decke, Deckenbeleuchtung",
+            "Type": "light",
+            "StateVariableID": 57575,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Schlafen",
+            "Name": "Schranklicht",
+            "Aliases": "Licht begehbarer Schrank, Schrank",
+            "Type": "light",
+            "StateVariableID": 48033,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Schlafen",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 41417,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Schlafen",
+            "Name": "Fenster links",
+            "Aliases": "Südfenster links",
+            "Type": "window",
+            "StateVariableID": 50333,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Schlafen",
+            "Name": "Fenster rechts",
+            "Aliases": "Südfenster rechts",
+            "Type": "window",
+            "StateVariableID": 10135,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Atelier",
+            "Name": "Fenstertür",
+            "Aliases": "Tür",
+            "Type": "door",
+            "StateVariableID": 34067,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Atelier",
+            "Name": "Luftfeuchte",
+            "Aliases": "Feuchtigkeit",
+            "Type": "humidity",
+            "StateVariableID": 34919,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Atelier",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 30145,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Atelier",
+            "Name": "Fenster links",
+            "Aliases": "",
+            "Type": "window",
+            "StateVariableID": 51361,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Atelier",
+            "Name": "Fenster rechts",
+            "Aliases": "",
+            "Type": "window",
+            "StateVariableID": 27724,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wintergarten",
+            "Name": "Terrassentür",
+            "Aliases": "Tür, Wintergartentür",
+            "Type": "door",
+            "StateVariableID": 49823,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wintergarten",
+            "Name": "Luftfeuchte",
+            "Aliases": "Feuchtigkeit",
+            "Type": "humidity",
+            "StateVariableID": 28691,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wintergarten",
+            "Name": "Deckenleuchte",
+            "Aliases": "Deckenlicht, Decke",
+            "Type": "light",
+            "StateVariableID": 0,
+            "LevelVariableID": 49785,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wintergarten",
+            "Name": "Präsenzmelder",
+            "Aliases": "Bewegungsmelder",
+            "Type": "presence",
+            "StateVariableID": 28831,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wintergarten",
+            "Name": "Fußbodenheizung",
+            "Aliases": "",
+            "Type": "switch",
+            "StateVariableID": 31047,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Wintergarten",
+            "Name": "Heizkörper",
+            "Aliases": "Temperatur am Heizkörper",
+            "Type": "temperature",
+            "StateVariableID": 32185,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wintergarten",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 19960,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wintergarten",
+            "Name": "Fenster",
+            "Aliases": "",
+            "Type": "window",
+            "StateVariableID": 28760,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Rollladen Nachbarseite",
+            "Aliases": "Rollo Nachbarseite",
+            "Type": "blind",
+            "StateVariableID": 0,
+            "LevelVariableID": 43178,
+            "Invert": false,
+            "ReadOnly": false,
+            "MovingVariableID": 16607
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Rollladen Sportplatzseite",
+            "Aliases": "Rollo Sportplatzseite",
+            "Type": "blind",
+            "StateVariableID": 0,
+            "LevelVariableID": 38528,
+            "Invert": false,
+            "ReadOnly": false,
+            "MovingVariableID": 46458
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Rollladen Terrasse",
+            "Aliases": "Terrassentür, Rollo Terrasse",
+            "Type": "blind",
+            "StateVariableID": 0,
+            "LevelVariableID": 36600,
+            "Invert": false,
+            "ReadOnly": false,
+            "MovingVariableID": 11379
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Luftfeuchte",
+            "Aliases": "Feuchtigkeit",
+            "Type": "humidity",
+            "StateVariableID": 17776,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Blumenfenster",
+            "Aliases": "Licht Blumenfenster",
+            "Type": "light",
+            "StateVariableID": 31482,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Esstischlampe",
+            "Aliases": "Esstisch",
+            "Type": "light",
+            "StateVariableID": 0,
+            "LevelVariableID": 59895,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Sitzecke",
+            "Aliases": "Schiene, Licht Sitzecke",
+            "Type": "light",
+            "StateVariableID": 0,
+            "LevelVariableID": 25219,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Stehlampe",
+            "Aliases": "Stehleuchte",
+            "Type": "light",
+            "StateVariableID": 34442,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Strahler Blumenfenster",
+            "Aliases": "Deckenstrahler Blumenfenster",
+            "Type": "light",
+            "StateVariableID": 0,
+            "LevelVariableID": 39677,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Strahler Fernseher",
+            "Aliases": "Deckenstrahler Fernseher, Strahler TV",
+            "Type": "light",
+            "StateVariableID": 0,
+            "LevelVariableID": 13177,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Strahler Wandschrank",
+            "Aliases": "Deckenstrahler Wandschrank",
+            "Type": "light",
+            "StateVariableID": 0,
+            "LevelVariableID": 59505,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Strahler Wintergartentür",
+            "Aliases": "Deckenstrahler Wintergartentür, Strahler Tür",
+            "Type": "light",
+            "StateVariableID": 0,
+            "LevelVariableID": 41031,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Steckdose Fernseher",
+            "Aliases": "Steckdose TV",
+            "Type": "socket",
+            "StateVariableID": 48151,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false,
+            "PowerVariableID": 32163,
+            "EnergyVariableID": 37729
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Steckdose Lautsprecher",
+            "Aliases": "Steckdose LS",
+            "Type": "socket",
+            "StateVariableID": 51848,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Steckdose Receiver",
+            "Aliases": "Steckdose AV, Steckdose Verstärker",
+            "Type": "socket",
+            "StateVariableID": 51785,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Fußbodenheizung",
+            "Aliases": "",
+            "Type": "switch",
+            "StateVariableID": 46802,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 38498,
+            "LevelVariableID": 0,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Bad oben",
+            "Name": "Rollladen",
+            "Aliases": "Dachfensterrollladen",
+            "Type": "blind",
+            "StateVariableID": 0,
+            "LevelVariableID": 47677,
+            "MovingVariableID": 44396,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Treppenhaus",
+            "Name": "Rollladen",
+            "Aliases": "Dachfensterrollladen",
+            "Type": "blind",
+            "StateVariableID": 0,
+            "LevelVariableID": 21760,
+            "MovingVariableID": 35725,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Dachboden",
+            "Name": "Rollladen",
+            "Aliases": "Dachfensterrollladen",
+            "Type": "blind",
+            "StateVariableID": 0,
+            "LevelVariableID": 41716,
+            "MovingVariableID": 15932,
+            "Invert": false,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Flur",
+            "Name": "Fenster",
+            "Aliases": "Flurfenster",
+            "Type": "window",
+            "StateVariableID": 0,
+            "LevelVariableID": 20009,
+            "MovingVariableID": 20675,
+            "Invert": false,
+            "Tilt": true,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Fenster Nachbarseite",
+            "Aliases": "",
+            "Type": "window",
+            "StateVariableID": 0,
+            "LevelVariableID": 10517,
+            "MovingVariableID": 41069,
+            "Invert": false,
+            "Tilt": true,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Fenster Sportplatzseite",
+            "Aliases": "",
+            "Type": "window",
+            "StateVariableID": 0,
+            "LevelVariableID": 32587,
+            "MovingVariableID": 26483,
+            "Invert": false,
+            "Tilt": true,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Küche",
+            "Name": "Fenster links",
+            "Aliases": "",
+            "Type": "window",
+            "StateVariableID": 0,
+            "LevelVariableID": 57075,
+            "MovingVariableID": 46395,
+            "Invert": false,
+            "Tilt": true,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Bad",
+            "Name": "Fenster",
+            "Aliases": "Badfenster",
+            "Type": "window",
+            "StateVariableID": 0,
+            "LevelVariableID": 24234,
+            "MovingVariableID": 46693,
+            "Invert": false,
+            "Tilt": true,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Schlafen",
+            "Name": "Westfenster",
+            "Aliases": "Fenster West",
+            "Type": "window",
+            "StateVariableID": 0,
+            "LevelVariableID": 22996,
+            "MovingVariableID": 27170,
+            "Invert": false,
+            "Tilt": true,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Keller",
+            "Name": "Wärmepumpe",
+            "Aliases": "Heizung, WP",
+            "Type": "appliance",
+            "StateVariableID": 1,
+            "LevelVariableID": 1,
+            "MovingVariableID": 1,
+            "StopVariableID": 1,
+            "PowerVariableID": 10025,
+            "EnergyVariableID": 20404,
+            "Invert": false,
+            "Tilt": false,
+            "ReadOnly": true
+        },
+        {
+            "Aliases": "Thermostat, Heizkörper",
+            "Invert": false,
+            "ReadOnly": false,
+            "Tilt": false,
+            "StateVariableID": 41351,
+            "LevelVariableID": 1,
+            "MovingVariableID": 1,
+            "StopVariableID": 1,
+            "PowerVariableID": 1,
+            "EnergyVariableID": 1,
+            "SetpointVariableID": 10028,
+            "Room": "Gast",
+            "Name": "Heizung",
+            "Type": "thermostat"
+        },
+        {
+            "Aliases": "Wandthermostat",
+            "Invert": false,
+            "ReadOnly": false,
+            "Tilt": false,
+            "StateVariableID": 19960,
+            "LevelVariableID": 1,
+            "MovingVariableID": 1,
+            "StopVariableID": 1,
+            "PowerVariableID": 1,
+            "EnergyVariableID": 1,
+            "SetpointVariableID": 11093,
+            "Room": "Wintergarten",
+            "Name": "Heizung",
+            "Type": "thermostat"
+        }
+    ]
+}

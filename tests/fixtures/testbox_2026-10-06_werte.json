@@ -1,0 +1,220 @@
+{
+    "quelle": "Testbox 9.1 rust-3e2e0eeb",
+    "zeit": "2026-10-06T15:38:50+02:00",
+    "variablen": {
+        "20946": {
+            "name": "Status",
+            "instanz": "Hue Aurelle",
+            "typ": 0,
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "darstellung": {
+                "PRESENTATION": "{60AE6B26-B3E2-BDB1-A3A1-BE232940664B}"
+            }
+        },
+        "50038": {
+            "name": "Level",
+            "instanz": "Hue Aurelle",
+            "typ": 1,
+            "wert": 254,
+            "formatiert": "100 %",
+            "aktion": true,
+            "darstellung": {
+                "CUSTOM_GRADIENT": "[]",
+                "GRADIENT_TYPE": 0,
+                "ICON": "",
+                "INTERVALS": "[]",
+                "INTERVALS_ACTIVE": false,
+                "MAX": 254,
+                "MIN": 1,
+                "PERCENTAGE": true,
+                "PREFIX": "",
+                "PRESENTATION": "{6B9CAEEC-5958-C223-30F7-BD36569FC57A}",
+                "STEP_SIZE": 5,
+                "SUFFIX": " %",
+                "THOUSANDS_SEPARATOR": "",
+                "USAGE_TYPE": 2
+            }
+        },
+        "53880": {
+            "name": "Status",
+            "instanz": "Ein/Aus Steckdose",
+            "typ": 0,
+            "wert": true,
+            "formatiert": "An",
+            "aktion": true,
+            "darstellung": {
+                "PRESENTATION": "{60AE6B26-B3E2-BDB1-A3A1-BE232940664B}"
+            }
+        },
+        "36578": {
+            "name": "Wohnzimmer.Licht.Esstisch",
+            "instanz": "Wohnzimmer.Licht.Esstisch",
+            "typ": 0,
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "darstellung": {
+                "PRESENTATION": "{60AE6B26-B3E2-BDB1-A3A1-BE232940664B}"
+            }
+        },
+        "40438": {
+            "name": "Ein",
+            "instanz": "WLED Master (WLED Bumas)",
+            "typ": 0,
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "darstellung": {
+                "PRESENTATION": "{60AE6B26-B3E2-BDB1-A3A1-BE232940664B}"
+            }
+        },
+        "30690": {
+            "name": "Helligkeit",
+            "instanz": "WLED Master (WLED Bumas)",
+            "typ": 1,
+            "wert": 71,
+            "formatiert": "27 %",
+            "aktion": true,
+            "darstellung": {
+                "MAX": 255,
+                "MIN": 0,
+                "PERCENTAGE": true,
+                "PRESENTATION": "{6B9CAEEC-5958-C223-30F7-BD36569FC57A}",
+                "STEP_SIZE": 1,
+                "SUFFIX": " %",
+                "USAGE_TYPE": 2
+            }
+        },
+        "49916": {
+            "name": "Power",
+            "instanz": "Denon Wohnzimmer",
+            "typ": 0,
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "darstellung": {
+                "ICON": false,
+                "PRESENTATION": "{60AE6B26-B3E2-BDB1-A3A1-BE232940664B}"
+            }
+        },
+        "45892": {
+            "name": "Status",
+            "instanz": "Kontakt Sensor",
+            "typ": 0,
+            "wert": false,
+            "formatiert": "Geöffnet",
+            "aktion": false,
+            "darstellung": {
+                "OPTIONS": "[{\"Caption\":\"Geschlossen\",\"Color\":-1,\"IconActive\":false,\"IconValue\":\"\",\"Value\":true},{\"Caption\":\"Geöffnet\",\"Color\":-1,\"IconActive\":false,\"IconValue\":\"\",\"Value\":false}]",
+                "PRESENTATION": "{3319437D-7CDE-699D-750A-3C6A3841FA75}"
+            }
+        },
+        "27044": {
+            "name": "Status",
+            "instanz": "Wasserleck Sensor",
+            "typ": 0,
+            "wert": false,
+            "formatiert": "Kein Leck",
+            "aktion": false,
+            "darstellung": {
+                "OPTIONS": "[{\"Caption\":\"Leck erkannt\",\"Color\":-1,\"IconActive\":false,\"IconValue\":\"\",\"Value\":true},{\"Caption\":\"Kein Leck\",\"Color\":-1,\"IconActive\":false,\"IconValue\":\"\",\"Value\":false}]",
+                "PRESENTATION": "{3319437D-7CDE-699D-750A-3C6A3841FA75}"
+            }
+        },
+        "16982": {
+            "name": "Anwesenheit",
+            "instanz": "Anwesenheitssensor",
+            "typ": 0,
+            "wert": true,
+            "formatiert": "An",
+            "aktion": false,
+            "darstellung": {
+                "PRESENTATION": "{3319437D-7CDE-699D-750A-3C6A3841FA75}"
+            }
+        },
+        "30689": {
+            "name": "Anwesenheit",
+            "instanz": "Sensor Gast",
+            "typ": 0,
+            "wert": true,
+            "formatiert": "An",
+            "aktion": false,
+            "darstellung": {
+                "PRESENTATION": "{3319437D-7CDE-699D-750A-3C6A3841FA75}"
+            }
+        },
+        "46546": {
+            "name": "Temperatur",
+            "instanz": "Luftqualitätssensor",
+            "typ": 2,
+            "wert": 20.84,
+            "formatiert": "20.84 °C",
+            "aktion": false,
+            "darstellung": {
+                "MAX": 70,
+                "MIN": -20,
+                "PRESENTATION": "{3319437D-7CDE-699D-750A-3C6A3841FA75}",
+                "SUFFIX": " °C",
+                "USAGE_TYPE": 1
+            }
+        },
+        "40392": {
+            "name": "Luftfeuchtigkeit",
+            "instanz": "Luftqualitätssensor",
+            "typ": 2,
+            "wert": 61.29,
+            "formatiert": "61.29 %",
+            "aktion": false,
+            "darstellung": {
+                "MAX": 100,
+                "MIN": 0,
+                "PRESENTATION": "{3319437D-7CDE-699D-750A-3C6A3841FA75}",
+                "SUFFIX": " %"
+            }
+        },
+        "33071": {
+            "name": "Temperatur",
+            "instanz": "Temperatursensor",
+            "typ": 2,
+            "wert": 23.74,
+            "formatiert": "23.74 °C",
+            "aktion": false,
+            "darstellung": {
+                "MAX": 125,
+                "MIN": -40,
+                "PRESENTATION": "{3319437D-7CDE-699D-750A-3C6A3841FA75}",
+                "SUFFIX": " °C",
+                "USAGE_TYPE": 1
+            }
+        },
+        "44040": {
+            "name": "Luftfeuchtigkeit",
+            "instanz": "Luftfeuchtigkeitssensor",
+            "typ": 2,
+            "wert": 53.78,
+            "formatiert": "53.78 %",
+            "aktion": false,
+            "darstellung": {
+                "MAX": 100,
+                "MIN": 0,
+                "PRESENTATION": "{3319437D-7CDE-699D-750A-3C6A3841FA75}",
+                "SUFFIX": " %"
+            }
+        },
+        "19090": {
+            "name": "Luftqualität",
+            "instanz": "Luftqualitätssensor",
+            "typ": 1,
+            "wert": 1,
+            "formatiert": "Gut",
+            "aktion": false,
+            "darstellung": {
+                "INTERVALS": "[{\"ColorActive\":false,\"ColorValue\":-1,\"ConstantActive\":true,\"ConstantValue\":\"Unbekannt\",\"ConversionFactor\":1.0,\"DigitsActive\":false,\"IntervalMaxValue\":0,\"IntervalMinValue\":0,\"PrefixActive\":false,\"SuffixActive\":false},{\"ColorActive\":true,\"ColorValue\":5238828,\"ConstantActive\":true,\"ConstantValue\":\"Gut\",\"ConversionFactor\":1.0,\"DigitsActive\":false,\"IntervalMaxValue\":1,\"IntervalMinValue\":1,\"PrefixActive\":false,\"SuffixActive\":false},{\"ColorActive\":true,\"ColorValue\":13565952,\"ConstantActive\":true,\"ConstantValue\":\"Befriedigend\",\"ConversionFactor\":1.0,\"DigitsActive\":false,\"IntervalMaxValue\":2,\"IntervalMinValue\":2,\"PrefixActive\":false,\"SuffixActive\":false},{\"ColorActive\":true,\"ColorValue\":16777023,\"ConstantActive\":true,\"ConstantValue\":\"Mäßig\",\"ConversionFactor\":1.0,\"DigitsActive\":false,\"IntervalMaxValue\":3,\"IntervalMinValue\":3,\"PrefixActive\":false,\"SuffixActive\":false},{\"ColorActive\":true,\"ColorValue\":16750848,\"ConstantActive\":true,\"ConstantValue\":\"Schlecht\",\"ConversionFactor\":1.0,\"DigitsActive\":false,\"IntervalMaxValue\":4,\"IntervalMinValue\":4,\"PrefixActive\":false,\"SuffixActive\":false},{\"ColorActive\":true,\"ColorValue\":16022070,\"ConstantActive\":true,\"ConstantValue\":\"Sehr Schlecht\",\"ConversionFactor\":1.0,\"DigitsActive\":false,\"IntervalMaxValue\":5,\"IntervalMinValue\":5,\"PrefixActive\":false,\"SuffixActive\":false},{\"ColorActive\":true,\"ColorValue\":9375511,\"ConstantActive\":true,\"ConstantValue\":\"Extrem Schlecht\",\"ConversionFactor\":1.0,\"DigitsActive\":false,\"IntervalMaxValue\":6,\"IntervalMinValue\":6,\"PrefixActive\":false,\"SuffixActive\":false}]",
+                "INTERVALS_ACTIVE": true,
+                "PRESENTATION": "{3319437D-7CDE-699D-750A-3C6A3841FA75}"
+            }
+        }
+    }
+}

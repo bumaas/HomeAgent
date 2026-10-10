@@ -1,0 +1,12 @@
+{
+  "id": "{89E40AE0-BB2A-40B8-A16F-C9C5FFBFC09F}",
+  "name": "Home Agent",
+  "type": 3,
+  "vendor": "",
+  "aliases": ["Hausagent", "KI-Assistent", "Sprachsteuerung"],
+  "parentRequirements": [],
+  "childRequirements": [],
+  "implemented": [],
+  "prefix": "HAGT",
+  "url": "https://github.com/bumaas/HomeAgent/blob/master/README.md"
+}

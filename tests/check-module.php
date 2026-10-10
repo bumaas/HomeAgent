@@ -1,0 +1,1207 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+ * Das Modul im offiziellen Kernel-Stub (Submodul tests/stubs): Hook-Anmeldung in Create,
+ * Status je nach Konfiguration, Klartext im Log bei fehlerhafter Freigabeliste und die
+ * Skriptfunktion QueryState mit echten Stub-Variablen.
+ */
+
+require __DIR__ . '/pruefen.php';
+require_once __DIR__ . '/stubs/autoload.php';
+require_once dirname(__DIR__) . '/HomeAgent/module.php';
+
+final class HomeAgentHarness extends HomeAgent
+{
+    public const MODULE_ID = '{89E40AE0-BB2A-40B8-A16F-C9C5FFBFC09F}';
+
+    /** @var list<string> */
+    public static array $hooks = [];
+
+    protected function RegisterHook(string $HookPath): bool
+    {
+        self::$hooks[] = $HookPath; // der Stub hat hier nur einen leeren Rumpf
+        return true;
+    }
+
+    public function logs(): array
+    {
+        return IPS\LogServer::getLogMessages((string)$this->InstanceID);
+    }
+
+    /** @var list<array{0: string, 1: string, 2: mixed}> Änderungen am geöffneten Dialog */
+    public array $formUpdates = [];
+
+    protected function UpdateFormField(string $Field, string $Parameter, mixed $Value): bool
+    {
+        $this->formUpdates[] = [$Field, $Parameter, $Value];
+        return true;
+    }
+
+    /** Das Backend, mit dem die Werkzeuge arbeiten (Fahrtmerker im Buffer „Travels“). */
+    public function testBackend(): SymconDeviceBackend
+    {
+        return \Closure::bind(fn (): SymconDeviceBackend => $this->backend(), $this, HomeAgent::class)();
+    }
+}
+
+/** Ergebnis des Aufrufs; null, solange es die Funktion nicht gibt (roter Lauf vor dem Umbau). */
+function oderNull(callable $aufruf): mixed
+{
+    try {
+        return $aufruf();
+    } catch (Error) {
+        return null;
+    }
+}
+
+function neueInstanz(): HomeAgentHarness
+{
+    $id = IPS\ObjectManager::registerObject(1 /* Instance */);
+    IPS\InstanceManager::createInstance($id, [
+        'ModuleID'   => HomeAgentHarness::MODULE_ID,
+        'ModuleName' => 'HomeAgent',
+        'ModuleType' => 3,
+        'Class'      => HomeAgentHarness::class,
+    ]);
+    return IPS\InstanceManager::getInstanceInterface($id);
+}
+
+function variable(int $typ, mixed $wert): int
+{
+    $id = IPS_CreateVariable($typ);
+    SetValue($id, $wert);
+    return $id;
+}
+
+/** Alle Formularelemente, auch die in aufklappbaren Bereichen (ExpansionPanel) und Zeilen (RowLayout). */
+function flach(array $elemente): array
+{
+    $alle = [];
+    foreach ($elemente as $e) {
+        $alle[] = $e;
+        if (is_array($e['items'] ?? null)) {
+            $alle = array_merge($alle, flach($e['items']));
+        }
+    }
+    return $alle;
+}
+
+IPS\Kernel::reset();
+$m = neueInstanz();
+$iid = (int)(new ReflectionProperty(IPSModuleStrict::class, 'InstanceID'))->getValue($m);
+
+pruefe(HomeAgentHarness::$hooks === ['homeagent/' . $iid], 'Create meldet den Hook homeagent/<InstanzID> an: ' . json_encode(HomeAgentHarness::$hooks));
+pruefe($m->GetEndpoint() === '/hook/homeagent/' . $iid, 'GetEndpoint nennt den vollen Pfad');
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 104, 'ohne Token Status 104, nicht aktiv: ' . IPS_GetInstance($iid)['InstanceStatus']);
+
+$licht = variable(VARIABLETYPE_BOOLEAN, true);
+$temperatur = variable(VARIABLETYPE_FLOAT, 21.5);
+IPS_SetProperty($iid, 'Accesses', json_encode([['Name' => 'Test', 'Token' => 'abc-token-0123456789abcdef', 'DefaultRoom' => '', 'ReadOnly' => false, 'InPath' => false]]));
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Küche', 'Name' => 'Deckenlicht', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $licht, 'LevelVariableID' => 1, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Temperatur', 'Aliases' => '', 'Type' => 'temperature', 'StateVariableID' => $temperatur, 'LevelVariableID' => 0, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Token und gültige Liste: aktiv');
+
+pruefe(str_starts_with($m->RunSelfTest(), "OK\n"), 'Selbsttest bei gültiger Konfiguration OK: ' . $m->RunSelfTest());
+
+$text = $m->QueryState('küche', 'light', '', true);
+pruefe(str_starts_with($text, '1 of 1 checked devices active') && str_contains($text, 'Küche | Deckenlicht | light | on'), 'QueryState mit Stub-Variable: ' . $text);
+pruefe(str_contains($m->QueryState('', 'temperature', '', false), '| 21.5'), 'Messwert kommt über GetValueFormatted');
+
+// Schaltende Skriptfunktionen: Die Stub-Variablen haben keine Aktion, also darf nichts geschaltet werden.
+$text = $m->SwitchDevices('Küche', 'light', '', false);
+pruefe(str_starts_with($text, '0 of 1 devices are now off') && str_contains($text, '| cannot be switched'), 'SwitchDevices ohne Aktion: ' . $text);
+pruefe(GetValue($licht) === true, 'die Variable bleibt unverändert');
+pruefe(str_contains($m->SetLevel('', '', 'Deckenlicht', 50.0), 'has no adjustable brightness or position'), 'SetLevel ohne Stufenvariable');
+pruefe(str_starts_with($m->SwitchDevices('', '', '', true), 'Nothing was changed'), 'SwitchDevices ohne Filter ändert nichts');
+pruefe(str_contains($m->RunSelfTest(), 'Note: Küche Deckenlicht has no action'), 'Selbsttest weist auf das nicht schaltbare Licht hin, mit Raum und Name: ' . $m->RunSelfTest());
+
+// Wertebereich: aus der Darstellung, sonst aus dem Legacy-Profil, sonst unbekannt
+$anlage = new SymconDeviceBackend(static fn (string $t): string => $t);
+$stufe = variable(VARIABLETYPE_INTEGER, 254);
+IPS_SetVariableCustomPresentation($stufe, ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'MIN' => 1, 'MAX' => 254, 'PERCENTAGE' => true]);
+$bereich = static fn (?array $r): ?array => $r === null ? null : ['min' => $r['min'], 'max' => $r['max']];
+pruefe($bereich($anlage->range($stufe)) === ['min' => 1.0, 'max' => 254.0], 'Bereich aus der Darstellung (wie Hue Aurelle): ' . json_encode($anlage->range($stufe)));
+IPS_CreateVariableProfile('~Shutter', VARIABLETYPE_INTEGER);
+IPS_SetVariableProfileValues('~Shutter', 0, 100, 1);
+$rollo = variable(VARIABLETYPE_INTEGER, 0);
+IPS_SetVariableCustomProfile($rollo, '~Shutter');
+pruefe($bereich($anlage->range($rollo)) === ['min' => 0.0, 'max' => 100.0], 'Bereich aus dem Legacy-Profil: ' . json_encode($anlage->range($rollo)));
+
+// Rollladenrichtung: die Darstellung Rollladen sagt sie selbst, ein Profil mit „.Reversed“ dreht sie, sonst ist der kleinste Wert offen
+$richtung = static fn (?array $r): ?array => $r === null ? null : ['open' => $r['open'] ?? null, 'closed' => $r['closed'] ?? null, 'source' => $r['source'] ?? null];
+pruefe($richtung($anlage->range($rollo)) === ['open' => 0.0, 'closed' => 100.0, 'source' => 'default'], '~Shutter: kleinster Wert offen: ' . json_encode($anlage->range($rollo)));
+$rolloDarstellung = variable(VARIABLETYPE_INTEGER, 0);
+IPS_SetVariableCustomPresentation($rolloDarstellung, ['PRESENTATION' => VARIABLE_PRESENTATION_SHUTTER, 'USAGE_TYPE' => 0, 'OPEN_OUTSIDE_VALUE' => 100, 'CLOSE_INSIDE_VALUE' => 0]);
+$r = $anlage->range($rolloDarstellung);
+pruefe($richtung($r) === ['open' => 100.0, 'closed' => 0.0, 'source' => 'presentation'] && $bereich($r) === ['min' => 0.0, 'max' => 100.0], 'Darstellung Rollladen liefert Richtung und Bereich (wie beim HomeAssistant-Modul): ' . json_encode($r));
+$lamelle = variable(VARIABLETYPE_INTEGER, 0);
+IPS_SetVariableCustomPresentation($lamelle, ['PRESENTATION' => VARIABLE_PRESENTATION_SHUTTER, 'USAGE_TYPE' => 1, 'OPEN_OUTSIDE_VALUE' => 0, 'CLOSE_INSIDE_VALUE' => 100]);
+pruefe(($anlage->range($lamelle)['source'] ?? null) === 'rotation', 'Darstellung Rollladen mit Rotation wird als solche erkannt: ' . json_encode($anlage->range($lamelle)));
+$ohneWerte = variable(VARIABLETYPE_INTEGER, 0);
+IPS_SetVariableCustomPresentation($ohneWerte, ['PRESENTATION' => VARIABLE_PRESENTATION_SHUTTER, 'USAGE_TYPE' => 0, 'OPEN_OUTSIDE_VALUE' => 5, 'CLOSE_INSIDE_VALUE' => 5]);
+pruefe($anlage->range($ohneWerte) === null, 'Darstellung Rollladen ohne Spanne: Bereich unbekannt');
+IPS_CreateVariableProfile('Rollladen.Reversed', VARIABLETYPE_FLOAT);
+IPS_SetVariableProfileValues('Rollladen.Reversed', 0, 1, 0);
+$rolloHm = variable(VARIABLETYPE_FLOAT, 0.0);
+IPS_SetVariableCustomProfile($rolloHm, 'Rollladen.Reversed');
+$r = $anlage->range($rolloHm);
+pruefe($richtung($r) === ['open' => 1.0, 'closed' => 0.0, 'source' => 'reversed'] && ($r['profile'] ?? '') === 'Rollladen.Reversed', 'Profil mit .Reversed (wie Homematic LEVEL): größter Wert offen: ' . json_encode($r));
+pruefe($anlage->range($licht) === null && $anlage->range(59999) === null, 'ohne Bereich und ohne Variable: unbekannt');
+pruefe($anlage->hasAction($licht) === false && $anlage->read(59999) === null, 'keine Aktion, fehlende Variable');
+
+// Profil mit leerem Suffix: Symcon hängt ein Leerzeichen an, die Antwort soll es nicht tragen
+IPS_CreateVariableProfile('Test.Position', VARIABLETYPE_INTEGER);
+IPS_SetVariableProfileText('Test.Position', '', ' ');
+$position = variable(VARIABLETYPE_INTEGER, 5);
+IPS_SetVariableCustomProfile($position, 'Test.Position');
+pruefe(GetValueFormatted($position) === '5 ' && $anlage->read($position)['formatted'] === '5', 'Leerzeichen am Ende des Anzeigetexts entfällt: ' . json_encode($anlage->read($position)));
+
+// Fehlschlag einer Aktion: Das Aktionsskript meldet ihn an die Instanz, das wartende Werkzeug holt ihn ab
+$lesen = new ReflectionMethod(HomeAgent::class, 'readFailure');
+pruefe($lesen->invoke($m, 'a1b2a1b2a1b2') === null, 'ohne Meldung kein Fehlschlag');
+IPS_RequestAction($iid, 'ActionFailed', json_encode(['key' => 'a1b2a1b2a1b2', 'variable' => $licht, 'error' => 'Cannot auto-convert value for parameter VariableValue (stod)']));
+IPS_RequestAction($iid, 'ActionFailed', json_encode(['key' => 'c3d4c3d4c3d4', 'variable' => $temperatur, 'error' => 'No valid action available']));
+pruefe($lesen->invoke($m, 'a1b2a1b2a1b2') === 'Cannot auto-convert value for parameter VariableValue (stod)' && $lesen->invoke($m, 'c3d4c3d4c3d4') === 'No valid action available', 'gemeldete Fehlschläge sind je Auftrag abholbar');
+pruefe(str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Action on variable ' . $licht . ' failed: Cannot auto-convert'), 'jeder Fehlschlag steht im Log');
+$mitInstanz = new SymconDeviceBackend(static fn (string $t): string => $t, $iid, static fn (string $key): ?string => $lesen->invoke($m, $key));
+pruefe($mitInstanz->failure($licht) === null, 'failure() ohne ausgelöste Aktion: nichts');
+// Ein Fehlertext mit ungültigem UTF-8 (Fremdmodul, CP850-Ausgabe unter Windows) muss trotzdem
+// ankommen (Code- und Sicherheitsreview 06.10.2026). Vorher lieferte json_encode im
+// Aktionsskript false, die Meldung wurde als „kein JSON“ abgewiesen und ging verloren.
+$scheitert = variable(VARIABLETYPE_BOOLEAN, false);
+$aktion = IPS_CreateScript(0);
+IPS_SetScriptContent($aktion, '<?php throw new Exception("Gerät meldet: \x81bertragung gestört");');
+IPS_SetVariableCustomAction($scheitert, $aktion);
+try {
+    $mitInstanz->request($scheitert, true);
+    $text = $mitInstanz->failure($scheitert);
+    pruefe(is_string($text) && mb_check_encoding($text, 'UTF-8') && str_contains($text, "\u{FFFD}bertragung gestört"), 'Fehlertext mit ungültigem Byte kommt ersetzt an: ' . json_encode($text));
+} catch (Throwable $e) {
+    pruefe(false, 'Fehlertext mit ungültigem Byte geht verloren: ' . get_class($e) . ' ' . $e->getMessage());
+}
+foreach (['Toggle' => true, 'ActionFailed' => 'kein JSON'] as $ident => $wert) {
+    try {
+        IPS_RequestAction($iid, $ident, $wert);
+        pruefe(false, 'RequestAction ' . $ident . ' hätte eine Warnung geben müssen');
+    } catch (ErrorException $e) {
+        pruefe(str_contains($e->getMessage(), $ident === 'Toggle' ? 'Unknown action "Toggle"' : 'ActionFailed expects'), 'RequestAction ' . $ident . ' wird mit Klartext abgewiesen: ' . $e->getMessage());
+    }
+}
+
+/* --- Zugänge: mehrere Assistenten an einer Instanz, jeder mit eigenem Token ----------------- */
+
+$setze = static function (string $property, array $wert) use ($iid): void {
+    IPS_SetProperty($iid, $property, json_encode($wert));
+    IPS_ApplyChanges($iid);
+};
+$zugang = static fn (string $name, string $token, string $raum = '', bool $nurLesen = false, bool $imPfad = false): array => ['Name' => $name, 'Token' => $token, 'DefaultRoom' => $raum, 'ReadOnly' => $nurLesen, 'InPath' => $imPfad];
+$status = static fn (): int => IPS_GetInstance($iid)['InstanceStatus'];
+$logText = static fn (): string => implode("\n", array_column($m->logs(), 'Message'));
+$geraeteStart = json_decode(IPS_GetProperty($iid, 'Devices'), true);
+
+$setze('Accesses', [$zugang('Leer', '')]);
+pruefe($status() === 104, 'ein Zugang ohne Token zählt nicht: Status 104, nicht ' . $status());
+$setze('Accesses', [$zugang('A', 'abc-token-0123456789abcdef'), $zugang('', 'def-token-0123456789abcdef'), $zugang('C', ''), $zugang('D', 'abc-token-0123456789abcdef'), $zugang('E', 'xyz-token-0123456789abcdef', 'Dachboden')]);
+pruefe($status() === 201, 'fehlerhafte Zugänge: Status 201, nicht ' . $status());
+$log = $logText();
+pruefe(str_contains($log, 'Access without a name: name is missing') && str_contains($log, 'Access "C": token is missing') && str_contains($log, 'Access "D": token is used twice'), 'Log nennt Zugänge ohne Name, ohne Token und mit doppeltem Token: ' . $log);
+pruefe(str_contains($log, 'Access "E": default room "Dachboden" is neither in the room list nor the room of a device'), 'unbekannter Standardraum wird benannt');
+pruefe(!str_contains($log, 'abc-token-0123456789abcdef') && !str_contains($log, 'xyz-token-0123456789abcdef'), 'kein Token steht im Log');
+
+$zugaenge = [$zugang('Küche', 'abc-token-0123456789abcdef', 'Küche'), $zugang('Gast', 'gast-token-0123456789abcdef', '', true), $zugang('HA', 'pfad-token-0123456789abcdef', '', false, true)];
+$setze('Accesses', $zugaenge);
+pruefe($status() === IS_ACTIVE, 'drei gültige Zugänge, der Standardraum ist der Raum eines Geräts: aktiv, nicht ' . $status());
+
+$werkzeuge = new ReflectionMethod(HomeAgent::class, 'tools');
+$namen = static fn (?array $z): array => array_column($werkzeuge->invoke($m, $z), 'name');
+pruefe($namen($zugaenge[1]) === ['get_state'], 'ein Nur-Lese-Zugang sieht nur get_state: ' . implode(', ', $namen($zugaenge[1])));
+pruefe($namen($zugaenge[0]) === ['get_state', 'set_state'] && $namen(null) === $namen($zugaenge[0]), 'ein voller Zugang sieht alle Werkzeuge: ' . implode(', ', $namen($zugaenge[0])));
+$aufruf = new ReflectionMethod(HomeAgent::class, 'callTool');
+$r = $aufruf->invoke($m, 'set_state', ['room' => 'Küche', 'command' => 'off'], $zugaenge[1]);
+pruefe($r['isError'] && str_contains($r['text'], 'Unknown tool') && GetValue($licht) === true, 'ein schreibender Aufruf über den Nur-Lese-Zugang wird abgewiesen: ' . $r['text']);
+$r = $aufruf->invoke($m, 'get_state', ['type' => 'temperature'], $zugaenge[1]);
+pruefe(!$r['isError'] && str_starts_with($r['text'], '1 device(s) found (type=temperature).'), 'lesen darf der Nur-Lese-Zugang: ' . $r['text']);
+$r = $aufruf->invoke($m, 'get_state', ['type' => 'temperature'], $zugaenge[0]);
+pruefe(str_starts_with($r['text'], '1 device(s) found (room=Küche, type=temperature).'), 'der Standardraum des Zugangs gilt im Werkzeug: ' . $r['text']);
+pruefe(str_starts_with($m->QueryState('', 'temperature', '', false), '1 device(s) found (type=temperature).'), 'Skriptfunktionen haben keinen Standardraum');
+$info = new ReflectionMethod(HomeAgent::class, 'serverInfo');
+pruefe(str_ends_with($info->invoke($m, $zugaenge[0])['instructions'], ' You are in room Küche. Commands and questions without a room mean this room; use room=all for the whole house.'), 'instructions nennen den Standardraum: ' . $info->invoke($m, $zugaenge[0])['instructions']);
+pruefe(!str_contains($info->invoke($m, $zugaenge[1])['instructions'], 'You are in room') && !str_contains($info->invoke($m, null)['instructions'], 'You are in room'), 'ohne Standardraum kein solcher Satz');
+// HA Assist am nuc (09.10.2026): Nach „fährt“ sagte das Modell „ist jetzt ganz aufgemacht“.
+pruefe(str_contains($info->invoke($m, null)['instructions'], '"moving" or "command sent" means the device has not arrived yet; then say that it is still moving.'), 'instructions erklären „fährt“: ' . $info->invoke($m, null)['instructions']);
+// Zwei Instanzen hießen in HA gleich („symcon-voicecontrol“); der Servername trägt jetzt den Namen der Instanz.
+IPS_SetName($iid, 'Sprachsteuerung (Test)');
+pruefe($info->invoke($m, null)['name'] === 'Symcon Sprachsteuerung (Test)', 'der Servername nennt die Instanz: ' . $info->invoke($m, null)['name']);
+$schema = array_column($werkzeuge->invoke($m, $zugaenge[0]), 'inputSchema', 'name');
+pruefe(str_contains($schema['set_state']['properties']['room']['description'] ?? '', 'the room Küche is meant; "all" means the whole house') && str_contains($schema['get_state']['properties']['room']['description'], 'the room Küche is meant'), 'die Beschreibung von room nennt Standardraum und all: ' . ($schema['set_state']['properties']['room']['description'] ?? '?'));
+$schema = array_column($werkzeuge->invoke($m, null), 'inputSchema', 'name');
+pruefe($schema['get_state']['properties']['room']['description'] === 'Room as the user calls it, e.g. Küche. Empty = all rooms.' && ($schema['set_state']['properties']['room']['description'] ?? '') === 'Room as the user calls it, e.g. Küche.', 'ohne Standardraum bleiben die Beschreibungen, wie sie waren');
+pruefe(!isset($schema['get_state']['properties']['floor']) && !isset($schema['set_state']['properties']['floor']), 'ohne Etagen gibt es den Parameter floor nicht');
+$test = $m->RunSelfTest();
+pruefe(str_contains($test, 'Note: access "HA" also accepts its token as the last part of the address') && !str_contains($test, 'access "Küche" also'), 'Selbsttest nennt den Zugang mit Token im Pfad: ' . $test);
+
+$formular = json_decode($m->GetConfigurationForm(), true);
+$benannt = array_column(array_filter(flach($formular['elements']), static fn (array $e): bool => isset($e['name'])), null, 'name');
+pruefe(isset($benannt['Accesses'], $benannt['Rooms']) && !isset($benannt['Token']) && !isset($benannt['AllowTokenInPath']) && !isset($benannt['EndpointWithToken']), 'Formular: Listen für Zugänge und Räume statt des einen Tokens: ' . implode(', ', array_keys($benannt)));
+pruefe(array_column($benannt['Accesses']['columns'] ?? [], 'name') === ['Name', 'Token', 'DefaultRoom', 'ReadOnly', 'InPath'] && (array_column($benannt['Accesses']['columns'] ?? [], 'edit', 'name')['Token']['type'] ?? '') === 'PasswordTextBox', 'Spalten der Zugänge, das Token als Kennwortfeld');
+pruefe(array_column($benannt['Rooms']['columns'] ?? [], 'name') === ['Name', 'Aliases', 'Floor'], 'Spalten der Raumliste');
+pruefe(str_contains($m->GetConfigurationForm(), '\/<Token>') && !str_contains($m->GetConfigurationForm(), 'gast-token-0123456789abcdef'), 'das Formular nennt die Adresse nur mit Platzhalter, kein echtes Token');
+
+/* --- Raumliste mit Aliasen und Etagen -------------------------------------------------------- */
+
+$setze('Rooms', [['Name' => 'Küche', 'Aliases' => 'Kochbereich', 'Floor' => 'EG'], ['Name' => '', 'Aliases' => '', 'Floor' => ''], ['Name' => 'küche', 'Aliases' => '', 'Floor' => '']]);
+pruefe($status() === 201 && str_contains($logText(), 'Room without a name: name is missing') && str_contains($logText(), 'Room "küche": name is used twice'), 'fehlerhafte Raumliste: Status 201 mit Klartext: ' . $status());
+$setze('Rooms', [['Name' => 'Küche', 'Aliases' => 'Kochbereich', 'Floor' => 'EG'], ['Name' => 'Bad', 'Aliases' => '', 'Floor' => 'OG']]);
+pruefe($status() === IS_ACTIVE, 'gültige Raumliste: aktiv');
+$schema = array_column($werkzeuge->invoke($m, null), 'inputSchema', 'name');
+pruefe(str_ends_with($schema['get_state']['properties']['floor']['description'] ?? '', 'Known floors: EG, OG.') && isset($schema['set_state']['properties']['floor']), 'mit Etagen nennen die Werkzeuge den Parameter floor samt den bekannten Etagen');
+pruefe(str_contains(array_column($werkzeuge->invoke($m, null), 'description', 'name')['set_state'] ?? '', 'Give at least one of room, floor, type and name.'), 'die Auswahlregel nennt die Etage');
+$r = $aufruf->invoke($m, 'get_state', ['floor' => 'eg'], null);
+pruefe(str_starts_with($r['text'], '2 device(s) found (floor=eg).'), 'Etage über das Werkzeug: ' . $r['text']);
+pruefe(str_starts_with($m->QueryState('Kochbereich', 'light', '', false), '1 device(s) found (room=Kochbereich, type=light).'), 'Raum-Alias auch in der Skriptfunktion: ' . $m->QueryState('Kochbereich', 'light', '', false));
+$setze('Accesses', [$zugang('Küche', 'abc-token-0123456789abcdef', 'Kochbereich')]);
+pruefe($status() === IS_ACTIVE, 'der Standardraum darf ein Alias der Raumliste sein');
+
+// Selbsttest: Tippfehler im Raum und Räume ohne Gerät als Hinweis, kein Fehler. „Nur abfragen“ je Gerät.
+$setze('Devices', array_merge($geraeteStart, [['Room' => 'Flur', 'Name' => 'Flurlicht', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $licht, 'LevelVariableID' => 0, 'Invert' => false, 'ReadOnly' => true]]));
+$test = $m->RunSelfTest();
+pruefe(str_starts_with($test, "OK\n") && str_contains($test, 'Note: room "Flur" (1 device(s)) is not in the room list') && str_contains($test, 'Note: room "Bad" of the room list has no device') && !str_contains($test, 'room "Küche"'), 'Selbsttest weist auf Räume außerhalb der Liste und Räume ohne Gerät hin: ' . $test);
+pruefe(str_contains($test, 'Note: Küche Deckenlicht has no action') && !str_contains($test, 'Flurlicht has no action'), 'bei „nur abfragen“ entfällt der Hinweis auf die fehlende Aktion');
+pruefe($m->SwitchDevices('', '', 'Flurlicht', false) === 'Nothing was changed: the devices matching name=Flurlicht can only be read.', '„nur abfragen“ bei Namensnennung: ' . $m->SwitchDevices('', '', 'Flurlicht', false));
+pruefe(str_contains($m->QueryState('', '', 'Flurlicht', false), 'Flur | Flurlicht | light | on'), 'abfragen lässt sich das Gerät');
+
+$setze('Rooms', []);
+$setze('Devices', $geraeteStart);
+$setze('Accesses', [$zugang('Test', 'abc-token-0123456789abcdef')]);
+pruefe($status() === IS_ACTIVE && !str_contains($m->RunSelfTest(), 'room list') && !str_contains($m->RunSelfTest(), 'last part of the address'), 'ohne Raumliste und ohne Pfad-Zugang keine Hinweise dazu');
+
+// Szenen: ein Skript der Anlage, gestartet über RunScene
+$skript = IPS_CreateScript(SCRIPTTYPE_PHP);
+IPS_SetProperty($iid, 'Scenes', json_encode([['Room' => 'Küche', 'Name' => 'Kochen', 'Aliases' => 'Kochlicht', 'ScriptID' => $skript]]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'gültige Szenenliste: aktiv');
+pruefe($anlage->scriptExists($skript) && !$anlage->scriptExists(59999) && !$anlage->scriptExists(0), 'scriptExists kennt das Skript, 0 und Fremdes nicht');
+pruefe($m->RunScene('', 'kochlicht') === 'Scene "Kochen" was started.', 'RunScene über den Alias: ' . $m->RunScene('', 'kochlicht'));
+pruefe(str_starts_with($m->RunScene('', ''), '1 scene(s) available, none was started') && str_contains($m->RunScene('', ''), "\nKüche | Kochen"), 'RunScene ohne Namen nennt die Szenen: ' . $m->RunScene('', ''));
+pruefe(str_contains($m->RunSelfTest(), '2 released device(s), 1 scene(s), endpoint'), 'Selbsttest zählt die Szenen: ' . $m->RunSelfTest());
+
+/* --- Drei Werkzeuge; das Schema von set_state nennt nur, was ein freigegebenes Gerät kann --- */
+
+$liste = $werkzeuge->invoke($m, null);
+pruefe(array_column($liste, 'name') === ['get_state', 'set_state', 'run_scene'], 'drei Werkzeuge: ' . implode(', ', array_column($liste, 'name')));
+$hinweise = array_column($liste, 'annotations', 'name');
+pruefe(array_unique(array_column($hinweise, 'openWorldHint')) === [false] && count(array_column($hinweise, 'openWorldHint')) === 3, 'alle drei Werkzeuge tragen openWorldHint false: ' . json_encode($hinweise));
+pruefe(($hinweise['get_state']['readOnlyHint'] ?? null) === true && ($hinweise['set_state'] ?? null) === ['readOnlyHint' => false, 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false], 'Annotationen von get_state und set_state: ' . json_encode($hinweise['set_state'] ?? null));
+$stellen = static fn (): ?array => array_column($werkzeuge->invoke($m, null), 'inputSchema', 'name')['set_state'] ?? null;
+$s1 = $stellen();
+pruefe(($s1['properties']['command']['enum'] ?? null) === ['on', 'off'] && !isset($s1['properties']['percent']) && ($s1['properties']['type']['enum'] ?? null) === ['light'], 'nur ein Licht mit Schalter: on und off, kein percent, Typ light: ' . json_encode($s1['properties'] ?? null));
+pruefe(!isset($s1['required']) && ($s1['additionalProperties'] ?? null) === false, 'kein Pflichtfeld im Schema (command oder percent), keine weiteren Felder');
+$r = $aufruf->invoke($m, 'set_state', ['room' => 'Küche', 'command' => 'off'], null);
+pruefe(str_starts_with($r['text'], '0 of 1 devices are now off (room=Küche).') && str_contains($r['text'], '| cannot be switched') && GetValue($licht) === true, 'set_state über das Modul, Stub-Variable ohne Aktion: ' . $r['text']);
+foreach (['switch_device', 'set_level'] as $alt) {
+    $r = $aufruf->invoke($m, $alt, ['room' => 'Küche', 'on' => false, 'percent' => 0], null);
+    pruefe($r['isError'] && str_contains($r['text'], 'Unknown tool'), 'das frühere Werkzeug ' . $alt . ' gibt es nicht mehr: ' . $r['text']);
+}
+pruefe(str_starts_with($m->SwitchDevices('Küche', 'light', '', false), '0 of 1 devices are now off') && str_contains($m->SetLevel('', '', 'Deckenlicht', 50.0), 'has no adjustable brightness or position'), 'die Skriptfunktionen SwitchDevices und SetLevel bleiben');
+
+$setze('Devices', array_merge($geraeteStart, [['Room' => 'Küche', 'Name' => 'Rollladen', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'Invert' => false]]));
+$s2 = $stellen();
+pruefe(($s2['properties']['command']['enum'] ?? null) === ['on', 'off', 'open', 'close'] && isset($s2['properties']['percent']) && ($s2['properties']['type']['enum'] ?? null) === ['light', 'blind'], 'mit Rollladen kommen open, close und percent dazu: ' . json_encode(array_keys($s2['properties'] ?? [])));
+$setze('Devices', [$geraeteStart[1]]);
+pruefe($namen(null) === ['get_state', 'run_scene'], 'ohne schaltbares Gerät gibt es set_state nicht: ' . implode(', ', $namen(null)));
+$setze('Devices', [$geraeteStart[0] + ['ReadOnly' => true], $geraeteStart[1]]);
+pruefe($namen(null) === ['get_state', 'run_scene'], 'auch nicht, wenn alles Schaltbare „nur abfragen“ ist: ' . implode(', ', $namen(null)));
+$setze('Devices', $geraeteStart);
+
+IPS_SetProperty($iid, 'Scenes', json_encode([['Room' => '', 'Name' => '', 'Aliases' => '', 'ScriptID' => 1]]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201, 'fehlerhafte Szenenliste: Status 201');
+$log = implode("\n", array_column($m->logs(), 'Message'));
+pruefe(str_contains($log, 'Scene without a name: name is missing') && str_contains($log, 'Scene without a name: script does not exist'), 'Log nennt die fehlerhafte Szene: ' . $log);
+IPS_SetProperty($iid, 'Scenes', '[]');
+
+/* --- Gerät mit Fähigkeiten: Validierung je Typ ------------------------------------------- */
+
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => $licht, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Lampe', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 0, 'LevelVariableID' => 1, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Dimmer', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $licht, 'LevelVariableID' => 59999, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Tür', 'Aliases' => '', 'Type' => 'door', 'StateVariableID' => $licht, 'LevelVariableID' => 59999, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Temperatur', 'Aliases' => '', 'Type' => 'temperature', 'StateVariableID' => 59998, 'LevelVariableID' => 0, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201, 'Zeilen ohne die Fähigkeit ihres Typs: Status 201');
+$log = implode("\n", array_column($m->logs(), 'Message'));
+pruefe(str_contains($log, 'Device "Rollo" (Küche): no variable selected for Position'), 'Rollladen ohne Position wird benannt: ' . $log);
+pruefe(str_contains($log, 'Device "Lampe" (Küche): no variable selected for Switching state / Brightness'), 'Licht braucht Schaltzustand oder Helligkeit');
+pruefe(str_contains($log, 'Device "Dimmer" (Küche): variable for Brightness does not exist'), 'fehlende Helligkeitsvariable wird benannt');
+pruefe(!str_contains($log, 'Device "Tür"'), 'eine Fähigkeit, die nicht zum Typ gehört, wird nicht geprüft');
+pruefe(str_contains($log, 'Device "Temperatur" (Küche): variable for Measured value does not exist'), 'fehlender Messwert wird benannt');
+$geraeteWerte = array_column(flach(json_decode($m->GetConfigurationForm(), true)['elements']), null, 'name')['Devices']['values'] ?? [];
+pruefe(array_column($geraeteWerte, 'rowColor') === ['#FFC0C0', '#FFC0C0', '#FFC0C0', '', '#FFC0C0'], 'in der Geräteliste sind genau die fehlerhaften Zeilen rot: ' . json_encode(array_column($geraeteWerte, 'rowColor')));
+pruefe(($geraeteWerte[3]['StateLabel'] ?? null) !== null, 'die Textspalten bleiben gefüllt');
+
+$dimmerStufe = variable(VARIABLETYPE_INTEGER, 40); // ohne Darstellung: Die Schieberegler-Darstellung kann der Stub nicht formatieren
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Dimmer', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 0, 'LevelVariableID' => $dimmerStufe, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Tür', 'Aliases' => '', 'Type' => 'door', 'StateVariableID' => $licht, 'LevelVariableID' => 59999, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Rollladen mit Position, Licht nur mit Helligkeit, Fenster mit Kontakt: aktiv');
+$text = $m->QueryState('', '', '', false);
+pruefe(str_starts_with($text, '3 device(s) found') && !str_contains($text, 'not available') && str_contains($text, 'Küche | Dimmer | light | on (') && str_contains($text, 'Küche | Tür | door | open'), 'alle drei sind abfragbar: ' . $text);
+pruefe(str_contains($m->RunSelfTest(), 'Note: Küche Rollo has no action') && str_contains($m->RunSelfTest(), 'Note: Küche Dimmer has no action'), 'Selbsttest prüft die Aktion an der Variable, die gestellt wird: ' . $m->RunSelfTest());
+
+// Den Selbsttest gibt es als Knopf im Formular, dort liest der Anwender die erkannte Richtung ab
+$knoepfe = array_column(json_decode($m->GetConfigurationForm(), true)['actions'], 'onClick', 'caption');
+pruefe(($knoepfe['Run self-test'] ?? '') === 'echo HAGT_RunSelfTest($id);', 'Formular hat den Knopf für den Selbsttest: ' . json_encode($knoepfe));
+
+// Der Selbsttest nennt je Rollladen die Richtung und woher sie stammt
+pruefe(str_contains($m->RunSelfTest(), 'Blind Küche Rollo: open at 0, closed at 100 (default: the smallest value is open)'), 'Selbsttest nennt die Richtung des Rollladens: ' . $m->RunSelfTest());
+pruefe(str_contains($m->QueryState('', 'blind', '', false), 'Küche | Rollo | blind | open'), 'QueryState rechnet die Position selbst: ' . $m->QueryState('', 'blind', '', false));
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rolloHm, 'Invert' => false],
+    ['Room' => 'Bad', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rolloDarstellung, 'Invert' => true],
+    ['Room' => 'Flur', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $licht, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+$test = $m->RunSelfTest();
+pruefe(str_contains($test, 'Blind Küche Rollo: open at 1, closed at 0 (from the profile name Rollladen.Reversed)'), 'Richtung aus dem Profilnamen: ' . $test);
+pruefe(str_contains($test, 'Blind Bad Rollo: open at 0, closed at 100 (from the blind presentation, reversed by the checkbox)'), 'Richtung aus der Darstellung, vom Haken umgekehrt: ' . $test);
+pruefe(str_contains($test, 'Note: blind Flur Rollo has no known value range, the assistant cannot set it'), 'Rollladen ohne Bereich wird benannt: ' . $test);
+// Den Anzeigetext der Darstellung Rollladen kann der Stub nicht bilden (GetValueFormatted wirft dort),
+// abgefragt wird deshalb nur der Rollladen mit Legacy-Profil. Die Darstellung prüft check-switch.php.
+$text = $m->QueryState('Küche', 'blind', '', false);
+pruefe(str_contains($text, 'Küche | Rollo | blind | closed'), 'Rohwert 0 heißt bei einem Profil mit .Reversed geschlossen: ' . $text);
+
+/* --- Bearbeitungsdialog je Typ ------------------------------------------------------------ */
+
+$formular = json_decode($m->GetConfigurationForm(), true);
+$geraete = array_values(array_filter(flach($formular['elements']), static fn ($e) => ($e['name'] ?? '') === 'Devices'))[0];
+$spalten = array_column($geraete['columns'], 'name');
+pruefe(in_array('StateVariableID', $spalten, true) && in_array('LevelVariableID', $spalten, true) && in_array('ReadOnly', $spalten, true) && !in_array('VariableID', $spalten, true), 'Spalten der Liste im neuen Format: ' . implode(', ', $spalten));
+pruefe(($geraete['form'] ?? null) === "return json_decode(HAGT_UIDeviceForm(\$id, \$Devices['Type'] ?? 'light'), true);", 'die Liste erzeugt ihren Dialog je Zeile über das Modul: ' . json_encode($geraete['form'] ?? null));
+// Burkhard, 10.10.2026: Endpunkt mit Zugängen, Räume, Geräte, Szenen und Energiebilanz je einzeln aufklappbar
+$oben = $formular['elements'];
+$bereiche = array_values(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel'));
+$inhalt = array_map(static fn (array $b): array => array_values(array_filter(array_column($b['items'], 'name'))), $bereiche);
+pruefe(count($bereiche) === 5 && $inhalt[0] === ['Endpoint', 'Accesses'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['Devices'] && $inhalt[3] === ['Scenes'] && in_array('GridImportVariableID', array_column(flach($bereiche[4]['items']), 'name'), true), 'fünf Bereiche in dieser Reihenfolge: ' . json_encode($inhalt));
+pruefe(array_values(array_filter(array_column(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') !== 'ExpansionPanel'), 'name'))) === [], 'oben steht außer den Bereichen nur Erklärtext, kein Feld: ' . json_encode(array_column($oben, 'name')));
+// Burkhard, 10.10.2026: einheitlich zugeklappt, und jeder Bereich merkt sich seinen Zustand
+$zustand = static fn (): array => array_map(static fn (array $b): bool => ($b['expanded'] ?? false) === true, array_values(array_filter(json_decode($m->GetConfigurationForm(), true)['elements'], static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel')));
+pruefe($zustand() === [false, false, false, false, false], 'anfangs sind alle Bereiche zu, auch mit leerer Liste: ' . json_encode($zustand()));
+pruefe(array_map(static fn (array $b): string => $b['onClick'] ?? '', $bereiche) === array_map(static fn (string $n): string => "HAGT_UITogglePanel(\$id, '$n');", ['PanelAccesses', 'PanelRooms', 'PanelDevices', 'PanelScenes', 'PanelBalance']), 'jeder Bereich meldet das Auf- und Zuklappen: ' . json_encode(array_column($bereiche, 'onClick')));
+oderNull(static fn () => $m->UITogglePanel('PanelDevices'));
+pruefe($zustand() === [false, false, true, false, false], 'nach dem Aufklappen bleibt „Geräte“ beim nächsten Öffnen auf: ' . json_encode($zustand()));
+oderNull(static fn () => $m->UITogglePanel('PanelDevices'));
+oderNull(static fn () => $m->UITogglePanel('Unbekannt'));
+pruefe($zustand() === [false, false, false, false, false], 'nach dem Zuklappen wieder zu, ein unbekannter Name ändert nichts: ' . json_encode($zustand()));
+
+$de = json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/locale.json'), true, 512, JSON_THROW_ON_ERROR)['translations']['de'];
+$dialogFehler = [];
+$ohneUebersetzung = [];
+$felder = [];
+foreach (DeviceIndex::TYPES as $typ => $woerter) {
+    $dialog = json_decode((string)oderNull(static fn () => $m->UIDeviceForm($typ)), true);
+    if (!is_array($dialog)) {
+        $dialogFehler[] = $typ . ': kein gültiges JSON';
+        continue;
+    }
+    $felder[$typ] = array_column($dialog, null, 'name');
+    if (array_keys($felder[$typ]) !== ['Room', 'Name', 'Aliases', 'Type', 'StateVariableID', 'StateLabel', 'SetpointVariableID', 'SetpointLabel', 'LevelVariableID', 'LevelLabel', 'MovingVariableID', 'MovingLabel', 'StopVariableID', 'StopLabel', 'PowerVariableID', 'PowerLabel', 'EnergyVariableID', 'EnergyLabel', 'Invert', 'Tilt', 'ReadOnly']) {
+        $dialogFehler[] = $typ . ': Felder ' . implode(', ', array_keys($felder[$typ]));
+        continue;
+    }
+    $rollenDesTyps = DeviceIndex::TYPE_ROLES[$typ]['roles'];
+    foreach (DeviceIndex::ROLES as $rolle => $schluessel) {
+        if ($felder[$typ][$schluessel]['visible'] !== in_array($rolle, $rollenDesTyps, true)) {
+            $dialogFehler[] = $typ . ': Sichtbarkeit von ' . $schluessel;
+        }
+    }
+    if ($felder[$typ]['Invert']['visible'] !== ($woerter !== null || $typ === 'blind')) {
+        $dialogFehler[] = $typ . ': Sichtbarkeit von Invert';
+    }
+    if ($felder[$typ]['ReadOnly']['visible'] !== (in_array($typ, DeviceIndex::CONTROLLABLE, true) || $typ === 'window')) {
+        $dialogFehler[] = $typ . ': Sichtbarkeit von ReadOnly';
+    }
+    foreach ($dialog as $element) {
+        foreach (array_merge([$element['caption'] ?? ''], array_column($element['options'] ?? [], 'caption')) as $beschriftung) {
+            if ($beschriftung !== '' && !isset($de[$beschriftung])) {
+                $ohneUebersetzung[] = $beschriftung;
+            }
+        }
+    }
+}
+pruefe($dialogFehler === [] && count($felder) === count(DeviceIndex::TYPES), 'Dialog für jeden Typ: gültiges JSON, alle Felder, nur die Fähigkeiten des Typs sichtbar: ' . implode('; ', $dialogFehler));
+pruefe($ohneUebersetzung === [] && $felder !== [], 'jede Beschriftung der Dialoge hat eine deutsche Übersetzung, es fehlen: ' . implode(' / ', array_unique($ohneUebersetzung)));
+pruefe(($felder['light']['StateVariableID']['caption'] ?? '') === 'Switching state' && ($felder['light']['LevelVariableID']['caption'] ?? '') === 'Brightness', 'Licht: Schaltzustand und Helligkeit');
+pruefe(($felder['blind']['LevelVariableID']['caption'] ?? '') === 'Position' && ($felder['blind']['Invert']['caption'] ?? '') === 'Reverse direction (if open and closed are swapped)', 'Rollladen: Position, Richtung umkehren');
+pruefe(($felder['window']['StateVariableID']['caption'] ?? '') === 'Contact' && ($felder['window']['Invert']['caption'] ?? '') === 'Inverted (true = closed)', 'Fenster: Kontakt, Umkehr');
+pruefe(($felder['temperature']['StateVariableID']['caption'] ?? '') === 'Measured value', 'Messwert');
+pruefe(($felder['socket']['Invert']['caption'] ?? '') === 'Inverted (true = off)', 'Steckdose: Umkehr');
+pruefe(array_column($felder['light']['Type']['options'] ?? [], 'value') === array_keys(DeviceIndex::TYPES), 'die Typauswahl nennt alle Typen');
+pruefe(($felder['light']['Type']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID);', 'ein Typwechsel im Dialog ruft das Modul');
+pruefe(($felder['blind']['MovingVariableID']['visible'] ?? false) === true && ($felder['blind']['MovingVariableID']['caption'] ?? '') === 'Moving state' && ($felder['blind']['MovingVariableID']['type'] ?? '') === 'SelectVariable', 'Rollladen: wahlweise ein Fahrstatus');
+pruefe(($felder['light']['MovingVariableID']['visible'] ?? true) === false, 'beim Licht gibt es keinen Fahrstatus');
+pruefe(($felder['window']['LevelVariableID']['visible'] ?? false) === true && ($felder['window']['LevelVariableID']['caption'] ?? '') === 'Drive (opening)' && ($felder['window']['MovingVariableID']['visible'] ?? false) === true, 'Fenster: wahlweise Antrieb und Fahrstatus');
+pruefe(($felder['window']['Tilt']['visible'] ?? false) === true && ($felder['window']['Tilt']['caption'] ?? '') === 'Tilt window (fully open means tilted)' && ($felder['blind']['Tilt']['visible'] ?? true) === false, 'Haken „Kippfenster“ nur beim Fenster');
+pruefe(($felder['blind']['MovingVariableID']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID);', 'die Wahl des Fahrstatus zieht den Spaltentext nach');
+pruefe(($felder['light']['StateVariableID']['type'] ?? '') === 'SelectVariable' && ($felder['light']['LevelVariableID']['type'] ?? '') === 'SelectVariable', 'Fähigkeiten sind Variablenauswahlen');
+$fremd = json_decode((string)oderNull(static fn () => $m->UIDeviceForm('herd')), true);
+pruefe(is_array($fremd) && $fremd === array_values($felder['light'] ?? []), 'unbekannter Typ: Dialog wie für ein Licht');
+
+$m->formUpdates = [];
+oderNull(static fn () => $m->UIDeviceChanged('blind', 0, 0));
+pruefe(in_array(['StateVariableID', 'visible', false], $m->formUpdates, true) && in_array(['LevelVariableID', 'visible', true], $m->formUpdates, true) && in_array(['LevelVariableID', 'caption', 'Position'], $m->formUpdates, true) && in_array(['Invert', 'caption', 'Reverse direction (if open and closed are swapped)'], $m->formUpdates, true), 'Typwechsel auf Rollladen passt den offenen Dialog an: ' . json_encode($m->formUpdates));
+$m->formUpdates = [];
+oderNull(static fn () => $m->UIDeviceChanged('humidity', 0, 0));
+pruefe(in_array(['Invert', 'visible', false], $m->formUpdates, true) && in_array(['StateVariableID', 'caption', 'Measured value'], $m->formUpdates, true), 'Typwechsel auf Messwert blendet die Umkehr aus: ' . json_encode($m->formUpdates));
+
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Küche', 'Name' => '', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 59999, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Ofen', 'Aliases' => '', 'Type' => 'herd', 'StateVariableID' => $licht, 'LevelVariableID' => 0, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201, 'fehlerhafte Liste: Status 201');
+$geraeteBereich = array_values(array_filter(json_decode($m->GetConfigurationForm(), true)['elements'], static fn (array $e): bool => in_array('Devices', array_column($e['items'] ?? [], 'name'), true)))[0] ?? [];
+pruefe(($geraeteBereich['expanded'] ?? false) === false, 'eine fehlerhafte Geräteliste ändert den gemerkten Zustand nicht, der Fehler steht oben im Formular');
+$log = implode("\n", array_column($m->logs(), 'Message'));
+pruefe(str_contains($log, 'Device without a name (Küche): name is missing') && str_contains($log, 'Device without a name (Küche): variable for Switching state does not exist') && str_contains($log, 'Device "Ofen" (Küche): unknown type'), 'Log nennt jeden fehlerhaften Eintrag: ' . $log);
+
+IPS_SetProperty($iid, 'Devices', '[]');
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'nach Korrektur wieder aktiv');
+pruefe(str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Configuration is valid again'), 'Behebung wird gemeldet');
+
+pruefe(str_starts_with($m->RunSelfTest(), "ERROR\n") && str_contains($m->RunSelfTest(), 'is empty'), 'Selbsttest meldet die leere Liste: ' . $m->RunSelfTest());
+
+$formular = json_decode($m->GetConfigurationForm(), true);
+$endpunkt = array_values(array_filter(flach($formular['elements']), static fn ($e) => ($e['name'] ?? '') === 'Endpoint'))[0]['caption'];
+pruefe(str_ends_with($endpunkt, '/hook/homeagent/' . $iid), 'Formular zeigt den Endpunkt: ' . $endpunkt);
+
+/* --- Textspalten der Geräteliste: Name der Variable oder „-“ statt „Kein(e)“ --------------- */
+
+$schalter = variable(VARIABLETYPE_BOOLEAN, false);
+IPS_SetName($schalter, 'Status');
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Küche', 'Name' => 'Lampe', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $schalter, 'LevelVariableID' => 1, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => $schalter, 'LevelVariableID' => 59998, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+$formular = json_decode($m->GetConfigurationForm(), true);
+$geraete = array_values(array_filter(flach($formular['elements']), static fn ($e) => ($e['name'] ?? '') === 'Devices'))[0];
+$spalten = array_column($geraete['columns'], null, 'name');
+pruefe(isset($spalten['StateLabel'], $spalten['LevelLabel']) && !isset($spalten['StateLabel']['edit']) && ($spalten['StateLabel']['add'] ?? null) === '-', 'sichtbar sind Textspalten ohne Variablenauswahl, neue Zeilen zeigen „-“');
+pruefe(($spalten['StateVariableID']['visible'] ?? true) === false && ($spalten['LevelVariableID']['visible'] ?? true) === false && isset($spalten['StateVariableID']['edit']), 'die Variablen selbst bleiben als unsichtbare, gespeicherte Spalten in der Zeile');
+$werte = $geraete['values'] ?? [];
+pruefe(($werte[0] ?? null) === ['StateLabel' => 'Status', 'LevelLabel' => '-', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'rowColor' => ''], 'Licht ohne Helligkeit: Name der Variable und „-“: ' . json_encode($werte[0] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($werte[1] ?? null) === ['StateLabel' => '-', 'LevelLabel' => '#59998 ?', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'rowColor' => '#FFC0C0'], 'Rollladen: der Zustand zählt nicht zum Typ, eine gelöschte Variable ist kenntlich und die Zeile rot: ' . json_encode($werte[1] ?? null, JSON_UNESCAPED_UNICODE));
+
+$m->formUpdates = [];
+oderNull(static fn () => $m->UIDeviceChanged('light', $schalter, 0));
+pruefe(in_array(['StateLabel', 'value', 'Status'], $m->formUpdates, true) && in_array(['LevelLabel', 'value', '-'], $m->formUpdates, true), 'eine andere Variable im Dialog zieht den Spaltentext nach: ' . json_encode($m->formUpdates, JSON_UNESCAPED_UNICODE));
+$dialog = array_column(json_decode($m->UIDeviceForm('light'), true), null, 'name');
+pruefe(($dialog['StateLabel']['visible'] ?? true) === false && ($dialog['StateVariableID']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID);', 'der Dialog trägt die Spaltentexte unsichtbar mit und meldet jede Variablenwahl');
+$laeuft = variable(VARIABLETYPE_BOOLEAN, false);
+IPS_SetName($laeuft, 'WORKING');
+$m->formUpdates = [];
+oderNull(static fn () => $m->UIDeviceChanged('blind', 0, 0, $laeuft));
+pruefe(in_array(['MovingLabel', 'value', 'WORKING'], $m->formUpdates, true), 'die Wahl des Fahrstatus zieht den unsichtbaren Text nach: ' . json_encode($m->formUpdates, JSON_UNESCAPED_UNICODE));
+
+/* --- Fenster mit Antrieb im Werkzeugschema (09.10.2026) ------------------------------------- */
+
+$antrieb = variable(VARIABLETYPE_FLOAT, 1.0);
+$antriebAktion = IPS_CreateScript(0);
+IPS_SetScriptContent($antriebAktion, '<?php SetValue($_IPS["VARIABLE"], $_IPS["VALUE"]);');
+IPS_SetVariableCustomAction($antrieb, $antriebAktion);
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Flur', 'Name' => 'Fenster', 'Aliases' => '', 'Type' => 'window', 'StateVariableID' => 0, 'LevelVariableID' => $antrieb, 'Invert' => false, 'Tilt' => true],
+]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Fenster nur mit Antrieb ist gültig');
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+$schema = $werkzeuge['set_state']['inputSchema']['properties'] ?? [];
+pruefe(in_array('window', $schema['type']['enum'] ?? [], true) && ($schema['command']['enum'] ?? []) === ['open', 'close'], 'set_state bietet window mit open und close an: ' . json_encode($schema['type']['enum'] ?? null) . ' ' . json_encode($schema['command']['enum'] ?? null));
+pruefe(str_contains($schema['percent']['description'] ?? '', 'how far a blind or window is open'), 'percent heißt bei Rollläden und Fenstern „wie weit offen“: ' . ($schema['percent']['description'] ?? ''));
+// HA Assist am nuc (09.10.2026): „Kipp das Fenster im Flur wieder“ lehnte das Modell ab, es kenne nur
+// öffnen und schließen. Bei einem Kippfenster heißt öffnen kippen; das muss in der Beschreibung stehen.
+pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', 'Tilt windows open by tilting: "tilt the window" means command=open.'), 'die Beschreibung erklärt das Kippen: ' . ($werkzeuge['set_state']['description'] ?? ''));
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Flur', 'Name' => 'Fenster', 'Aliases' => '', 'Type' => 'window', 'StateVariableID' => 0, 'LevelVariableID' => $antrieb, 'Invert' => false, 'Tilt' => false],
+]));
+IPS_ApplyChanges($iid);
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+pruefe(!str_contains($werkzeuge['set_state']['description'] ?? '', 'Tilt windows'), 'ohne Kippfenster kein Satz dazu');
+
+/* --- Fahrstatus: Validierung, Selbsttest, Fahrtmerker im Buffer (Rollladen-Paket 09.10.2026) --- */
+
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'MovingVariableID' => 59997, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201, 'gelöschte Fahrstatus-Variable: Status 201');
+pruefe(str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Device "Rollo" (Küche): variable for Moving state does not exist'), 'das Log nennt den fehlenden Fahrstatus');
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'MovingVariableID' => $laeuft, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'mit Fahrstatus aktiv');
+pruefe(str_contains($m->RunSelfTest(), 'Blind Küche Rollo reports its movement through WORKING'), 'der Selbsttest nennt den Fahrstatus: ' . $m->RunSelfTest());
+// Der Fahrstatus wird nur gelesen und braucht keine Aktion (nuc 09.10.2026: Homematic WORKING hat
+// keine, der Selbsttest meldete „hat keine Aktion“, obwohl die Position eine hat).
+$position = variable(VARIABLETYPE_INTEGER, 0);
+$positionAktion = IPS_CreateScript(0);
+IPS_SetScriptContent($positionAktion, '<?php SetValue($_IPS["VARIABLE"], $_IPS["VALUE"]);');
+IPS_SetVariableCustomAction($position, $positionAktion);
+IPS_SetVariableCustomProfile($position, '~Shutter');
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Gast', 'Name' => 'Rollladen', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $position, 'MovingVariableID' => $laeuft, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(!str_contains($m->RunSelfTest(), 'Note: Gast Rollladen has no action'), 'Fahrstatus ohne Aktion: kein Hinweis „hat keine Aktion“: ' . $m->RunSelfTest());
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'MovingVariableID' => $laeuft, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+
+$merker = $m->testBackend();
+$merker->rememberTravel($rollo, ['target' => 100, 'since' => $merker->now()]);
+pruefe($m->testBackend()->rememberedTravel($rollo) === ['target' => 100, 'since' => $merker->rememberedTravel($rollo)['since'] ?? -1], 'der Fahrtmerker überlebt die Anfrage (Buffer „Travels“)');
+$merker->rememberTravel($rollo, null);
+pruefe($m->testBackend()->rememberedTravel($rollo) === null, 'und lässt sich löschen');
+$merker->rememberTravel(11111, ['target' => 1, 'since' => $merker->now() - 130000]);
+$merker->rememberTravel($rollo, ['target' => 50, 'since' => $merker->now()]);
+pruefe($m->testBackend()->rememberedTravel(11111) === null, 'Merker älter als 2 Minuten fallen beim nächsten Schreiben heraus');
+for ($i = 1; $i <= 60; $i++) {
+    $merker->rememberTravel(20000 + $i, ['target' => $i, 'since' => $merker->now()]);
+}
+pruefe($m->testBackend()->rememberedTravel(20001) === null && $m->testBackend()->rememberedTravel(20060) !== null, 'höchstens 50 Merker, die ältesten gehen zuerst');
+
+/* --- Stopp (09.10.2026): Stoppvariable, sonst Weg nach Modul (HomeMatic, KLF200) -------------- */
+
+pruefe(($felder['blind']['StopVariableID']['visible'] ?? false) === true && ($felder['blind']['StopVariableID']['caption'] ?? '') === 'Stop' && ($felder['blind']['StopVariableID']['type'] ?? '') === 'SelectVariable', 'Rollladen: wahlweise eine Stoppvariable');
+pruefe(($felder['window']['StopVariableID']['visible'] ?? false) === true && ($felder['light']['StopVariableID']['visible'] ?? true) === false, 'Fenster ja, Licht nein');
+$stoppTaster = variable(VARIABLETYPE_BOOLEAN, false);
+IPS_SetName($stoppTaster, 'STOP');
+$m->formUpdates = [];
+oderNull(static fn () => $m->UIDeviceChanged('blind', 0, 0, 0, 0, 0, $stoppTaster));
+pruefe(in_array(['StopLabel', 'value', 'STOP'], $m->formUpdates, true), 'die Wahl der Stoppvariable zieht den unsichtbaren Text nach: ' . json_encode($m->formUpdates, JSON_UNESCAPED_UNICODE));
+
+// Ein Stopp über die Modulfunktion hat keinen Wert. IPS_RunScriptTextEx nimmt null in den Parametern
+// nicht an (nuc 09.10.2026: „Cannot auto-convert value for parameter Parameters (Type is not
+// supported)“, der Kernel-Stub nimmt es an). Die Parameter dürfen deshalb kein null tragen.
+$parameter = !method_exists(SymconDeviceBackend::class, 'actionParameters') ? null : ((new ReflectionMethod(SymconDeviceBackend::class, 'actionParameters'))->invoke(null, 4711, null, $iid, 'a1b2a1b2a1b2'));
+pruefe(is_array($parameter) && !in_array(null, $parameter, true) && ($parameter['HAGT_VARIABLE'] ?? 0) === 4711, 'Parameter des Aktionsskripts ohne null: ' . json_encode($parameter));
+$parameter = !method_exists(SymconDeviceBackend::class, 'actionParameters') ? null : ((new ReflectionMethod(SymconDeviceBackend::class, 'actionParameters'))->invoke(null, 4711, 2, $iid, 'a1b2a1b2a1b2'));
+pruefe(($parameter['HAGT_VALUE'] ?? null) === 2, 'mit Wert steht er in HAGT_VALUE: ' . json_encode($parameter));
+
+// Stoppweg an der Anlage: Wahrheitswert mit Aktion, Eintrag „Stop“ im Profil, sonst keiner
+$stoppAktion = IPS_CreateScript(0);
+IPS_SetScriptContent($stoppAktion, '<?php SetValue($_IPS["VARIABLE"], $_IPS["VALUE"]);');
+IPS_SetVariableCustomAction($stoppTaster, $stoppAktion);
+$haAktion = variable(VARIABLETYPE_INTEGER, 0);
+IPS_SetName($haAktion, 'Aktion');
+IPS_CreateVariableProfile('VoiceControlTest.CoverAction', VARIABLETYPE_INTEGER);
+IPS_SetVariableProfileAssociation('VoiceControlTest.CoverAction', 0, 'Öffnen', '', -1);
+IPS_SetVariableProfileAssociation('VoiceControlTest.CoverAction', 1, 'Schließen', '', -1);
+IPS_SetVariableProfileAssociation('VoiceControlTest.CoverAction', 2, 'Stop', '', -1);
+IPS_SetVariableCustomProfile($haAktion, 'VoiceControlTest.CoverAction');
+IPS_SetVariableCustomAction($haAktion, $stoppAktion);
+$ohneStopp = variable(VARIABLETYPE_INTEGER, 0);
+IPS_SetVariableCustomAction($ohneStopp, $stoppAktion);
+$stoppweg = static fn (int $position, int $stopp): ?string => oderNull(static fn () => $m->testBackend()->stopMethod($position, $stopp));
+pruefe($stoppweg($position, $stoppTaster) === 'variable', 'Wahrheitswert mit Aktion taugt als Stoppvariable: ' . json_encode($stoppweg($position, $stoppTaster)));
+pruefe($stoppweg($position, $haAktion) === 'variable', 'Zahl mit Profileintrag „Stop“ ebenso (HomeAssistant-Modul): ' . json_encode($stoppweg($position, $haAktion)));
+pruefe($stoppweg($position, $ohneStopp) === '' && $stoppweg($position, 0) === '', 'ohne Eintrag „Stop“ und ohne passendes Modul kein Stoppweg: ' . json_encode([$stoppweg($position, $ohneStopp), $stoppweg($position, 0)]));
+oderNull(static fn () => $m->testBackend()->stop($position, $haAktion));
+pruefe(GetValue($haAktion) === 2, 'der Stopp sendet den Wert des Eintrags „Stop“ an die Aktion: ' . json_encode(GetValue($haAktion)));
+
+// Schema, Selbsttest und Validierung
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Gast', 'Name' => 'Rollladen', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $position, 'StopVariableID' => $haAktion, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'mit Stoppvariable aktiv');
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+$schema = $werkzeuge['set_state']['inputSchema']['properties'] ?? [];
+pruefe(($schema['command']['enum'] ?? []) === ['open', 'close', 'stop'], 'set_state bietet stop an: ' . json_encode($schema['command']['enum'] ?? null));
+pruefe(str_contains($schema['command']['description'] ?? '', 'stop halts a moving blind or window'), 'die Beschreibung erklärt stop: ' . ($schema['command']['description'] ?? ''));
+pruefe(str_contains($m->RunSelfTest(), 'Blind Gast Rollladen stops through Aktion'), 'der Selbsttest nennt den Stoppweg: ' . $m->RunSelfTest());
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Gast', 'Name' => 'Rollladen', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $position, 'StopVariableID' => $ohneStopp, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(str_contains($m->RunSelfTest(), 'Note: blind Gast Rollladen: the stop variable has no entry "Stop", the assistant cannot stop it'), 'eine Stoppvariable ohne Eintrag „Stop“ fällt im Selbsttest auf: ' . $m->RunSelfTest());
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+pruefe(!in_array('stop', $werkzeuge['set_state']['inputSchema']['properties']['command']['enum'] ?? [], true) && isset($werkzeuge['set_state']), 'dann bietet das Schema kein stop an');
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Gast', 'Name' => 'Rollladen', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $position, 'StopVariableID' => 59996, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201 && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Device "Rollladen" (Gast): variable for Stop does not exist'), 'gelöschte Stoppvariable: Status 201 und Log');
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'MovingVariableID' => $laeuft, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+
+/* --- Leistung und Verbrauch (09.10.2026) ----------------------------------------------------- */
+
+pruefe(($felder['socket']['PowerVariableID']['visible'] ?? false) === true && ($felder['socket']['PowerVariableID']['caption'] ?? '') === 'Power'
+    && ($felder['socket']['EnergyVariableID']['visible'] ?? false) === true && ($felder['socket']['EnergyVariableID']['caption'] ?? '') === 'Energy meter (archived as counter)', 'Steckdose: wahlweise Leistung und Zähler');
+pruefe(($felder['light']['PowerVariableID']['visible'] ?? false) === true && ($felder['window']['PowerVariableID']['visible'] ?? true) === false && ($felder['temperature']['EnergyVariableID']['visible'] ?? true) === false, 'Licht ja, Fenster und Messwert nein');
+$leistung = variable(VARIABLETYPE_FLOAT, 26.1);
+IPS_SetName($leistung, 'POWER');
+$zaehler = variable(VARIABLETYPE_FLOAT, 427530.6);
+IPS_SetName($zaehler, 'ENERGY_COUNTER');
+IPS_CreateVariableProfile('VoiceControlTest.Wh', VARIABLETYPE_FLOAT);
+IPS_SetVariableProfileText('VoiceControlTest.Wh', '', ' Wh');
+IPS_SetVariableCustomProfile($zaehler, 'VoiceControlTest.Wh');
+$steckdose = variable(VARIABLETYPE_BOOLEAN, true);
+$steckdoseAktion = IPS_CreateScript(0);
+IPS_SetScriptContent($steckdoseAktion, '<?php SetValue($_IPS["VARIABLE"], $_IPS["VALUE"]);');
+IPS_SetVariableCustomAction($steckdose, $steckdoseAktion);
+$m->formUpdates = [];
+oderNull(static fn () => $m->UIDeviceChanged('socket', $steckdose, 0, 0, $leistung, $zaehler));
+pruefe(in_array(['PowerLabel', 'value', 'POWER'], $m->formUpdates, true) && in_array(['EnergyLabel', 'value', 'ENERGY_COUNTER'], $m->formUpdates, true), 'die Wahl von Leistung und Zähler zieht die Texte nach: ' . json_encode($m->formUpdates, JSON_UNESCAPED_UNICODE));
+
+$entfeuchter = ['Room' => 'Keller', 'Name' => 'Entfeuchter', 'Aliases' => '', 'Type' => 'socket', 'StateVariableID' => $steckdose, 'PowerVariableID' => $leistung, 'EnergyVariableID' => $zaehler, 'Invert' => false];
+IPS_SetProperty($iid, 'Devices', json_encode([['EnergyVariableID' => 59996] + $entfeuchter]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201 && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Device "Entfeuchter" (Keller): variable for Energy meter (archived as counter) does not exist'), 'gelöschter Zähler: Status 201, das Log nennt ihn');
+
+// Ohne Archiv: gültig, aber der Selbsttest sagt, dass es keinen Verlauf gibt
+IPS_SetProperty($iid, 'Devices', json_encode([$entfeuchter]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Gerät mit Leistung und Zähler: aktiv');
+pruefe(str_contains($m->RunSelfTest(), 'Note: Keller Entfeuchter: the energy meter ENERGY_COUNTER is not archived as a counter, so there is no consumption over periods'), 'Selbsttest: Zähler ohne Archiv: ' . $m->RunSelfTest());
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+$periode = $werkzeuge['get_state']['inputSchema']['properties']['period'] ?? [];
+pruefe(($periode['enum'] ?? null) === ['now', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year'], 'get_state bietet period an, sobald ein Gerät einen Zähler hat: ' . json_encode($periode));
+// HA Assist am nuc (09.10.2026): „Wie viel Strom haben wir heute schon verbraucht?“ beantwortete das
+// Modell mit der Summe der Geräte mit Zähler als Hausverbrauch. Die Beschreibung muss die Grenze nennen.
+pruefe(str_contains($periode['description'] ?? '', 'Covers only devices with their own energy meter, not the whole house.'), 'period sagt, dass nur Geräte mit eigenem Zähler zählen: ' . ($periode['description'] ?? ''));
+pruefe(str_contains($werkzeuge['get_state']['description'] ?? '', '"How much did the washing machine use last month?" → name=washing machine, period=last_month'), 'die Beschreibung nennt ein Beispiel für den Verbrauch: ' . ($werkzeuge['get_state']['description'] ?? ''));
+// Freie Zeiträume (09.10.2026): from und to neben period, mit dem heutigen Datum für das Modell
+$von = $werkzeuge['get_state']['inputSchema']['properties']['from'] ?? [];
+$bis = $werkzeuge['get_state']['inputSchema']['properties']['to'] ?? [];
+pruefe(($von['type'] ?? '') === 'string' && str_contains($von['description'] ?? '', 'Instead of period: first day, YYYY-MM-DD. Today is ' . date('Y-m-d') . '.'), 'from mit Format und heutigem Datum: ' . json_encode($von));
+pruefe(($bis['type'] ?? '') === 'string' && str_contains($bis['description'] ?? '', 'Last day, inclusive; without it only the day given in from.'), 'to: ' . json_encode($bis));
+pruefe(str_contains($werkzeuge['get_state']['description'] ?? '', '"How much did the washing machine use in January?" → name=washing machine, from=' . date('Y') . '-01-01, to=' . date('Y') . '-01-31.'), 'Beispiel für einen Monat: ' . ($werkzeuge['get_state']['description'] ?? ''));
+$text = $m->QueryState('Keller', '', 'Entfeuchter', false);
+pruefe(str_contains($text, 'Keller | Entfeuchter | socket | on (26.1'), 'QueryState nennt die Leistung: ' . $text);
+
+// Mit Archiv als Zähler: die Summe kommt aus AC_GetAggregatedValues
+IPS\ModuleLoader::loadLibrary(__DIR__ . '/stubs/CoreStubs/library.json');
+$archiv = IPS_CreateInstance('{43192F0B-135B-4CE7-A0A7-1475603F3060}'); // Archive Control
+AC_SetLoggingStatus($archiv, $zaehler, true);
+AC_SetAggregationType($archiv, $zaehler, 1);
+$tag = mktime(0, 0, 0, 10, 8, 2026);
+AC_StubsAddAggregatedValues($archiv, $zaehler, 1, [
+    ['TimeStamp' => $tag, 'Duration' => 86400, 'Avg' => 2868.4, 'Min' => 0, 'Max' => 0, 'MinTime' => 0, 'MaxTime' => 0],
+    ['TimeStamp' => $tag + 86400, 'Duration' => 86400, 'Avg' => 1387.2, 'Min' => 0, 'Max' => 0, 'MinTime' => 0, 'MaxTime' => 0],
+]);
+pruefe(!str_contains($m->RunSelfTest(), 'is not archived as a counter'), 'Selbsttest: archivierter Zähler ohne Hinweis: ' . $m->RunSelfTest());
+$summe = oderNull(static fn () => $m->testBackend()->counterSum($zaehler, 1, $tag, $tag + 86399));
+pruefe($summe === ['sum' => 2868.4, 'unit' => 'Wh'], 'counterSum über das Archiv, Einheit aus dem Profil: ' . json_encode($summe));
+$summe = oderNull(static fn () => $m->testBackend()->counterSum($zaehler, 1, $tag, 0));
+pruefe(is_array($summe) && abs($summe['sum'] - 4255.6) < 0.001, 'bis jetzt zählt der laufende Tag mit: ' . json_encode($summe));
+pruefe(oderNull(static fn () => $m->testBackend()->counterSum($leistung, 1, $tag, 0)) === null, 'nicht archiviert: null');
+AC_SetLoggingStatus($archiv, $leistung, true);
+pruefe(oderNull(static fn () => $m->testBackend()->counterSum($leistung, 1, $tag, 0)) === null, 'archiviert, aber nicht als Zähler: null');
+pruefe(is_int(oderNull(static fn () => $m->testBackend()->timestamp())), 'die Uhr der Anlage');
+
+/* --- Energiebilanz (09.10.2026): fünf Zählerfelder, Hausverbrauch wie bei HA ------------------ */
+
+$bilanzFelder = ['GridImportVariableID', 'GridExportVariableID', 'SolarVariableID', 'BatteryChargeVariableID', 'BatteryDischargeVariableID'];
+$eigenschaften = [];
+foreach ($bilanzFelder as $feld) {
+    try {
+        $eigenschaften[$feld] = IPS_GetProperty($iid, $feld);
+    } catch (Throwable) {
+        $eigenschaften[$feld] = null;
+    }
+}
+pruefe($eigenschaften === array_fill_keys($bilanzFelder, 0), 'fünf Properties für die Bilanz, anfangs leer: ' . json_encode($eigenschaften));
+$formular = json_decode($m->GetConfigurationForm(), true);
+$namen = [];
+$sammle = static function (array $liste) use (&$sammle, &$namen): void {
+    foreach ($liste as $e) {
+        if (is_array($e)) {
+            if (isset($e['name']) && is_string($e['name'])) {
+                $namen[] = $e['name'];
+            }
+            $sammle($e['items'] ?? []);
+        }
+    }
+};
+$sammle($formular['elements']);
+pruefe(array_diff($bilanzFelder, $namen) === [], 'das Formular hat die fünf Felder: fehlen ' . implode(', ', array_diff($bilanzFelder, $namen)));
+
+$setzeBilanz = static function (array $werte) use ($iid, $bilanzFelder): void {
+    foreach ($bilanzFelder as $feld) {
+        try {
+            IPS_SetProperty($iid, $feld, $werte[$feld] ?? 0);
+        } catch (Throwable) {
+        }
+    }
+    IPS_ApplyChanges($iid);
+};
+// Nur Bilanz, kein Gerät mit Zähler: period gibt es trotzdem, und die Beschreibung nennt das ganze Haus
+IPS_SetProperty($iid, 'Devices', json_encode([['EnergyVariableID' => 0] + $entfeuchter]));
+$setzeBilanz(['GridImportVariableID' => $zaehler]);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'mit Netzbezug aktiv');
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+$periode = $werkzeuge['get_state']['inputSchema']['properties']['period'] ?? [];
+pruefe(isset($periode['enum']), 'period gibt es auch nur mit der Bilanz: ' . json_encode($periode));
+pruefe(str_contains($periode['description'] ?? '', 'For the whole house (no room, type or name) the first line gives the house consumption from grid, solar and battery.') && !str_contains($periode['description'] ?? '', 'not the whole house'), 'period nennt den Hausverbrauch: ' . ($periode['description'] ?? ''));
+pruefe(!str_contains($m->RunSelfTest(), 'energy balance'), 'archivierter Netzbezug: kein Hinweis: ' . $m->RunSelfTest());
+$setzeBilanz(['GridImportVariableID' => $zaehler, 'SolarVariableID' => $leistung]);
+pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: solar production POWER is not archived as a counter, so there is no house consumption'), 'Selbsttest: Bilanzzähler nicht als Zähler archiviert: ' . $m->RunSelfTest());
+$setzeBilanz(['GridImportVariableID' => $zaehler, 'BatteryChargeVariableID' => 59995]);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201 && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Energy balance: variable for battery charge does not exist'), 'gelöschter Bilanzzähler: Status 201, das Log nennt ihn');
+// Aktuelle Leistung (09.10.2026): fünf weitere Felder, period=now
+$setzeBilanz([]); // der Abschnitt davor hinterlässt einen gelöschten Bilanzzähler
+$leistungFelder = ['GridImportPowerVariableID', 'GridExportPowerVariableID', 'SolarPowerVariableID', 'BatteryChargePowerVariableID', 'BatteryDischargePowerVariableID'];
+$eigenschaften = [];
+foreach ($leistungFelder as $feld) {
+    try {
+        $eigenschaften[$feld] = IPS_GetProperty($iid, $feld);
+    } catch (Throwable) {
+        $eigenschaften[$feld] = null;
+    }
+}
+pruefe($eigenschaften === array_fill_keys($leistungFelder, 0), 'fünf Properties für die Leistung, anfangs leer: ' . json_encode($eigenschaften));
+pruefe(array_diff($leistungFelder, $namen) === [], 'das Formular hat die fünf Leistungsfelder: fehlen ' . implode(', ', array_diff($leistungFelder, $namen)));
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+$periode = $werkzeuge['get_state']['inputSchema']['properties']['period'] ?? [];
+pruefe(($periode['enum'][0] ?? null) === 'now' && str_contains($periode['description'] ?? '', '"now" gives the current power in W instead.'), 'mit einem Gerät mit Leistung bietet period „now“ an: ' . json_encode($periode));
+pruefe(str_contains($werkzeuge['get_state']['description'] ?? '', '"How much power are we using right now?" → period=now.'), 'die Beschreibung nennt ein Beispiel: ' . ($werkzeuge['get_state']['description'] ?? ''));
+foreach ($leistungFelder as $feld) {
+    try {
+        IPS_SetProperty($iid, $feld, $feld === 'GridImportPowerVariableID' ? $zaehler : 0);
+    } catch (Throwable) {
+    }
+}
+IPS_ApplyChanges($iid);
+pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: grid import power ENERGY_COUNTER is in Wh, not a power value, so there is no house power'), 'Selbsttest: ein Zähler im Leistungsfeld: ' . $m->RunSelfTest());
+foreach ($leistungFelder as $feld) {
+    try {
+        IPS_SetProperty($iid, $feld, $feld === 'SolarPowerVariableID' ? 59994 : 0);
+    } catch (Throwable) {
+    }
+}
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201 && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Energy balance: variable for solar power does not exist'), 'gelöschte Leistungsvariable: Status 201, das Log nennt sie');
+foreach ($leistungFelder as $feld) {
+    try {
+        IPS_SetProperty($iid, $feld, 0);
+    } catch (Throwable) {
+    }
+}
+IPS_ApplyChanges($iid);
+
+// Ein Zähler, der keine Energie zählt (Wasser, Gas), fällt im Selbsttest auf
+$wasser = variable(VARIABLETYPE_FLOAT, 352171.0);
+IPS_SetName($wasser, 'WASSER');
+IPS_CreateVariableProfile('VoiceControlTest.m3', VARIABLETYPE_FLOAT);
+IPS_SetVariableProfileText('VoiceControlTest.m3', '', ' m³');
+IPS_SetVariableCustomProfile($wasser, 'VoiceControlTest.m3');
+AC_SetLoggingStatus($archiv, $wasser, true);
+AC_SetAggregationType($archiv, $wasser, 1);
+IPS_SetProperty($iid, 'Devices', json_encode([['EnergyVariableID' => $wasser] + $entfeuchter]));
+$setzeBilanz(['GridImportVariableID' => $wasser]);
+$selbsttest = $m->RunSelfTest();
+pruefe(str_contains($selbsttest, 'Note: Keller Entfeuchter: the energy meter WASSER counts in m³, not in kWh, so it is left out of the consumption'), 'Selbsttest: Gerätezähler in m³: ' . $selbsttest);
+pruefe(str_contains($selbsttest, 'Note: energy balance: grid import WASSER counts in m³, not in kWh, so there is no house consumption'), 'Selbsttest: Bilanzzähler in m³: ' . $selbsttest);
+$setzeBilanz([]);
+
+/* --- Heizungs-Sollwert (10.10.2026): Typ thermostat, Bereich aus Profil oder Darstellung ----- */
+
+pruefe(($felder['thermostat']['SetpointVariableID']['visible'] ?? false) === true && ($felder['thermostat']['SetpointVariableID']['caption'] ?? '') === 'Setpoint'
+    && ($felder['thermostat']['SetpointVariableID']['type'] ?? '') === 'SelectVariable', 'Thermostat: Feld Sollwert im Dialog');
+pruefe(($felder['thermostat']['StateVariableID']['caption'] ?? '') === 'Current temperature' && ($felder['thermostat']['LevelVariableID']['visible'] ?? true) === false, 'Thermostat: Ist-Temperatur, keine Stufe');
+pruefe(($felder['thermostat']['Invert']['visible'] ?? true) === false && ($felder['thermostat']['ReadOnly']['visible'] ?? false) === true, 'Thermostat: kein „Umgekehrt“, aber „Nur abfragen“');
+pruefe(($felder['light']['SetpointVariableID']['visible'] ?? true) === false, 'beim Licht gibt es keinen Sollwert');
+pruefe(in_array(['caption' => 'Thermostat', 'value' => 'thermostat'], $felder['light']['Type']['options'] ?? [], true), 'Typauswahl mit Thermostat');
+
+// Wertebereich des Sollwerts: Darstellung (HomeAssistant-Modul), sonst Profil; Sonderwerte am Rand
+// mit Text statt Zahl („On“ bei Temperature.HM_30.5 am nuc) zählen nicht dazu.
+$anlage = new SymconDeviceBackend(static fn (string $t): string => $t);
+$sollbereich = static fn (int $id): mixed => oderNull(static fn () => $anlage->setpointRange($id));
+IPS_CreateVariableProfile('Temperature.HM_30.5', VARIABLETYPE_FLOAT);
+IPS_SetVariableProfileValues('Temperature.HM_30.5', 6, 30.5, 0.5);
+IPS_SetVariableProfileText('Temperature.HM_30.5', '', ' °C');
+IPS_SetVariableProfileDigits('Temperature.HM_30.5', 1);
+foreach ([[16, '16,0'], [17, '17,0'], [21, '21,0'], [30.5, 'On']] as [$wert, $text]) {
+    IPS_SetVariableProfileAssociation('Temperature.HM_30.5', $wert, $text, '', -1);
+}
+$soll = variable(VARIABLETYPE_FLOAT, 21.0);
+IPS_SetName($soll, 'SET_TEMPERATURE');
+IPS_SetVariableCustomProfile($soll, 'Temperature.HM_30.5');
+$sollAktion = IPS_CreateScript(0);
+IPS_SetScriptContent($sollAktion, '<?php SetValue($_IPS["VARIABLE"], $_IPS["VALUE"]);');
+IPS_SetVariableCustomAction($soll, $sollAktion);
+pruefe($sollbereich($soll) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.5], 'Profil wie am nuc: 30,5 „On“ ist ein Sonderwert, „16,0“ eine Zahl: ' . json_encode($sollbereich($soll)));
+IPS_CreateVariableProfile('~Temperature.HM', VARIABLETYPE_FLOAT);
+IPS_SetVariableProfileValues('~Temperature.HM', 6, 30, 0.5);
+$sollAlt = variable(VARIABLETYPE_FLOAT, 100.0);
+IPS_SetVariableCustomProfile($sollAlt, '~Temperature.HM');
+pruefe($sollbereich($sollAlt) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.5], '~Temperature.HM (HM-CC-TC): 6 bis 30: ' . json_encode($sollbereich($sollAlt)));
+IPS_CreateVariableProfile('VoiceControlTest.SollAusEin', VARIABLETYPE_FLOAT);
+IPS_SetVariableProfileValues('VoiceControlTest.SollAusEin', 4.5, 30.5, 0.5);
+IPS_SetVariableProfileAssociation('VoiceControlTest.SollAusEin', 4.5, 'Aus', '', -1);
+IPS_SetVariableProfileAssociation('VoiceControlTest.SollAusEin', 30.5, 'Ein', '', -1);
+$sollAusEin = variable(VARIABLETYPE_FLOAT, 20.0);
+IPS_SetVariableCustomProfile($sollAusEin, 'VoiceControlTest.SollAusEin');
+pruefe($sollbereich($sollAusEin) === ['min' => 5.0, 'max' => 30.0, 'step' => 0.5], 'Sonderwerte an beiden Rändern fallen heraus: ' . json_encode($sollbereich($sollAusEin)));
+$haSoll = variable(VARIABLETYPE_FLOAT, 21.5);
+IPS_SetVariableCustomPresentation($haSoll, ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'MIN' => 6, 'MAX' => 30, 'STEP_SIZE' => 0.5, 'SUFFIX' => ' °C']);
+pruefe($sollbereich($haSoll) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.5], 'Darstellung Schieberegler (HomeAssistant-Modul): ' . json_encode($sollbereich($haSoll)));
+pruefe($sollbereich(variable(VARIABLETYPE_FLOAT, 20.0)) === null && $sollbereich(59999) === null, 'ohne Profil und Darstellung oder ohne Variable: unbekannt');
+
+// Freigabeliste mit Thermostat: Schema, Abfrage, Stellen, Selbsttest, Validierung
+IPS_CreateVariableProfile('~Temperature', VARIABLETYPE_FLOAT);
+IPS_SetVariableProfileText('~Temperature', '', ' °C');
+IPS_SetVariableProfileDigits('~Temperature', 1);
+$ist = variable(VARIABLETYPE_FLOAT, 21.7);
+IPS_SetVariableCustomProfile($ist, '~Temperature');
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Gast', 'Name' => 'Heizung', 'Aliases' => 'Thermostat', 'Type' => 'thermostat', 'StateVariableID' => $ist, 'SetpointVariableID' => $soll, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Thermostat mit Sollwert: aktiv');
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+$schema = $werkzeuge['set_state']['inputSchema']['properties'] ?? [];
+pruefe(($schema['temperature']['type'] ?? '') === 'number' && str_contains($schema['temperature']['description'] ?? '', 'Target temperature in °C'), 'set_state hat temperature: ' . json_encode($schema['temperature'] ?? null));
+pruefe(!isset($schema['command']) && !isset($schema['percent']) && ($schema['type']['enum'] ?? []) === ['thermostat'], 'nur ein Thermostat: kein command, kein percent, Typ thermostat: ' . json_encode(array_keys($schema)));
+pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', '"Set the heating in the guest room to 21 degrees" → room=Gast, temperature=21.'), 'die Beschreibung nennt ein Beispiel: ' . ($werkzeuge['set_state']['description'] ?? ''));
+pruefe(in_array('thermostat', $werkzeuge['get_state']['inputSchema']['properties']['type']['enum'] ?? [], true), 'get_state kennt den Typ thermostat');
+$text = $m->QueryState('Gast', 'thermostat', '', false);
+pruefe(str_contains($text, 'Gast | Heizung | thermostat | setpoint 21 °C (currently ' . GetValueFormatted($ist) . ')'), 'Abfrage über den Kernel-Stub, die Ist-Temperatur als Anzeigetext der Anlage: ' . $text);
+$aufruf = new ReflectionMethod(HomeAgent::class, 'callTool');
+$r = oderNull(static fn () => $aufruf->invoke($m, 'set_state', ['room' => 'Gast', 'temperature' => 22.5], null));
+pruefe(is_array($r) && GetValue($soll) === 22.5, 'Stellen über das Werkzeug schreibt den Sollwert: ' . json_encode(GetValue($soll)) . ' ' . json_encode($r, JSON_UNESCAPED_UNICODE));
+$test = $m->RunSelfTest();
+pruefe(str_contains($test, 'Thermostat Gast Heizung: 6 to 30 °C in steps of 0.5'), 'der Selbsttest nennt den Bereich des Sollwerts: ' . $test);
+pruefe(!str_contains($test, 'Gast Heizung has no action'), 'die Ist-Temperatur braucht keine Aktion: ' . $test);
+$m->formUpdates = [];
+oderNull(static fn () => $m->UIDeviceChanged('thermostat', $ist, 0, 0, 0, 0, 0, $soll));
+pruefe(in_array(['SetpointLabel', 'value', 'SET_TEMPERATURE'], $m->formUpdates, true) && in_array(['SetpointVariableID', 'visible', true], $m->formUpdates, true), 'die Wahl des Sollwerts zieht den Spaltentext nach: ' . json_encode($m->formUpdates, JSON_UNESCAPED_UNICODE));
+
+$sollOhneAktion = variable(VARIABLETYPE_FLOAT, 20.0);
+IPS_SetVariableCustomProfile($sollOhneAktion, '~Temperature.HM');
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Gast', 'Name' => 'Heizung', 'Aliases' => '', 'Type' => 'thermostat', 'StateVariableID' => $ist, 'SetpointVariableID' => $sollOhneAktion, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(str_contains($m->RunSelfTest(), 'Note: Gast Heizung has no action on its setpoint, the assistant can read it but not set it'), 'Sollwert ohne Aktion fällt im Selbsttest auf: ' . $m->RunSelfTest());
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Gast', 'Name' => 'Heizung', 'Aliases' => '', 'Type' => 'thermostat', 'StateVariableID' => $ist, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201 && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Device "Heizung" (Gast): no variable selected for Setpoint'), 'Thermostat ohne Sollwert: Status 201 und Log');
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'MovingVariableID' => $laeuft, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+
+/* --- Alexa-Import (build 37/39): Vorschläge im Fenster, freigegeben wird nur, was angehakt ist --- */
+
+// Aktionen nach Namen, auch innerhalb einer Zeile (RowLayout)
+$aktionen = static function () use ($m): array {
+    $flach = [];
+    foreach (json_decode($m->GetConfigurationForm(), true)['actions'] ?? [] as $element) {
+        foreach (($element['type'] ?? '') === 'RowLayout' ? $element['items'] : [$element] as $e) {
+            if (isset($e['name'])) {
+                $flach[$e['name']] = $e;
+            }
+        }
+    }
+    return $flach;
+};
+$zeilen = array_values(array_filter(json_decode($m->GetConfigurationForm(), true)['actions'] ?? [], static fn (array $e): bool => ($e['type'] ?? '') === 'RowLayout'));
+pruefe(array_filter($zeilen, static fn (array $z): bool => array_column($z['items'], 'name') === ['AlexaInstance', 'ImportAlexa']) !== [], 'Auswahl und Knopf stehen in einer Zeile (Burkhard: Platz sparen)');
+pruefe(($aktionen()['AlexaInstance']['visible'] ?? true) === false, 'ohne Alexa-Instanz ist die Auswahl unsichtbar: ' . json_encode($aktionen()['AlexaInstance'] ?? null));
+
+// Ersatz für das Alexa-Modul von Symcon: echte GUID, Listen als Properties wie am nuc (#10110)
+final class AlexaErsatz extends IPSModuleStrict
+{
+    public function Create(): void
+    {
+        parent::Create();
+        foreach (['DeviceGenericSwitch', 'DeviceLightSwitch', 'DeviceLightDimmer', 'DeviceLock', 'DeviceShutter', 'DeviceThermostat', 'DeviceTemperatureSensor', 'DeviceSimpleScene'] as $liste) {
+            $this->RegisterPropertyString($liste, '[]');
+        }
+    }
+}
+$alexa = IPS\ObjectManager::registerObject(1 /* Instance */);
+IPS\InstanceManager::createInstance($alexa, ['ModuleID' => '{CC759EB6-7821-4AA5-9267-EF08C6A6A5B3}', 'ModuleName' => 'Alexa', 'ModuleType' => 0, 'Class' => AlexaErsatz::class]);
+IPS_SetName($alexa, 'Alexa');
+$kuechenlicht = variable(VARIABLETYPE_BOOLEAN, false);
+IPS_SetName($kuechenlicht, 'STATE');
+$flurlicht = variable(VARIABLETYPE_BOOLEAN, false);
+$schloss = variable(VARIABLETYPE_BOOLEAN, false);
+IPS_SetProperty($alexa, 'DeviceLightSwitch', json_encode([
+    ['Status' => 'OK', 'ID' => '1', 'Name' => 'Deckenlicht Küche', 'PowerControllerID' => $kuechenlicht],
+    ['Status' => 'OK', 'ID' => '3', 'Name' => 'Deckenlicht Flur', 'PowerControllerID' => $flurlicht],
+]));
+IPS_SetProperty($alexa, 'DeviceLock', json_encode([['Status' => 'OK', 'ID' => '2', 'Name' => 'Tür Küche', 'LockControllerID' => $schloss]]));
+IPS_ApplyChanges($alexa);
+IPS_SetProperty($iid, 'Rooms', json_encode([['Name' => 'Küche', 'Aliases' => '', 'Floor' => ''], ['Name' => 'Flur', 'Aliases' => '', 'Floor' => '']]));
+IPS_ApplyChanges($iid);
+$vorher = IPS_GetProperty($iid, 'Devices');
+
+$auswahl = $aktionen()['AlexaInstance'] ?? [];
+pruefe(($auswahl['type'] ?? '') === 'Select' && ($auswahl['visible'] ?? false) === true && ($auswahl['options'] ?? []) === [['caption' => 'Alexa (#' . $alexa . ')', 'value' => $alexa]] && ($auswahl['value'] ?? 0) === $alexa, 'Auswahl nennt die Alexa-Instanz und wählt sie vor: ' . json_encode($auswahl, JSON_UNESCAPED_UNICODE));
+pruefe(($aktionen()['ImportAlexa']['onClick'] ?? '') === 'HAGT_UIImportAlexa($id, $AlexaInstance);' && ($aktionen()['ImportAlexa']['visible'] ?? false) === true, 'Knopf für den Vorschlag: ' . json_encode($aktionen()['ImportAlexa'] ?? null));
+$fenster = $aktionen()['AlexaPopup'] ?? [];
+$elemente = array_column($fenster['popup']['items'] ?? [], null, 'name');
+pruefe(($fenster['type'] ?? '') === 'PopupAlert' && ($fenster['visible'] ?? true) === false, 'das Vorschlagsfenster ist ein PopupAlert und anfangs zu: ' . json_encode(array_diff_key($fenster, ['popup' => 1])));
+pruefe(array_column($elemente['AlexaProposals']['columns'] ?? [], 'name') === ['Take', 'Room', 'Name', 'Type', 'Aliases', 'Index'] && (($elemente['AlexaProposals']['columns'][0]['edit']['type'] ?? '') === 'CheckBox'), 'Vorschlagsliste mit Haken je Zeile: ' . json_encode(array_column($elemente['AlexaProposals']['columns'] ?? [], 'name')));
+pruefe(isset($elemente['AlexaSummary']) && str_contains($fenster['popup']['buttons'][0]['onClick'] ?? '', 'HAGT_UIApplyAlexa($id, json_encode($ausgewaehlt))'), 'Meldung im Fenster und Knopf „Ausgewählte freigeben“: ' . json_encode($fenster['popup']['buttons'] ?? null));
+pruefe((array_column($elemente['AlexaProposals']['columns'] ?? [], null, 'name')['Room']['edit']['type'] ?? '') === 'ValidationTextBox' && str_contains($fenster['popup']['buttons'][0]['onClick'] ?? '', "[\$zeile['Index'], \$zeile['Room']]"), 'der Raum ist im Fenster bearbeitbar und geht mit der Nummer an das Modul: ' . ($fenster['popup']['buttons'][0]['onClick'] ?? ''));
+
+$m->formUpdates = [];
+$meldung = (string)oderNull(static fn () => $m->UIImportAlexa($alexa));
+$felder = [];
+foreach ($m->formUpdates as [$feld, $parameter, $wert]) {
+    $felder[$feld . '.' . $parameter] = $wert;
+}
+$vorschlaege = json_decode((string)($felder['AlexaProposals.values'] ?? '[]'), true);
+pruefe(str_starts_with($meldung, '2 device(s) proposed, 0 already released, 1 without a matching type (lock 1)') && ($felder['AlexaSummary.caption'] ?? '') === $meldung, 'Meldung im Fenster: ' . $meldung);
+pruefe(($felder['AlexaPopup.visible'] ?? null) === true, 'das Fenster öffnet sich');
+pruefe(count($vorschlaege) === 2 && ($vorschlaege[0] ?? null) === ['Take' => true, 'Room' => 'Küche', 'Name' => 'Deckenlicht', 'Type' => 'Light', 'Aliases' => 'Deckenlicht Küche', 'Index' => 0], 'Vorschläge mit vorbelegtem Haken: ' . json_encode($vorschlaege, JSON_UNESCAPED_UNICODE));
+pruefe(!isset($felder['Devices.values']) && IPS_GetProperty($iid, 'Devices') === $vorher, 'die Freigabeliste bleibt beim Vorschlagen unberührt');
+
+// Alle oder keine anhaken: Knöpfe im Fenster (ein Knopf in popup.buttons schlösse es ohne Ausgabe)
+$knoepfe = [];
+foreach ($fenster['popup']['items'] ?? [] as $element) {
+    foreach (($element['type'] ?? '') === 'RowLayout' ? $element['items'] : [] as $knopf) {
+        $knoepfe[$knopf['caption'] ?? ''] = $knopf['onClick'] ?? '';
+    }
+}
+pruefe($knoepfe === ['Tick all' => 'HAGT_UISetAlexaTakes($id, true);', 'Tick none' => 'HAGT_UISetAlexaTakes($id, false);'], 'Knöpfe „Alle anhaken“ und „Keine anhaken“ über der Liste: ' . json_encode($knoepfe));
+$haken = static function (bool $an) use ($m): ?array {
+    $m->formUpdates = [];
+    oderNull(static fn () => $m->UISetAlexaTakes($an));
+    $werte = array_values(array_filter($m->formUpdates, static fn (array $u): bool => $u[0] === 'AlexaProposals' && $u[1] === 'values'));
+    return isset($werte[0]) ? array_column(json_decode((string)$werte[0][2], true), 'Take') : null;
+};
+pruefe($haken(false) === [false, false], 'keine anhaken: ' . json_encode($haken(false)));
+pruefe($haken(true) === [true, true], 'alle anhaken: ' . json_encode($haken(true)));
+
+$m->formUpdates = [];
+$meldung = (string)oderNull(static fn () => $m->UIApplyAlexa('[1]'));
+$liste = json_decode(IPS_GetProperty($iid, 'Devices'), true);
+$neu = end($liste) ?: [];
+// Ein Popup-Knopf zeigt jede Ausgabe rot im Popup, außer sie beginnt mit „MESSAGE:“ (Doku PopupAlert, buttons).
+pruefe($meldung === 'MESSAGE:1 device(s) released.', 'Erfolg als Meldungsdialog, nicht als rote Fehlermeldung: ' . $meldung);
+pruefe(count($liste) === count(json_decode($vorher, true)) + 1 && ($neu['Room'] ?? '') === 'Flur' && ($neu['StateVariableID'] ?? 0) === $flurlicht, 'nur die angehakte Zeile ist gespeichert: ' . json_encode($neu, JSON_UNESCAPED_UNICODE));
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && in_array(['AlexaPopup', 'visible', false], $m->formUpdates, true), 'Instanz aktiv, Fenster zu');
+pruefe((string)oderNull(static fn () => $m->UIApplyAlexa('[0]')) === 'Propose devices first.', 'ohne neuen Vorschlag gibt es nichts freizugeben');
+oderNull(static fn () => $m->UIImportAlexa($alexa));
+pruefe((string)oderNull(static fn () => $m->UIApplyAlexa('[]')) === 'Nothing was selected.' && count(json_decode(IPS_GetProperty($iid, 'Devices'), true)) === count($liste), 'ohne Haken wird nichts gespeichert');
+$m->formUpdates = [];
+$meldung = (string)oderNull(static fn () => $m->UIImportAlexa($alexa));
+pruefe(str_starts_with($meldung, '1 device(s) proposed, 1 already released'), 'beim nächsten Vorschlag ist das Flurlicht schon freigegeben: ' . $meldung);
+
+// Stufe 1 der Räume (Burkhard, 10.10.2026): Raum im Fenster ändern, ein neuer Raum kommt in die Raumliste
+$meldung = (string)oderNull(static fn () => $m->UIApplyAlexa('[[0, "Wohnküche"]]'));
+$liste = json_decode(IPS_GetProperty($iid, 'Devices'), true);
+$raumNamen = array_column(json_decode(IPS_GetProperty($iid, 'Rooms'), true), 'Name');
+pruefe($meldung === 'MESSAGE:1 device(s) released, 1 room(s) added to the room list.', 'Meldung nennt den neuen Raum: ' . $meldung);
+pruefe((end($liste)['Room'] ?? '') === 'Wohnküche' && $raumNamen === ['Küche', 'Flur', 'Wohnküche'], 'Gerät im geänderten Raum, der Raum steht in der Raumliste: ' . json_encode($raumNamen, JSON_UNESCAPED_UNICODE));
+IPS_SetProperty($iid, 'Devices', $vorher);
+IPS_SetProperty($iid, 'Rooms', json_encode([['Name' => 'Küche', 'Aliases' => 'Kochen', 'Floor' => ''], ['Name' => 'Flur', 'Aliases' => '', 'Floor' => '']]));
+IPS_ApplyChanges($iid);
+oderNull(static fn () => $m->UIImportAlexa($alexa));
+$meldung = (string)oderNull(static fn () => $m->UIApplyAlexa('[[0, "kochen"], [1, " "]]'));
+$liste = json_decode(IPS_GetProperty($iid, 'Devices'), true);
+$neue = array_slice($liste, -2);
+pruefe($meldung === 'MESSAGE:2 device(s) released.' && count(json_decode(IPS_GetProperty($iid, 'Rooms'), true)) === 2, 'ein Alias ist kein neuer Raum: ' . $meldung);
+pruefe(array_column($neue, 'Room') === ['Küche', ''], 'der Alias wird zum Namen aus der Raumliste, ein geleerter Raum bleibt leer: ' . json_encode(array_column($neue, 'Room'), JSON_UNESCAPED_UNICODE));
+IPS_SetProperty($iid, 'Devices', $vorher);
+IPS_SetProperty($iid, 'Rooms', json_encode([['Name' => 'Küche', 'Aliases' => '', 'Floor' => ''], ['Name' => 'Flur', 'Aliases' => '', 'Floor' => '']]));
+IPS_ApplyChanges($iid);
+// Rollladen nur mit Fahrbefehl: Profil wie am nuc (~ShutterMoveStop 0 Öffnen, 2 Stop, 4 Schließen)
+if (!IPS_VariableProfileExists('~ShutterMoveStop')) {
+    IPS_CreateVariableProfile('~ShutterMoveStop', VARIABLETYPE_INTEGER);
+    IPS_SetVariableProfileValues('~ShutterMoveStop', 0, 4, 0);
+    foreach ([[0, 'Öffnen'], [2, 'Stop'], [4, 'Schließen']] as [$wert, $text]) {
+        IPS_SetVariableProfileAssociation('~ShutterMoveStop', $wert, $text, '', -1);
+    }
+}
+$fahrbefehl = variable(VARIABLETYPE_INTEGER, 2);
+IPS_SetVariableCustomProfile($fahrbefehl, '~ShutterMoveStop');
+IPS_SetProperty($alexa, 'DeviceShutter', json_encode([['Status' => 'OK', 'ID' => '4', 'Name' => 'Rollladen Küche', 'RangeControllerShutterID' => $fahrbefehl]]));
+IPS_ApplyChanges($alexa);
+$m->formUpdates = [];
+$meldung = (string)oderNull(static fn () => $m->UIImportAlexa($alexa));
+$felder = [];
+foreach ($m->formUpdates as [$feld, $parameter, $wert]) {
+    $felder[$feld . '.' . $parameter] = $wert;
+}
+pruefe(str_contains($meldung, 'blind without position 1') && !in_array('Rollladen', array_column(json_decode((string)($felder['AlexaProposals.values'] ?? '[]'), true), 'Name'), true), 'ein Alexa-Rollladen mit ~ShutterMoveStop wird nicht als Position vorgeschlagen: ' . $meldung);
+IPS_SetProperty($alexa, 'DeviceShutter', '[]');
+IPS_ApplyChanges($alexa);
+
+$m->formUpdates = [];
+$meldung = (string)oderNull(static fn () => $m->UIImportAlexa($iid));
+pruefe($meldung === 'Choose an Alexa instance.' && !in_array(['AlexaPopup', 'visible', true], $m->formUpdates, true), 'eine andere Instanz wird abgewiesen: ' . $meldung);
+IPS_SetProperty($iid, 'Devices', $vorher);
+IPS_ApplyChanges($iid);
+/* --- Verlauf von Messwerten (10.10.2026): Zeiträume auch ohne Zähler im Schema ------------------ */
+
+$geraeteVorher = IPS_GetProperty($iid, 'Devices');
+$raumTemperatur = variable(VARIABLETYPE_FLOAT, 21.5);
+IPS_SetProperty($iid, 'Devices', json_encode([['Room' => 'Gast', 'Name' => 'Temperatur', 'Aliases' => '', 'Type' => 'temperature', 'StateVariableID' => $raumTemperatur, 'Invert' => false]]));
+IPS_ApplyChanges($iid);
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+$abfrage = $werkzeuge['get_state'] ?? [];
+$felder = $abfrage['inputSchema']['properties'] ?? [];
+pruefe(isset($felder['period'], $felder['from'], $felder['to']) && !in_array('now', $felder['period']['enum'] ?? [], true), 'nur ein Temperatursensor: period, from und to gibt es für den Verlauf, „now“ nicht: ' . json_encode(array_keys($felder)));
+pruefe(str_contains($felder['period']['description'] ?? '', 'For measured values such as temperature or humidity: the history per hour, day or month (minimum / average / maximum).'), 'die Beschreibung nennt den Verlauf: ' . ($felder['period']['description'] ?? ''));
+pruefe(str_contains($abfrage['description'] ?? '', '"How warm was it in the guest room over the last 30 days?" → room=Gast, type=temperature, from='), 'mit Beispiel: ' . ($abfrage['description'] ?? ''));
+IPS_SetProperty($iid, 'Devices', $geraeteVorher);
+IPS_ApplyChanges($iid);
+
+/* --- Tokens: Mindestlänge, erzeugen, Fehlversuche (Sicherheitsreview 06.10.2026) ------------- */
+
+IPS_SetProperty($iid, 'Devices', json_encode($geraeteStart)); // der Abschnitt davor hinterlässt eine fehlerhafte Liste
+$setze('Accesses', [$zugang('Lang', 'lang-token-0123456789abcdef')]);
+pruefe($status() === IS_ACTIVE, 'Ausgangslage: aktiv, nicht ' . $status());
+$formular = json_decode($m->GetConfigurationForm(), true);
+pruefe(array_filter($formular['elements'], static fn (array $e): bool => str_starts_with((string)($e['name'] ?? ''), 'ListError')) === [], 'ohne Fehler keine Fehlermeldung im Formular');
+pruefe(array_filter(array_column(array_column(flach($formular['elements']), null, 'name')['Accesses']['values'] ?? [], 'rowColor')) === [], 'und keine rote Zeile');
+$setze('Accesses', [$zugang('Kurz', 'abc123'), $zugang('Lang', 'lang-token-0123456789abcdef')]);
+pruefe($status() === 201, 'ein Token unter 24 Zeichen ist ein Fehler: Status 201, nicht ' . $status());
+pruefe(str_contains($logText(), 'Access "Kurz": token is shorter than 24 characters') && !str_contains($logText(), 'abc123'), 'das Log nennt den Zugang, aber nicht das Token');
+
+// Fehler im Formular: oben die Meldungen, in der Liste die Zeile rot (Wunsch Burkhard 06.10.2026,
+// „Zugang 3“ taugt nicht, weil sich die Spalten sortieren lassen, und der Hinweis gehört ins Formular)
+$formular = json_decode($m->GetConfigurationForm(), true);
+$elemente = array_column(flach($formular['elements']), null, 'name');
+$fehlerTexte = array_column(array_filter($formular['elements'], static fn (array $e): bool => str_starts_with((string)($e['name'] ?? ''), 'ListError')), 'caption');
+pruefe(count($fehlerTexte) === 2 && in_array('Access "Kurz": token is shorter than 24 characters', $fehlerTexte, true), 'oben im Formular stehen Überschrift und Fehler: ' . json_encode($fehlerTexte));
+pruefe(array_column($elemente['Accesses']['values'] ?? [], 'rowColor') === ['#FFC0C0', ''], 'die fehlerhafte Zeile ist rot, die andere nicht: ' . json_encode($elemente['Accesses']['values'] ?? null));
+pruefe(!str_contains(json_encode($formular), 'abc123'), 'das Formular trägt das Token nicht in die Werte');
+$tokenSpalte = array_column($elemente['Accesses']['columns'] ?? [], null, 'name')['Token']['edit'] ?? [];
+$muster = '/' . str_replace('/', '\/', (string)($tokenSpalte['validate'] ?? 'x^')) . '/';
+pruefe(preg_match($muster, str_repeat('a1', 32)) === 1 && preg_match($muster, ' ' . str_repeat('b', 24) . ' ') === 1 && preg_match($muster, 'abc123') === 0 && preg_match($muster, '') === 0, 'die Token-Spalte prüft die Mindestlänge schon bei der Eingabe: ' . ($tokenSpalte['validate'] ?? '-'));
+
+try {
+    $m->UIGenerateToken();
+    $m->UIGenerateToken();
+} catch (Throwable $e) {
+    pruefe(false, 'UIGenerateToken fehlt: ' . $e->getMessage());
+}
+$erzeugt = array_values(array_filter($m->formUpdates, static fn (array $u): bool => $u[0] === 'GeneratedToken' && $u[1] === 'value'));
+pruefe(count($erzeugt) === 2 && preg_match('/^[0-9a-f]{64}$/', (string)$erzeugt[0][2]) === 1 && $erzeugt[0][2] !== $erzeugt[1][2], 'der Knopf erzeugt jedes Mal ein neues Token aus 64 Hex-Zeichen: ' . count($erzeugt));
+pruefe(in_array(['GeneratedToken', 'visible', true], $m->formUpdates, true), 'und zeigt das Feld zum Kopieren an');
+$aktionen = array_column(json_decode($m->GetConfigurationForm(), true)['actions'], null, 'name');
+pruefe(($aktionen['GeneratedToken']['visible'] ?? null) === false, 'das Feld ist anfangs unsichtbar');
+
+// Die Bremse selbst, mit vorgegebener Uhrzeit
+if (is_file(dirname(__DIR__) . '/libs/SignInGuard.php')) {
+    require_once dirname(__DIR__) . '/libs/SignInGuard.php';
+}
+if (class_exists('SignInGuard')) {
+    $ereignisse = static fn (array $schritt): array => array_column($schritt['events'], 0);
+    $s = SignInGuard::failure([], 1000);
+    pruefe($ereignisse($s) === ['first'], 'der erste Fehlversuch einer Minute wird gemeldet: ' . json_encode($s['events']));
+    for ($t = 1001; $t <= 1004; $t++) {
+        $s = SignInGuard::failure($s['state'], $t);
+        pruefe($s['events'] === [], 'weitere Fehlversuche derselben Minute bleiben still');
+    }
+    $s = SignInGuard::failure($s['state'], 1070);
+    pruefe($s['events'] === [['summary', 5, 1000], ['first']], 'nach der Minute kommt die Zusammenfassung der vorigen: ' . json_encode($s['events']));
+
+    $s = ['state' => []];
+    for ($t = 0; $t < 20; $t++) {
+        $s = SignInGuard::failure($s['state'], 2000 + $t);
+    }
+    pruefe(in_array('blocked', $ereignisse($s), true) && SignInGuard::blockedFor($s['state'], 2019) === 60 && SignInGuard::blockedFor($s['state'], 2050) === 29, 'nach 20 Fehlversuchen in einer Minute 60 s Sperre: ' . SignInGuard::blockedFor($s['state'], 2019));
+    pruefe(SignInGuard::blockedFor($s['state'], 2079) === 0 && SignInGuard::blockedFor([], 2079) === 0, 'danach ist der Endpunkt wieder offen');
+    $s = SignInGuard::failure($s['state'], 2079);
+    pruefe($ereignisse($s) === ['summary', 'first'], 'der nächste Fehlversuch beginnt eine neue Minute: ' . json_encode($s['events']));
+} else {
+    pruefe(false, 'die Klasse SignInGuard fehlt');
+}
+
+// Am Hook: Fehlversuche ins Log, nach 20 in einer Minute 429 für alle
+$token = 'lang-token-0123456789abcdef';
+$setze('Accesses', [$zugang('Lang', $token)]);
+pruefe($status() === IS_ACTIVE, 'Ausgangslage für den Hook: aktiv, nicht ' . $status());
+$hook = new ReflectionMethod(HomeAgent::class, 'ProcessHookData');
+$anfrage = static function (string $auth) use ($hook, $m, $iid): string {
+    $_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $iid, 'HTTP_AUTHORIZATION' => $auth, 'REMOTE_ADDR' => '192.0.2.1'];
+    ob_start();
+    try {
+        $hook->invoke($m);
+    } finally {
+        $ausgabe = (string)ob_get_clean();
+    }
+    return $ausgabe;
+};
+$vorher = count($m->logs());
+$a = $anfrage('Bearer ' . $token);
+pruefe(str_contains($a, 'Parse error'), 'das richtige Token kommt durch (leerer Körper ergibt Parse error): ' . $a . ' Status ' . $status());
+for ($i = 1; $i <= 19; $i++) {
+    $anfrage('Bearer falsch-' . $i);
+}
+$neu = array_column(array_slice($m->logs(), $vorher), 'Message');
+pruefe(count(array_filter($neu, static fn (string $t): bool => str_contains($t, 'Rejected sign-in'))) === 1, 'von 19 Fehlversuchen einer Minute steht einer im Log: ' . implode(' / ', $neu));
+pruefe(str_contains($anfrage('Bearer ' . $token), 'Parse error'), 'nach 19 Fehlversuchen kommt das richtige Token noch durch');
+$anfrage('Bearer falsch-20');
+pruefe(str_contains($logText(), 'Too many rejected sign-ins, the endpoint is blocked for 60 s'), 'der 20. Fehlversuch sperrt den Endpunkt und steht im Log');
+$a = $anfrage('Bearer ' . $token);
+pruefe(str_contains($a, 'Too many rejected sign-ins'), 'während der Sperre bekommt auch das richtige Token eine Absage: ' . $a);
+pruefe(!str_contains($logText(), $token) && !str_contains($logText(), 'falsch-'), 'kein Token steht im Log');
+
+/* --- Rest aus Code- und Sicherheitsreview 06.10.2026 ------------------------------------------ */
+
+// Nicht bereit (Status 104 oder 201): eine Antwort, die das sagt, statt „falsches Token“ (401).
+// Vorher begann ein Client wie HA bei 401 mit der OAuth-Suche, und man suchte einen Tokenfehler.
+$setze('Accesses', []);
+pruefe($status() === 104, 'Ausgangslage: kein Zugang, Status 104');
+$a = $anfrage('Bearer ' . $token);
+pruefe(str_contains($a, 'not ready') && !str_contains($a, 'Missing or invalid bearer token'), 'nicht bereit wird als solches gemeldet: ' . $a);
+pruefe(!str_contains($a, '104') && !str_contains($a, 'Access'), 'ohne Einzelheiten der Konfiguration: ' . $a);
+
+// Ein Token mit Leerzeichen am Rand gilt wie ohne; die Mindestlänge zählt ohne Rand
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', ''); // die Sperre aus dem Abschnitt davor aufheben
+$setze('Accesses', [$zugang('Rand', ' ' . $token . ' ')]);
+pruefe($status() === IS_ACTIVE && str_contains($anfrage('Bearer ' . $token), 'Parse error'), 'eingefügtes Leerzeichen am Rand stört nicht: Status ' . $status());
+$setze('Accesses', [$zugang('Kurz mit Rand', str_repeat(' ', 10) . 'kurz-token' . str_repeat(' ', 10))]);
+pruefe($status() === 201, 'Leerzeichen zählen nicht zur Mindestlänge: Status ' . $status());
+
+// ActionFailed begrenzen: Schlüssel prüfen, Text kürzen und ohne Steuerzeichen, höchstens 50 Einträge
+$setze('Accesses', [$zugang('Lang', $token)]);
+$lang = "Erste Zeile\nZweite Zeile\r\n" . str_repeat('x', 1000);
+IPS_RequestAction($iid, 'ActionFailed', json_encode(['key' => 'aaaaaaaaaaaa', 'variable' => $licht, 'error' => $lang]));
+$text = (string)$lesen->invoke($m, 'aaaaaaaaaaaa');
+pruefe(mb_strlen($text) <= 300 && !preg_match('/[\x00-\x1F]/', $text) && str_starts_with($text, 'Erste Zeile Zweite Zeile'), 'Fehlertext gekürzt und einzeilig: ' . mb_strlen($text) . ' ' . json_encode(mb_substr($text, 0, 40)));
+$alleLogs = $m->logs();
+$letzte = (string)(end($alleLogs)['Message'] ?? '');
+pruefe(!preg_match('/[\x00-\x1F]/', $letzte) && mb_strlen($letzte) < 400, 'auch im Log einzeilig und gekürzt: ' . mb_strlen($letzte));
+foreach (['../etc', 'ABCDEFABCDEF', str_repeat('a', 13), ''] as $schluessel) {
+    try {
+        IPS_RequestAction($iid, 'ActionFailed', json_encode(['key' => $schluessel, 'variable' => $licht, 'error' => 'x']));
+        pruefe(false, 'ungültiger Schlüssel hätte abgewiesen werden müssen: ' . json_encode($schluessel));
+    } catch (ErrorException $e) {
+        pruefe(str_contains($e->getMessage(), 'ActionFailed expects'), 'ungültiger Schlüssel wird abgewiesen: ' . json_encode($schluessel));
+    }
+}
+for ($i = 0; $i < 60; $i++) {
+    IPS_RequestAction($iid, 'ActionFailed', json_encode(['key' => sprintf('%012x', $i), 'variable' => $licht, 'error' => 'Fehler ' . $i]));
+}
+$gemerkt = json_decode((string)(new ReflectionMethod($m, 'GetBuffer'))->invoke($m, 'ActionFailures'), true);
+pruefe(is_array($gemerkt) && count($gemerkt) <= 50 && $lesen->invoke($m, sprintf('%012x', 59)) === 'Fehler 59' && $lesen->invoke($m, sprintf('%012x', 0)) === null, 'höchstens 50 Einträge, die ältesten fallen heraus: ' . (is_array($gemerkt) ? count($gemerkt) : '?'));
+
+ende('Modul');

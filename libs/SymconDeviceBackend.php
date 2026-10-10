@@ -1,0 +1,456 @@
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/DeviceBackend.php';
+
+/** Anbindung der Freigabeliste an die laufende Symcon-Anlage. */
+final class SymconDeviceBackend implements DeviceBackend
+{
+    /**
+     * Skript, in dem eine Aktion läuft; %s ist der Aufruf. RequestAction meldet einen Fehlschlag
+     * als PHP-Warnung plus false; der Text der Warnung ist die einzige Auskunft über die Ursache
+     * und geht deshalb über die Aktion „ActionFailed“ an die Instanz zurück.
+     */
+    private const ACTION_SCRIPT = <<<'PHP'
+        $error = null;
+        set_error_handler(static function (int $number, string $text) use (&$error): bool {
+            $error = $text;
+            return true;
+        });
+        try {
+            $ok = (bool)(%s);
+        } catch (Throwable $e) {
+            $ok = false;
+            $error = $e->getMessage();
+        }
+        restore_error_handler();
+        if (!$ok && $_IPS['HAGT_INSTANCE'] > 0) {
+            IPS_RequestAction($_IPS['HAGT_INSTANCE'], 'ActionFailed', json_encode([
+                'key'      => $_IPS['HAGT_KEY'],
+                'variable' => $_IPS['HAGT_VARIABLE'],
+                'error'    => $error ?? 'RequestAction returned false',
+            ], JSON_INVALID_UTF8_SUBSTITUTE));
+        }
+        PHP;
+
+    private const REQUEST_CALL = 'RequestAction($_IPS[\'HAGT_VARIABLE\'], $_IPS[\'HAGT_VALUE\'])';
+
+    /**
+     * Module, deren Geräte sich nur über eine Modulfunktion anhalten lassen (keine Variable STOP an
+     * der Instanz, nuc 09.10.2026): Modul-GUID => Name und Aufruf mit der Instanz der Position.
+     * Signaturen: bool HM_WriteValueBoolean(int $InstanzID, string $Parameter, bool $Wert) laut
+     * Befehlsreferenz, bool KLF200_ShutterMoveStop(int $InstanzeID) laut README des Moduls.
+     */
+    private const STOP_MODULES = [
+        '{EE4A81C6-5C90-4DB7-AD2F-F6BBD521412E}' => ['HomeMatic', 'HM_WriteValueBoolean(%d, \'STOP\', true)'],
+        '{4EBD07B1-2962-4531-AC5F-7944789A9CE5}' => ['KLF200', 'KLF200_ShutterMoveStop(%d)'],
+    ];
+
+    /** Einträge einer Stoppvariable, die „anhalten“ bedeuten (Groß- und Kleinschreibung egal). */
+    private const STOP_CAPTIONS = ['stop', 'stopp'];
+
+    /** Modul „Archive Control“. */
+    private const ARCHIVE_CONTROL = '{43192F0B-135B-4CE7-A0A7-1475603F3060}';
+
+    /** Aggregationstyp „Zähler“ laut AC_GetAggregationType (0 Standard, 1 Zähler). */
+    private const AGGREGATION_COUNTER = 1;
+
+    /** VARIABLE_PRESENTATION_SHUTTER; als GUID, weil es die Konstante erst ab Symcon 8.0 gibt. */
+    private const PRESENTATION_SHUTTER = '{6075FC22-69AF-B110-3749-C24138883082}';
+
+    /** @var callable(string): string */
+    private $translator;
+
+    private int $instanceId;
+
+    /** @var null|callable(string): ?string */
+    private $readFailure;
+
+    /** @var array<int, string> Auftragsnummer der zuletzt ausgelösten Aktion je Variable */
+    private array $started = [];
+
+    /** @var null|callable(int): ?array liest den Fahrtmerker einer Positionsvariable */
+    private $readTravel;
+
+    /** @var null|callable(int, ?array): void schreibt oder löscht den Fahrtmerker */
+    private $storeTravel;
+
+    /**
+     * @param callable(string): string $translator
+     * @param int $instanceId Instanz, an die ein Aktionsskript seinen Fehlschlag meldet (0 = keine)
+     * @param null|callable(string): ?string $readFailure liest den gemeldeten Fehlertext zu einer Auftragsnummer
+     * @param null|callable(int): ?array $readTravel liest den Fahrtmerker (null = ohne Merker)
+     * @param null|callable(int, ?array): void $storeTravel schreibt den Fahrtmerker
+     */
+    public function __construct(callable $translator, int $instanceId = 0, ?callable $readFailure = null, ?callable $readTravel = null, ?callable $storeTravel = null)
+    {
+        $this->translator = $translator;
+        $this->instanceId = $instanceId;
+        $this->readFailure = $readFailure;
+        $this->readTravel = $readTravel;
+        $this->storeTravel = $storeTravel;
+    }
+
+    public function read(int $variableId): ?array
+    {
+        if ($variableId <= 0 || !IPS_VariableExists($variableId)) {
+            return null;
+        }
+        // Profile mit leerem Suffix hängen ein Leerzeichen an („Geöffnet “ beim Velux KLF200)
+        return ['value' => GetValue($variableId), 'formatted' => trim(GetValueFormatted($variableId))];
+    }
+
+    public function hasAction(int $variableId): bool
+    {
+        return $variableId > 0 && IPS_VariableExists($variableId) && HasAction($variableId);
+    }
+
+    public function request(int $variableId, mixed $value): ?string
+    {
+        // Die Aktion läuft in einem eigenen Skript: Bei manchen Modulen kehrt RequestAction erst
+        // zurück, wenn das Gerät am Ziel ist (Velux KLF200 mit WaitForFinishSession: 31 Sekunden
+        // für eine Fahrt). Die Antwort an den Assistenten darf darauf nicht warten.
+        return $this->runAction($variableId, self::REQUEST_CALL, $value);
+    }
+
+    public function stopMethod(int $levelVariable, int $stopVariable): string
+    {
+        if ($stopVariable > 0) {
+            return self::stopValue($stopVariable) === null ? '' : 'variable';
+        }
+        return self::stopModule($levelVariable)[0] ?? '';
+    }
+
+    public function stop(int $levelVariable, int $stopVariable): ?string
+    {
+        if ($stopVariable > 0) {
+            $value = self::stopValue($stopVariable);
+            if ($value === null) {
+                return $this->translate('cannot be stopped');
+            }
+            // Ein Fehlschlag gehört zur Position: Nach ihr fragt das wartende Werkzeug.
+            return $this->runAction($stopVariable, self::REQUEST_CALL, $value, $levelVariable);
+        }
+        $module = self::stopModule($levelVariable);
+        // Auch die Modulfunktion läuft im eigenen Skript: KLF200_ShutterMoveStop kehrte erst nach 2,4 s zurück.
+        return $module === null ? $this->translate('cannot be stopped') : $this->runAction($levelVariable, $module[1], null);
+    }
+
+    /**
+     * Startet den Aufruf im Aktionsskript. Der Fehlschlag wird unter $reportFor abgelegt, sonst
+     * unter der Variable selbst.
+     */
+    private function runAction(int $variableId, string $call, mixed $value, int $reportFor = 0): ?string
+    {
+        $key = bin2hex(random_bytes(6));
+        $this->started[$reportFor > 0 ? $reportFor : $variableId] = $key;
+        return self::guarded(fn (): bool => IPS_RunScriptTextEx(sprintf(self::ACTION_SCRIPT, $call), self::actionParameters($variableId, $value, $this->instanceId, $key)), 'IPS_RunScriptTextEx returned false');
+    }
+
+    /**
+     * Parameter des Aktionsskripts. Ohne Wert (Stopp über eine Modulfunktion) fehlt HAGT_VALUE:
+     * IPS_RunScriptTextEx nimmt null nicht an („Cannot auto-convert value for parameter Parameters
+     * (Type is not supported)“, nuc 09.10.2026).
+     *
+     * @return array<string, bool|int|float|string>
+     */
+    private static function actionParameters(int $variableId, mixed $value, int $instanceId, string $key): array
+    {
+        $parameters = ['HAGT_VARIABLE' => $variableId, 'HAGT_INSTANCE' => $instanceId, 'HAGT_KEY' => $key];
+        if ($value !== null) {
+            $parameters['HAGT_VALUE'] = $value;
+        }
+        return $parameters;
+    }
+
+    /** Wert, der eine Stoppvariable auslöst: true, oder der Wert ihres Eintrags „Stop“; null = taugt nicht. */
+    private static function stopValue(int $variableId): mixed
+    {
+        if ($variableId <= 0 || !IPS_VariableExists($variableId) || !HasAction($variableId)) {
+            return null;
+        }
+        $type = IPS_GetVariable($variableId)['VariableType'];
+        if ($type === VARIABLETYPE_BOOLEAN) {
+            return true;
+        }
+        // Einträge aus der Darstellung (OPTIONS, etwa beim HomeAssistant-Modul), sonst aus dem Profil.
+        $presentation = IPS_GetVariablePresentation($variableId);
+        $options = json_decode((string)($presentation['OPTIONS'] ?? ''), true);
+        $entries = [];
+        foreach (is_array($options) ? $options : [] as $option) {
+            if (is_array($option) && array_key_exists('Value', $option)) {
+                $entries[] = [$option['Value'], (string)($option['Caption'] ?? '')];
+            }
+        }
+        $profile = (string)($presentation['PROFILE'] ?? '');
+        if ($entries === [] && $profile !== '' && IPS_VariableProfileExists($profile)) {
+            foreach (IPS_GetVariableProfile($profile)['Associations'] as $association) {
+                $entries[] = [$association['Value'], (string)$association['Name']];
+            }
+        }
+        foreach ($entries as [$value, $caption]) {
+            if (in_array(mb_strtolower(trim($caption)), self::STOP_CAPTIONS, true)) {
+                return match ($type) {
+                    VARIABLETYPE_INTEGER => (int)$value,
+                    VARIABLETYPE_FLOAT   => (float)$value,
+                    default              => (string)$value,
+                };
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Modul der Instanz, zu der die Positionsvariable gehört, wenn es sich über eine Funktion
+     * anhalten lässt.
+     *
+     * @return null|array{0: string, 1: string} Name und fertiger Aufruf
+     */
+    private static function stopModule(int $levelVariable): ?array
+    {
+        if ($levelVariable <= 0 || !IPS_VariableExists($levelVariable)) {
+            return null;
+        }
+        $instance = IPS_GetParent($levelVariable);
+        if ($instance <= 0 || !IPS_InstanceExists($instance)) {
+            return null;
+        }
+        $module = self::STOP_MODULES[IPS_GetInstance($instance)['ModuleInfo']['ModuleID']] ?? null;
+        return $module === null ? null : [$module[0], sprintf($module[1], $instance)];
+    }
+
+    public function failure(int $variableId): ?string
+    {
+        $key = $this->started[$variableId] ?? null;
+        return $key === null || $this->readFailure === null ? null : ($this->readFailure)($key);
+    }
+
+    public function scriptExists(int $scriptId): bool
+    {
+        return $scriptId > 0 && IPS_ScriptExists($scriptId);
+    }
+
+    public function runScript(int $scriptId): ?string
+    {
+        return self::guarded(static fn (): bool => IPS_RunScript($scriptId), 'IPS_RunScript returned false');
+    }
+
+    public function range(int $variableId): ?array
+    {
+        if ($variableId <= 0 || !IPS_VariableExists($variableId)) {
+            return null;
+        }
+        $presentation = IPS_GetVariablePresentation($variableId);
+        // Die Darstellung Rollladen (ab 8.0) kennt kein MIN/MAX. Sie nennt den Rohwert für „offen“
+        // und für „geschlossen“ und damit Richtung und Bereich zugleich.
+        if (($presentation['PRESENTATION'] ?? '') === self::PRESENTATION_SHUTTER) {
+            if (!isset($presentation['OPEN_OUTSIDE_VALUE'], $presentation['CLOSE_INSIDE_VALUE'])) {
+                return null;
+            }
+            $rotation = (int)($presentation['USAGE_TYPE'] ?? 0) === 1;
+            return self::travel((float)$presentation['OPEN_OUTSIDE_VALUE'], (float)$presentation['CLOSE_INSIDE_VALUE'], $rotation ? 'rotation' : 'presentation');
+        }
+        if (isset($presentation['MIN'], $presentation['MAX'])) {
+            return self::validRange((float)$presentation['MIN'], (float)$presentation['MAX']);
+        }
+        // Legacy-Darstellung: der Bereich steht im Profil. Trägt der Profilname „.Reversed“, zählt
+        // Symcon ihn als 100 % bis 0 % (Doku „Legacy-Icons“); bei Homematic ist LEVEL 0 geschlossen.
+        $profile = (string)($presentation['PROFILE'] ?? '');
+        if ($profile !== '' && IPS_VariableProfileExists($profile)) {
+            $data = IPS_GetVariableProfile($profile);
+            $range = self::validRange((float)$data['MinValue'], (float)$data['MaxValue'], $profile);
+            if ($range !== null && str_contains(strtolower($profile), '.reversed')) {
+                return self::travel($range['max'], $range['min'], 'reversed', $profile);
+            }
+            return $range;
+        }
+        return null;
+    }
+
+    public function setpointRange(int $variableId): ?array
+    {
+        if ($variableId <= 0 || !IPS_VariableExists($variableId)) {
+            return null;
+        }
+        $presentation = IPS_GetVariablePresentation($variableId);
+        if (($presentation['PRESENTATION'] ?? '') !== self::PRESENTATION_SHUTTER && isset($presentation['MIN'], $presentation['MAX'])) {
+            $min = (float)$presentation['MIN'];
+            $max = (float)$presentation['MAX'];
+            return $max > $min ? ['min' => $min, 'max' => $max, 'step' => (float)($presentation['STEP_SIZE'] ?? 0)] : null;
+        }
+        $profile = (string)($presentation['PROFILE'] ?? '');
+        if ($profile === '') {
+            $variable = IPS_GetVariable($variableId);
+            $profile = $variable['VariableCustomProfile'] !== '' ? $variable['VariableCustomProfile'] : $variable['VariableProfile'];
+        }
+        if ($profile === '' || !IPS_VariableProfileExists($profile)) {
+            return null;
+        }
+        $data = IPS_GetVariableProfile($profile);
+        $min = (float)$data['MinValue'];
+        $max = (float)$data['MaxValue'];
+        $step = (float)$data['StepSize'];
+        // Ein Rand mit Text statt Zahl ist ein Sonderwert (Homematic: 30,5 „On“, 4,5 „Off“).
+        foreach ($data['Associations'] as $association) {
+            if (is_numeric(str_replace(',', '.', trim((string)$association['Name']))) || $step <= 0) {
+                continue;
+            }
+            if (abs((float)$association['Value'] - $max) < 0.001) {
+                $max -= $step;
+            } elseif (abs((float)$association['Value'] - $min) < 0.001) {
+                $min += $step;
+            }
+        }
+        return $max > $min ? ['min' => $min, 'max' => $max, 'step' => $step] : null;
+    }
+
+    public function sleep(int $milliseconds): void
+    {
+        IPS_Sleep($milliseconds);
+    }
+
+    public function updated(int $variableId): int
+    {
+        if ($variableId <= 0 || !IPS_VariableExists($variableId)) {
+            return 0;
+        }
+        return (int)IPS_GetVariable($variableId)['VariableUpdated'] * 1000;
+    }
+
+    public function now(): int
+    {
+        return (int)round(microtime(true) * 1000);
+    }
+
+    public function rememberedTravel(int $levelVariable): ?array
+    {
+        return $this->readTravel === null ? null : ($this->readTravel)($levelVariable);
+    }
+
+    public function rememberTravel(int $levelVariable, ?array $travel): void
+    {
+        if ($this->storeTravel !== null) {
+            ($this->storeTravel)($levelVariable, $travel);
+        }
+    }
+
+    public function counterSum(int $variableId, int $level, int $from, int $to): ?array
+    {
+        $archives = IPS_GetInstanceListByModuleID(self::ARCHIVE_CONTROL);
+        if ($archives === [] || $variableId <= 0 || !IPS_VariableExists($variableId)) {
+            return null;
+        }
+        $archive = $archives[0];
+        try {
+            if (!AC_GetLoggingStatus($archive, $variableId) || AC_GetAggregationType($archive, $variableId) !== self::AGGREGATION_COUNTER) {
+                return null;
+            }
+        } catch (Throwable) {
+            return null;
+        }
+        // Beim Zähler ist Avg die Summe der positiven Deltas des Zeitraums (Doku AC_GetAggregatedValues).
+        // Ohne Aggregate (Zähler frisch archiviert) ist die Summe 0, archiviert ist er trotzdem.
+        $sum = 0.0;
+        try {
+            foreach (AC_GetAggregatedValues($archive, $variableId, $level, $from, $to, 0) as $row) {
+                $sum += (float)$row['Avg'];
+            }
+        } catch (Throwable) {
+            $sum = 0.0;
+        }
+        return ['sum' => $sum, 'unit' => self::unitOf($variableId)];
+    }
+
+    public function history(int $variableId, int $level, int $from, int $to): ?array
+    {
+        $archives = IPS_GetInstanceListByModuleID(self::ARCHIVE_CONTROL);
+        if ($archives === [] || $variableId <= 0 || !IPS_VariableExists($variableId)) {
+            return null;
+        }
+        $archive = $archives[0];
+        try {
+            if (!AC_GetLoggingStatus($archive, $variableId) || AC_GetAggregationType($archive, $variableId) === self::AGGREGATION_COUNTER) {
+                return null;
+            }
+            // Das Archiv liefert die neuesten zuerst (Doku AC_GetAggregatedValues).
+            $rows = array_reverse(AC_GetAggregatedValues($archive, $variableId, $level, $from, $to, 0));
+        } catch (Throwable) {
+            return null;
+        }
+        return [
+            'rows' => array_map(static fn (array $r): array => ['time' => (int)$r['TimeStamp'], 'min' => (float)$r['Min'], 'avg' => (float)$r['Avg'], 'max' => (float)$r['Max']], $rows),
+            'unit' => self::unitOf($variableId),
+        ];
+    }
+
+    public function timestamp(): int
+    {
+        return time();
+    }
+
+    public function unit(int $variableId): string
+    {
+        return $variableId > 0 && IPS_VariableExists($variableId) ? self::unitOf($variableId) : '';
+    }
+
+    public function translate(string $text): string
+    {
+        return ($this->translator)($text);
+    }
+
+    /**
+     * Symcon meldet einen Fehlschlag als PHP-Warnung plus false; der Text der Warnung ist die
+     * einzige Auskunft über die Ursache und geht deshalb in die Antwort.
+     *
+     * @param callable(): bool $call
+     */
+    private static function guarded(callable $call, string $fallback): ?string
+    {
+        $error = null;
+        set_error_handler(static function (int $number, string $text) use (&$error): bool {
+            $error = $text;
+            return true;
+        });
+        try {
+            $ok = $call();
+        } catch (Throwable $e) {
+            $ok = false;
+            $error = $e->getMessage();
+        } finally {
+            restore_error_handler();
+        }
+        return $ok ? null : ($error ?? $fallback);
+    }
+
+    /**
+     * Bereich ohne eigene Richtungsangabe: der kleinste Wert ist offen (~Shutter, KLF200).
+     *
+     * @return null|array{min: float, max: float, open: float, closed: float, source: string, profile: string}
+     */
+    /** Einheit einer Variable: Suffix des Profils, sonst das der Darstellung. */
+    private static function unitOf(int $variableId): string
+    {
+        $variable = IPS_GetVariable($variableId);
+        $profile = $variable['VariableCustomProfile'] !== '' ? $variable['VariableCustomProfile'] : $variable['VariableProfile'];
+        if ($profile !== '' && IPS_VariableProfileExists($profile)) {
+            return trim((string)IPS_GetVariableProfile($profile)['Suffix']);
+        }
+        $presentation = function_exists('IPS_GetVariablePresentation') ? IPS_GetVariablePresentation($variableId) : [];
+        return trim((string)($presentation['SUFFIX'] ?? ''));
+    }
+
+    private static function validRange(float $min, float $max, string $profile = ''): ?array
+    {
+        return $max > $min ? self::travel($min, $max, 'default', $profile) : null;
+    }
+
+    /** @return null|array{min: float, max: float, open: float, closed: float, source: string, profile: string} */
+    private static function travel(float $open, float $closed, string $source, string $profile = ''): ?array
+    {
+        if ($open === $closed) {
+            return null;
+        }
+        return ['min' => min($open, $closed), 'max' => max($open, $closed), 'open' => $open, 'closed' => $closed, 'source' => $source, 'profile' => $profile];
+    }
+}
