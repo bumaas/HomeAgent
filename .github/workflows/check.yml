@@ -11,7 +11,7 @@ jobs:
           submodules: true # .style (Regelwerk) und tests/stubs (Kernel-Stub), beide gepinnt
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5' # wie Symcon ab 9.0 (Migrationen V8.1->V9.0: „Neu: PHP 8.5“)
       - name: PHP-Syntax
         run: for f in HomeAgent/module.php libs/*.php tests/*.php; do php -l "$f" || exit 1; done
       - name: Code-Stil (gemeinsames Regelwerk, Submodul .style)

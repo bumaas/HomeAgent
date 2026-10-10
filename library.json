@@ -4,10 +4,10 @@
   "name":          "Home Agent",
   "url":           "https://github.com/bumaas/HomeAgent",
   "compatibility": {
-    "version": "8.1",
+    "version": "9.0",
     "date":    0
   },
   "version":       "0.1",
-  "build":         52,
-  "date":          1791651993
+  "build":         53,
+  "date":          1791652779
 }

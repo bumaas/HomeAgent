@@ -25,7 +25,7 @@ die Geräte, die Sie freigeben.
 
 ## Was Sie dafür brauchen
 
-- **Symcon ab Version 8.1.** Den eingebauten MCP-Server von Symcon brauchen Sie nicht. Das Modul ist
+- **Symcon ab Version 9.0.** Den eingebauten MCP-Server von Symcon brauchen Sie nicht. Das Modul ist
   selbst ein MCP-Server und läuft unabhängig davon.
 - **Einen Assistenten, der MCP spricht.** Mikrofon, Spracherkennung und Sprachmodell bringt der
   Assistent mit. Das Modul liefert ihm die Geräte und die Werkzeuge, um sie abzufragen und zu schalten.

@@ -22,7 +22,7 @@ unambiguous answer. It only sees and switches the devices you release.
 
 ## What you need
 
-- **Symcon version 8.1 or later.** You do not need Symcon's built-in MCP server. The module is an MCP
+- **Symcon version 9.0 or later.** You do not need Symcon's built-in MCP server. The module is an MCP
   server of its own and runs independently of it.
 - **An assistant that speaks MCP.** Microphone, speech recognition and language model come with the
   assistant. The module gives it the devices and the tools to query and switch them.

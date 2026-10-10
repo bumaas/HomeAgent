@@ -137,4 +137,4 @@ Weitere Regeln, die nicht offensichtlich sind:
 ## Versionen
 
 Version, Build und Datum stehen in der `library.json`. Jede inhaltliche Änderung zählt den Build hoch,
-der Betreff lautet `<version> build <NN>: <kurze Beschreibung>`. `compatibility.version` ist 8.1.
+der Betreff lautet `<version> build <NN>: <kurze Beschreibung>`. `compatibility.version` ist 9.0 (seit build 53; erprobt unter 9.0 C++ und 9.1, 8.1 nie). Symcon 9.0 bringt PHP 8.5 mit, die CI prüft mit 8.5.
