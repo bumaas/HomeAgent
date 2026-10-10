@@ -1040,6 +1040,51 @@ pruefe(array_column($neue, 'Room') === ['Küche', ''], 'der Alias wird zum Namen
 IPS_SetProperty($iid, 'Devices', $vorher);
 IPS_SetProperty($iid, 'Rooms', json_encode([['Name' => 'Küche', 'Aliases' => '', 'Floor' => ''], ['Name' => 'Flur', 'Aliases' => '', 'Floor' => '']]));
 IPS_ApplyChanges($iid);
+// Raumvorschlag mit Etage (build 56): Liegen die Geräte eines vorgeschlagenen Raums unter verschiedenen
+// Etagen-Kategorien, entsteht je Etage ein Raum mit dem gemeinsamen Namen als Alias (Burkhard, 10.10.2026).
+$baum = static function (array $namen): int {
+    $eltern = 0;
+    foreach ($namen as $name) {
+        $kategorie = IPS_CreateCategory();
+        IPS_SetName($kategorie, $name);
+        IPS_SetParent($kategorie, $eltern);
+        $eltern = $kategorie;
+    }
+    return $eltern;
+};
+$dieleUnten = variable(VARIABLETYPE_BOOLEAN, false);
+IPS_SetParent($dieleUnten, $baum(['Hardware', 'EG', 'Diele', 'Diele_EG_Schalter']));
+$dieleOben = variable(VARIABLETYPE_BOOLEAN, false);
+IPS_SetParent($dieleOben, $baum(['Hardware', 'OG', 'Diele', 'Diele_OG_Schalter']));
+IPS_SetProperty($alexa, 'DeviceLightSwitch', json_encode([
+    ['Status' => 'OK', 'ID' => '5', 'Name' => 'Diele Erdgeschoss', 'PowerControllerID' => $dieleUnten],
+    ['Status' => 'OK', 'ID' => '6', 'Name' => 'Diele Obergeschoss', 'PowerControllerID' => $dieleOben],
+]));
+IPS_SetProperty($alexa, 'DeviceLock', '[]');
+IPS_ApplyChanges($alexa);
+$m->formUpdates = [];
+oderNull(static fn () => $m->UIImportAlexa($alexa));
+$felder = [];
+foreach ($m->formUpdates as [$feld, $parameter, $wert]) {
+    $felder[$feld . '.' . $parameter] = $wert;
+}
+$vorschlagsRaeume = array_column(json_decode((string)($felder['AlexaProposals.values'] ?? '[]'), true), 'Room');
+pruefe($vorschlagsRaeume === ['Diele EG', 'Diele OG'], 'je Etage ein Raum im Fenster: ' . json_encode($vorschlagsRaeume, JSON_UNESCAPED_UNICODE));
+$meldung = (string)oderNull(static fn () => $m->UIApplyAlexa('[[0, "Diele EG"], [1, "Diele OG"]]'));
+$raumListe = json_decode(IPS_GetProperty($iid, 'Rooms'), true);
+pruefe($meldung === 'MESSAGE:2 device(s) released, 2 room(s) added to the room list.' && array_slice($raumListe, 2) === [['Name' => 'Diele EG', 'Aliases' => 'Diele', 'Floor' => 'EG'], ['Name' => 'Diele OG', 'Aliases' => 'Diele', 'Floor' => 'OG']], 'neue Räume mit Etage und gemeinsamem Alias: ' . json_encode($raumListe, JSON_UNESCAPED_UNICODE));
+$r = $aufruf->invoke($m, 'get_state', ['room' => 'Diele'], null);
+pruefe(str_starts_with($r['text'], '2 device(s) found (room=Diele).'), 'der gemeinsame Alias trifft beide Räume: ' . $r['text']);
+$r = $aufruf->invoke($m, 'get_state', ['floor' => 'OG'], null);
+pruefe(str_starts_with($r['text'], '1 device(s) found (floor=OG).'), 'die Etage wirkt: ' . $r['text']);
+IPS_SetProperty($alexa, 'DeviceLightSwitch', json_encode([
+    ['Status' => 'OK', 'ID' => '1', 'Name' => 'Deckenlicht Küche', 'PowerControllerID' => $kuechenlicht],
+    ['Status' => 'OK', 'ID' => '3', 'Name' => 'Deckenlicht Flur', 'PowerControllerID' => $flurlicht],
+]));
+IPS_ApplyChanges($alexa);
+IPS_SetProperty($iid, 'Devices', $vorher);
+IPS_SetProperty($iid, 'Rooms', json_encode([['Name' => 'Küche', 'Aliases' => '', 'Floor' => ''], ['Name' => 'Flur', 'Aliases' => '', 'Floor' => '']]));
+IPS_ApplyChanges($iid);
 // Rollladen nur mit Fahrbefehl: Profil wie am nuc (~ShutterMoveStop 0 Öffnen, 2 Stop, 4 Schließen)
 if (!IPS_VariableProfileExists('~ShutterMoveStop')) {
     IPS_CreateVariableProfile('~ShutterMoveStop', VARIABLETYPE_INTEGER);

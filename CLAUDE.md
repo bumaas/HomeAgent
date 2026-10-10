@@ -92,7 +92,9 @@ Weitere Regeln, die nicht offensichtlich sind:
 - **Raumvorschlag beim Alexa-Import** (`AlexaImport::proposeRooms`), nur wenn die Raumliste nichts
   weiß: erste Kategorie im eigenen Pfad (ohne Instanz und Variable), die ein Wort mit dem Alexa-Namen
   teilt, sonst ein Wort des Namens, das bei einem anderen Vorschlag Kategorie ist. Kategorien aus
-  höchstens zwei Buchstaben gelten als Etage. Test `check-raumvorschlag.php` mit den Mitschnitten aus
+  höchstens zwei Buchstaben sind die Etage; verschiedene Etagen in einem Raum ergeben je Etage einen
+  Raum mit dem gemeinsamen Namen als Alias. Die neuen Räume liefert `propose()` in `rooms`, das Modul
+  hält sie im Buffer `AlexaRooms` und legt sie beim Freigeben mit Etage und Alias an. Test `check-raumvorschlag.php` mit den Mitschnitten aus
   einer betreuten Anlage (anonymisiert) und vom nuc ohne Raumliste.
 - **Räume als Vokabular:** Die Beschreibung von `room` nennt die Räume der Geräte und der Raumliste
   („Known rooms: …“), sonst kürzt ein Modell „Bad oben“ zu `room=Bad`.

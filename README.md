@@ -90,7 +90,9 @@ Formular gehen dabei verloren.
 dessen Name mit „Fenster“ beginnt, wird ein Fenster mit Antrieb. Den Raum erkennt das Modul am Namen
 und am Pfad der Variable, zuerst über die Raumliste. Kennt die ihn nicht, nimmt das Modul eine Kategorie
 aus dem Objektbaum, deren Name auch im Alexa-Namen steht („Küche links“ unter `…\EG\Küche\…` kommt in den
-Raum Küche); Kategorien wie „EG“ oder „OG“ zählen dabei als Etage, nicht als Raum. Stimmt ein Raum nicht
+Raum Küche). Kategorien wie „EG“ oder „OG“ zählen dabei nicht als Raum, sondern werden die Etage des
+neuen Raums. Hängen die Geräte eines Raums unter verschiedenen Etagen, entsteht je Etage ein Raum
+(„Flur EG“, „Flur OG“), und alle bekommen den Alias „Flur“. Stimmt ein Raum nicht
 oder fehlt er, ändern Sie ihn im Fenster in der Spalte „Raum“. Ein Raum, den die Raumliste noch nicht
 kennt, wird dort beim Freigeben angelegt.
 Aus „Deckenlicht Bad“ wird so „Deckenlicht“ im Raum Bad, und der Alexa-Name bleibt als Alias.

@@ -450,6 +450,8 @@ class HomeAgent extends IPSModuleStrict
         };
         $result = AlexaImport::propose(is_array($config) ? $config : [], $info, $this->deviceList(), $this->roomIndex(), fn (string $text): string => $this->Translate($text));
         $this->SetBuffer('AlexaProposals', (string)json_encode($result['rows']));
+        // Etage und Alias der Räume aus dem Objektbaum, für die Raumliste beim Freigeben.
+        $this->SetBuffer('AlexaRooms', (string)json_encode($result['rooms']));
         // Burkhard, 10.10.2026: „Übernehmen“ in der Liste hieß alles oder nichts; im Fenster wählt
         // der Anwender je Zeile.
         $this->UpdateFormField('AlexaProposals', 'values', (string)json_encode($this->proposalValues($result['rows'], true)));
@@ -496,7 +498,15 @@ class HomeAgent extends IPSModuleStrict
         }
         IPS_SetProperty($this->InstanceID, 'Devices', (string)json_encode(array_merge($this->deviceList(), $chosen)));
         if ($newRooms !== []) {
-            $added = array_map(static fn (string $name): array => ['Name' => $name, 'Aliases' => '', 'Floor' => ''], array_values($newRooms));
+            $proposed = [];
+            foreach (json_decode($this->GetBuffer('AlexaRooms'), true) ?: [] as $room) {
+                $proposed[DeviceIndex::normalize((string)$room['Name'])] = $room;
+            }
+            $added = array_map(static fn (string $name): array => [
+                'Name'    => $name,
+                'Aliases' => (string)($proposed[DeviceIndex::normalize($name)]['Aliases'] ?? ''),
+                'Floor'   => (string)($proposed[DeviceIndex::normalize($name)]['Floor'] ?? ''),
+            ], array_values($newRooms));
             IPS_SetProperty($this->InstanceID, 'Rooms', (string)json_encode(array_merge($this->listProperty('Rooms'), $added)));
         }
         IPS_ApplyChanges($this->InstanceID);

@@ -27,6 +27,15 @@ function vorschlagOhneRaeume(string $datei): array
     return AlexaImport::propose($mitschnitt['alexa'], $info, [], new RoomIndex([]), static fn (string $t): string => $t)['rows'];
 }
 
+/** Räume, die der Vorschlag für die Raumliste mitbringt */
+function raeumeOhneListe(string $datei): array
+{
+    $mitschnitt = fixture($datei);
+    $objekte = $mitschnitt['objekte'];
+    $info = static fn (int $id): ?array => isset($objekte[$id]) ? ['parent' => (int)$objekte[$id]['eltern'], 'path' => (string)$objekte[$id]['pfad']] : null;
+    return AlexaImport::propose($mitschnitt['alexa'], $info, [], new RoomIndex([]), static fn (string $t): string => $t)['rooms'] ?? [];
+}
+
 /** Zeile zum Alexa-Namen: der steht als Alias, wenn der Name gekürzt wurde, sonst als Name. */
 function zu(array $zeilen, string $alexaName): ?array
 {
@@ -52,12 +61,13 @@ $erwarte($n, 'Küche rechts', 'Küche', 'rechts');
 $erwarte($n, 'Schlafzimmer Deckenlicht', 'Schlafzimmer', 'Deckenlicht');
 $erwarte($n, 'Schlafzimmer links', 'Schlafzimmer', 'links');
 $erwarte($n, 'Wohnzimmer Deckenlicht', 'Wohnzimmer', 'Deckenlicht');
-$erwarte($n, 'Flur Erdgeschoss', 'Flur', 'Erdgeschoss');
-$erwarte($n, 'Flur Obergeschoss', 'Flur', 'Obergeschoss');
+// Die Flurlichter hängen unter EG, OG und DG: je Etage ein Raum (Burkhard, 10.10.2026).
+$erwarte($n, 'Flur Erdgeschoss', 'Flur EG', 'Erdgeschoss');
+$erwarte($n, 'Flur Obergeschoss', 'Flur OG', 'Obergeschoss');
 // Pfad Hardware\Zigbee\EG\Küche Deckenlicht: „EG“ zählt nicht, „Küche“ kommt bei anderen Geräten als Kategorie vor.
 $erwarte($n, 'Küche Deckenlicht', 'Küche', 'Deckenlicht');
 // Pfad Hardware\Shelly\DG\Flur_DG_…: die Kategorie „Flur“ der anderen Flurlichter.
-$erwarte($n, 'Flur Dachgeschoss', 'Flur', 'Dachgeschoss');
+$erwarte($n, 'Flur Dachgeschoss', 'Flur DG', 'Dachgeschoss');
 // Ein Wort, das ganz der Raum ist, bleibt auch der Name.
 $erwarte($n, 'Wohnzimmer', 'Wohnzimmer', 'Wohnzimmer');
 $erwarte($n, 'Garten', 'Garten', 'Garten');
@@ -66,6 +76,24 @@ $erwarte($n, 'Esszimmer', '', 'Esszimmer');
 $erwarte($n, 'Freisitz', '', 'Freisitz');
 $erwarte($n, 'Terasse', '', 'Terasse');
 pruefe((zu($n, 'Küche links')['Aliases'] ?? '') === 'Küche links', 'der Alexa-Name bleibt Alias');
+
+/* --- Neue Räume für die Raumliste: Etage aus der Kategorie EG/OG/DG im Pfad ------------------------- */
+
+$neueRaeume = raeumeOhneListe('betreut_2026-10-10_alexa.json');
+$sortiert = static function (array $raeume): array {
+    usort($raeume, static fn (array $a, array $b): int => strcmp($a['Name'], $b['Name']));
+    return $raeume;
+};
+pruefe($sortiert($neueRaeume) === [
+    ['Name' => 'Flur DG', 'Aliases' => 'Flur', 'Floor' => 'DG'],
+    ['Name' => 'Flur EG', 'Aliases' => 'Flur', 'Floor' => 'EG'],
+    ['Name' => 'Flur OG', 'Aliases' => 'Flur', 'Floor' => 'OG'],
+    ['Name' => 'Garten', 'Aliases' => '', 'Floor' => ''],
+    ['Name' => 'Küche', 'Aliases' => '', 'Floor' => 'EG'],
+    ['Name' => 'Schlafzimmer', 'Aliases' => '', 'Floor' => 'OG'],
+    ['Name' => 'Wohnzimmer', 'Aliases' => '', 'Floor' => 'EG'],
+], 'neue Räume mit Etage, der Flur geteilt: ' . json_encode($neueRaeume, JSON_UNESCAPED_UNICODE));
+pruefe(raeumeOhneListe('nuc_2026-10-10_alexa.json') !== [] && array_filter(raeumeOhneListe('nuc_2026-10-10_alexa.json'), static fn (array $r): bool => $r['Floor'] !== '') === [], 'am nuc gibt es keine Etagen-Kategorien, also keine Etage');
 
 /* --- nuc ohne Raumliste ------------------------------------------------------------------------- */
 

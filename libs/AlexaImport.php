@@ -55,7 +55,7 @@ final class AlexaImport
      * @param callable(int): ?array{parent: int, path: string, profile?: string} $objectInfo null = Variable fehlt
      * @param list<array<string, mixed>> $devices bisherige Zeilen der Freigabeliste
      * @param callable(string): string $translate
-     * @return array{rows: list<array<string, mixed>>, report: array<string, mixed>, message: string}
+     * @return array{rows: list<array<string, mixed>>, rooms: list<array{Name: string, Aliases: string, Floor: string}>, report: array<string, mixed>, message: string}
      */
     public static function propose(array $alexaConfig, callable $objectInfo, array $devices, RoomIndex $rooms, callable $translate): array
     {
@@ -131,11 +131,11 @@ final class AlexaImport
             }
         }
 
-        self::proposeRooms($candidates);
+        $newRooms = self::proposeRooms($candidates);
         $report['merged'] = self::mergeThermostats($candidates);
         $rows = array_map(static fn (array $c): array => self::row($c), array_values($candidates));
         $report['proposed'] = count($rows);
-        return ['rows' => $rows, 'report' => $report, 'message' => self::message($report, $translate)];
+        return ['rows' => $rows, 'rooms' => $newRooms, 'report' => $report, 'message' => self::message($report, $translate)];
     }
 
     /**
@@ -143,12 +143,30 @@ final class AlexaImport
      * blieben alle Räume leer). Zuerst die Kategorien im eigenen Pfad, von der Wurzel her: die erste,
      * die ein Wort mit dem Alexa-Namen teilt („Hardware\Shelly\EG\Küche\…“ bei „Küche links“). Sonst
      * ein Wort des Namens, das bei irgendeinem Vorschlag als eigene Kategorie vorkommt. Kategorien
-     * aus höchstens zwei Buchstaben (EG, OG, DG) sind Etagen und zählen nicht.
+     * aus höchstens zwei Buchstaben (EG, OG, DG) sind Etagen und zählen nicht als Raum, geben ihm aber
+     * die Etage. Liegen die Geräte eines Raums unter verschiedenen Etagen, entsteht je Etage ein Raum
+     * („Flur EG“, „Flur OG“) mit dem gemeinsamen Namen als Alias (Burkhard, 10.10.2026).
      *
      * @param list<array<string, mixed>> $candidates
+     * @return list<array{Name: string, Aliases: string, Floor: string}> neue Räume für die Raumliste
      */
-    private static function proposeRooms(array &$candidates): void
+    private static function proposeRooms(array &$candidates): array
     {
+        $isFloor = static fn (string $segment): bool => mb_strlen((string)preg_replace('/[^\p{L}]/u', '', $segment)) <= 2
+            && preg_match('/\p{L}/u', $segment) === 1;
+        // Die letzte Etagen-Kategorie im Pfad, ohne Instanz und Variable.
+        $floorOf = static function (array $paths) use ($isFloor): string {
+            $floor = '';
+            foreach ($paths as $path) {
+                $segments = explode('\\', $path);
+                foreach (array_slice($segments, 0, max(0, count($segments) - 2)) as $segment) {
+                    if ($isFloor($segment)) {
+                        $floor = trim($segment);
+                    }
+                }
+            }
+            return $floor;
+        };
         // Ohne die letzten beiden Stufen: die Variable und ihre Instanz (das Gerät selbst).
         $categories = static function (array $paths): array {
             $result = [];
@@ -184,9 +202,33 @@ final class AlexaImport
             if ($room !== null) {
                 $room = trim((string)preg_replace('/[_\s]+/u', ' ', $room));
                 $candidate['match'] = ['room' => $room, 'tokens' => self::tokens($room)];
+                $candidate['proposedFloor'] = $floorOf($candidate['paths']);
             }
         }
         unset($candidate);
+
+        $floorsByRoom = [];
+        foreach ($candidates as $candidate) {
+            if (isset($candidate['proposedFloor'])) {
+                $floorsByRoom[$candidate['match']['room']][$candidate['proposedFloor']] = true;
+            }
+        }
+        $newRooms = [];
+        foreach ($candidates as &$candidate) {
+            if (!isset($candidate['proposedFloor'])) {
+                continue;
+            }
+            $room = $candidate['match']['room'];
+            $floor = $candidate['proposedFloor'];
+            $split = count(array_filter(array_keys($floorsByRoom[$room]), static fn (string $f): bool => $f !== '')) > 1;
+            $name = $split && $floor !== '' ? $room . ' ' . $floor : $room;
+            if ($name !== $room) {
+                $candidate['match'] = ['room' => $name, 'tokens' => self::tokens($name)];
+            }
+            $newRooms[$name] ??= ['Name' => $name, 'Aliases' => $name !== $room ? $room : '', 'Floor' => $split ? $floor : (string)array_find(array_keys($floorsByRoom[$room]), static fn (string $f): bool => $f !== '')];
+        }
+        unset($candidate);
+        return array_values($newRooms);
     }
 
     /**

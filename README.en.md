@@ -85,8 +85,9 @@ Lights, switches, blinds, thermostats and temperature sensors are taken over. A 
 with "Fenster" becomes a window with a drive. The module recognises the room from the name and from the
 path of the variable, first through the room list. If the list does not know it, the module takes a
 category from the object tree whose name also appears in the Alexa name ("Küche links" under
-`…\EG\Küche\…` goes into the room Küche); categories such as "EG" or "OG" count as a floor, not as a
-room. If a room is wrong or missing, change it in the window in the column "Room". A room the room list
+`…\EG\Küche\…` goes into the room Küche); categories such as "EG" or "OG" do not count as a room
+but become the floor of the new room. If the devices of a room lie under different floors, one room per
+floor is created ("Flur EG", "Flur OG"), and all of them get the alias "Flur". If a room is wrong or missing, change it in the window in the column "Room". A room the room list
 does not know yet is added to it on release. "Deckenlicht Bad" thus becomes
 "Deckenlicht" in the room Bad, and the Alexa name stays as an alias. A temperature sensor becomes the
 current temperature of the thermostat in the same room. Devices that are already released are not added
