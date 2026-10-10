@@ -292,7 +292,7 @@ final class DeviceIndex
         // Temperaturen im Gästezimmer der letzten 30 Tage“). Wo Zähler sind und fürs ganze Haus bleibt es beim Verbrauch.
         if (($range !== null || ($period !== '' && $period !== self::NOW)) && !$wholeHouse
             && (in_array($type, self::HISTORY_TYPES, true)
-                || (array_filter($matches, static fn (array $e): bool => isset($e['roles']['energy'])) === [] && array_filter($matches, [self::class, 'isMeasured']) !== []))) {
+                || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy'])) && array_any($matches, static fn (array $e): bool => self::isMeasured($e))))) {
             if ($range !== null) {
                 [, $from, $to] = self::rangeBounds($range[0], $range[1], $this->backend->timestamp());
                 $span = ($to === 0 ? $this->backend->timestamp() : $to) - $from;
@@ -1166,7 +1166,7 @@ final class DeviceIndex
         }
         // Die Kopfzeile nennt den gesendeten Wert, wenn er für alle gleich ist, sonst den verlangten.
         $result['target'] = count(array_unique(array_map('strval', $targets))) === 1 ? (float)$targets[0] : $temperature;
-        $result['unit'] = $entries === [] ? '°C' : $this->temperatureUnit((int)reset($entries)['roles']['setpoint']);
+        $result['unit'] = $entries === [] ? '°C' : $this->temperatureUnit((int)array_first($entries)['roles']['setpoint']);
         return $result;
     }
 
@@ -1444,7 +1444,7 @@ final class DeviceIndex
         if ($type !== '' && !array_key_exists($type, self::TYPES)) {
             return ['error' => sprintf($this->t('Unknown type "%s". Allowed: %s.'), $type, implode(', ', self::CONTROLLABLE))];
         }
-        if ($type !== '' && !in_array($type, self::CONTROLLABLE, true) && array_filter($this->entries, fn (array $e): bool => $e['Type'] === $type && $this->isControllable($e)) === []) {
+        if ($type !== '' && !in_array($type, self::CONTROLLABLE, true) && !array_any($this->entries, fn (array $e): bool => $e['Type'] === $type && $this->isControllable($e))) {
             return ['error' => sprintf($this->t('Nothing was changed: devices of type %s can only be read. Controllable types: %s.'), $type, implode(', ', self::CONTROLLABLE))];
         }
 
@@ -1482,7 +1482,7 @@ final class DeviceIndex
         // Sollen Fenster mit Antrieb fahren, gehören die Fenster nur mit Kontakt derselben Auswahl zu
         // den ausgelassenen: „alle Fenster zu“ darf nicht verschweigen, dass eines offen bleiben kann.
         $windowsWithoutDrive = 0;
-        if ($name === '' && array_filter($entries, static fn (array $e): bool => $e['Type'] === 'window') !== []) {
+        if ($name === '' && array_any($entries, static fn (array $e): bool => $e['Type'] === 'window')) {
             $windowsWithoutDrive = count($this->find($room, $type, $name, $floor, static fn (array $e): bool => $e['Type'] === 'window' && !isset($e['roles']['level']) && !$e['ReadOnly']));
         }
         return ['entries' => $entries, 'filter' => $filter, 'windowsWithoutDrive' => $windowsWithoutDrive];

@@ -125,7 +125,7 @@ final class AlexaImport
                 foreach ($infos as $info) {
                     $pathTokens = array_merge($pathTokens, self::tokens((string)$info['path']));
                 }
-                $candidates[] = ['type' => $type, 'name' => $name, 'roles' => $roles, 'parent' => (int)reset($infos)['parent'],
+                $candidates[] = ['type' => $type, 'name' => $name, 'roles' => $roles, 'parent' => (int)array_first($infos)['parent'],
                     'match' => $rooms->bestMatch(self::tokens($name), $pathTokens)];
             }
         }

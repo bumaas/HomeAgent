@@ -239,7 +239,7 @@ class HomeAgent extends IPSModuleStrict
                 $lines[] = sprintf($this->Translate('Note: room "%s" (%d device(s)) is not in the room list, so it has neither aliases nor a floor'), $room, $devices);
             }
             foreach ($rooms->names() as $name) {
-                if (array_filter(array_merge($list, $this->sceneList()), static fn (array $entry): bool => DeviceIndex::normalize((string)($entry['Room'] ?? '')) === DeviceIndex::normalize($name)) === []) {
+                if (!array_any(array_merge($list, $this->sceneList()), static fn (array $entry): bool => DeviceIndex::normalize((string)($entry['Room'] ?? '')) === DeviceIndex::normalize($name))) {
                     $lines[] = sprintf($this->Translate('Note: room "%s" of the room list has no device'), $name);
                 }
             }
@@ -704,12 +704,12 @@ class HomeAgent extends IPSModuleStrict
         // Verbrauch über Zeiträume nur, wenn ein freigegebenes Gerät einen Zähler hat oder die
         // Energiebilanz eingetragen ist. Ohne Bilanz muss die Beschreibung die Grenze nennen: HA Assist
         // gab die Summe der Geräte sonst als Hausverbrauch aus (09.10.2026).
-        $hasMeters = array_filter($this->deviceList(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['energy'])) !== [];
+        $hasMeters = array_any($this->deviceList(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['energy']));
         $hasBalance = $this->balance() !== [];
         // Die Leistung jetzt (period=now) mit einem Gerät mit Leistung oder der Leistungsbilanz.
-        $hasPower = $this->powerBalance() !== [] || array_filter($this->deviceList(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['power'])) !== [];
+        $hasPower = $this->powerBalance() !== [] || array_any($this->deviceList(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['power']));
         // Verlauf von Messwerten (Temperatur, Feuchte …) über dieselben Zeiträume.
-        $hasHistory = array_filter($this->deviceList(), [DeviceIndex::class, 'isMeasured']) !== [];
+        $hasHistory = array_any($this->deviceList(), static fn (array $row): bool => DeviceIndex::isMeasured($row));
         $consumption = $hasMeters || $hasBalance
             ? 'Energy consumption over this period instead of the state, in kWh; the first line gives the total. '
                 . ($hasBalance
@@ -769,7 +769,7 @@ class HomeAgent extends IPSModuleStrict
             $hasTemperature = in_array('temperature', $offered, true);
             $hasBlinds = in_array('open', $offered, true);
             $hasStop = in_array('stop', $offered, true);
-            $hasTiltWindows = array_filter($devices, static fn (array $row): bool => ($row['Type'] ?? '') === 'window' && ($row['Tilt'] ?? false) === true && DeviceIndex::abilitiesOf($row) !== []) !== [];
+            $hasTiltWindows = array_any($devices, static fn (array $row): bool => ($row['Type'] ?? '') === 'window' && ($row['Tilt'] ?? false) === true && DeviceIndex::abilitiesOf($row) !== []);
             $types = array_values(array_intersect(array_keys(DeviceIndex::TYPES), array_column(array_filter($devices, static fn (array $row): bool => DeviceIndex::abilitiesOf($row) !== []), 'Type')));
             $properties = [
                 'room' => ['type' => 'string', 'description' => rtrim('Room as the user calls it, e.g. Küche. ' . $roomsText . $defaultRule)],
@@ -792,7 +792,7 @@ class HomeAgent extends IPSModuleStrict
             }
             // Was der Assistent angeben kann, in der Reihenfolge des Schemas.
             $fields = array_values(array_filter([$commands !== [] ? 'a command' : '', $hasPercent ? 'percent' : '', $hasTemperature ? 'temperature' : '']));
-            $give = count($fields) > 1 ? implode(', ', array_slice($fields, 0, -1)) . ' or ' . end($fields) : $fields[0];
+            $give = count($fields) > 1 ? implode(', ', array_slice($fields, 0, -1)) . ' or ' . array_last($fields) : $fields[0];
             $tools[] = [
                 'name'        => 'set_state',
                 'title'       => 'Switch or set',
@@ -1004,7 +1004,7 @@ class HomeAgent extends IPSModuleStrict
 
     private function hasAccessWithToken(): bool
     {
-        return array_filter(array_column($this->accessList(), 'Token'), static fn (string $token): bool => $token !== '') !== [];
+        return array_any(array_column($this->accessList(), 'Token'), static fn (string $token): bool => $token !== '');
     }
 
     /** @return list<array<string, mixed>> Zeilen einer Listen-Property */
@@ -1158,7 +1158,7 @@ class HomeAgent extends IPSModuleStrict
             $tokens[] = $access['Token'];
             // Der Standardraum bleibt freier Text; ein Tippfehler würde ihn still wirkungslos machen.
             $known = $rooms->isKnown($access['DefaultRoom'])
-                || array_filter($list, static fn (array $entry): bool => DeviceIndex::normalize((string)($entry['Room'] ?? '')) === DeviceIndex::normalize($access['DefaultRoom'])) !== [];
+                || array_any($list, static fn (array $entry): bool => DeviceIndex::normalize((string)($entry['Room'] ?? '')) === DeviceIndex::normalize($access['DefaultRoom']));
             if ($access['DefaultRoom'] !== '' && !$known) {
                 $add('Accesses', $index, $row, sprintf($this->Translate('default room "%s" is neither in the room list nor the room of a device'), $access['DefaultRoom']));
             }
