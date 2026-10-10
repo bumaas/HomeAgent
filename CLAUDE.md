@@ -89,6 +89,11 @@ Weitere Regeln, die nicht offensichtlich sind:
 - **Namenssuche** in Stufen: genauer Name oder Alias, dann die Anfrage als Teil des Namens, dann der
   Name in der Anfrage, aber nur an einem Wortanfang („Esstischlampe“ trifft „Esstisch“,
   „Außentemperatur“ trifft „Temperatur“ nicht). Nur die beste Stufe zählt.
+- **Raumvorschlag beim Alexa-Import** (`AlexaImport::proposeRooms`), nur wenn die Raumliste nichts
+  weiß: erste Kategorie im eigenen Pfad (ohne Instanz und Variable), die ein Wort mit dem Alexa-Namen
+  teilt, sonst ein Wort des Namens, das bei einem anderen Vorschlag Kategorie ist. Kategorien aus
+  höchstens zwei Buchstaben gelten als Etage. Test `check-raumvorschlag.php` mit den Mitschnitten aus
+  einer betreuten Anlage (anonymisiert) und vom nuc ohne Raumliste.
 - **Räume als Vokabular:** Die Beschreibung von `room` nennt die Räume der Geräte und der Raumliste
   („Known rooms: …“), sonst kürzt ein Modell „Bad oben“ zu `room=Bad`.
 - **Nur-Lese-Zugang:** `instructions` und die Beschreibung von `get_state` sagen dem Assistenten, dass

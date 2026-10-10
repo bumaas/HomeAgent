@@ -1,0 +1,114 @@
+{
+    "_quelle": "SymBox einer betreuten Anlage (Symcon 9.0), 10.10.2026, nur gelesen: Konfiguration der Alexa-Instanz (nur die Listen Device*), je referenzierter Variable Eltern-Instanz, Pfad, Ident und Profil. Keine Raum- und keine Geräteliste. Für die Veröffentlichung geändert: die Vornamen der Bewohner in Namen und Pfaden zu „links“ bzw. „rechts“, die zwölfstelligen Geräte-IDs der Shellys zu Nullen.",
+    "alexaModul": "{CC759EB6-7821-4AA5-9267-EF08C6A6A5B3}",
+    "alexa": {
+        "DeviceDeactivatableScene": "[]",
+        "DeviceGenericSlider": "[]",
+        "DeviceGenericSwitch": "[]",
+        "DeviceLightColor": "[]",
+        "DeviceLightDimmer": "[{\"Status\":\"OK\",\"ID\":\"18\",\"Name\":\"Esszimmer\",\"BrightnessControllerID\":35752},{\"Status\":\"OK\",\"ID\":\"19\",\"Name\":\"Küche Deckenlicht\",\"BrightnessControllerID\":51697}]",
+        "DeviceLightExpert": "[]",
+        "DeviceLightSwitch": "[{\"ID\":\"16\",\"Name\":\"Flur Dachgeschoss\",\"PowerControllerID\":30913},{\"ID\":\"6\",\"Name\":\"Flur Erdgeschoss\",\"PowerControllerID\":43070},{\"ID\":\"12\",\"Name\":\"Flur Obergeschoss\",\"PowerControllerID\":26633},{\"ID\":\"7\",\"Name\":\"Freisitz\",\"PowerControllerID\":59478},{\"ID\":\"8\",\"Name\":\"Küche links\",\"PowerControllerID\":10817},{\"ID\":\"9\",\"Name\":\"Küche rechts\",\"PowerControllerID\":37088},{\"ID\":\"14\",\"Name\":\"Schlafzimmer links\",\"PowerControllerID\":16671},{\"ID\":\"13\",\"Name\":\"Schlafzimmer Deckenlicht\",\"PowerControllerID\":37076},{\"ID\":\"15\",\"Name\":\"Schlafzimmer rechts\",\"PowerControllerID\":44120},{\"ID\":\"10\",\"Name\":\"Terasse\",\"PowerControllerID\":10712},{\"ID\":\"11\",\"Name\":\"Wohnzimmer Deckenlicht\",\"PowerControllerID\":55531}]",
+        "DeviceLock": "[]",
+        "DeviceMediaPlayer": "[]",
+        "DeviceShutter": "[]",
+        "DeviceSimpleScene": "[{\"Status\":\"OK\",\"ID\":\"4\",\"Name\":\"Alle Lichter aus\",\"SceneControllerSimpleAction\":\"{\\\"actionID\\\":\\\"{64087366-07B7-A3D6-F6BA-000000000000}\\\",\\\"parameters\\\":{\\\"BOOLEANPARAMETERS\\\":\\\"[{\\\\\\\"name\\\\\\\":\\\\\\\"VALUE\\\\\\\",\\\\\\\"value\\\\\\\":true}]\\\",\\\"NUMERICPARAMETERS\\\":\\\"[]\\\",\\\"STRINGPARAMETERS\\\":\\\"[{\\\\\\\"name\\\\\\\":\\\\\\\"SENDER\\\\\\\",\\\\\\\"value\\\\\\\":\\\\\\\"VoiceControl\\\\\\\"}]\\\",\\\"TARGET\\\":32417}}\"}]",
+        "DeviceSpeaker": "[]",
+        "DeviceSpeakerMuteable": "[]",
+        "DeviceTelevision": "[]",
+        "DeviceTemperatureSensor": "[{\"Status\":\"OK\",\"ID\":\"20\",\"Name\":\"Garten\",\"TemperatureSensorID\":59289},{\"Status\":\"OK\",\"ID\":\"2\",\"Name\":\"Wohnzimmer\",\"TemperatureSensorID\":51316}]",
+        "DeviceThermostat": "[]"
+    },
+    "objekte": {
+        "35752": {
+            "eltern": 47356,
+            "pfad": "Hardware\\Zigbee\\EG\\Esstisch Downlight\\Helligkeit",
+            "ident": "brightness",
+            "profil": "~Intensity.100"
+        },
+        "51697": {
+            "eltern": 23796,
+            "pfad": "Hardware\\Zigbee\\EG\\Küche Deckenlicht\\Helligkeit",
+            "ident": "brightness",
+            "profil": "~Intensity.100"
+        },
+        "30913": {
+            "eltern": 43849,
+            "pfad": "Hardware\\Shelly\\DG\\Flur_DG_shelly1pm-000000000000\\Status",
+            "ident": "Shelly_State",
+            "profil": "~Switch"
+        },
+        "43070": {
+            "eltern": 40413,
+            "pfad": "Hardware\\Shelly\\EG\\Flur\\Flur_EG_ShellyPlus1-000000000000\\Status",
+            "ident": "State",
+            "profil": "~Switch"
+        },
+        "26633": {
+            "eltern": 41957,
+            "pfad": "Hardware\\Shelly\\OG\\Flur\\Flur_OG_shelly1pm-000000000000\\Status",
+            "ident": "Shelly_State",
+            "profil": "~Switch"
+        },
+        "59478": {
+            "eltern": 38107,
+            "pfad": "Hardware\\Shelly\\Garten\\Freisitz_Shelly1PM-000000000000\\Status",
+            "ident": "Shelly_State",
+            "profil": "~Switch"
+        },
+        "10817": {
+            "eltern": 53166,
+            "pfad": "Hardware\\Shelly\\EG\\Küche\\Küche_links_ShellyPlus1-000000000000\\Status",
+            "ident": "State",
+            "profil": "~Switch"
+        },
+        "37088": {
+            "eltern": 48649,
+            "pfad": "Hardware\\Shelly\\EG\\Küche\\Küche_rechts_ShellyPlus1-000000000000\\Status",
+            "ident": "State",
+            "profil": "~Switch"
+        },
+        "16671": {
+            "eltern": 51274,
+            "pfad": "Hardware\\Shelly\\OG\\Schlafzimmer\\SZ_Decke_links_Shelly 2.5 Relay\\Status 2 (links)",
+            "ident": "Shelly_State1",
+            "profil": "~Switch"
+        },
+        "37076": {
+            "eltern": 51274,
+            "pfad": "Hardware\\Shelly\\OG\\Schlafzimmer\\SZ_Decke_links_Shelly 2.5 Relay\\Status (Decke)",
+            "ident": "Shelly_State",
+            "profil": "~Switch"
+        },
+        "44120": {
+            "eltern": 15209,
+            "pfad": "Hardware\\Shelly\\OG\\Schlafzimmer\\SZ_rechts_shelly1pm-000000000000\\Status",
+            "ident": "Shelly_State",
+            "profil": "~Switch"
+        },
+        "10712": {
+            "eltern": 33504,
+            "pfad": "Hardware\\Shelly\\Garten\\Garten_Terrasse_Shelly1PM-000000000000\\Status",
+            "ident": "Shelly_State",
+            "profil": "~Switch"
+        },
+        "55531": {
+            "eltern": 47048,
+            "pfad": "Hardware\\Shelly\\EG\\Wohnzimmer\\WZ_Decke_shelly1pm-000000000000\\Status",
+            "ident": "State",
+            "profil": "~Switch"
+        },
+        "59289": {
+            "eltern": 46446,
+            "pfad": "Programme\\Heizung\\Stiebel Eltron\\Servicewelt\\Prozessdaten\\Außentemperatur (aktuell)",
+            "ident": "",
+            "profil": ""
+        },
+        "51316": {
+            "eltern": 15780,
+            "pfad": "Hardware\\Homematic\\EG\\Wohnzimmer\\Wohnzimmer.Heizung.Wand:1\\ACTUAL_TEMPERATURE",
+            "ident": "ACTUAL_TEMPERATURE",
+            "profil": "~Temperature"
+        }
+    }
+}

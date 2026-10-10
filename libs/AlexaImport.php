@@ -126,14 +126,67 @@ final class AlexaImport
                     $pathTokens = array_merge($pathTokens, self::tokens((string)$info['path']));
                 }
                 $candidates[] = ['type' => $type, 'name' => $name, 'roles' => $roles, 'parent' => (int)array_first($infos)['parent'],
+                    'paths' => array_values(array_map(static fn (array $info): string => (string)$info['path'], $infos)),
                     'match' => $rooms->bestMatch(self::tokens($name), $pathTokens)];
             }
         }
 
+        self::proposeRooms($candidates);
         $report['merged'] = self::mergeThermostats($candidates);
         $rows = array_map(static fn (array $c): array => self::row($c), array_values($candidates));
         $report['proposed'] = count($rows);
         return ['rows' => $rows, 'report' => $report, 'message' => self::message($report, $translate)];
+    }
+
+    /**
+     * Raum für Vorschläge, zu denen die Raumliste nichts weiß (betreute Anlage, 10.10.2026: ohne Raumliste
+     * blieben alle Räume leer). Zuerst die Kategorien im eigenen Pfad, von der Wurzel her: die erste,
+     * die ein Wort mit dem Alexa-Namen teilt („Hardware\Shelly\EG\Küche\…“ bei „Küche links“). Sonst
+     * ein Wort des Namens, das bei irgendeinem Vorschlag als eigene Kategorie vorkommt. Kategorien
+     * aus höchstens zwei Buchstaben (EG, OG, DG) sind Etagen und zählen nicht.
+     *
+     * @param list<array<string, mixed>> $candidates
+     */
+    private static function proposeRooms(array &$candidates): void
+    {
+        // Ohne die letzten beiden Stufen: die Variable und ihre Instanz (das Gerät selbst).
+        $categories = static function (array $paths): array {
+            $result = [];
+            foreach ($paths as $path) {
+                $segments = explode('\\', $path);
+                foreach (array_slice($segments, 0, max(0, count($segments) - 2)) as $segment) {
+                    if (mb_strlen((string)preg_replace('/[^\p{L}]/u', '', $segment)) > 2) {
+                        $result[] = $segment;
+                    }
+                }
+            }
+            return $result;
+        };
+        $known = [];
+        foreach ($candidates as $candidate) {
+            foreach ($categories($candidate['paths']) as $segment) {
+                $tokens = self::tokens($segment);
+                if (count($tokens) === 1) {
+                    $known[$tokens[0]] ??= $segment;
+                }
+            }
+        }
+        foreach ($candidates as &$candidate) {
+            if ($candidate['match'] !== null) {
+                continue;
+            }
+            $nameTokens = self::tokens($candidate['name']);
+            $room = array_find($categories($candidate['paths']), static fn (string $segment): bool => array_intersect(self::tokens($segment), $nameTokens) !== []);
+            if ($room === null) {
+                $word = array_find($nameTokens, static fn (string $token): bool => isset($known[$token]));
+                $room = $word === null ? null : $known[$word];
+            }
+            if ($room !== null) {
+                $room = trim((string)preg_replace('/[_\s]+/u', ' ', $room));
+                $candidate['match'] = ['room' => $room, 'tokens' => self::tokens($room)];
+            }
+        }
+        unset($candidate);
     }
 
     /**

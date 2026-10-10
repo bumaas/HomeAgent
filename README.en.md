@@ -9,7 +9,7 @@ unambiguous answer. It only sees and switches the devices you release.
 
 > **Status:** early preview. Querying, switching, setting brightness, position and heating setpoint,
 > stopping blinds, consumption and power, the history of measured values and starting scenes work. The device list can be proposed from
-> an Alexa instance. So far the module has been tried on two systems of the developer.
+> an Alexa instance. So far the module has been tried on three systems.
 
 ## When do I need this?
 
@@ -42,7 +42,7 @@ unambiguous answer. It only sees and switches the devices you release.
    then ask but not switch anything.
 3. **Create rooms (optional).** In the section **Rooms**, enter the rooms with further names and a floor,
    for example "Gast" with the alias "Gästezimmer". This pays off before the next step, because the
-   proposal from Alexa only recognises rooms listed here.
+   proposal from Alexa then also recognises these rooms by their other names and knows their floor.
 4. **Release devices.** With an Alexa instance it is quickest: at the bottom of the form press **Propose
    devices from Alexa**, tick the devices you want in the window and press **Release selected** (see
    [Taking over devices from Alexa](#taking-over-devices-from-alexa)). Without Alexa or for further
@@ -83,8 +83,11 @@ are lost.
 
 Lights, switches, blinds, thermostats and temperature sensors are taken over. A blind whose name starts
 with "Fenster" becomes a window with a drive. The module recognises the room from the name and from the
-path of the variable if it is in the room list. If it is missing, enter it in the window in the column
-"Room"; a room the room list does not know yet is added to it on release. "Deckenlicht Bad" thus becomes
+path of the variable, first through the room list. If the list does not know it, the module takes a
+category from the object tree whose name also appears in the Alexa name ("Küche links" under
+`…\EG\Küche\…` goes into the room Küche); categories such as "EG" or "OG" count as a floor, not as a
+room. If a room is wrong or missing, change it in the window in the column "Room". A room the room list
+does not know yet is added to it on release. "Deckenlicht Bad" thus becomes
 "Deckenlicht" in the room Bad, and the Alexa name stays as an alias. A temperature sensor becomes the
 current temperature of the thermostat in the same room. Devices that are already released are not added
 twice. Locks, televisions, colour lights, scenes and blinds that only know open, stop and close (profile

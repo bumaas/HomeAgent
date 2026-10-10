@@ -11,7 +11,7 @@ die Geräte, die Sie freigeben.
 > **Stand:** frühe Vorschau. Abfragen, Schalten, das Stellen von Helligkeit, Position und
 > Heizungs-Sollwert, das Anhalten von Rollläden, Verbrauch und Leistung, der Verlauf von Messwerten
 > und das Starten von Szenen gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen. Erprobt ist das Modul bisher
-> auf zwei Anlagen des Entwicklers.
+> auf drei Anlagen.
 
 ## Wann brauche ich das?
 
@@ -46,7 +46,7 @@ die Geräte, die Sie freigeben.
    Assistent kann dann fragen, aber nichts schalten.
 3. **Räume anlegen (wahlweise).** Im Bereich **Räume** die Räume mit weiteren Bezeichnungen und Etage
    eintragen, etwa „Gast“ mit dem Alias „Gästezimmer“. Das lohnt sich vor dem nächsten Schritt, denn der
-   Vorschlag aus Alexa erkennt nur Räume, die hier stehen.
+   Vorschlag aus Alexa erkennt diese Räume auch an anderen Namen und kennt danach ihre Etage.
 4. **Geräte freigeben.** Mit einer Alexa-Instanz geht es am schnellsten: unten im Formular **Geräte aus
    Alexa vorschlagen**, im Fenster die gewünschten Geräte anhaken und **Ausgewählte freigeben** (siehe
    [Geräte aus Alexa übernehmen](#geräte-aus-alexa-übernehmen)). Ohne Alexa oder für weitere Geräte den
@@ -88,8 +88,11 @@ Formular gehen dabei verloren.
 
 Übernommen werden Lichter, Schalter, Rollläden, Thermostate und Temperatursensoren. Ein Rollladen,
 dessen Name mit „Fenster“ beginnt, wird ein Fenster mit Antrieb. Den Raum erkennt das Modul am Namen
-und am Pfad der Variable, wenn er in der Raumliste steht. Fehlt er, tragen Sie ihn im Fenster in der
-Spalte „Raum“ ein; ein Raum, den die Raumliste noch nicht kennt, wird dort beim Freigeben angelegt.
+und am Pfad der Variable, zuerst über die Raumliste. Kennt die ihn nicht, nimmt das Modul eine Kategorie
+aus dem Objektbaum, deren Name auch im Alexa-Namen steht („Küche links“ unter `…\EG\Küche\…` kommt in den
+Raum Küche); Kategorien wie „EG“ oder „OG“ zählen dabei als Etage, nicht als Raum. Stimmt ein Raum nicht
+oder fehlt er, ändern Sie ihn im Fenster in der Spalte „Raum“. Ein Raum, den die Raumliste noch nicht
+kennt, wird dort beim Freigeben angelegt.
 Aus „Deckenlicht Bad“ wird so „Deckenlicht“ im Raum Bad, und der Alexa-Name bleibt als Alias.
 Ein Temperatursensor wird die Ist-Temperatur des Thermostats im selben Raum. Was schon freigegeben ist,
 kommt nicht doppelt. Schlösser, Fernseher, Farblichter, Szenen und Rollläden, die nur Öffnen, Stop
