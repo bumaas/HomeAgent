@@ -1,0 +1,15 @@
+{
+    "_quelle": "10.10.2026 abends, gelesen an Testbox (Symcon 9.1) und nuc (9.1): Variablen zweier Lichter mit Farbtemperatur. Hue Aurelle über Matter (Testbox, Instanz Hardware\\Matter\\DIRIGERA\\Hue Aurelle): Farbtemperatur in Mired, Darstellung Schieberegler mit USAGE_TYPE 1 (Farbtemperatur), MIN 153, MAX 454, STEP_SIZE 5, Suffix „ Mired“. Gemessen: RequestAction(53845, 250) bei ausgeschalteter Lampe kehrte nach 7 ms zurück, die Variable zeigte nach 8 ms 250, die Lampe blieb aus; danach zurück auf 370. Deckenpanel der Küche über das HomeAssistant-Modul (nuc, Hardware\\Home Assistant\\Küche\\Küche.Deckenpanel): Farbtemperatur in Kelvin, Schieberegler USAGE_TYPE 1, MIN 2202, MAX 4000, STEP_SIZE 1, Suffix „ K“, bei ausgeschalteter Lampe 0. Nicht gemessen, weil HA die Lampe dabei einschaltet: wie schnell die Kelvin-Variable nach einer Aktion folgt; hier als „sofort“ angenommen. Die Geräteliste (Raum, Namen) ist für den Test zusammengestellt.",
+    "variablen": {
+        "20946": {"name": "Testbox: Hue Aurelle OnOff_Status", "wert": false, "formatiert": "Aus", "formate": {"true": "An", "false": "Aus"}, "aktion": true},
+        "50038": {"name": "Testbox: Hue Aurelle LevelControl_Level", "wert": 254, "formatiert": "100 %", "aktion": true, "bereich": {"min": 1, "max": 254}},
+        "53845": {"name": "Testbox: Hue Aurelle ColorControl_ColorTemperature", "wert": 370, "formatiert": "370 Mired", "einheit": "Mired", "aktion": true, "sollbereich": {"min": 153, "max": 454, "schritt": 5}},
+        "33255": {"name": "nuc: Küche.Deckenpanel light_status (HomeAssistant-Modul)", "wert": false, "formatiert": "Aus", "formate": {"true": "An", "false": "Aus"}, "aktion": true},
+        "59411": {"name": "nuc: Küche.Deckenpanel light_brightness", "wert": 0, "formatiert": "0 %", "aktion": true, "bereich": {"min": 0, "max": 255}},
+        "53701": {"name": "nuc: Küche.Deckenpanel light_color_temp_kelvin", "wert": 0, "formatiert": "0 K", "einheit": "K", "aktion": true, "sollbereich": {"min": 2202, "max": 4000, "schritt": 1}}
+    },
+    "geraete": [
+        {"Room": "Küche", "Name": "Fensterleuchte", "Aliases": "", "Type": "light", "StateVariableID": 20946, "LevelVariableID": 50038, "ColorTempVariableID": 53845, "Invert": false},
+        {"Room": "Küche", "Name": "Deckenpanel", "Aliases": "", "Type": "light", "StateVariableID": 33255, "LevelVariableID": 59411, "ColorTempVariableID": 53701, "Invert": false}
+    ]
+}

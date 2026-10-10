@@ -20,7 +20,7 @@ final class AlexaImport
     private const KINDS = [
         'DeviceLightSwitch'       => ['type' => 'light', 'roles' => ['state' => 'PowerControllerID']],
         'DeviceLightDimmer'       => ['type' => 'light', 'roles' => ['level' => 'BrightnessControllerID']],
-        'DeviceLightExpert'       => ['type' => 'light', 'roles' => ['state' => 'PowerControllerID', 'level' => 'BrightnessOnlyControllerID']],
+        'DeviceLightExpert'       => ['type' => 'light', 'roles' => ['state' => 'PowerControllerID', 'level' => 'BrightnessOnlyControllerID', 'colortemp' => 'ColorTemperatureOnlyControllerID']],
         'DeviceGenericSwitch'     => ['type' => 'switch', 'roles' => ['state' => 'PowerControllerID']],
         'DeviceShutter'           => ['type' => 'blind', 'roles' => ['level' => 'RangeControllerShutterID']],
         'DeviceThermostat'        => ['type' => 'thermostat', 'roles' => ['setpoint' => 'ThermostatControllerID']],

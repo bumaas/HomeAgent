@@ -242,7 +242,7 @@ function oderNull(callable $aufruf): mixed
 
 $rollen = oderNull(static fn () => DeviceIndex::ROLES);
 $typRollen = oderNull(static fn () => DeviceIndex::TYPE_ROLES) ?? [];
-pruefe($rollen === ['state' => 'StateVariableID', 'level' => 'LevelVariableID', 'moving' => 'MovingVariableID', 'stop' => 'StopVariableID', 'power' => 'PowerVariableID', 'energy' => 'EnergyVariableID', 'setpoint' => 'SetpointVariableID'], 'Fähigkeiten und ihre Schlüssel in der Zeile: ' . json_encode($rollen));
+pruefe($rollen === ['state' => 'StateVariableID', 'level' => 'LevelVariableID', 'moving' => 'MovingVariableID', 'stop' => 'StopVariableID', 'power' => 'PowerVariableID', 'energy' => 'EnergyVariableID', 'setpoint' => 'SetpointVariableID', 'colortemp' => 'ColorTempVariableID'], 'Fähigkeiten und ihre Schlüssel in der Zeile: ' . json_encode($rollen));
 pruefe(array_keys($typRollen) === array_keys(DeviceIndex::TYPES), 'jeder Typ hat einen Eintrag in der Fähigkeitstabelle: ' . json_encode(array_keys($typRollen)));
 $unstimmig = [];
 foreach ($typRollen as $typ => $def) {
@@ -251,7 +251,7 @@ foreach ($typRollen as $typ => $def) {
     }
 }
 pruefe($typRollen !== [] && $unstimmig === [], 'jeder Typ nennt bekannte Fähigkeiten und mindestens eine Pflichtfähigkeit, unstimmig: ' . implode(', ', $unstimmig));
-pruefe(($typRollen['light'] ?? null) === ['roles' => ['state', 'level', 'power', 'energy'], 'required' => ['state', 'level']], 'Licht: Schaltzustand und/oder Helligkeit, wahlweise Leistung und Zähler');
+pruefe(($typRollen['light'] ?? null) === ['roles' => ['state', 'level', 'power', 'energy', 'colortemp'], 'required' => ['state', 'level']], 'Licht: Schaltzustand und/oder Helligkeit, wahlweise Leistung, Zähler und Farbtemperatur');
 pruefe(($typRollen['blind'] ?? null) === ['roles' => ['level', 'moving', 'stop'], 'required' => ['level']], 'Rollladen: Position, dazu wahlweise Fahrstatus und Stoppvariable');
 pruefe(($typRollen['temperature'] ?? null) === ['roles' => ['state'], 'required' => ['state']], 'Messwert: eine Variable');
 

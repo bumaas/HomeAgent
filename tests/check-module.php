@@ -245,6 +245,19 @@ pruefe(!str_contains($beschreibung($zugaenge[0]), $nurLesen), 'beim vollen Zugan
 // Zwei Instanzen hießen in HA gleich („symcon-voicecontrol“); der Servername trägt jetzt den Namen der Instanz.
 IPS_SetName($iid, 'Sprachsteuerung (Test)');
 pruefe($info->invoke($m, null)['name'] === 'Symcon Sprachsteuerung (Test)', 'der Servername nennt die Instanz: ' . $info->invoke($m, null)['name']);
+pruefe(!isset(array_column($werkzeuge->invoke($m, null), 'inputSchema', 'name')['set_state']['properties']['color_temperature']), 'ohne Licht mit Farbtemperatur kein Feld color_temperature');
+$farbtemperatur = variable(VARIABLETYPE_INTEGER, 370);
+$geraeteMitFarbe = json_decode(IPS_GetProperty($iid, 'Devices'), true);
+$geraeteMitFarbe[0]['ColorTempVariableID'] = $farbtemperatur;
+IPS_SetProperty($iid, 'Devices', json_encode($geraeteMitFarbe));
+IPS_ApplyChanges($iid);
+$feld = array_column($werkzeuge->invoke($m, null), 'inputSchema', 'name')['set_state']['properties']['color_temperature'] ?? [];
+pruefe(($feld['type'] ?? '') === 'number' && str_contains($feld['description'] ?? '', '2700 warm white'), 'mit einem Licht mit Farbtemperatur bietet set_state color_temperature an: ' . json_encode($feld));
+IPS_SetProperty($iid, 'Devices', json_encode(array_map(static function (array $g): array {
+    unset($g['ColorTempVariableID']);
+    return $g;
+}, $geraeteMitFarbe)));
+IPS_ApplyChanges($iid);
 $schema = array_column($werkzeuge->invoke($m, $zugaenge[0]), 'inputSchema', 'name');
 pruefe(str_contains($schema['set_state']['properties']['room']['description'] ?? '', 'the room Küche is meant; "all" means the whole house') && str_contains($schema['get_state']['properties']['room']['description'], 'the room Küche is meant'), 'die Beschreibung von room nennt Standardraum und all: ' . ($schema['set_state']['properties']['room']['description'] ?? '?'));
 $schema = array_column($werkzeuge->invoke($m, null), 'inputSchema', 'name');
@@ -425,7 +438,7 @@ foreach (DeviceIndex::TYPES as $typ => $woerter) {
         continue;
     }
     $felder[$typ] = array_column($dialog, null, 'name');
-    if (array_keys($felder[$typ]) !== ['Room', 'Name', 'Aliases', 'Type', 'StateVariableID', 'StateLabel', 'SetpointVariableID', 'SetpointLabel', 'LevelVariableID', 'LevelLabel', 'MovingVariableID', 'MovingLabel', 'StopVariableID', 'StopLabel', 'PowerVariableID', 'PowerLabel', 'EnergyVariableID', 'EnergyLabel', 'Invert', 'Tilt', 'ReadOnly']) {
+    if (array_keys($felder[$typ]) !== ['Room', 'Name', 'Aliases', 'Type', 'StateVariableID', 'StateLabel', 'SetpointVariableID', 'SetpointLabel', 'ColorTempVariableID', 'ColorTempLabel', 'LevelVariableID', 'LevelLabel', 'MovingVariableID', 'MovingLabel', 'StopVariableID', 'StopLabel', 'PowerVariableID', 'PowerLabel', 'EnergyVariableID', 'EnergyLabel', 'Invert', 'Tilt', 'ReadOnly']) {
         $dialogFehler[] = $typ . ': Felder ' . implode(', ', array_keys($felder[$typ]));
         continue;
     }
@@ -457,12 +470,14 @@ pruefe(($felder['window']['StateVariableID']['caption'] ?? '') === 'Contact' && 
 pruefe(($felder['temperature']['StateVariableID']['caption'] ?? '') === 'Measured value', 'Messwert');
 pruefe(($felder['socket']['Invert']['caption'] ?? '') === 'Inverted (true = off)', 'Steckdose: Umkehr');
 pruefe(array_column($felder['light']['Type']['options'] ?? [], 'value') === array_keys(DeviceIndex::TYPES), 'die Typauswahl nennt alle Typen');
-pruefe(($felder['light']['Type']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID);', 'ein Typwechsel im Dialog ruft das Modul');
+pruefe(($felder['light']['Type']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID);', 'ein Typwechsel im Dialog ruft das Modul');
 pruefe(($felder['blind']['MovingVariableID']['visible'] ?? false) === true && ($felder['blind']['MovingVariableID']['caption'] ?? '') === 'Moving state' && ($felder['blind']['MovingVariableID']['type'] ?? '') === 'SelectVariable', 'Rollladen: wahlweise ein Fahrstatus');
 pruefe(($felder['light']['MovingVariableID']['visible'] ?? true) === false, 'beim Licht gibt es keinen Fahrstatus');
+// Farbtemperatur (build 57): wahlweise beim Licht, nicht beim Schalter.
+pruefe(($felder['light']['ColorTempVariableID']['visible'] ?? false) === true && ($felder['light']['ColorTempVariableID']['caption'] ?? '') === 'Colour temperature' && ($felder['switch']['ColorTempVariableID']['visible'] ?? true) === false, 'Licht: wahlweise Farbtemperatur');
 pruefe(($felder['window']['LevelVariableID']['visible'] ?? false) === true && ($felder['window']['LevelVariableID']['caption'] ?? '') === 'Drive (opening)' && ($felder['window']['MovingVariableID']['visible'] ?? false) === true, 'Fenster: wahlweise Antrieb und Fahrstatus');
 pruefe(($felder['window']['Tilt']['visible'] ?? false) === true && ($felder['window']['Tilt']['caption'] ?? '') === 'Tilt window (fully open means tilted)' && ($felder['blind']['Tilt']['visible'] ?? true) === false, 'Haken „Kippfenster“ nur beim Fenster');
-pruefe(($felder['blind']['MovingVariableID']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID);', 'die Wahl des Fahrstatus zieht den Spaltentext nach');
+pruefe(($felder['blind']['MovingVariableID']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID);', 'die Wahl des Fahrstatus zieht den Spaltentext nach');
 pruefe(($felder['light']['StateVariableID']['type'] ?? '') === 'SelectVariable' && ($felder['light']['LevelVariableID']['type'] ?? '') === 'SelectVariable', 'Fähigkeiten sind Variablenauswahlen');
 $fremd = json_decode((string)oderNull(static fn () => $m->UIDeviceForm('herd')), true);
 pruefe(is_array($fremd) && $fremd === array_values($felder['light'] ?? []), 'unbekannter Typ: Dialog wie für ein Licht');
@@ -511,14 +526,14 @@ $spalten = array_column($geraete['columns'], null, 'name');
 pruefe(isset($spalten['StateLabel'], $spalten['LevelLabel']) && !isset($spalten['StateLabel']['edit']) && ($spalten['StateLabel']['add'] ?? null) === '-', 'sichtbar sind Textspalten ohne Variablenauswahl, neue Zeilen zeigen „-“');
 pruefe(($spalten['StateVariableID']['visible'] ?? true) === false && ($spalten['LevelVariableID']['visible'] ?? true) === false && isset($spalten['StateVariableID']['edit']), 'die Variablen selbst bleiben als unsichtbare, gespeicherte Spalten in der Zeile');
 $werte = $geraete['values'] ?? [];
-pruefe(($werte[0] ?? null) === ['StateLabel' => 'Status', 'LevelLabel' => '-', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'rowColor' => ''], 'Licht ohne Helligkeit: Name der Variable und „-“: ' . json_encode($werte[0] ?? null, JSON_UNESCAPED_UNICODE));
-pruefe(($werte[1] ?? null) === ['StateLabel' => '-', 'LevelLabel' => '#59998 ?', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'rowColor' => '#FFC0C0'], 'Rollladen: der Zustand zählt nicht zum Typ, eine gelöschte Variable ist kenntlich und die Zeile rot: ' . json_encode($werte[1] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($werte[0] ?? null) === ['StateLabel' => 'Status', 'LevelLabel' => '-', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'ColorTempLabel' => '-', 'rowColor' => ''], 'Licht ohne Helligkeit: Name der Variable und „-“: ' . json_encode($werte[0] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($werte[1] ?? null) === ['StateLabel' => '-', 'LevelLabel' => '#59998 ?', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'ColorTempLabel' => '-', 'rowColor' => '#FFC0C0'], 'Rollladen: der Zustand zählt nicht zum Typ, eine gelöschte Variable ist kenntlich und die Zeile rot: ' . json_encode($werte[1] ?? null, JSON_UNESCAPED_UNICODE));
 
 $m->formUpdates = [];
 oderNull(static fn () => $m->UIDeviceChanged('light', $schalter, 0));
 pruefe(in_array(['StateLabel', 'value', 'Status'], $m->formUpdates, true) && in_array(['LevelLabel', 'value', '-'], $m->formUpdates, true), 'eine andere Variable im Dialog zieht den Spaltentext nach: ' . json_encode($m->formUpdates, JSON_UNESCAPED_UNICODE));
 $dialog = array_column(json_decode($m->UIDeviceForm('light'), true), null, 'name');
-pruefe(($dialog['StateLabel']['visible'] ?? true) === false && ($dialog['StateVariableID']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID);', 'der Dialog trägt die Spaltentexte unsichtbar mit und meldet jede Variablenwahl');
+pruefe(($dialog['StateLabel']['visible'] ?? true) === false && ($dialog['StateVariableID']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID);', 'der Dialog trägt die Spaltentexte unsichtbar mit und meldet jede Variablenwahl');
 $laeuft = variable(VARIABLETYPE_BOOLEAN, false);
 IPS_SetName($laeuft, 'WORKING');
 $m->formUpdates = [];

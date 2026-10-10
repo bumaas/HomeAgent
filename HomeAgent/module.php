@@ -617,14 +617,14 @@ class HomeAgent extends IPSModuleStrict
      * ein anderer Gerätetyp oder eine andere Variable gewählt wird. Die Felder folgen dem Typ, und
      * die Texte für die Spalten der Liste folgen den gewählten Variablen.
      */
-    public function UIDeviceChanged(string $Type, int $StateVariableID, int $LevelVariableID, int $MovingVariableID = 0, int $PowerVariableID = 0, int $EnergyVariableID = 0, int $StopVariableID = 0, int $SetpointVariableID = 0): void
+    public function UIDeviceChanged(string $Type, int $StateVariableID, int $LevelVariableID, int $MovingVariableID = 0, int $PowerVariableID = 0, int $EnergyVariableID = 0, int $StopVariableID = 0, int $SetpointVariableID = 0, int $ColorTempVariableID = 0): void
     {
         $type = array_key_exists($Type, DeviceIndex::TYPES) ? $Type : array_key_first(DeviceIndex::TYPES);
         foreach ($this->deviceDialogFields($type) as $name => $field) {
             $this->UpdateFormField($name, 'visible', $field['visible']);
             $this->UpdateFormField($name, 'caption', $field['caption']);
         }
-        foreach ($this->deviceLabels(['Type' => $type, 'StateVariableID' => $StateVariableID, 'LevelVariableID' => $LevelVariableID, 'MovingVariableID' => $MovingVariableID, 'PowerVariableID' => $PowerVariableID, 'EnergyVariableID' => $EnergyVariableID, 'StopVariableID' => $StopVariableID, 'SetpointVariableID' => $SetpointVariableID]) as $name => $label) {
+        foreach ($this->deviceLabels(['Type' => $type, 'StateVariableID' => $StateVariableID, 'LevelVariableID' => $LevelVariableID, 'MovingVariableID' => $MovingVariableID, 'PowerVariableID' => $PowerVariableID, 'EnergyVariableID' => $EnergyVariableID, 'StopVariableID' => $StopVariableID, 'SetpointVariableID' => $SetpointVariableID, 'ColorTempVariableID' => $ColorTempVariableID]) as $name => $label) {
             $this->UpdateFormField($name, 'value', $label);
         }
     }
@@ -777,6 +777,7 @@ class HomeAgent extends IPSModuleStrict
             $commands = array_values(array_intersect(DeviceIndex::COMMANDS, $offered));
             $hasPercent = in_array('percent', $offered, true);
             $hasTemperature = in_array('temperature', $offered, true);
+            $hasColorTemperature = in_array('color_temperature', $offered, true);
             $hasBlinds = in_array('open', $offered, true);
             $hasStop = in_array('stop', $offered, true);
             $hasTiltWindows = array_any($devices, static fn (array $row): bool => ($row['Type'] ?? '') === 'window' && ($row['Tilt'] ?? false) === true && DeviceIndex::abilitiesOf($row) !== []);
@@ -800,8 +801,11 @@ class HomeAgent extends IPSModuleStrict
             if ($hasTemperature) {
                 $properties['temperature'] = ['type' => 'number', 'description' => 'Target temperature in °C for a thermostat (heating setpoint).'];
             }
+            if ($hasColorTemperature) {
+                $properties['color_temperature'] = ['type' => 'number', 'minimum' => 1000, 'maximum' => 20000, 'description' => 'Colour temperature of a light in Kelvin: 2700 warm white, 4000 neutral white, 6500 cool white. Switches the light on; values outside its range go to the nearest end.'];
+            }
             // Was der Assistent angeben kann, in der Reihenfolge des Schemas.
-            $fields = array_values(array_filter([$commands !== [] ? 'a command' : '', $hasPercent ? 'percent' : '', $hasTemperature ? 'temperature' : '']));
+            $fields = array_values(array_filter([$commands !== [] ? 'a command' : '', $hasPercent ? 'percent' : '', $hasTemperature ? 'temperature' : '', $hasColorTemperature ? 'color_temperature' : '']));
             $give = count($fields) > 1 ? implode(', ', array_slice($fields, 0, -1)) . ' or ' . array_last($fields) : $fields[0];
             $tools[] = [
                 'name'        => 'set_state',
@@ -1246,7 +1250,7 @@ class HomeAgent extends IPSModuleStrict
     private function roleCaptions(string $type): array
     {
         $captions = match (true) {
-            $type === 'light'                                  => ['state' => $this->Translate('Switching state'), 'level' => $this->Translate('Brightness')],
+            $type === 'light'                                  => ['state' => $this->Translate('Switching state'), 'level' => $this->Translate('Brightness'), 'colortemp' => $this->Translate('Colour temperature')],
             $type === 'blind'                                  => ['level' => $this->Translate('Position'), 'moving' => $this->Translate('Moving state'), 'stop' => $this->Translate('Stop')],
             $type === 'window'                                 => ['state' => $this->Translate('Contact'), 'level' => $this->Translate('Drive (opening)'), 'moving' => $this->Translate('Moving state'), 'stop' => $this->Translate('Stop')],
             $type === 'door'                                   => ['state' => $this->Translate('Contact')],
@@ -1257,7 +1261,8 @@ class HomeAgent extends IPSModuleStrict
         };
         // Fähigkeiten, die der Typ nicht hat, bleiben im Dialog unsichtbar und behalten ihren allgemeinen Namen.
         return $captions + ['state' => $this->Translate('State or measured value'), 'level' => $this->Translate('Brightness/position'), 'moving' => $this->Translate('Moving state'),
-            'stop' => $this->Translate('Stop'), 'power' => $this->Translate('Power'), 'energy' => $this->Translate('Energy meter (archived as counter)'), 'setpoint' => $this->Translate('Setpoint')];
+            'stop' => $this->Translate('Stop'), 'power' => $this->Translate('Power'), 'energy' => $this->Translate('Energy meter (archived as counter)'), 'setpoint' => $this->Translate('Setpoint'),
+            'colortemp' => $this->Translate('Colour temperature')];
     }
 
     /**

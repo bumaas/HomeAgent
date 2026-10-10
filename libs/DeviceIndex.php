@@ -51,6 +51,7 @@ final class DeviceIndex
         'power'  => 'PowerVariableID',
         'energy'   => 'EnergyVariableID',
         'setpoint' => 'SetpointVariableID',
+        'colortemp' => 'ColorTempVariableID',
     ];
 
     /**
@@ -58,7 +59,7 @@ final class DeviceIndex
      * eine gesetzt sein muss („required“). Was nicht zum Typ gehört, wird beim Einlesen verworfen.
      */
     public const TYPE_ROLES = [
-        'light'       => ['roles' => ['state', 'level', 'power', 'energy'], 'required' => ['state', 'level']],
+        'light'       => ['roles' => ['state', 'level', 'power', 'energy', 'colortemp'], 'required' => ['state', 'level']],
         'switch'      => ['roles' => ['state', 'power', 'energy'], 'required' => ['state']],
         'socket'      => ['roles' => ['state', 'power', 'energy'], 'required' => ['state']],
         'appliance'   => ['roles' => ['state', 'power', 'energy'], 'required' => ['state', 'power']],
@@ -755,6 +756,13 @@ final class DeviceIndex
         $command = trim((string)($arguments['command'] ?? ''));
         $percent = $arguments['percent'] ?? null;
         $temperature = $arguments['temperature'] ?? null;
+        $kelvin = $arguments['color_temperature'] ?? null;
+        if ($kelvin !== null && ((!is_int($kelvin) && !is_float($kelvin)) || $kelvin < 1000 || $kelvin > 20000)) {
+            return $this->fail($this->t('Parameter "color_temperature" must be a number in Kelvin from 1000 to 20000.'));
+        }
+        if ($kelvin !== null && ($command !== '' || $percent !== null || $temperature !== null)) {
+            return $this->fail($this->t('Nothing was changed. Give color_temperature alone, without command, percent or temperature.'));
+        }
         if ($temperature !== null && !is_int($temperature) && !is_float($temperature)) {
             return $this->fail($this->t('Parameter "temperature" must be a number in °C.'));
         }
@@ -767,7 +775,7 @@ final class DeviceIndex
         if ($percent !== null && ((!is_int($percent) && !is_float($percent)) || $percent < 0 || $percent > 100)) {
             return $this->fail($this->t('Parameter "percent" must be a number from 0 to 100.'));
         }
-        if ($command === '' && $percent === null && $temperature === null) {
+        if ($command === '' && $percent === null && $temperature === null && $kelvin === null) {
             return $this->fail(sprintf($this->t('Nothing was changed: give a command (%s), a percent value or a temperature.'), implode(', ', self::COMMANDS)));
         }
         // Nur „on“ verträgt einen Wert, und dann einen über 0: „an und 0 %“ wäre zugleich aus.
@@ -784,7 +792,7 @@ final class DeviceIndex
         $type = trim((string)($arguments['type'] ?? ''));
 
         // Was verlangt ist, heißt wie das Feld des Werkzeugs; so kann der Assistent es korrigieren.
-        $ability = $temperature !== null ? 'temperature' : ($percent !== null ? 'percent' : $command);
+        $ability = $kelvin !== null ? 'color_temperature' : ($temperature !== null ? 'temperature' : ($percent !== null ? 'percent' : $command));
         $understand = array_filter($selection['entries'], static fn (array $e): bool => in_array($ability, self::abilitiesOf($e), true));
         $skipped = count($selection['entries']) - count($understand) + ($selection['windowsWithoutDrive'] ?? 0);
         if ($understand === []) {
@@ -810,6 +818,9 @@ final class DeviceIndex
         }
 
         $closing = $skipped > 0 ? [sprintf($this->t('%d device(s) of the selection do not understand "%s" and were left out.'), $skipped, $ability)] : [];
+        if ($kelvin !== null) {
+            return $this->setpointAnswer($this->runColorTemperature($understand, (float)$kelvin), $filter, $closing);
+        }
         if ($temperature !== null) {
             return $this->setpointAnswer($this->runSetpoint($understand, (float)$temperature), $filter, $closing);
         }
@@ -871,7 +882,8 @@ final class DeviceIndex
         if (!isset($roles['state']) && !isset($roles['level'])) {
             return [];
         }
-        return isset($roles['level']) ? ['on', 'off', 'percent'] : ['on', 'off'];
+        $abilities = isset($roles['level']) ? ['on', 'off', 'percent'] : ['on', 'off'];
+        return $type === 'light' && isset($roles['colortemp']) ? [...$abilities, 'color_temperature'] : $abilities;
     }
 
     /**
@@ -887,7 +899,7 @@ final class DeviceIndex
         foreach ($rows as $row) {
             $found = array_merge($found, self::abilitiesOf($row));
         }
-        return array_values(array_intersect(array_merge(self::COMMANDS, ['percent', 'temperature']), $found));
+        return array_values(array_intersect(array_merge(self::COMMANDS, ['percent', 'temperature', 'color_temperature']), $found));
     }
 
     /**
@@ -1168,6 +1180,97 @@ final class DeviceIndex
         $result['target'] = count(array_unique(array_map('strval', $targets))) === 1 ? (float)$targets[0] : $temperature;
         $result['unit'] = $entries === [] ? '°C' : $this->temperatureUnit((int)array_first($entries)['roles']['setpoint']);
         return $result;
+    }
+
+    /**
+     * Stellt die Farbtemperatur der Lichter und schaltet ausgeschaltete mit eigenem Schalter ein, wie
+     * beim Stellen der Helligkeit. Werte außerhalb des Bereichs gehen auf das nächste Ende. Die
+     * Schrittweite der Darstellung ist nur das Raster des Schiebereglers und zählt nicht: Die Hue
+     * Aurelle über Matter nahm 250 Mired an, obwohl ihr Regler in Fünfern ab 153 läuft (Testbox,
+     * 10.10.2026). Das Matter-Modul setzt die Variable sofort, auch bei ausgeschalteter Lampe.
+     *
+     * @param array<int, array<string, mixed>> $entries
+     * @return array{lines: array<int, string>, total: int, reached: int, pending: int, failed: int, target: float, unit: string}
+     */
+    private function runColorTemperature(array $entries, float $kelvin): array
+    {
+        $jobs = [];
+        $sent = [];
+        foreach ($entries as $index => $entry) {
+            $variable = $entry['roles']['colortemp'];
+            $job = ['entry' => $entry, 'variable' => $variable, 'target' => null, 'note' => null];
+            $current = $this->backend->read($variable);
+            if ($current === null) {
+                $job['note'] = sprintf($this->t('not available (variable %d is missing)'), $variable);
+            } elseif (!$this->backend->hasAction($variable)) {
+                $job['note'] = $this->t('cannot be set (the colour temperature has no action)');
+            } else {
+                $mired = $this->isMired($variable);
+                $raw = $mired ? 1000000 / $kelvin : $kelvin;
+                $range = $this->backend->setpointRange($variable);
+                if ($range !== null) {
+                    $raw = min($range['max'], max($range['min'], $raw));
+                }
+                $job['target'] = (int)round($raw);
+                $sent[] = $this->kelvinOf($variable, $job['target']);
+                $error = $this->backend->request($variable, $job['target']);
+                if ($error !== null) {
+                    $job['note'] = sprintf($this->t('failed: %s'), $error);
+                } elseif (isset($entry['roles']['state']) && ($this->backend->read($entry['roles']['state'])['value'] ?? null) === false) {
+                    $this->backend->request($entry['roles']['state'], true);
+                }
+            }
+            $jobs[$index] = $job;
+        }
+
+        $reached = fn (array $job): bool => ($this->backend->read($job['variable'])['value'] ?? null) == $job['target'];
+        $this->waitUntil(function () use ($jobs, $reached): bool {
+            foreach ($jobs as $job) {
+                if ($job['note'] === null && !$reached($job) && $this->backend->failure($job['variable']) === null) {
+                    return false;
+                }
+            }
+            return true;
+        });
+
+        $result = ['lines' => [], 'total' => count($jobs), 'reached' => 0, 'pending' => 0, 'failed' => 0];
+        foreach ($jobs as $index => $job) {
+            if ($job['note'] === null) {
+                $error = $reached($job) ? null : $this->backend->failure($job['variable']);
+                if ($error !== null) {
+                    $job['note'] = sprintf($this->t('failed: %s'), $error);
+                    $result['failed']++;
+                } elseif ($reached($job)) {
+                    $job['note'] = $this->stateOf($job['entry'])['text'];
+                    $result['reached']++;
+                } else {
+                    $job['note'] = sprintf($this->t('sent, but the device has not confirmed yet (currently %s)'), $this->stateOf($job['entry'])['text']);
+                    $result['pending']++;
+                }
+            } else {
+                $result['failed']++;
+            }
+            $result['lines'][$index] = $this->line($job['entry'], $job['note']);
+        }
+        $result['target'] = count(array_unique($sent)) === 1 ? (float)$sent[0] : $kelvin;
+        $result['unit'] = 'K';
+        return $result;
+    }
+
+    /** Mired statt Kelvin: ein Bereich bis 1000 (Hue über Matter 153 bis 454), ohne Bereich die Einheit. */
+    private function isMired(int $variableId): bool
+    {
+        $range = $this->backend->setpointRange($variableId);
+        if ($range !== null && $range['max'] > 0) {
+            return $range['max'] <= 1000;
+        }
+        return stripos($this->backend->unit($variableId), 'mired') !== false;
+    }
+
+    /** Ein Rohwert der Farbtemperatur in Kelvin; aus Mired umgerechnet auf 10 K gerundet. */
+    private function kelvinOf(int $variableId, float $raw): int
+    {
+        return $this->isMired($variableId) ? (int)(round(1000000 / $raw / 10) * 10) : (int)round($raw);
     }
 
     /**
@@ -1797,14 +1900,25 @@ final class DeviceIndex
             return ['text' => $power === null ? sprintf($this->t('not available (variable %d is missing)'), $entry['roles']['power']) : $power['formatted'], 'active' => null];
         }
         $state = $this->mainStateOf($entry);
+        $append = static function (array $state, string $text): array {
+            $state['text'] = str_ends_with($state['text'], ')')
+                ? substr($state['text'], 0, -1) . ', ' . $text . ')'
+                : $state['text'] . ' (' . $text . ')';
+            return $state;
+        };
+        // Die Farbtemperatur nur bei eingeschaltetem Licht; ausgeschaltet meldet etwa das
+        // HomeAssistant-Modul 0 K.
+        if ($state['active'] === true && isset($entry['roles']['colortemp'])) {
+            $raw = $this->backend->read($entry['roles']['colortemp'])['value'] ?? null;
+            if ((is_int($raw) || is_float($raw)) && $raw > 0) {
+                $state = $append($state, $this->kelvinOf($entry['roles']['colortemp'], (float)$raw) . ' K');
+            }
+        }
         $power = isset($entry['roles']['power']) && $this->backend->read($this->mainVariable($entry)) !== null ? $this->backend->read($entry['roles']['power']) : null;
         if ($power === null || $power['formatted'] === '') {
             return $state;
         }
-        $state['text'] = str_ends_with($state['text'], ')')
-            ? substr($state['text'], 0, -1) . ', ' . $power['formatted'] . ')'
-            : $state['text'] . ' (' . $power['formatted'] . ')';
-        return $state;
+        return $append($state, $power['formatted']);
     }
 
     /** @return array{text: string, active: ?bool} */

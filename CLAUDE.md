@@ -100,6 +100,10 @@ Weitere Regeln, die nicht offensichtlich sind:
   („Known rooms: …“), sonst kürzt ein Modell „Bad oben“ zu `room=Bad`.
 - **Nur-Lese-Zugang:** `instructions` und die Beschreibung von `get_state` sagen dem Assistenten, dass
   der Zugang nicht schalten kann, damit er eine Absage richtig begründet.
+- **Farbtemperatur** (`colortemp`, Feld `color_temperature` in Kelvin): Ein Bereich bis 1000 heißt Mired,
+  umgerechnet wird im Modul. Die Schrittweite der Darstellung zählt nicht (nur Raster des Reglers), ein
+  Wert außerhalb geht aufs nächste Ende, ein ausgeschaltetes Licht wird eingeschaltet. Farbe kommt
+  später; für Farbe als Text (Kodierung RGB, HSV, xy) beschreibt die Doku das Textformat nicht.
 - **Ein neues Feld** von `set_state` kostet: eine Fähigkeit in `ROLES`/`TYPE_ROLES`, einen Eintrag in
   `abilitiesOf()`, einen Zweig in `setState()`, eine Eigenschaft im Schema und ein Dialogfeld.
 

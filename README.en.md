@@ -7,7 +7,7 @@ operates Symcon with it, whether spoken, typed or from a workflow of its own. It
 still open?", say "Turn off the lights in the living room" or close a blind halfway and gets a short,
 unambiguous answer. It only sees and switches the devices you release.
 
-> **Status:** early preview. Querying, switching, setting brightness, position and heating setpoint,
+> **Status:** early preview. Querying, switching, setting brightness, colour temperature, position and heating setpoint,
 > stopping blinds, consumption and power, the history of measured values and starting scenes work. The device list can be proposed from
 > an Alexa instance. So far the module has been tried on three systems.
 
@@ -130,6 +130,7 @@ then shows only the variables that belong to this type.
 | Type | Light, switch, socket, appliance, blind, thermostat, window, door, presence, water leak, temperature, humidity, air quality or other measured value. |
 | State or measured value | The variable for on/off, open/closed or detected, for measured values the value itself. For a thermostat the current temperature. |
 | Setpoint | Only for a thermostat: the variable with the target temperature. It needs an action. |
+| Colour temperature | Only for a light, optional: the variable with the colour temperature in Kelvin or mired. It needs an action. |
 | Brightness/position | For a light the brightness. It is announced together with a light that is on and can be set in percent. For a blind the position, for a window the drive. |
 | Moving state | Only for blinds and windows with a drive, and only if such a variable exists: it reports whether the blind is moving, for example `WORKING` on Homematic or the run status on the Velux KLF200. The module then answers "moving" at once, even if the position only arrives at the end. |
 | Stop | Only for blinds and windows with a drive, optional: a variable that stops the travel, that is a boolean with an action or a selection with the entry "Stop" (such as "Aktion" in the HomeAssistant module). Homematic and Velux KLF200 devices are stopped by the module even without it. |
@@ -143,7 +144,7 @@ Which variables a device needs depends on its type:
 
 | Type | Variables |
 |---|---|
-| Light | Switching state, brightness or both. A dimmer without a separate switch only has the brightness. Optionally power and energy meter. |
+| Light | Switching state, brightness or both. A dimmer without a separate switch only has the brightness. Optionally power, energy meter and colour temperature. |
 | Switch, socket | Switching state, optionally power and energy meter |
 | Appliance | Switching state or power, optionally the energy meter. An appliance with power only, such as a heat pump, can be queried but not switched. |
 | Blind | Position, optionally moving state and stop |
@@ -247,6 +248,7 @@ when querying and adds a command or a percent value:
 | `stop` | stops blinds and windows that are moving |
 | `percent` | sets the brightness of a light or how far a blind or window is open |
 | `temperature` | sets the setpoint of a thermostat in °C |
+| `color_temperature` | sets the colour temperature of a light in Kelvin, for example 2700 for warm white |
 
 For lights 0 percent switches off, any other value switches on. A light that has only a brightness
 entered and whose smallest level is above 0 (with Matter for example 1 to 254) cannot be switched off
@@ -265,6 +267,11 @@ or the profile of the variable. Outside of it nothing is sent, and the answer na
 go to the step size, with steps of 0.5 21.3 becomes 21.5, and the answer names the value sent. Entries
 such as "On" at the edge of a Homematic profile do not count as part of the range. The button **Run
 self-test** shows the range for each thermostat.
+
+The assistant gives the colour temperature in Kelvin. If the variable counts in mired (range up to 1000,
+for example Hue via Matter), the module converts it. A value outside the range of the lamp goes to the
+nearest end, and the answer names the value sent. A light that is off is switched on. With the light on,
+the query names the colour temperature, for example "on (100 %, 2700 K)".
 
 A command for a group only reaches the devices that understand it. "Living room off" switches lights
 and sockets and leaves the blinds alone; the end of the answer says how many devices were left out.
@@ -351,7 +358,7 @@ echo HAGT_RunScene($InstanceID, '', 'Filmabend');
 - With the token in the address it can end up in logs, histories and settings files of the client.
   Set the tick only for accesses whose client cannot send the login in the header.
 - The script functions know neither default room nor floor. They exist for state, switching, setting
-  and scenes, not for stop, setpoint, consumption, power and history.
+  and scenes, not for stop, setpoint, colour temperature, consumption, power and history.
 
 ## Terms
 

@@ -288,7 +288,11 @@
             "day": "Tag",
             "month": "Monat",
             "no values in this period": "keine Werte in diesem Zeitraum",
-            "%d device(s) without measured value were left out.": "%d Gerät(e) ohne Messwert wurden ausgelassen."
+            "%d device(s) without measured value were left out.": "%d Gerät(e) ohne Messwert wurden ausgelassen.",
+            "Colour temperature": "Farbtemperatur",
+            "Parameter \"color_temperature\" must be a number in Kelvin from 1000 to 20000.": "Der Parameter „color_temperature“ muss eine Zahl in Kelvin von 1000 bis 20000 sein.",
+            "Nothing was changed. Give color_temperature alone, without command, percent or temperature.": "Nichts geändert. Gib color_temperature allein an, ohne command, percent oder temperature.",
+            "cannot be set (the colour temperature has no action)": "nicht stellbar (die Farbtemperatur hat keine Aktion)"
         }
     }
 }
