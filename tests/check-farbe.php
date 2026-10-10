@@ -78,6 +78,36 @@ pruefe($zeile($r, 1) === 'Wohnzimmer | WLED | light | an (100 %, rot)' && $anlag
 $r = rufe($werte, 'get', ['name' => 'WLED']);
 pruefe($zeile($r, 1) === 'Wohnzimmer | WLED | light | off', 'ausgeschaltet ohne Farbe: ' . $zeile($r, 1));
 
+/* --- Licht ohne Schaltzustand: an, wenn die Farbe nicht schwarz ist (Probe am nuc, build 58) ------ */
+
+// Nach color=blue stand der Weißkanal weiter auf 0 und die Farbe auf 255; die Zeile sagte trotzdem „aus“.
+$blau = $werte;
+$blau['54728']['wert'] = 0x0000FF;
+$r = rufe($blau, 'get', ['name' => 'Leiste']);
+pruefe($zeile($r, 1) === 'Wohnzimmer | Leiste | light | on (blue)', 'die blaue Leiste ist an: ' . $zeile($r, 1));
+$r = rufe($blau, 'get', ['type' => 'light', 'active_only' => true]);
+pruefe(str_starts_with($r['text'], '1 of 4') && str_contains($r['text'], 'Leiste'), 'active_only zählt sie mit: ' . $r['text']);
+$r = rufe($werte, 'set', ['name' => 'Leiste', 'color' => 'blue']);
+pruefe($zeile($r, 1) === 'Wohnzimmer | Leiste | light | on (blue)', 'die Antwort auf das Stellen sagt „an (blau)“: ' . $zeile($r, 1));
+$r = rufe($werte, 'get', ['name' => 'Leiste']);
+pruefe($zeile($r, 1) === 'Wohnzimmer | Leiste | light | off', 'schwarz und Weißkanal 0 bleibt aus: ' . $zeile($r, 1));
+
+// „aus“ bei einem Licht ohne Schalter setzt auch die Farbe auf Schwarz, sonst leuchtete die Leiste weiter.
+$r = rufe($blau, 'set', ['name' => 'Leiste', 'command' => 'off']);
+pruefe($gesendet(54728) === [0] && !$r['isError'] && $zeile($r, 1) === 'Wohnzimmer | Leiste | light | off', 'off schaltet die Farbe ab: ' . json_encode($anlage->requests) . ' ' . $r['text']);
+// Am nuc (build 59) stand die Farbe nach „aus“ wieder auf 255: Der Weißbefehl schrieb den alten Farbwert
+// zurück. Die Farbe geht deshalb erst hinaus, wenn der Weißkanal bestätigt ist, und ohne Weißbefehl,
+// wenn er schon auf 0 steht.
+$r = rufe($blau, 'set', ['name' => 'Leiste', 'command' => 'off']);
+pruefe($anlage->read(54728)['value'] === 0 && $gesendet(19752) === [], 'Weißkanal schon 0: nur die Farbe, und sie bleibt schwarz: ' . json_encode($anlage->requests));
+$hell = $blau;
+$hell['19752']['wert'] = 128;
+$r = rufe($hell, 'set', ['name' => 'Leiste', 'command' => 'off']);
+pruefe($anlage->read(54728)['value'] === 0 && $anlage->read(19752)['value'] === 0 && array_column($anlage->requests, 0) === [19752, 54728], 'erst Weiß, dann Farbe, am Ende beides aus: ' . json_encode($anlage->requests) . ' ' . $r['text']);
+pruefe($zeile($r, 1) === 'Wohnzimmer | Leiste | light | off', 'die Zeile sagt aus: ' . $zeile($r, 1));
+$r = rufe($werte, 'set', ['name' => 'Leiste', 'command' => 'off']);
+pruefe($gesendet(54728) === [], 'ist die Farbe schon schwarz, geht dafür nichts hinaus');
+
 /* --- Übersetzung ---------------------------------------------------------------------------------- */
 
 $r = rufe($werte, 'set', ['name' => 'Leiste', 'color' => 'blue'], $de);

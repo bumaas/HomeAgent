@@ -886,7 +886,48 @@ final class DeviceIndex
         $levelOnly = array_diff_key($understand, $withState);
         $result = $withState === [] ? null : $this->runSwitch($withState, $on);
         if ($levelOnly !== []) {
-            $result = self::mergeResults($result, $this->runLevel($levelOnly, $on ? 100.0 : 0.0, $word));
+            // Ein Licht ohne Schalter mit Farbe (RGBW-Leiste) leuchtet mit Stufe 0 weiter, solange die
+            // Farbe nicht schwarz ist; „aus“ setzt sie deshalb mit auf 0. Erst nach der Stufe: Das
+            // IPS-868-Modul schreibt bei jedem Weißbefehl den alten Farbwert mit (nuc, 10.10.2026), ein
+            // vorher gesendetes Schwarz wäre wieder weg. Steht die Stufe schon auf 0, geht sie nicht hinaus.
+            $colored = [];
+            if (!$on) {
+                foreach ($levelOnly as $index => $entry) {
+                    $rgb = isset($entry['roles']['color']) ? ($this->backend->read($entry['roles']['color'])['value'] ?? null) : null;
+                    if (is_int($rgb) && $rgb !== 0 && $this->backend->hasAction($entry['roles']['color'])) {
+                        $colored[$index] = $entry;
+                    }
+                }
+            }
+            $dark = array_filter($colored, fn (array $e): bool => ($this->backend->read($e['roles']['level'])['value'] ?? null) == 0);
+            $withLevel = array_diff_key($levelOnly, $dark);
+            if ($withLevel !== []) {
+                $result = self::mergeResults($result, $this->runLevel($withLevel, $on ? 100.0 : 0.0, $word));
+            }
+            if ($colored !== []) {
+                foreach ($colored as $entry) {
+                    $this->backend->request($entry['roles']['color'], 0);
+                }
+                $black = fn (array $e): bool => ($this->backend->read($e['roles']['color'])['value'] ?? null) === 0;
+                $this->waitUntil(function () use ($colored, $black): bool {
+                    foreach ($colored as $entry) {
+                        if (!$black($entry) && $this->backend->failure($entry['roles']['color']) === null) {
+                            return false;
+                        }
+                    }
+                    return true;
+                });
+                $lines = ['lines' => [], 'total' => count($dark), 'reached' => 0, 'pending' => 0, 'failed' => 0];
+                foreach ($colored as $index => $entry) {
+                    $done = $black($entry);
+                    $text = $this->stateOf($entry)['text'];
+                    if (isset($dark[$index])) {
+                        $lines[$done ? 'reached' : 'pending']++;
+                    }
+                    $lines['lines'][$index] = $this->line($entry, $done ? $text : sprintf($this->t('sent, but the device has not confirmed yet (currently %s)'), $text));
+                }
+                $result = $result === null ? $lines : self::mergeResults($result, $lines);
+            }
         }
         return $this->switchAnswer($result, $word, $filter, $closing);
     }
@@ -2097,6 +2138,14 @@ final class DeviceIndex
         if ($words !== null && (is_int($main['value']) || is_float($main['value']))) {
             // Gerät nur mit Stufe (z. B. Dimmer ohne eigenen Schalter): an, sobald die Stufe über 0 liegt.
             $active = $main['value'] > 0;
+            // Eine RGBW-Leiste ohne Schalter leuchtet auch mit Weißkanal 0, wenn ihre Farbe nicht schwarz
+            // ist (IPS-868 am nuc nach color=blue: White 0, Color 255, die Zeile sagte „aus“).
+            if (!$active && isset($entry['roles']['color'])) {
+                $rgb = $this->backend->read($entry['roles']['color'])['value'] ?? null;
+                if (is_int($rgb) && self::colorName($rgb) !== null) {
+                    return ['text' => $this->t($words[0]), 'active' => true];
+                }
+            }
             return ['text' => ($active ? $this->t($words[0]) . ' (' . $this->levelText($entry, $main) . ')' : $this->t($words[1])), 'active' => $active];
         }
         return ['text' => $entry['Type'] === 'blind' ? $this->blindText($entry, $main) : $main['formatted'], 'active' => null];

@@ -290,7 +290,8 @@ eingeschaltet. Bei eingeschaltetem Licht nennt die Abfrage die Farbtemperatur, e
 
 Eine Farbe wählt der Assistent aus einer festen Liste von neun Namen. Das Modul schreibt sie als RGB in
 die Variable und schaltet ein ausgeschaltetes Licht dabei ein. Die Abfrage nennt bei eingeschaltetem
-Licht die nächstliegende Farbe der Liste. Eine Farbvariable mit Text (Darstellung Farbe mit Kodierung,
+Licht die nächstliegende Farbe der Liste. Ein Licht ohne eigenen Schalter, etwa eine RGBW-Leiste, gilt als an,
+solange seine Farbe nicht schwarz ist, und „aus“ setzt die Farbe mit auf Schwarz. Eine Farbvariable mit Text (Darstellung Farbe mit Kodierung,
 etwa beim HomeAssistant-Modul) stellt das Modul noch nicht, die Antwort sagt das.
 
 Ein Befehl für eine Gruppe erreicht nur die Geräte, die ihn verstehen. „Wohnzimmer aus“ schaltet

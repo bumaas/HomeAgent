@@ -106,6 +106,9 @@ Weitere Regeln, die nicht offensichtlich sind:
   als Ganzzahl (`color`, Feld `color` mit fester Liste `DeviceIndex::COLORS`), Farbe als Text noch nicht:
   die Doku beschreibt das Textformat nicht (Doku-Feedback 10.10.2026), und das HomeAssistant-Modul
   schreibt RGB als `{"r":…}`, xy und HS aber als Liste. Die Abfrage nennt die nächstliegende Farbe.
+  Ein Licht ohne Schaltzustand gilt als an, solange die Farbe nicht schwarz ist; `off` setzt sie auf 0,
+  und zwar erst nach der bestätigten Stufe (IPS-868 schreibt bei jedem Weißbefehl den alten Farbwert mit;
+  `FakeBackend` bildet das über `schreibtAltwert` nach).
 - **Ein neues Feld** von `set_state` kostet: eine Fähigkeit in `ROLES`/`TYPE_ROLES`, einen Eintrag in
   `abilitiesOf()`, einen Zweig in `setState()`, eine Eigenschaft im Schema und ein Dialogfeld.
 

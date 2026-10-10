@@ -55,6 +55,9 @@ final class FakeBackend implements DeviceBackend
     /** @var null|array<string, string> */
     private ?array $translations;
 
+    /** @var array<int, mixed> Werte beim Anlegen, für Module, die einen alten Wert zurückschreiben */
+    private array $initial = [];
+
     /**
      * @param array<string, array<string, mixed>> $variables id => [wert, formatiert?, formate?, aktion?, verhalten?, verzoegerungMs?, blockiertMs?, schritt?, schrittMs?, bereich?, fehlertext?]
      * @param null|array<string, string> $translations null = englische Schlüssel unverändert
@@ -64,6 +67,7 @@ final class FakeBackend implements DeviceBackend
     {
         foreach ($variables as $id => $v) {
             $this->variables[(int)$id] = $v;
+            $this->initial[(int)$id] = $v['wert'] ?? null;
         }
         foreach ($scripts as $id => $s) {
             $this->scripts[(int)$id] = $s;
@@ -124,6 +128,11 @@ final class FakeBackend implements DeviceBackend
                 break;
             default:
                 $this->write($variableId, $value);
+        }
+        // IPS-868 am nuc (10.10.2026): Ein Befehl an den Weißkanal schreibt die Farbe mit, die das Modul
+        // vorher kannte; ein gerade gesendetes Schwarz wird so wieder zum alten Wert.
+        if (isset($v['schreibtAltwert'])) {
+            $this->write((int)$v['schreibtAltwert'], $this->initial[(int)$v['schreibtAltwert']] ?? null);
         }
         if (isset($v['fahrstatus'], $v['fahrstatusMs']) && ($v['verhalten'] ?? '') === 'blockiert') {
             $this->statusChanges[] = ['at' => $this->slept + (int)$v['fahrstatusMs'], 'id' => (int)$v['fahrstatus'], 'value' => true];

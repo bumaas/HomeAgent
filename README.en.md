@@ -277,7 +277,8 @@ the query names the colour temperature, for example "on (100 %, 2700 K)".
 
 The assistant picks a colour from a fixed list of nine names. The module writes it as RGB into the
 variable and switches a light that is off on. With the light on, the query names the nearest colour of the
-list. A colour variable with text (presentation colour with an encoding, for example with the
+list. A light without its own switch, such as an RGBW strip, counts as on as long as its colour is not black,
+and "off" also sets the colour to black. A colour variable with text (presentation colour with an encoding, for example with the
 HomeAssistant module) is not set yet; the answer says so.
 
 A command for a group only reaches the devices that understand it. "Living room off" switches lights
