@@ -319,7 +319,19 @@
             "Volume": "Lautstärke",
             "Mute": "Stumm",
             "Title": "Titel",
-            "Artist": "Interpret"
+            "Artist": "Interpret",
+            "idle": "bereit",
+            "standby": "Standby",
+            "buffering": "lädt",
+            "playing back": "in Wiedergabe",
+            "at the next track": "beim nächsten Titel",
+            "at the previous track": "beim vorigen Titel",
+            "already paused": "war schon pausiert",
+            "already playing": "spielte schon",
+            "already stopped": "war schon angehalten",
+            "cannot be controlled (unknown playback profile %s)": "nicht steuerbar (unbekanntes Wiedergabeprofil %s)",
+            "cannot be controlled (playback has no action)": "nicht steuerbar (die Wiedergabe hat keine Aktion)",
+            "does not support \"%s\"": "kann nicht „%s“"
         }
     }
 }

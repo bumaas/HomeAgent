@@ -1,0 +1,667 @@
+{
+    "_quelle": "10.10.2026 gegen 23:30, nuc, Sonos Wintergarten mit Burkhards OK hörbar gesteuert: Befehle wie Home Agent in einem eigenen Skript (RequestAction), alle 100 ms jede Aktualisierung beider Module mitgeschnitten. Weg sonos: Status #27341 (~PlaybackPreviousNext) des Sonos-Moduls #13088. Weg ha: Wiedergabe #11085 des HomeAssistant-Moduls #24294 (bleibt -1), Zustand im Text #45169 (Rohwerte playing/paused), Titel #53862, Interpret #12831. Befehle 2 Play, 4 Weiter, 0 Zurück, 3 Pause; danach wieder pausiert. Je Zeile: ms seit Beginn, Variable, Wert, anfang/aktualisiert. Ausgangswerte danach gelesen (beide pausiert, HA mit Titel, Sonos-Modul ohne). „reaktion“ je Befehlswert aus den Folgen abgelesen; beim Pausieren über HA kam in 3 s kein „paused“.",
+    "variablen": {
+        "27341": {
+            "name": "Wintergarten: Status",
+            "wert": 3,
+            "formatiert": "Pause",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 4,
+                "profil": "~PlaybackPreviousNext"
+            },
+            "verhalten": "reaktion",
+            "reaktion": {
+                "2": [
+                    [
+                        100,
+                        27341,
+                        2
+                    ]
+                ],
+                "4": [
+                    [
+                        200,
+                        27341,
+                        -1
+                    ],
+                    [
+                        200,
+                        31197,
+                        ""
+                    ],
+                    [
+                        200,
+                        35899,
+                        ""
+                    ]
+                ],
+                "0": [
+                    [
+                        1400,
+                        27341,
+                        2
+                    ],
+                    [
+                        1600,
+                        31197,
+                        "Can't Get Enough"
+                    ],
+                    [
+                        1600,
+                        35899,
+                        "Bad Company"
+                    ]
+                ],
+                "3": [
+                    [
+                        100,
+                        27341,
+                        3
+                    ]
+                ]
+            }
+        },
+        "27915": {
+            "name": "Wintergarten: Lautstärke",
+            "wert": 20,
+            "formatiert": "20 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 100,
+                "profil": "~Volume"
+            }
+        },
+        "28490": {
+            "name": "Wintergarten: Mute",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true
+        },
+        "31197": {
+            "name": "Wintergarten: Titel",
+            "wert": "",
+            "formatiert": "...",
+            "aktion": false
+        },
+        "35899": {
+            "name": "Wintergarten: Künstler",
+            "wert": "",
+            "formatiert": "...",
+            "aktion": false
+        },
+        "45169": {
+            "name": "Wintergarten (Sonos): Status",
+            "wert": "paused",
+            "formatiert": "Pausiert",
+            "aktion": false
+        },
+        "11085": {
+            "name": "Wintergarten (Sonos): Wiedergabe",
+            "wert": -1,
+            "formatiert": "",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 4,
+                "profil": "~PlaybackPreviousNext"
+            },
+            "verhalten": "reaktion",
+            "reaktion": {
+                "2": [
+                    [
+                        100,
+                        11085,
+                        -1
+                    ],
+                    [
+                        900,
+                        45169,
+                        "playing"
+                    ],
+                    [
+                        1300,
+                        53862,
+                        "Can't Get Enough"
+                    ],
+                    [
+                        1400,
+                        12831,
+                        "Bad Company"
+                    ]
+                ],
+                "4": [
+                    [
+                        200,
+                        11085,
+                        -1
+                    ],
+                    [
+                        1100,
+                        45169,
+                        "playing"
+                    ],
+                    [
+                        1600,
+                        53862,
+                        "Rock Steady"
+                    ],
+                    [
+                        1600,
+                        12831,
+                        "Bad Company"
+                    ]
+                ],
+                "0": [
+                    [
+                        300,
+                        11085,
+                        -1
+                    ],
+                    [
+                        2700,
+                        45169,
+                        "playing"
+                    ],
+                    [
+                        5500,
+                        53862,
+                        "Can't Get Enough"
+                    ]
+                ],
+                "3": [
+                    [
+                        250,
+                        11085,
+                        -1
+                    ],
+                    [
+                        1350,
+                        45169,
+                        "playing"
+                    ],
+                    [
+                        1450,
+                        53862,
+                        "Can't Get Enough"
+                    ]
+                ]
+            }
+        },
+        "31588": {
+            "name": "Wintergarten (Sonos): Lautstärke",
+            "wert": 0.2,
+            "formatiert": "20 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 1
+            }
+        },
+        "21842": {
+            "name": "Wintergarten (Sonos): Stumm",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true
+        },
+        "53862": {
+            "name": "Wintergarten (Sonos): Titel",
+            "wert": "Can't Get Enough",
+            "formatiert": "Can't Get Enough...",
+            "aktion": false
+        },
+        "12831": {
+            "name": "Wintergarten (Sonos): Interpret",
+            "wert": "Bad Company",
+            "formatiert": "Bad Company...",
+            "aktion": false
+        }
+    },
+    "geraete": [
+        {
+            "Room": "Wintergarten",
+            "Name": "Sonos",
+            "Aliases": "",
+            "Type": "media",
+            "Invert": false,
+            "PlaybackVariableID": 27341,
+            "VolumeVariableID": 27915,
+            "MuteVariableID": 28490,
+            "TitleVariableID": 31197,
+            "ArtistVariableID": 35899
+        },
+        {
+            "Room": "Wintergarten",
+            "Name": "Sonos über HA",
+            "Aliases": "",
+            "Type": "media",
+            "Invert": false,
+            "StateVariableID": 45169,
+            "PlaybackVariableID": 11085,
+            "VolumeVariableID": 31588,
+            "MuteVariableID": 21842,
+            "TitleVariableID": 53862,
+            "ArtistVariableID": 12831
+        }
+    ],
+    "sonos": [
+        [
+            0,
+            "sonos.status",
+            1,
+            "anfang"
+        ],
+        [
+            0,
+            "sonos.titel",
+            "",
+            "anfang"
+        ],
+        [
+            0,
+            "sonos.interpret",
+            "",
+            "anfang"
+        ],
+        [
+            0,
+            "ha.wiedergabe",
+            -1,
+            "anfang"
+        ],
+        [
+            0,
+            "ha.status",
+            "paused",
+            "anfang"
+        ],
+        [
+            0,
+            "ha.titel",
+            "Can't Get Enough",
+            "anfang"
+        ],
+        [
+            0,
+            "ha.interpret",
+            "Bad Company",
+            "anfang"
+        ],
+        [
+            303,
+            "BEFEHL",
+            2,
+            "sonos"
+        ],
+        [
+            405,
+            "sonos.status",
+            2,
+            "aktualisiert"
+        ],
+        [
+            4345,
+            "BEFEHL",
+            4,
+            "sonos"
+        ],
+        [
+            4347,
+            "ha.status",
+            "playing",
+            "aktualisiert"
+        ],
+        [
+            4548,
+            "sonos.status",
+            -1,
+            "aktualisiert"
+        ],
+        [
+            4548,
+            "sonos.titel",
+            "",
+            "aktualisiert"
+        ],
+        [
+            4548,
+            "sonos.interpret",
+            "",
+            "aktualisiert"
+        ],
+        [
+            4749,
+            "ha.status",
+            "playing",
+            "aktualisiert"
+        ],
+        [
+            4851,
+            "ha.titel",
+            "Can't Get Enough",
+            "aktualisiert"
+        ],
+        [
+            4851,
+            "ha.interpret",
+            "Bad Company",
+            "aktualisiert"
+        ],
+        [
+            5868,
+            "ha.status",
+            "playing",
+            "aktualisiert"
+        ],
+        [
+            5969,
+            "ha.titel",
+            "Rock Steady",
+            "aktualisiert"
+        ],
+        [
+            5969,
+            "ha.interpret",
+            "Bad Company",
+            "aktualisiert"
+        ],
+        [
+            8407,
+            "BEFEHL",
+            0,
+            "sonos"
+        ],
+        [
+            9823,
+            "sonos.status",
+            2,
+            "aktualisiert"
+        ],
+        [
+            10025,
+            "sonos.titel",
+            "Can't Get Enough",
+            "aktualisiert"
+        ],
+        [
+            10025,
+            "sonos.interpret",
+            "Bad Company",
+            "aktualisiert"
+        ],
+        [
+            10631,
+            "ha.status",
+            "playing",
+            "aktualisiert"
+        ],
+        [
+            11140,
+            "ha.titel",
+            "Can't Get Enough",
+            "aktualisiert"
+        ],
+        [
+            11140,
+            "ha.interpret",
+            "Bad Company",
+            "aktualisiert"
+        ],
+        [
+            12459,
+            "BEFEHL",
+            3,
+            "sonos"
+        ],
+        [
+            12561,
+            "sonos.status",
+            3,
+            "aktualisiert"
+        ],
+        [
+            13268,
+            "ha.status",
+            "paused",
+            "aktualisiert"
+        ],
+        [
+            13671,
+            "ha.status",
+            "paused",
+            "aktualisiert"
+        ],
+        [
+            13671,
+            "ha.titel",
+            "Can't Get Enough",
+            "aktualisiert"
+        ],
+        [
+            13671,
+            "ha.interpret",
+            "Bad Company",
+            "aktualisiert"
+        ]
+    ],
+    "ha": [
+        [
+            0,
+            "sonos.status",
+            3,
+            "anfang"
+        ],
+        [
+            0,
+            "sonos.titel",
+            "",
+            "anfang"
+        ],
+        [
+            0,
+            "sonos.interpret",
+            "",
+            "anfang"
+        ],
+        [
+            0,
+            "ha.wiedergabe",
+            -1,
+            "anfang"
+        ],
+        [
+            0,
+            "ha.status",
+            "paused",
+            "anfang"
+        ],
+        [
+            0,
+            "ha.titel",
+            "Can't Get Enough",
+            "anfang"
+        ],
+        [
+            0,
+            "ha.interpret",
+            "Bad Company",
+            "anfang"
+        ],
+        [
+            302,
+            "BEFEHL",
+            2,
+            "ha"
+        ],
+        [
+            404,
+            "ha.wiedergabe",
+            -1,
+            "aktualisiert"
+        ],
+        [
+            1213,
+            "ha.status",
+            "playing",
+            "aktualisiert"
+        ],
+        [
+            1616,
+            "ha.titel",
+            "Can't Get Enough",
+            "aktualisiert"
+        ],
+        [
+            1717,
+            "ha.interpret",
+            "Bad Company",
+            "aktualisiert"
+        ],
+        [
+            3854,
+            "sonos.status",
+            2,
+            "aktualisiert"
+        ],
+        [
+            3854,
+            "sonos.titel",
+            "Can't Get Enough",
+            "aktualisiert"
+        ],
+        [
+            3854,
+            "sonos.interpret",
+            "Bad Company",
+            "aktualisiert"
+        ],
+        [
+            4359,
+            "BEFEHL",
+            4,
+            "ha"
+        ],
+        [
+            4562,
+            "ha.wiedergabe",
+            -1,
+            "aktualisiert"
+        ],
+        [
+            5474,
+            "ha.status",
+            "playing",
+            "aktualisiert"
+        ],
+        [
+            5979,
+            "ha.titel",
+            "Rock Steady",
+            "aktualisiert"
+        ],
+        [
+            5979,
+            "ha.interpret",
+            "Bad Company",
+            "aktualisiert"
+        ],
+        [
+            6184,
+            "ha.status",
+            "playing",
+            "aktualisiert"
+        ],
+        [
+            8419,
+            "BEFEHL",
+            0,
+            "ha"
+        ],
+        [
+            8723,
+            "ha.wiedergabe",
+            -1,
+            "aktualisiert"
+        ],
+        [
+            9243,
+            "sonos.status",
+            -1,
+            "aktualisiert"
+        ],
+        [
+            9243,
+            "sonos.titel",
+            "",
+            "aktualisiert"
+        ],
+        [
+            9244,
+            "sonos.interpret",
+            "",
+            "aktualisiert"
+        ],
+        [
+            11083,
+            "ha.status",
+            "playing",
+            "aktualisiert"
+        ],
+        [
+            12518,
+            "BEFEHL",
+            3,
+            "ha"
+        ],
+        [
+            12767,
+            "ha.wiedergabe",
+            -1,
+            "aktualisiert"
+        ],
+        [
+            13861,
+            "ha.status",
+            "playing",
+            "aktualisiert"
+        ],
+        [
+            13962,
+            "ha.titel",
+            "Can't Get Enough",
+            "aktualisiert"
+        ],
+        [
+            13962,
+            "ha.interpret",
+            "Bad Company",
+            "aktualisiert"
+        ],
+        [
+            14164,
+            "ha.status",
+            "playing",
+            "aktualisiert"
+        ],
+        [
+            14366,
+            "sonos.status",
+            3,
+            "aktualisiert"
+        ],
+        [
+            14366,
+            "sonos.titel",
+            "",
+            "aktualisiert"
+        ],
+        [
+            14366,
+            "sonos.interpret",
+            "",
+            "aktualisiert"
+        ]
+    ]
+}

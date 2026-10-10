@@ -791,11 +791,15 @@ class HomeAgent extends IPSModuleStrict
                 'name' => ['type' => 'string', 'description' => 'Name or alias of one single device, a partial word is enough.'],
             ];
             if ($commands !== []) {
-                $properties['command'] = ['type' => 'string', 'enum' => $commands, 'description' => match (true) {
-                    $hasStop   => 'on/off switch a device, open/close move a blind or window all the way, stop halts a moving blind or window.',
-                    $hasBlinds => 'on/off switch a device, open/close move a blind or window all the way.',
-                    default    => 'on/off switch a device.',
-                }];
+                // Jeder Teil nur, wenn ein freigegebenes Gerät ihn versteht.
+                $hasMedia = in_array('play', $offered, true);
+                $parts = array_filter([
+                    in_array('on', $commands, true) ? 'on/off switch a device' : '',
+                    $hasBlinds ? 'open/close move a blind or window all the way' : '',
+                    $hasStop && $hasBlinds ? ($hasMedia ? 'stop halts a moving blind or window and ends playback of a media player' : 'stop halts a moving blind or window') : ($hasMedia ? 'stop ends playback' : ''),
+                    $hasMedia ? 'play/pause/next/previous control a media player' : '',
+                ]);
+                $properties['command'] = ['type' => 'string', 'enum' => $commands, 'description' => ucfirst(implode(', ', $parts)) . '.'];
             }
             if ($hasPercent) {
                 $properties['percent'] = ['type' => 'number', 'minimum' => 0, 'maximum' => 100, 'description' => $hasBlinds ? 'Brightness of a light, or how far a blind or window is open (0 closed, 100 open).' : 'Brightness of a light, 0 switches it off.'];
@@ -822,7 +826,8 @@ class HomeAgent extends IPSModuleStrict
                     . ($hasBlinds ? 'Blinds are slow: "moving" or "command sent" is a normal answer, not a failure. ' : '')
                     // HA Assist am nuc (09.10.2026): „Kipp das Fenster“ lehnte das Modell sonst ab.
                     . ($hasTiltWindows ? 'Tilt windows open by tilting: "tilt the window" means command=open. ' : '')
-                    . 'Example: "Lights off in the living room" → room=Wohnzimmer, type=light, command=off.'
+                    . (in_array('on', $commands, true) ? 'Example: "Lights off in the living room" → room=Wohnzimmer, type=light, command=off.' : 'Example:')
+                    . (in_array('play', $offered, true) ? ' "Pause the music in the conservatory" → room=Wintergarten, type=media, command=pause.' : '')
                     . ($hasPercent ? ' "Dim the ceiling light to a third" → name=Deckenlicht, percent=33.' : '')
                     . ($hasTemperature ? ' "Set the heating in the guest room to 21 degrees" → room=Gast, temperature=21.' : ''),
                 'inputSchema' => [

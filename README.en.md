@@ -8,7 +8,7 @@ still open?", say "Turn off the lights in the living room" or close a blind half
 unambiguous answer. It only sees and switches the devices you release.
 
 > **Status:** early preview. Querying, switching, setting brightness, colour temperature, colour, position and heating setpoint,
-> stopping blinds, consumption and power, the history of measured values and starting scenes work, media players can be queried. The device list can be proposed from
+> stopping blinds, consumption and power, the history of measured values starting scenes and media playback work. The device list can be proposed from
 > an Alexa instance. So far the module has been tried on three systems.
 
 ## When do I need this?
@@ -186,9 +186,10 @@ do not need a separate temperature entry on the same variable. A setpoint outsid
 special setpoint: some Homematic thermostats use 100 for "valve fully open".
 
 A media player reports for example "playing "Can't Get Enough" by Bad Company (volume 20 %)",
-"paused (volume 37 %, muted)" or "off". It counts as active while it plays. Without a playback state
-(the HomeAssistant module only has a command variable) only the title is shown, and it is not counted
-among the active devices.
+"paused (volume 37 %, muted)" or "off". It counts as active while it plays. With the HomeAssistant
+module playback is only a command variable; enter its status text (`playing`, `paused`, `idle`, `off` …)
+as on/off, and the module knows the state anyway. Without either only the title is shown, and the player
+is not counted among the active devices.
 
 With `period`, **get_state** reports consumption instead of the state: `today`, `yesterday`,
 `this_week`, `last_week`, `this_month`, `last_month`, `this_year` or `last_year`. Instead of `period`, a
@@ -253,7 +254,9 @@ when querying and adds a command or a percent value:
 |---|---|
 | `on`, `off` | switches lights, switches, sockets and appliances on or off |
 | `open`, `close` | moves blinds and windows with a drive fully open or fully closed |
-| `stop` | stops blinds and windows that are moving |
+| `stop` | stops blinds and windows that are moving and ends playback of a media player |
+| `play`, `pause` | resumes or pauses playback of a media player |
+| `next`, `previous` | skips to the next or previous track of a media player |
 | `percent` | sets the brightness of a light or how far a blind or window is open |
 | `temperature` | sets the setpoint of a thermostat in °C |
 | `color_temperature` | sets the colour temperature of a light in Kelvin, for example 2700 for warm white |
@@ -270,6 +273,12 @@ The tool only offers what your released devices can do. Without a blind and with
 drive there is no `open` and `close`, without a dimmable light and without both no percent value. A
 window with only a contact can only be queried; for "close all windows" the answer says how many such
 windows were left out.
+
+For a media player, play, pause or stop count as done when the playback state matches, next and previous
+as soon as title or playback state change. A player that is already paused gets no command, the line says
+"already paused". Some players report the new title only after a few seconds; then the answer says "sent,
+but the device has not confirmed yet". The module reads which values the playback variable understands
+from its profile; with an unknown profile it leaves the player alone and says so.
 
 The module checks a temperature against the range of the setpoint, which it reads from the presentation
 or the profile of the variable. Outside of it nothing is sent, and the answer names the range. Odd values
@@ -356,7 +365,7 @@ echo HAGT_RunScene($InstanceID, '', 'Filmabend');
 ## Limits
 
 - Colour as text and the operating mode of thermostats (off, heat, auto) are not supported yet.
-- Media players can only be queried so far, not controlled.
+- Volume, mute and on/off of a media player cannot be set yet.
 - A battery-powered thermostat often takes a new setpoint only at its next radio contact. The central
   unit still confirms it right away, so "set" then means "handed over to the central unit".
 - For a blind that reports only on arrival and has no moving state, the module does not know after

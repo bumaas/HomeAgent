@@ -109,13 +109,20 @@ Weitere Regeln, die nicht offensichtlich sind:
   Ein Licht ohne Schaltzustand gilt als an, solange die Farbe nicht schwarz ist; `off` setzt sie auf 0,
   und zwar erst nach der bestätigten Stufe (IPS-868 schreibt bei jedem Weißbefehl den alten Farbwert mit;
   `FakeBackend` bildet das über `schreibtAltwert` nach).
-- **Mediaplayer** (Typ `media`, Stufe 1 nur abfragen): Fähigkeiten `state` (Ein/Aus), `playback`, `volume`,
+- **Mediaplayer** (Typ `media`): Fähigkeiten `state` (Ein/Aus), `playback`, `volume`,
   `mute`, `title`, `artist`, wie sie Symcon in der Darstellung „Media Player“ zusammenfasst. Die Werte der
   Wiedergabe hängen am Profil (`DeviceIndex::PLAYBACK_CODES`, an der Anlage gelesen): `~Playback…` zählt
   0 Zurück, 1 Stop, 2 Play, 3 Pause, 4 Weiter, der eingebaute Media Player (`~PlayerStatus`) 1 Play, 2 Pause,
-  3 Stop. Das HomeAssistant-Modul hat nur eine Befehlsvariable (Wert -1), dann gibt es keinen Zustand. Aktiv
-  ist, was spielt oder an ist ohne Wiedergabezustand. Geplant nach HA: Play/Pause/Stop/Weiter/Zurück,
-  `volume`, `volume_change`, `mute`, Ein/Aus; das Sonos-Modul hat an `Volume` keine Aktion.
+  3 Stop. Das HomeAssistant-Modul hat nur eine Befehlsvariable (Wert -1); als `state` darf dort sein
+  Statustext stehen (`MEDIA_STATES`: playing, paused, idle, buffering, standby, on, off), die Phase kommt
+  dann daraus (`playbackPhase`). Aktiv ist, was spielt oder an ist ohne Wiedergabezustand.
+  `play`, `pause`, `stop`, `next`, `previous` (`runPlayback`): gesendet wird der Wert aus dem Profil, ein
+  fremdes Profil wird abgewiesen, ein Player in der Zielphase bekommt nichts. Play/Pause/Stop sind bestätigt,
+  wenn die Phase stimmt, Weiter/Zurück, wenn sich Wiedergabewert, Titel oder Interpret ändern. Das
+  Sonos-Modul meldet „Weiter“ teils nach 0,2 s (Status -1), teils erst nach 4,5 s mit dem neuen Titel;
+  über das HomeAssistant-Modul kam „paused“ in 3 s nie. Dann bleibt es bei „noch nicht bestätigt“, die
+  Wartezeit bleibt 2 s. `stop` teilt sich in Rollläden (`runStop`) und Mediaplayer. Noch offen:
+  `volume`, `volume_change`, `mute`, Ein/Aus; das Sonos-Modul hat an `Volume` teils keine Aktion.
 - **Ein neues Feld** von `set_state` kostet: eine Fähigkeit in `ROLES`/`TYPE_ROLES`, einen Eintrag in
   `abilitiesOf()`, einen Zweig in `setState()`, eine Eigenschaft im Schema und ein Dialogfeld.
 

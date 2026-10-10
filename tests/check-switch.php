@@ -576,9 +576,9 @@ foreach ([['off', 50], ['on', 0], ['open', 20], ['close', 100]] as [$befehl, $pr
 $r = stelle($idx, ['name' => 'Testlampe', 'room' => 'Testraum', 'command' => 'off', 'percent' => 50]);
 pruefe($r['text'] === $fx['beobachtet']['set_state name=Testlampe room=Testraum command=off percent=50']['text'], 'der Widerspruch wortgleich wie an der Testbox: ' . $r['text']);
 $r = stelle($idx, ['name' => 'Testlampe']);
-pruefe($r['isError'] && $b->requests === [] && $r['text'] === 'Nichts geändert: Es fehlt ein Befehl (on, off, open, close, stop), ein Prozentwert oder eine Temperatur.', 'weder command noch percent: ' . $r['text']);
+pruefe($r['isError'] && $b->requests === [] && $r['text'] === 'Nichts geändert: Es fehlt ein Befehl (on, off, open, close, stop, play, pause, next, previous), ein Prozentwert oder eine Temperatur.', 'weder command noch percent: ' . $r['text']);
 $r = stelle($idx, ['name' => 'Testlampe', 'command' => 'toggle']);
-pruefe($r['isError'] && $b->requests === [] && $r['text'] === 'Unbekannter Befehl „toggle“. Erlaubt: on, off, open, close, stop.', 'unbekannter Befehl: ' . $r['text']);
+pruefe($r['isError'] && $b->requests === [] && $r['text'] === 'Unbekannter Befehl „toggle“. Erlaubt: on, off, open, close, stop, play, pause, next, previous.', 'unbekannter Befehl: ' . $r['text']);
 foreach ([140, -1, '50'] as $falsch) {
     $r = stelle($idx, ['name' => 'Rollo', 'percent' => $falsch]);
     pruefe($r['isError'] && $b->requests === [] && $r['text'] === 'Der Parameter „percent“ muss eine Zahl von 0 bis 100 sein.', 'percent=' . json_encode($falsch) . ' wird abgewiesen: ' . $r['text']);
@@ -1000,7 +1000,7 @@ pruefe(DeviceIndex::offeredAbilities($flur()) === ['open', 'close', 'percent'], 
 // Mitschnitte nuc 09.10.2026: Gast über HomeMatic (HM_WriteValueBoolean STOP) und über die Variable
 // „Aktion“ des HomeAssistant-Moduls (Option 2 Stop), Velux Bad über KLF200_ShutterMoveStop.
 
-pruefe(DeviceIndex::COMMANDS === ['on', 'off', 'open', 'close', 'stop'], 'set_state kennt den Befehl stop: ' . json_encode(DeviceIndex::COMMANDS));
+pruefe(DeviceIndex::COMMANDS === ['on', 'off', 'open', 'close', 'stop', 'play', 'pause', 'next', 'previous'], 'set_state kennt den Befehl stop: ' . json_encode(DeviceIndex::COMMANDS));
 pruefe((DeviceIndex::ROLES['stop'] ?? '') === 'StopVariableID', 'Fähigkeit „stop“ mit dem Schlüssel StopVariableID: ' . json_encode(DeviceIndex::ROLES));
 pruefe($rollenVon(['Type' => 'blind', 'LevelVariableID' => 53574, 'StopVariableID' => 38970]) === ['level' => 53574, 'stop' => 38970], 'Rollladen kennt die Stoppvariable: ' . json_encode($rollenVon(['Type' => 'blind', 'LevelVariableID' => 53574, 'StopVariableID' => 38970])));
 pruefe($rollenVon(['Type' => 'window', 'LevelVariableID' => 20009, 'StopVariableID' => 38970]) === ['level' => 20009, 'stop' => 38970], 'Fenster mit Antrieb ebenso');

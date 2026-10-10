@@ -10,7 +10,7 @@ die Geräte, die Sie freigeben.
 
 > **Stand:** frühe Vorschau. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Farbe, Position und
 > Heizungs-Sollwert, das Anhalten von Rollläden, Verbrauch und Leistung, der Verlauf von Messwerten
-> und das Starten von Szenen gehen, Mediaplayer lassen sich abfragen. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen. Erprobt ist das Modul bisher
+> das Starten von Szenen und die Wiedergabe von Mediaplayern gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen. Erprobt ist das Modul bisher
 > auf drei Anlagen.
 
 ## Wann brauche ich das?
@@ -196,9 +196,10 @@ Temperaturzeile auf derselben Variable brauchen Sie dafür nicht. Steht der Soll
 Bereichs, heißt er Sonder-Sollwert: Manche Homematic-Thermostate nutzen 100 für „Ventil ganz offen“.
 
 Ein Mediaplayer meldet sich etwa mit „spielt „Can't Get Enough“ von Bad Company (Lautstärke 20 %)“,
-„pausiert (Lautstärke 37 %, stumm)“ oder „aus“. Als aktiv zählt er, wenn er spielt. Hat er keinen
-Wiedergabezustand (das HomeAssistant-Modul kennt nur eine Befehlsvariable), steht dort nur der Titel, und
-er zählt bei den aktiven Geräten nicht mit.
+„pausiert (Lautstärke 37 %, stumm)“ oder „aus“. Als aktiv zählt er, wenn er spielt. Beim
+HomeAssistant-Modul ist die Wiedergabe nur eine Befehlsvariable; tragen Sie dort als Ein/Aus den
+Statustext ein (`playing`, `paused`, `idle`, `off` …), dann kennt das Modul den Zustand trotzdem. Ohne
+beides steht dort nur der Titel, und der Player zählt bei den aktiven Geräten nicht mit.
 
 Mit `period` fragt **get_state** nach dem Verbrauch statt nach dem Zustand: `today`, `yesterday`,
 `this_week`, `last_week`, `this_month`, `last_month`, `this_year` oder `last_year`. Statt `period` geht
@@ -265,7 +266,9 @@ aus und gibt dazu einen Befehl oder einen Prozentwert an:
 |---|---|
 | `on`, `off` | schaltet Lichter, Schalter, Steckdosen und Geräte ein oder aus |
 | `open`, `close` | fährt Rollläden und Fenster mit Antrieb ganz auf oder ganz zu |
-| `stop` | hält Rollläden und Fenster an, die gerade fahren |
+| `stop` | hält Rollläden und Fenster an, die gerade fahren, und beendet die Wiedergabe eines Mediaplayers |
+| `play`, `pause` | setzt die Wiedergabe eines Mediaplayers fort oder hält sie an |
+| `next`, `previous` | springt beim Mediaplayer zum nächsten oder vorigen Titel |
 | `percent` | stellt die Helligkeit eines Lichts oder die Öffnung eines Rollladens oder Fensters |
 | `temperature` | stellt den Sollwert eines Thermostats in °C |
 | `color_temperature` | stellt die Farbtemperatur eines Lichts in Kelvin, etwa 2700 für warmweiß |
@@ -283,6 +286,13 @@ Das Werkzeug bietet nur an, was Ihre freigegebenen Geräte können. Ohne Rolllad
 Antrieb gibt es `open` und `close` nicht, ohne dimmbares Licht und ohne beides keinen Prozentwert. Ein
 Fenster nur mit Kontakt lässt sich nur abfragen; bei „alle Fenster zu“ nennt die Antwort, wie viele
 solcher Fenster ausgelassen wurden.
+
+Beim Mediaplayer gilt Play, Pause oder Stop als erledigt, wenn der Wiedergabezustand passt, Weiter und
+Zurück, sobald sich Titel oder Wiedergabezustand ändern. Ein Player, der schon pausiert ist, bekommt
+keinen Befehl, die Zeile sagt „war schon pausiert“. Manche Player melden den neuen Titel erst nach
+einigen Sekunden; dann sagt die Antwort „gesendet, aber das Gerät hat noch nicht bestätigt“. Welche
+Werte die Wiedergabevariable versteht, liest das Modul aus ihrem Profil; bei einem fremden Profil
+lässt es die Finger davon und sagt das.
 
 Eine Temperatur prüft das Modul gegen den Bereich des Sollwerts, den es aus der Darstellung oder dem
 Profil der Variable liest. Liegt sie außerhalb, geht nichts hinaus, und die Antwort nennt den Bereich.
@@ -372,7 +382,7 @@ echo HAGT_RunScene($InstanzID, '', 'Filmabend');
 ## Grenzen
 
 - Farbe als Text und die Betriebsart von Thermostaten (aus, heizen, automatisch) gehen noch nicht.
-- Mediaplayer lassen sich bisher nur abfragen, nicht steuern.
+- Lautstärke, Stumm und Ein/Aus eines Mediaplayers lassen sich noch nicht stellen.
 - Ein batteriebetriebenes Thermostat übernimmt einen neuen Sollwert oft erst beim nächsten Funkkontakt.
   Die Zentrale meldet ihn trotzdem sofort zurück, „gestellt“ heißt dann „an die Zentrale übergeben“.
 - Bei einem Rollladen, der sich erst am Ziel meldet und keinen Fahrstatus hat, weiß das Modul nach

@@ -482,7 +482,7 @@ pruefe(($felder['light']['ColorTempVariableID']['visible'] ?? false) === true &&
 pruefe(($felder['light']['ColorVariableID']['visible'] ?? false) === true && ($felder['light']['ColorVariableID']['caption'] ?? '') === 'Colour' && ($felder['blind']['ColorVariableID']['visible'] ?? true) === false, 'Licht: wahlweise Farbe');
 // Mediaplayer (build 60): Ein/Aus, Wiedergabe, Lautstärke, Stumm, Titel und Interpret.
 pruefe(array_map(static fn (string $f): string => ($felder['media'][$f]['visible'] ?? false) ? ($felder['media'][$f]['caption'] ?? '') : '', ['StateVariableID', 'PlaybackVariableID', 'VolumeVariableID', 'MuteVariableID', 'TitleVariableID', 'ArtistVariableID']) === ['On/off', 'Playback', 'Volume', 'Mute', 'Title', 'Artist'], 'Mediaplayer: sechs Felder mit eigenen Beschriftungen: ' . json_encode(array_map(static fn (array $f): string => ($f['visible'] ?? false) ? ($f['caption'] ?? '') : '-', $felder['media'] ?? []), JSON_UNESCAPED_UNICODE));
-pruefe(($felder['light']['PlaybackVariableID']['visible'] ?? true) === false && ($felder['media']['LevelVariableID']['visible'] ?? true) === false && ($felder['media']['ReadOnly']['visible'] ?? true) === false, 'Wiedergabe nur beim Mediaplayer, dort weder Helligkeit noch „Nur abfragen“');
+pruefe(($felder['light']['PlaybackVariableID']['visible'] ?? true) === false && ($felder['media']['LevelVariableID']['visible'] ?? true) === false && ($felder['media']['ReadOnly']['visible'] ?? false) === true, 'Wiedergabe nur beim Mediaplayer, dort keine Helligkeit, aber „Nur abfragen“ (steuerbar seit build 61)');
 pruefe(($felder['media']['PlaybackVariableID']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID);', 'die Wahl der Wiedergabe zieht den Spaltentext nach');
 $m->formUpdates = [];
 $lautstaerke = variable(VARIABLETYPE_INTEGER, 37);
@@ -1288,5 +1288,20 @@ for ($i = 0; $i < 60; $i++) {
 }
 $gemerkt = json_decode((string)(new ReflectionMethod($m, 'GetBuffer'))->invoke($m, 'ActionFailures'), true);
 pruefe(is_array($gemerkt) && count($gemerkt) <= 50 && $lesen->invoke($m, sprintf('%012x', 59)) === 'Fehler 59' && $lesen->invoke($m, sprintf('%012x', 0)) === null, 'höchstens 50 Einträge, die ältesten fallen heraus: ' . (is_array($gemerkt) ? count($gemerkt) : '?'));
+
+/* --- Mediaplayer im Werkzeugschema (build 61) ---------------------------------------------------- */
+
+$wiedergabe = variable(VARIABLETYPE_INTEGER, 3);
+IPS_SetVariableCustomAction($wiedergabe, $antriebAktion);
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Wintergarten', 'Name' => 'Sonos', 'Aliases' => '', 'Type' => 'media', 'PlaybackVariableID' => $wiedergabe, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Mediaplayer nur mit Wiedergabe ist gültig');
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+$schema = $werkzeuge['set_state']['inputSchema']['properties'] ?? [];
+pruefe(($schema['command']['enum'] ?? null) === ['stop', 'play', 'pause', 'next', 'previous'] && ($schema['type']['enum'] ?? null) === ['media'], 'set_state bietet die Wiedergabebefehle an: ' . json_encode($schema['command'] ?? null));
+pruefe(str_contains($schema['command']['description'] ?? '', 'play/pause/next/previous control a media player') && str_contains($schema['command']['description'] ?? '', 'Stop ends playback'), 'die Beschreibung erklärt die Befehle: ' . ($schema['command']['description'] ?? ''));
+pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', '"Pause the music in the conservatory" → room=Wintergarten, type=media, command=pause.'), 'mit Beispielsatz: ' . ($werkzeuge['set_state']['description'] ?? ''));
 
 ende('Modul');

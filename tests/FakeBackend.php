@@ -116,6 +116,13 @@ final class FakeBackend implements DeviceBackend
                 break;
             case 'stumm':
                 break;
+            case 'reaktion':
+                // Gemessene Folge je Befehlswert (Mediaplayer am nuc, 10.10.2026): [ms, Variable, Wert].
+                // Die Befehlsvariable selbst behält ihren Wert, solange die Folge sie nicht setzt.
+                foreach ($v['reaktion'][(string)$value] ?? [] as [$ms, $id, $reaction]) {
+                    $this->pending[] = ['at' => $this->slept + (int)$ms, 'id' => (int)$id, 'value' => $reaction];
+                }
+                break;
             case 'startEnde':
                 // Meldung beim Losfahren nach startMs, Zielwert nach der Fahrzeit, die anteilig zur
                 // Strecke aus vollfahrtMs folgt; Fahrstatus dazwischen true.

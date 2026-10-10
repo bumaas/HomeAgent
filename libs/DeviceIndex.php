@@ -33,7 +33,7 @@ final class DeviceIndex
     ];
 
     /** Nur diese Typen lassen sich schalten oder stellen; alle anderen sind Melder und Messwerte. */
-    public const CONTROLLABLE = ['light', 'switch', 'socket', 'appliance', 'blind', 'thermostat'];
+    public const CONTROLLABLE = ['light', 'switch', 'socket', 'appliance', 'blind', 'thermostat', 'media'];
 
     /**
      * Fähigkeiten eines Geräts und der Schlüssel, unter dem ihre Variable in der Zeile steht.
@@ -88,6 +88,20 @@ final class DeviceIndex
         '~PlaybackPreviousNext'       => ['previous' => 0, 'stop' => 1, 'play' => 2, 'pause' => 3, 'next' => 4],
         '~PlaybackPreviousNextNoStop' => ['previous' => 0, 'play' => 2, 'pause' => 3, 'next' => 4],
         '~PlayerStatus'               => ['previous' => 0, 'play' => 1, 'pause' => 2, 'stop' => 3, 'next' => 4],
+    ];
+
+    /**
+     * Zustandswörter, die das HomeAssistant-Modul in seinen Statustext schreibt (die Zustände eines
+     * media_player bei Home Assistant, am nuc gelesen: playing, paused): Wiedergabephase, aktiv, Wort.
+     */
+    private const MEDIA_STATES = [
+        'playing'   => ['play', true, 'playing'],
+        'paused'    => ['pause', false, 'paused'],
+        'idle'      => ['stop', false, 'idle'],
+        'buffering' => [null, true, 'buffering'],
+        'standby'   => [null, false, 'standby'],
+        'on'        => [null, true, 'on'],
+        'off'       => [null, false, 'off'],
     ];
 
     /** Deutsche Namen der Farben in normalisierter Form, falls ein Assistent sie unübersetzt schickt. */
@@ -178,7 +192,7 @@ final class DeviceIndex
     public const PERIODS = ['today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year'];
 
     /** Verben des Werkzeugs „set_state“, in der Reihenfolge, in der das Schema sie nennt. */
-    public const COMMANDS = ['on', 'off', 'open', 'close', 'stop'];
+    public const COMMANDS = ['on', 'off', 'open', 'close', 'stop', 'play', 'pause', 'next', 'previous'];
 
     /** So lange wartet ein schaltendes Werkzeug höchstens auf die Rückmeldung der Geräte. */
     private const CONFIRM_TIMEOUT_MS = 2000;
@@ -891,7 +905,18 @@ final class DeviceIndex
             return $this->levelAnswer($this->runLevel($understand, (float)$percent), (float)$percent, $filter, $closing);
         }
         if ($command === 'stop') {
-            return $this->switchAnswer($this->runStop($understand), $this->t('stopped'), $filter, $closing);
+            // Rollläden halten an, Mediaplayer beenden die Wiedergabe; beides in einer Antwort.
+            $media = array_filter($understand, static fn (array $e): bool => $e['Type'] === 'media');
+            $moving = array_diff_key($understand, $media);
+            $result = $moving === [] ? null : $this->runStop($moving);
+            if ($media !== []) {
+                $result = self::mergeResults($result, $this->runPlayback($media, 'stop'));
+            }
+            return $this->switchAnswer($result, $this->t('stopped'), $filter, $closing);
+        }
+        if (in_array($command, ['play', 'pause', 'next', 'previous'], true)) {
+            $word = ['play' => 'playing back', 'pause' => 'paused', 'next' => 'at the next track', 'previous' => 'at the previous track'][$command];
+            return $this->switchAnswer($this->runPlayback($understand, $command), $this->t($word), $filter, $closing);
         }
         if ($command === 'open' || $command === 'close') {
             // Ganz auf und ganz zu als Öffnungsgrad; welchen Rohwert das am Gerät meint, regelt die Richtungserkennung.
@@ -978,6 +1003,10 @@ final class DeviceIndex
         // Ein Thermostat stellt man auf eine Temperatur; ein- und ausschalten kommt später als Modus.
         if ($type === 'thermostat') {
             return isset($roles['setpoint']) ? ['temperature'] : [];
+        }
+        // Ein Mediaplayer versteht die Wiedergabebefehle; welche das Gerät kennt, sagt erst sein Profil.
+        if ($type === 'media') {
+            return isset($roles['playback']) ? ['stop', 'play', 'pause', 'next', 'previous'] : [];
         }
         if (!in_array($type, self::CONTROLLABLE, true)) {
             return [];
@@ -2029,34 +2058,40 @@ final class DeviceIndex
         $roles = $entry['roles'];
         $active = null;
         $words = [];
+        $playing = $this->playbackPhase($entry);
         if (isset($roles['state'])) {
             $power = $this->backend->read($roles['state']);
             if ($power === null) {
                 return ['text' => sprintf($this->t('not available (variable %d is missing)'), $roles['state']), 'active' => null];
             }
+            $status = is_string($power['value']) ? (self::MEDIA_STATES[strtolower(trim($power['value']))] ?? null) : null;
             if (is_bool($power['value'])) {
                 $active = $power['value'] !== $entry['Invert'];
                 if (!$active) {
                     return ['text' => $this->t('off'), 'active' => false];
+                }
+            } elseif ($status !== null) {
+                // Statustext des HomeAssistant-Moduls: playing, paused, idle, off …
+                if ($status[2] === 'off') {
+                    return ['text' => $this->t('off'), 'active' => false];
+                }
+                $active = $status[1];
+                if ($this->playbackPhase($entry, false) === null) {
+                    $words[] = $this->t($status[2]);
                 }
             } else {
                 // Ein/Aus als Zahl (Sony TV: „Standby“) bleibt der Anzeigetext.
                 $words[] = $power['formatted'];
             }
         }
-        $playing = null;
-        if (isset($roles['playback'])) {
-            $value = $this->backend->read($roles['playback'])['value'] ?? null;
-            $codes = self::PLAYBACK_CODES[(string)($this->backend->range($roles['playback'])['profile'] ?? '')] ?? [];
-            $playing = is_int($value) ? array_search($value, array_intersect_key($codes, ['play' => 0, 'pause' => 0, 'stop' => 0]), true) : false;
-            if ($playing !== false) {
-                $words[] = $this->t(['play' => 'playing', 'pause' => 'paused', 'stop' => 'stopped'][$playing]);
-                $active = $playing === 'play';
-            }
+        $fromPlayback = isset($roles['playback']) ? $this->playbackPhase($entry, false) : null;
+        if ($fromPlayback !== null) {
+            $words[] = $this->t(['play' => 'playing', 'pause' => 'paused', 'stop' => 'stopped'][$fromPlayback]);
+            $active = $fromPlayback === 'play';
         }
         $title = isset($roles['title']) ? trim((string)($this->backend->read($roles['title'])['value'] ?? '')) : '';
         $artist = isset($roles['artist']) ? trim((string)($this->backend->read($roles['artist'])['value'] ?? '')) : '';
-        if ($title !== '' && $playing !== 'stop') {
+        if ($title !== '' && $playing !== 'stop' && ($words === [] || $playing !== null)) {
             $words[] = $artist !== '' ? sprintf($this->t('"%s" by %s'), $title, $artist) : sprintf($this->t('"%s"'), $title);
         }
         $extras = [];
@@ -2080,6 +2115,109 @@ final class DeviceIndex
             $text = trim($text . ' (' . implode(', ', $extras) . ')');
         }
         return ['text' => $text === '' ? '-' : $text, 'active' => $active];
+    }
+
+    /**
+     * Wiedergabephase eines Mediaplayers: „play“, „pause“, „stop“ oder null. Zuerst der Wert der
+     * Wiedergabevariable nach ihrem Profil, sonst der Statustext des HomeAssistant-Moduls (dessen
+     * Wiedergabevariable ist nur ein Befehl und steht auf -1).
+     */
+    private function playbackPhase(array $entry, bool $withStatus = true): ?string
+    {
+        $roles = $entry['roles'];
+        if (isset($roles['playback'])) {
+            $value = $this->backend->read($roles['playback'])['value'] ?? null;
+            $codes = self::PLAYBACK_CODES[(string)($this->backend->range($roles['playback'])['profile'] ?? '')] ?? [];
+            $phase = is_int($value) ? array_search($value, array_intersect_key($codes, ['play' => 0, 'pause' => 0, 'stop' => 0]), true) : false;
+            if ($phase !== false) {
+                return $phase;
+            }
+        }
+        if ($withStatus && isset($roles['state'])) {
+            $value = $this->backend->read($roles['state'])['value'] ?? null;
+            return is_string($value) ? (self::MEDIA_STATES[strtolower(trim($value))][0] ?? null) : null;
+        }
+        return null;
+    }
+
+    /**
+     * Wiedergabebefehl an Mediaplayer: Play, Pause und Stop gelten als bestätigt, wenn die Phase
+     * stimmt, Weiter und Zurück, wenn sich Wiedergabewert, Titel oder Interpret ändern. Gemessen am
+     * nuc (Sonos Wintergarten, 10.10.2026): Sonos-Modul nach 0,1 s, HomeAssistant-Modul nach 0,9 s
+     * (Statustext) bzw. 1,6 s (neuer Titel).
+     *
+     * @param array<int, array<string, mixed>> $entries
+     * @return array{lines: array<int, string>, total: int, reached: int, pending: int, failed: int}
+     */
+    private function runPlayback(array $entries, string $command): array
+    {
+        $snapshot = function (array $entry): array {
+            $roles = $entry['roles'];
+            return array_map(fn (int $id): mixed => $this->backend->read($id)['value'] ?? null, array_intersect_key($roles, ['playback' => 0, 'title' => 0, 'artist' => 0]));
+        };
+        $jobs = [];
+        foreach ($entries as $index => $entry) {
+            $variable = $entry['roles']['playback'];
+            $job = ['entry' => $entry, 'variable' => $variable, 'note' => null, 'done' => false, 'before' => []];
+            $current = $this->backend->read($variable);
+            $profile = (string)($this->backend->range($variable)['profile'] ?? '');
+            $codes = self::PLAYBACK_CODES[$profile] ?? null;
+            if ($current === null) {
+                $job['note'] = sprintf($this->t('not available (variable %d is missing)'), $variable);
+            } elseif ($codes === null) {
+                $job['note'] = sprintf($this->t('cannot be controlled (unknown playback profile %s)'), $profile === '' ? '-' : $profile);
+            } elseif (!$this->backend->hasAction($variable)) {
+                $job['note'] = $this->t('cannot be controlled (playback has no action)');
+            } elseif (!isset($codes[$command])) {
+                $job['note'] = sprintf($this->t('does not support "%s"'), $command);
+            } elseif (in_array($command, ['play', 'pause', 'stop'], true) && $this->playbackPhase($entry) === $command) {
+                $job['note'] = $this->t(['play' => 'already playing', 'pause' => 'already paused', 'stop' => 'already stopped'][$command]);
+                $job['done'] = true;
+            } else {
+                $job['before'] = $snapshot($entry);
+                $error = $this->backend->request($variable, $codes[$command]);
+                if ($error !== null) {
+                    $job['note'] = sprintf($this->t('failed: %s'), $error);
+                }
+            }
+            $jobs[$index] = $job;
+        }
+
+        $reached = fn (array $job): bool => in_array($command, ['next', 'previous'], true)
+            ? $snapshot($job['entry']) !== $job['before']
+            : $this->playbackPhase($job['entry']) === $command;
+        $this->waitUntil(function () use ($jobs, $reached): bool {
+            foreach ($jobs as $job) {
+                if ($job['note'] === null && !$reached($job) && $this->backend->failure($job['variable']) === null) {
+                    return false;
+                }
+            }
+            return true;
+        });
+
+        $result = ['lines' => [], 'total' => count($jobs), 'reached' => 0, 'pending' => 0, 'failed' => 0];
+        foreach ($jobs as $index => $job) {
+            if ($job['note'] === null) {
+                $confirmed = $reached($job);
+                $error = $confirmed ? null : $this->backend->failure($job['variable']);
+                if ($error !== null) {
+                    $job['note'] = sprintf($this->t('failed: %s'), $error);
+                    $result['failed']++;
+                } else {
+                    $text = $this->stateOf($job['entry'])['text'];
+                    $job['done'] = $confirmed;
+                    $job['note'] = $confirmed ? $text : sprintf($this->t('sent, but the device has not confirmed yet (currently %s)'), $text);
+                    $result['pending'] += $confirmed ? 0 : 1;
+                }
+            } elseif (!$job['done']) {
+                $result['failed']++;
+            }
+            if ($job['done']) {
+                $result['reached']++;
+            }
+            $result['lines'][$index] = $this->line($job['entry'], $job['note']);
+        }
+        return $result;
     }
 
     /**

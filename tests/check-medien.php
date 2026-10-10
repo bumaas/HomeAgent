@@ -38,7 +38,7 @@ $rollen = ['playback' => 'PlaybackVariableID', 'volume' => 'VolumeVariableID', '
 pruefe(array_intersect_assoc($rollen, DeviceIndex::ROLES) === $rollen, 'Fähigkeiten mit ihren Schlüsseln: ' . json_encode(DeviceIndex::ROLES));
 pruefe((DeviceIndex::TYPE_ROLES['media'] ?? null) === ['roles' => ['state', 'playback', 'volume', 'mute', 'title', 'artist'], 'required' => ['state', 'playback', 'volume']], 'Mediaplayer: Ein/Aus, Wiedergabe oder Lautstärke ist Pflicht');
 pruefe(DeviceIndex::rolesOf($liste[0]) === ['playback' => 11085, 'volume' => 31588, 'mute' => 21842, 'title' => 53862, 'artist' => 12831], 'Zeile liest alle Fähigkeiten: ' . json_encode(DeviceIndex::rolesOf($liste[0])));
-pruefe(DeviceIndex::abilitiesOf($liste[1]) === [], 'in Stufe 1 lässt sich ein Mediaplayer nur abfragen');
+pruefe(DeviceIndex::abilitiesOf($liste[1]) === ['stop', 'play', 'pause', 'next', 'previous'], 'seit Stufe 2 versteht ein Mediaplayer die Wiedergabebefehle: ' . json_encode(DeviceIndex::abilitiesOf($liste[1])));
 
 /* --- Zustand -------------------------------------------------------------------------------------- */
 
