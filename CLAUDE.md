@@ -118,7 +118,12 @@ Weitere Regeln, die nicht offensichtlich sind:
   (Zielfeuchte, Feld `humidity` von `set_state` über `runSetpoint`, Einheit ohne Angabe %). Gemessen am
   Luftentfeuchter über das HomeAssistant-Modul: Die Darstellung nennt 35 bis 85 in Einerschritten, das Gerät
   nimmt aber nur Fünferschritte; 56 kam nie an, die Antwort sagt dann „noch nicht bestätigt“. 60 brauchte
-  1,7 bis 2,3 s. Modus und Lüfterstufe folgen als Auswahl per Name.
+  1,7 bis 2,3 s. Modus (`mode`) und Lüfterstufe (`fan`) sind **Auswahl per Name** (`runOption`, Felder `mode`
+  und `fan_speed`): Treffer auf Beschriftung oder Wert aus `DeviceBackend::options()` (Darstellung `OPTIONS`,
+  sonst Profilzuordnungen), Name in der anderen Auswahl ergibt einen Hinweis, die Einträge der freigegebenen
+  Geräte stehen als Vokabular in der Beschreibung (kein `enum`). Die Rollen sind nicht an den Typ gebunden;
+  Lüftung, Thermostat-Betriebsart und Radiosender sollen denselben Weg nehmen. Befehle kurz hintereinander
+  brauchten am Entfeuchter über 2 s (gemessen 11.10.2026), die Antwort sagt dann „noch nicht bestätigt“.
 - **Mediaplayer** (Typ `media`): Fähigkeiten `state` (Ein/Aus), `playback`, `volume`,
   `mute`, `title`, `artist`, wie sie Symcon in der Darstellung „Media Player“ zusammenfasst. Die Werte der
   Wiedergabe hängen am Profil (`DeviceIndex::PLAYBACK_CODES`, an der Anlage gelesen): `~Playback…` zählt

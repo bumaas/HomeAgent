@@ -174,17 +174,22 @@ final class SymconDeviceBackend implements DeviceBackend
         return $parameters;
     }
 
-    /** Wert, der eine Stoppvariable auslöst: true, oder der Wert ihres Eintrags „Stop“; null = taugt nicht. */
-    private static function stopValue(int $variableId): mixed
+    public function options(int $variableId): ?array
     {
-        if ($variableId <= 0 || !IPS_VariableExists($variableId) || !HasAction($variableId)) {
+        if ($variableId <= 0 || !IPS_VariableExists($variableId)) {
             return null;
         }
-        $type = IPS_GetVariable($variableId)['VariableType'];
-        if ($type === VARIABLETYPE_BOOLEAN) {
-            return true;
-        }
-        // Einträge aus der Darstellung (OPTIONS, etwa beim HomeAssistant-Modul), sonst aus dem Profil.
+        $entries = self::entriesOf($variableId);
+        return $entries === [] ? null : $entries;
+    }
+
+    /**
+     * Einträge aus der Darstellung (OPTIONS, etwa beim HomeAssistant-Modul), sonst aus dem Profil.
+     *
+     * @return list<array{0: mixed, 1: string}>
+     */
+    private static function entriesOf(int $variableId): array
+    {
         $presentation = IPS_GetVariablePresentation($variableId);
         $options = json_decode((string)($presentation['OPTIONS'] ?? ''), true);
         $entries = [];
@@ -199,7 +204,20 @@ final class SymconDeviceBackend implements DeviceBackend
                 $entries[] = [$association['Value'], (string)$association['Name']];
             }
         }
-        foreach ($entries as [$value, $caption]) {
+        return $entries;
+    }
+
+    /** Wert, der eine Stoppvariable auslöst: true, oder der Wert ihres Eintrags „Stop“; null = taugt nicht. */
+    private static function stopValue(int $variableId): mixed
+    {
+        if ($variableId <= 0 || !IPS_VariableExists($variableId) || !HasAction($variableId)) {
+            return null;
+        }
+        $type = IPS_GetVariable($variableId)['VariableType'];
+        if ($type === VARIABLETYPE_BOOLEAN) {
+            return true;
+        }
+        foreach (self::entriesOf($variableId) as [$value, $caption]) {
             if (in_array(mb_strtolower(trim($caption)), self::STOP_CAPTIONS, true)) {
                 return match ($type) {
                     VARIABLETYPE_INTEGER => (int)$value,

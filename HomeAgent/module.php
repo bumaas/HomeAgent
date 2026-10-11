@@ -628,7 +628,7 @@ class HomeAgent extends IPSModuleStrict
      * ein anderer Gerätetyp oder eine andere Variable gewählt wird. Die Felder folgen dem Typ, und
      * die Texte für die Spalten der Liste folgen den gewählten Variablen.
      */
-    public function UIDeviceChanged(string $Type, int $StateVariableID, int $LevelVariableID, int $MovingVariableID = 0, int $PowerVariableID = 0, int $EnergyVariableID = 0, int $StopVariableID = 0, int $SetpointVariableID = 0, int $ColorTempVariableID = 0, int $ColorVariableID = 0, int $PlaybackVariableID = 0, int $VolumeVariableID = 0, int $MuteVariableID = 0, int $TitleVariableID = 0, int $ArtistVariableID = 0, int $HumidityVariableID = 0): void
+    public function UIDeviceChanged(string $Type, int $StateVariableID, int $LevelVariableID, int $MovingVariableID = 0, int $PowerVariableID = 0, int $EnergyVariableID = 0, int $StopVariableID = 0, int $SetpointVariableID = 0, int $ColorTempVariableID = 0, int $ColorVariableID = 0, int $PlaybackVariableID = 0, int $VolumeVariableID = 0, int $MuteVariableID = 0, int $TitleVariableID = 0, int $ArtistVariableID = 0, int $HumidityVariableID = 0, int $ModeVariableID = 0, int $FanVariableID = 0): void
     {
         $type = array_key_exists($Type, DeviceIndex::TYPES) ? $Type : array_key_first(DeviceIndex::TYPES);
         foreach ($this->deviceDialogFields($type) as $name => $field) {
@@ -636,7 +636,7 @@ class HomeAgent extends IPSModuleStrict
             $this->UpdateFormField($name, 'caption', $field['caption']);
         }
         foreach ($this->deviceLabels(['Type' => $type, 'StateVariableID' => $StateVariableID, 'LevelVariableID' => $LevelVariableID, 'MovingVariableID' => $MovingVariableID, 'PowerVariableID' => $PowerVariableID, 'EnergyVariableID' => $EnergyVariableID, 'StopVariableID' => $StopVariableID, 'SetpointVariableID' => $SetpointVariableID, 'ColorTempVariableID' => $ColorTempVariableID, 'ColorVariableID' => $ColorVariableID,
-            'PlaybackVariableID' => $PlaybackVariableID, 'VolumeVariableID' => $VolumeVariableID, 'MuteVariableID' => $MuteVariableID, 'TitleVariableID' => $TitleVariableID, 'ArtistVariableID' => $ArtistVariableID, 'HumidityVariableID' => $HumidityVariableID]) as $name => $label) {
+            'PlaybackVariableID' => $PlaybackVariableID, 'VolumeVariableID' => $VolumeVariableID, 'MuteVariableID' => $MuteVariableID, 'TitleVariableID' => $TitleVariableID, 'ArtistVariableID' => $ArtistVariableID, 'HumidityVariableID' => $HumidityVariableID, 'ModeVariableID' => $ModeVariableID, 'FanVariableID' => $FanVariableID]) as $name => $label) {
             $this->UpdateFormField($name, 'value', $label);
         }
     }
@@ -794,6 +794,8 @@ class HomeAgent extends IPSModuleStrict
             $hasColorTemperature = in_array('color_temperature', $offered, true);
             $hasColor = in_array('color', $offered, true);
             $hasHumidity = in_array('humidity', $offered, true);
+            $hasMode = in_array('mode', $offered, true);
+            $hasFan = in_array('fan_speed', $offered, true);
             $hasBlinds = in_array('open', $offered, true);
             $hasStop = in_array('stop', $offered, true);
             $hasVolume = in_array('volume', $offered, true);
@@ -827,6 +829,29 @@ class HomeAgent extends IPSModuleStrict
             if ($hasHumidity) {
                 $properties['humidity'] = ['type' => 'number', 'minimum' => 0, 'maximum' => 100, 'description' => 'Target humidity in percent for a humidifier or dehumidifier.'];
             }
+            // Auswahl per Name: die Einträge der freigegebenen Geräte als Vokabular, ohne feste Liste,
+            // damit ein Modell auch „high“ für „Hoch“ schicken kann.
+            $known = function (string $role) use ($devices): string {
+                $backend = $this->backend();
+                $names = [];
+                foreach ($devices as $row) {
+                    if (DeviceIndex::abilitiesOf($row) === []) {
+                        continue;
+                    }
+                    foreach ($backend->options(DeviceIndex::rolesOf($row)[$role] ?? 0) ?? [] as [, $caption]) {
+                        $names[$caption] = true;
+                    }
+                }
+                return implode(', ', array_keys($names));
+            };
+            if ($hasMode) {
+                $list = $known('mode');
+                $properties['mode'] = ['type' => 'string', 'description' => 'Operating mode by name.' . ($list === '' ? '' : ' Known modes: ' . $list . '.')];
+            }
+            if ($hasFan) {
+                $list = $known('fan');
+                $properties['fan_speed'] = ['type' => 'string', 'description' => 'Fan speed by name.' . ($list === '' ? '' : ' Known fan speeds: ' . $list . '.')];
+            }
             if ($hasColorTemperature) {
                 $properties['color_temperature'] = ['type' => 'number', 'minimum' => 1000, 'maximum' => 20000, 'description' => 'Colour temperature of a light in Kelvin: 2700 warm white, 4000 neutral white, 6500 cool white. Switches the light on; values outside its range go to the nearest end.'];
             }
@@ -843,7 +868,7 @@ class HomeAgent extends IPSModuleStrict
                 $properties['mute'] = ['type' => 'boolean', 'description' => 'true mutes a media player, false unmutes it.'];
             }
             // Was der Assistent angeben kann, in der Reihenfolge des Schemas.
-            $fields = array_values(array_filter([$commands !== [] ? 'a command' : '', $hasPercent ? 'percent' : '', $hasTemperature ? 'temperature' : '', $hasHumidity ? 'humidity' : '', $hasColorTemperature ? 'color_temperature' : '', $hasColor ? 'color' : '', $hasVolume ? 'volume' : '', $hasVolumeChange ? 'volume_change' : '', $hasMute ? 'mute' : '']));
+            $fields = array_values(array_filter([$commands !== [] ? 'a command' : '', $hasPercent ? 'percent' : '', $hasTemperature ? 'temperature' : '', $hasHumidity ? 'humidity' : '', $hasMode ? 'mode' : '', $hasFan ? 'fan_speed' : '', $hasColorTemperature ? 'color_temperature' : '', $hasColor ? 'color' : '', $hasVolume ? 'volume' : '', $hasVolumeChange ? 'volume_change' : '', $hasMute ? 'mute' : '']));
             $give = count($fields) > 1 ? implode(', ', array_slice($fields, 0, -1)) . ' or ' . array_last($fields) : $fields[0];
             $tools[] = [
                 'name'        => 'set_state',
@@ -861,7 +886,8 @@ class HomeAgent extends IPSModuleStrict
                     . ($hasVolumeChange ? ' "Louder in the bathroom" → room=Bad, type=media, volume_change=10.' : '')
                     . ($hasPercent ? ' "Dim the ceiling light to a third" → name=Deckenlicht, percent=33.' : '')
                     . ($hasTemperature ? ' "Set the heating in the guest room to 21 degrees" → room=Gast, temperature=21.' : '')
-                    . ($hasHumidity ? ' "Set the dehumidifier in the basement to 50 percent" → room=Keller, type=humidifier, humidity=50.' : ''),
+                    . ($hasHumidity ? ' "Set the dehumidifier in the basement to 50 percent" → room=Keller, type=humidifier, humidity=50.' : '')
+                    . ($hasFan ? ' "Set the dehumidifier fan to high" → type=humidifier, fan_speed=high.' : ''),
                 'inputSchema' => [
                     'type'                 => 'object',
                     'properties'           => $properties,
@@ -1342,7 +1368,7 @@ class HomeAgent extends IPSModuleStrict
             $type === 'door'                                   => ['state' => $this->Translate('Contact')],
             $type === 'thermostat'                             => ['state' => $this->Translate('Current temperature'), 'setpoint' => $this->Translate('Setpoint')],
             $type === 'media'                                  => ['state' => $this->Translate('On/off')],
-            $type === 'humidifier'                             => ['state' => $this->Translate('On/off'), 'humidity' => $this->Translate('Current humidity'), 'setpoint' => $this->Translate('Target humidity')],
+            $type === 'humidifier'                             => ['state' => $this->Translate('On/off'), 'humidity' => $this->Translate('Current humidity'), 'setpoint' => $this->Translate('Target humidity'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed')],
             in_array($type, ['presence', 'water_leak'], true)  => ['state' => $this->Translate('Detector')],
             DeviceIndex::TYPES[$type] === null                 => ['state' => $this->Translate('Measured value')],
             default                                            => ['state' => $this->Translate('Switching state')],
@@ -1351,7 +1377,7 @@ class HomeAgent extends IPSModuleStrict
         return $captions + ['state' => $this->Translate('State or measured value'), 'level' => $this->Translate('Brightness/position'), 'moving' => $this->Translate('Moving state'),
             'stop' => $this->Translate('Stop'), 'power' => $this->Translate('Power'), 'energy' => $this->Translate('Energy meter (archived as counter)'), 'setpoint' => $this->Translate('Setpoint'),
             'colortemp' => $this->Translate('Colour temperature'), 'color' => $this->Translate('Colour'), 'playback' => $this->Translate('Playback'),
-            'volume' => $this->Translate('Volume'), 'mute' => $this->Translate('Mute'), 'title' => $this->Translate('Title'), 'artist' => $this->Translate('Artist'), 'humidity' => $this->Translate('Humidity')];
+            'volume' => $this->Translate('Volume'), 'mute' => $this->Translate('Mute'), 'title' => $this->Translate('Title'), 'artist' => $this->Translate('Artist'), 'humidity' => $this->Translate('Humidity'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed')];
     }
 
     /**

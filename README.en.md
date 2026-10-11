@@ -132,7 +132,7 @@ then shows only the variables that belong to this type.
 | Setpoint | Only for a thermostat: the variable with the target temperature. It needs an action. |
 | Colour temperature | Only for a light, optional: the variable with the colour temperature in Kelvin or mired. It needs an action. |
 | Colour | Only for a light, optional: the variable with the colour as an integer (RGB, for example profile `~HexColor`). It needs an action. |
-| Current humidity, target humidity | Only for a humidifier or dehumidifier: the measured humidity and the target humidity the assistant may set (range and step from presentation or profile). The state is called "On/off" there. |
+| Current humidity, target humidity, mode, fan speed | Only for a humidifier or dehumidifier: the measured humidity, the target humidity the assistant may set (range and step from presentation or profile), and two selection variables whose entries it sets by name. The state is called "On/off" there. |
 | Playback, volume, mute, title, artist | Only for a media player. These are the variables Symcon combines in the "Media Player" presentation: playback with one of the profiles `~Playback`, `~PlaybackNoStop`, `~PlaybackPreviousNext`, `~PlaybackPreviousNextNoStop` or `~PlayerStatus`, the volume (announced in percent of its range), mute as a boolean, title and artist as text. For a media player the state is called "On/off". |
 | Brightness/position | For a light the brightness. It is announced together with a light that is on and can be set in percent. For a blind the position, for a window the drive. |
 | Moving state | Only for blinds and windows with a drive, and only if such a variable exists: it reports whether the blind is moving, for example `WORKING` on Homematic or the run status on the Velux KLF200. The module then answers "moving" at once, even if the position only arrives at the end. |
@@ -153,7 +153,7 @@ Which variables a device needs depends on its type:
 | Blind | Position, optionally moving state and stop |
 | Thermostat | Setpoint, optionally the current temperature |
 | Media player | On/off, playback or volume, optionally mute, title and artist |
-| Humidifier | On/off or target humidity, optionally the current humidity |
+| Humidifier | On/off or target humidity, optionally current humidity, mode and fan speed |
 | Window | Contact, drive or both, optionally moving state and stop for the drive |
 | Door | Contact |
 | Presence, water leak | Detector |
@@ -187,7 +187,7 @@ If the assistant asks for `type=temperature`, it also finds thermostats with a c
 do not need a separate temperature entry on the same variable. A setpoint outside its range is called a
 special setpoint: some Homematic thermostats use 100 for "valve fully open".
 
-A dehumidifier reports "on (51 %, setpoint 55 %)" or "off" and counts as active while it runs.
+A dehumidifier reports "on (51 %, setpoint 55 %, Smart, fan Niedrig)" or "off" and counts as active while it runs.
 
 A media player reports for example "playing "Can't Get Enough" by Bad Company (volume 20 %)",
 "paused (volume 37 %, muted)" or "off". It counts as active while it plays. With the HomeAssistant
@@ -267,6 +267,7 @@ when querying and adds a command or a percent value:
 | `percent` | sets the brightness of a light or how far a blind or window is open |
 | `temperature` | sets the setpoint of a thermostat in °C |
 | `humidity` | sets the target humidity of a humidifier or dehumidifier in percent |
+| `mode`, `fan_speed` | sets mode or fan speed by name, for example "Continuous" or "High" |
 | `color_temperature` | sets the colour temperature of a light in Kelvin, for example 2700 for warm white |
 | `color` | sets the colour of a light: red, orange, yellow, green, turquoise, blue, purple, pink or white |
 
@@ -288,6 +289,10 @@ as soon as title or playback state change. A player that is already paused gets 
 "already paused". Some players report the new title only after a few seconds; then the answer says "sent,
 but the device has not confirmed yet". The module reads which values the playback variable understands
 from its profile; with an unknown profile it leaves the player alone and says so.
+
+The module takes mode and fan speed by name. It compares with the caption and the value of each entry of
+the variable, ignoring case, so "Hoch" and "high" both match. Unknown names are not sent; the answer then
+lists the entries of the device. The tool description names the known entries.
 
 `play` without any room, floor or name resumes the media players that were paused through the tool in the
 last hour. So "music off" and later "go on" work without repeating the room. Without such a player the

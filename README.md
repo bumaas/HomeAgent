@@ -140,7 +140,7 @@ zeigt der Dialog nur die Variablen, die zu diesem Typ gehören.
 | Sollwert | Nur beim Thermostat: die Variable mit der Solltemperatur. Sie braucht eine Aktion. |
 | Farbtemperatur | Nur beim Licht, wahlweise: die Variable mit der Farbtemperatur in Kelvin oder Mired. Sie braucht eine Aktion. |
 | Farbe | Nur beim Licht, wahlweise: die Variable mit der Farbe als Ganzzahl (RGB, etwa Profil `~HexColor`). Sie braucht eine Aktion. |
-| Ist-Feuchte, Zielfeuchte | Nur beim Luftbe-/entfeuchter: die gemessene Luftfeuchte und die Zielfeuchte, die der Assistent stellen darf (Bereich und Schrittweite aus Darstellung oder Profil). Der Zustand heißt dort „Ein/Aus“. |
+| Ist-Feuchte, Zielfeuchte, Modus, Lüfterstufe | Nur beim Luftbe-/entfeuchter: die gemessene Luftfeuchte, die Zielfeuchte, die der Assistent stellen darf (Bereich und Schrittweite aus Darstellung oder Profil), und zwei Auswahlvariablen, deren Einträge er per Name setzt. Der Zustand heißt dort „Ein/Aus“. |
 | Wiedergabe, Lautstärke, Stumm, Titel, Interpret | Nur beim Mediaplayer. Es sind die Variablen, die Symcon in der Darstellung „Media Player“ zusammenfasst: die Wiedergabe mit einem der Profile `~Playback`, `~PlaybackNoStop`, `~PlaybackPreviousNext`, `~PlaybackPreviousNextNoStop` oder `~PlayerStatus`, die Lautstärke (in Prozent ihres Bereichs angesagt), Stumm als Wahrheitswert, Titel und Interpret als Text. Beim Mediaplayer heißt der Zustand „Ein/Aus“. |
 | Helligkeit/Position | Beim Licht die Helligkeit. Sie wird bei eingeschaltetem Licht mit angesagt und lässt sich in Prozent stellen. Beim Rollladen die Position, beim Fenster der Antrieb. |
 | Fahrstatus | Nur bei Rollladen und Fenster mit Antrieb und nur, wenn es so eine Variable gibt: sie meldet, ob er gerade fährt, etwa `WORKING` bei Homematic oder der Laufstatus beim Velux KLF200. Dann antwortet das Modul sofort mit „fährt“, auch wenn die Position erst am Ziel kommt. |
@@ -161,7 +161,7 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 | Rollladen | Position, dazu wahlweise Fahrstatus und Stopp |
 | Thermostat | Sollwert, wahlweise die Ist-Temperatur |
 | Mediaplayer | Ein/Aus, Wiedergabe oder Lautstärke, wahlweise Stumm, Titel und Interpret |
-| Luftbe-/entfeuchter | Ein/Aus oder Zielfeuchte, wahlweise die Ist-Feuchte |
+| Luftbe-/entfeuchter | Ein/Aus oder Zielfeuchte, wahlweise Ist-Feuchte, Modus und Lüfterstufe |
 | Fenster | Kontakt, Antrieb oder beides, zum Antrieb wahlweise Fahrstatus und Stopp |
 | Tür | Kontakt |
 | Anwesenheit, Wasserleck | Melder |
@@ -197,8 +197,8 @@ Assistent nach `type=temperature`, findet er auch die Thermostate mit Ist-Temper
 Temperaturzeile auf derselben Variable brauchen Sie dafür nicht. Steht der Sollwert außerhalb seines
 Bereichs, heißt er Sonder-Sollwert: Manche Homematic-Thermostate nutzen 100 für „Ventil ganz offen“.
 
-Ein Luftentfeuchter meldet sich mit „an (51 %, Soll 55 %)“ oder „aus“ und zählt als aktiv, solange er
-läuft.
+Ein Luftentfeuchter meldet sich mit „an (51 %, Soll 55 %, Smart, Lüfter Niedrig)“ oder „aus“ und zählt als
+aktiv, solange er läuft.
 
 Ein Mediaplayer meldet sich etwa mit „spielt „Can't Get Enough“ von Bad Company (Lautstärke 20 %)“,
 „pausiert (Lautstärke 37 %, stumm)“ oder „aus“. Als aktiv zählt er, wenn er spielt. Beim
@@ -280,6 +280,7 @@ aus und gibt dazu einen Befehl oder einen Prozentwert an:
 | `percent` | stellt die Helligkeit eines Lichts oder die Öffnung eines Rollladens oder Fensters |
 | `temperature` | stellt den Sollwert eines Thermostats in °C |
 | `humidity` | stellt die Zielfeuchte eines Luftbe- oder -entfeuchters in Prozent |
+| `mode`, `fan_speed` | setzt Modus oder Lüfterstufe per Name, etwa „Kontinuierlich“ oder „Hoch“ |
 | `color_temperature` | stellt die Farbtemperatur eines Lichts in Kelvin, etwa 2700 für warmweiß |
 | `color` | stellt die Farbe eines Lichts: rot, orange, gelb, grün, türkis, blau, lila, pink oder weiß |
 
@@ -303,6 +304,11 @@ keinen Befehl, die Zeile sagt „war schon pausiert“. Manche Player melden den
 einigen Sekunden; dann sagt die Antwort „gesendet, aber das Gerät hat noch nicht bestätigt“. Welche
 Werte die Wiedergabevariable versteht, liest das Modul aus ihrem Profil; bei einem fremden Profil
 lässt es die Finger davon und sagt das.
+
+Modus und Lüfterstufe nimmt das Modul per Name an. Es vergleicht mit der Beschriftung und dem Wert jedes
+Eintrags der Variable, Groß- und Kleinschreibung zählen nicht; „Hoch“ und „high“ treffen also beide.
+Unbekannte Namen gehen nicht hinaus, die Antwort nennt dann die Einträge des Geräts. Welche Einträge es gibt,
+steht in der Beschreibung des Werkzeugs.
 
 `play` ganz ohne Raum, Etage und Name setzt die Mediaplayer fort, die in der letzten Stunde über das
 Werkzeug pausiert wurden. So klappt „Musik aus“ und später „weiter“, ohne den Raum zu wiederholen. Gibt

@@ -89,6 +89,13 @@ final class FakeBackend implements DeviceBackend
         return (bool)($this->variables[$variableId]['aktion'] ?? false);
     }
 
+    /** Einträge aus dem Mitschnitt: „optionen“ als [Wert, Beschriftung]. */
+    public function options(int $variableId): ?array
+    {
+        $options = $this->variables[$variableId]['optionen'] ?? null;
+        return is_array($options) && $options !== [] ? array_map(static fn (array $o): array => [$o[0], (string)$o[1]], $options) : null;
+    }
+
     /**
      * Wie an der Anlage läuft die Aktion in einem eigenen Skript: Der Aufruf kehrt sofort zurück,
      * ein Fehlschlag steht danach in failure().
@@ -445,6 +452,12 @@ final class FakeBackend implements DeviceBackend
         }
         if (isset($v['formate'][(string)$v['wert']])) {
             return (string)$v['formate'][(string)$v['wert']];
+        }
+        // Auswahl: die Beschriftung des Eintrags, wie an der Anlage („High“ zeigt „Hoch“).
+        foreach ($v['optionen'] ?? [] as [$value, $caption]) {
+            if ((string)$value === (string)$v['wert']) {
+                return (string)$caption;
+            }
         }
         if (isset($v['bereich'])) {
             $span = $v['bereich']['max'] - $v['bereich']['min'];

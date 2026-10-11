@@ -61,6 +61,8 @@ final class DeviceIndex
         'title'     => 'TitleVariableID',
         'artist'    => 'ArtistVariableID',
         'humidity'  => 'HumidityVariableID',
+        'mode'      => 'ModeVariableID',
+        'fan'       => 'FanVariableID',
     ];
 
     /**
@@ -124,7 +126,7 @@ final class DeviceIndex
         'blind'       => ['roles' => ['level', 'moving', 'stop'], 'required' => ['level']],
         'thermostat'  => ['roles' => ['state', 'setpoint'], 'required' => ['setpoint']],
         'media'       => ['roles' => ['state', 'playback', 'volume', 'mute', 'title', 'artist'], 'required' => ['state', 'playback', 'volume']],
-        'humidifier'  => ['roles' => ['state', 'humidity', 'setpoint'], 'required' => ['state', 'setpoint']],
+        'humidifier'  => ['roles' => ['state', 'humidity', 'setpoint', 'mode', 'fan'], 'required' => ['state', 'setpoint']],
         'window'      => ['roles' => ['state', 'level', 'moving', 'stop'], 'required' => ['state', 'level']],
         'door'        => ['roles' => ['state'], 'required' => ['state']],
         'presence'    => ['roles' => ['state'], 'required' => ['state']],
@@ -843,12 +845,24 @@ final class DeviceIndex
         if ($sound !== [] && (count($sound) > 1 || $command !== '' || $percent !== null || $temperature !== null || $kelvin !== null || $color !== null)) {
             return $this->fail($this->t('Nothing was changed. Give volume, volume_change or mute alone, without another field.'));
         }
+        // Auswahl per Name: Betriebsart und Lüfterstufe, ein Weg für beide (runOption).
+        $mode = $arguments['mode'] ?? null;
+        $fanSpeed = $arguments['fan_speed'] ?? null;
+        foreach (['mode' => $mode, 'fan_speed' => $fanSpeed] as $field => $value) {
+            if ($value !== null && (!is_string($value) || trim($value) === '')) {
+                return $this->fail(sprintf($this->t('Parameter "%s" must be the name of an entry.'), $field));
+            }
+        }
+        $choice = array_filter([$mode, $fanSpeed], static fn (mixed $v): bool => $v !== null);
         $humidity = $arguments['humidity'] ?? null;
         if ($humidity !== null && ((!is_int($humidity) && !is_float($humidity)) || $humidity < 0 || $humidity > 100)) {
             return $this->fail($this->t('Parameter "humidity" must be a number from 0 to 100.'));
         }
-        if ($humidity !== null && ($command !== '' || $percent !== null || $temperature !== null || $kelvin !== null || $color !== null || $sound !== [])) {
+        if ($humidity !== null && ($command !== '' || $percent !== null || $temperature !== null || $kelvin !== null || $color !== null || $sound !== [] || $choice !== [])) {
             return $this->fail($this->t('Nothing was changed. Give humidity alone, without command, percent or temperature.'));
+        }
+        if ($choice !== [] && (count($choice) > 1 || $command !== '' || $percent !== null || $temperature !== null || $kelvin !== null || $color !== null || $sound !== [])) {
+            return $this->fail($this->t('Nothing was changed. Give mode or fan_speed alone, without another field.'));
         }
         if ($color !== null) {
             $key = DeviceIndex::normalize((string)$color);
@@ -879,7 +893,7 @@ final class DeviceIndex
         if ($percent !== null && ((!is_int($percent) && !is_float($percent)) || $percent < 0 || $percent > 100)) {
             return $this->fail($this->t('Parameter "percent" must be a number from 0 to 100.'));
         }
-        if ($command === '' && $percent === null && $temperature === null && $kelvin === null && $color === null && $sound === [] && $humidity === null) {
+        if ($command === '' && $percent === null && $temperature === null && $kelvin === null && $color === null && $sound === [] && $humidity === null && $choice === []) {
             return $this->fail(sprintf($this->t('Nothing was changed: give a command (%s), a percent value or a temperature.'), implode(', ', self::COMMANDS)));
         }
         // Nur „on“ verträgt einen Wert, und dann einen über 0: „an und 0 %“ wäre zugleich aus.
@@ -899,7 +913,7 @@ final class DeviceIndex
         $type = trim((string)($arguments['type'] ?? ''));
 
         // Was verlangt ist, heißt wie das Feld des Werkzeugs; so kann der Assistent es korrigieren.
-        $ability = $mute !== null ? 'mute' : ($volumeChange !== null ? 'volume_change' : ($volume !== null ? 'volume' : ($color !== null ? 'color' : ($kelvin !== null ? 'color_temperature' : ($humidity !== null ? 'humidity' : ($temperature !== null ? 'temperature' : ($percent !== null ? 'percent' : $command)))))));
+        $ability = $mode !== null ? 'mode' : ($fanSpeed !== null ? 'fan_speed' : ($mute !== null ? 'mute' : ($volumeChange !== null ? 'volume_change' : ($volume !== null ? 'volume' : ($color !== null ? 'color' : ($kelvin !== null ? 'color_temperature' : ($humidity !== null ? 'humidity' : ($temperature !== null ? 'temperature' : ($percent !== null ? 'percent' : $command)))))))));
         $understand = array_filter($selection['entries'], static fn (array $e): bool => in_array($ability, self::abilitiesOf($e), true));
         $skipped = count($selection['entries']) - count($understand) + ($selection['windowsWithoutDrive'] ?? 0);
         if ($understand === []) {
@@ -935,6 +949,13 @@ final class DeviceIndex
         }
         if ($kelvin !== null) {
             return $this->setpointAnswer($this->runColorTemperature($understand, (float)$kelvin), $filter, $closing);
+        }
+        if ($choice !== []) {
+            $result = $this->runOption($understand, $mode !== null ? 'mode' : 'fan', (string)($mode ?? $fanSpeed));
+            $head = $result['pending'] > 0
+                ? sprintf($this->t('%d of %d devices set to %s, %d not confirmed yet (%s).'), $result['reached'], $result['total'], $result['caption'], $result['pending'], $filter)
+                : sprintf($this->t('%d of %d devices set to %s (%s).'), $result['reached'], $result['total'], $result['caption'], $filter);
+            return $this->answer($head, $result, $closing);
         }
         if ($humidity !== null) {
             return $this->setpointAnswer($this->runSetpoint($understand, (float)$humidity), $filter, $closing);
@@ -1056,7 +1077,7 @@ final class DeviceIndex
         }
         // Ein Luftentfeuchter schaltet und stellt seine Zielfeuchte.
         if ($type === 'humidifier') {
-            return array_merge(isset($roles['state']) ? ['on', 'off'] : [], isset($roles['setpoint']) ? ['humidity'] : []);
+            return array_merge(isset($roles['state']) ? ['on', 'off'] : [], isset($roles['setpoint']) ? ['humidity'] : [], isset($roles['mode']) ? ['mode'] : [], isset($roles['fan']) ? ['fan_speed'] : []);
         }
         // Ein Mediaplayer versteht die Wiedergabebefehle; welche das Gerät kennt, sagt erst sein Profil.
         if ($type === 'media') {
@@ -1096,7 +1117,7 @@ final class DeviceIndex
         foreach ($rows as $row) {
             $found = array_merge($found, self::abilitiesOf($row));
         }
-        return array_values(array_intersect(array_merge(self::COMMANDS, ['percent', 'temperature', 'humidity', 'color_temperature', 'color', 'volume', 'volume_change', 'mute']), $found));
+        return array_values(array_intersect(array_merge(self::COMMANDS, ['percent', 'temperature', 'humidity', 'color_temperature', 'color', 'volume', 'volume_change', 'mute', 'mode', 'fan_speed']), $found));
     }
 
     /**
@@ -1619,6 +1640,13 @@ final class DeviceIndex
         }
         if (isset($roles['setpoint'])) {
             $extras[] = $this->setpointText($entry);
+        }
+        if (isset($roles['mode'])) {
+            $extras[] = $this->backend->read($roles['mode'])['formatted'] ?? sprintf($this->t('not available (variable %d is missing)'), $roles['mode']);
+        }
+        if (isset($roles['fan'])) {
+            $fan = $this->backend->read($roles['fan']);
+            $extras[] = $fan === null ? sprintf($this->t('not available (variable %d is missing)'), $roles['fan']) : sprintf($this->t('fan %s'), $fan['formatted']);
         }
         if (isset($roles['state'])) {
             $power = $this->backend->read($roles['state']);
@@ -2424,6 +2452,66 @@ final class DeviceIndex
             $jobs[$index] = $job;
         }
         return $this->confirmJobs($jobs, fn (array $job): bool => ($this->backend->read($job['variable'])['value'] ?? null) === $mute);
+    }
+
+    /**
+     * Setzt einen Eintrag einer Auswahlvariable per Name (Betriebsart „mode“, Lüfterstufe „fan“). Der
+     * Name trifft die Beschriftung oder den Wert, ohne Groß- und Kleinschreibung: „Hoch“ und „high“
+     * treffen beide `High` des HomeAssistant-Moduls. Steht der Name in der anderen Auswahl des Geräts,
+     * geht nichts hinaus, und die Zeile nennt das richtige Feld. Gemessen am Luftentfeuchter des nuc:
+     * Lüfterstufe nach 0,5 bis 1,3 s, Modus nach 0,5 bis 0,8 s bestätigt.
+     *
+     * @return array{lines: array<int, string>, total: int, reached: int, pending: int, failed: int, caption: string}
+     */
+    private function runOption(array $entries, string $role, string $name): array
+    {
+        $other = $role === 'mode' ? 'fan' : 'mode';
+        $key = self::normalize($name);
+        $find = function (int $variable) use ($key): ?array {
+            foreach ($this->backend->options($variable) ?? [] as [$value, $caption]) {
+                if (self::normalize($caption) === $key || self::normalize((string)$value) === $key) {
+                    return [$value, $caption];
+                }
+            }
+            return null;
+        };
+        $jobs = [];
+        $captions = [];
+        foreach ($entries as $index => $entry) {
+            $variable = $entry['roles'][$role];
+            $job = ['entry' => $entry, 'variable' => $variable, 'note' => null, 'done' => false, 'target' => null];
+            $current = $this->backend->read($variable);
+            $options = $this->backend->options($variable);
+            $hit = $options === null ? null : $find($variable);
+            if ($current === null) {
+                $job['note'] = sprintf($this->t('not available (variable %d is missing)'), $variable);
+            } elseif ($options === null) {
+                $job['note'] = $this->t('cannot be set (no entries known)');
+            } elseif (!$this->backend->hasAction($variable)) {
+                $job['note'] = $this->t('cannot be set (the variable has no action)');
+            } elseif ($hit === null) {
+                $otherVariable = $entry['roles'][$other] ?? 0;
+                $job['note'] = $otherVariable > 0 && $find($otherVariable) !== null
+                    ? sprintf($this->t($other === 'mode' ? '"%s" is a mode, give it as mode' : '"%s" is a fan speed, give it as fan_speed'), $name)
+                    : sprintf($this->t('unknown entry "%s", known: %s'), $name, implode(', ', array_column($options, 1)));
+            } else {
+                $job['target'] = $hit[0];
+                $captions[] = $hit[1];
+                if ((string)$current['value'] === (string)$hit[0]) {
+                    $job['note'] = sprintf($this->t('already set to %s'), $hit[1]);
+                    $job['done'] = true;
+                } else {
+                    $error = $this->backend->request($variable, $hit[0]);
+                    if ($error !== null) {
+                        $job['note'] = sprintf($this->t('failed: %s'), $error);
+                    }
+                }
+            }
+            $jobs[$index] = $job;
+        }
+        $result = $this->confirmJobs($jobs, fn (array $job): bool => (string)($this->backend->read($job['variable'])['value'] ?? '') === (string)$job['target']);
+        $result['caption'] = count(array_unique($captions)) === 1 ? $captions[0] : $name;
+        return $result;
     }
 
     /**

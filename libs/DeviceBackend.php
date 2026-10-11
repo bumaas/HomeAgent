@@ -15,6 +15,14 @@ interface DeviceBackend
     public function hasAction(int $variableId): bool;
 
     /**
+     * Einträge einer Auswahlvariable als [Wert, Beschriftung], aus der Darstellung (OPTIONS) oder
+     * den Zuordnungen des Profils. null = Variable fehlt oder hat keine Einträge.
+     *
+     * @return null|list<array{0: mixed, 1: string}>
+     */
+    public function options(int $variableId): ?array;
+
+    /**
      * Löst die Aktion der Variable aus, ohne auf ihr Ende zu warten. null = ausgelöst, sonst der
      * Fehlertext. Ob die Aktion selbst gescheitert ist, sagt danach failure().
      */

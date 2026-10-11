@@ -364,6 +364,40 @@
               }
             },
             {
+              "caption": "Mode",
+              "name": "ModeLabel",
+              "width": "220px",
+              "add": "-",
+              "visible": false
+            },
+            {
+              "caption": "Mode",
+              "name": "ModeVariableID",
+              "width": "200px",
+              "add": 1,
+              "visible": false,
+              "edit": {
+                "type": "SelectVariable"
+              }
+            },
+            {
+              "caption": "Fan speed",
+              "name": "FanLabel",
+              "width": "220px",
+              "add": "-",
+              "visible": false
+            },
+            {
+              "caption": "Fan speed",
+              "name": "FanVariableID",
+              "width": "200px",
+              "add": 1,
+              "visible": false,
+              "edit": {
+                "type": "SelectVariable"
+              }
+            },
+            {
               "caption": "Brightness/position",
               "name": "LevelLabel",
               "width": "220px",
@@ -498,14 +532,14 @@
               "name": "Type",
               "caption": "Type",
               "options": [],
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "SelectVariable",
               "name": "StateVariableID",
               "caption": "State or measured value",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -518,7 +552,7 @@
               "name": "HumidityVariableID",
               "caption": "Humidity",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -531,7 +565,7 @@
               "name": "SetpointVariableID",
               "caption": "Setpoint",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -541,10 +575,36 @@
             },
             {
               "type": "SelectVariable",
+              "name": "ModeVariableID",
+              "caption": "Mode",
+              "width": "600px",
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
+            },
+            {
+              "type": "ValidationTextBox",
+              "name": "ModeLabel",
+              "caption": "Mode",
+              "visible": false
+            },
+            {
+              "type": "SelectVariable",
+              "name": "FanVariableID",
+              "caption": "Fan speed",
+              "width": "600px",
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
+            },
+            {
+              "type": "ValidationTextBox",
+              "name": "FanLabel",
+              "caption": "Fan speed",
+              "visible": false
+            },
+            {
+              "type": "SelectVariable",
               "name": "ColorTempVariableID",
               "caption": "Colour temperature",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -557,7 +617,7 @@
               "name": "ColorVariableID",
               "caption": "Colour",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -570,7 +630,7 @@
               "name": "PlaybackVariableID",
               "caption": "Playback",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -583,7 +643,7 @@
               "name": "VolumeVariableID",
               "caption": "Volume",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -596,7 +656,7 @@
               "name": "MuteVariableID",
               "caption": "Mute",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -609,7 +669,7 @@
               "name": "TitleVariableID",
               "caption": "Title",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -622,7 +682,7 @@
               "name": "ArtistVariableID",
               "caption": "Artist",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -635,7 +695,7 @@
               "name": "LevelVariableID",
               "caption": "Brightness/position",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -648,7 +708,7 @@
               "name": "MovingVariableID",
               "caption": "Moving state",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -661,7 +721,7 @@
               "name": "StopVariableID",
               "caption": "Stop",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -674,7 +734,7 @@
               "name": "PowerVariableID",
               "caption": "Power",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
@@ -687,7 +747,7 @@
               "name": "EnergyVariableID",
               "caption": "Energy meter (archived as counter)",
               "width": "600px",
-              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID);"
+              "onChange": "HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);"
             },
             {
               "type": "ValidationTextBox",
