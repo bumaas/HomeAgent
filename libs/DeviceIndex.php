@@ -1081,7 +1081,9 @@ final class DeviceIndex
         }
         // Ein Mediaplayer versteht die Wiedergabebefehle; welche das Gerät kennt, sagt erst sein Profil.
         if ($type === 'media') {
+            // Ein/Aus nur mit Schaltzustand; ein Statustext ohne Aktion (HomeAssistant-Modul) wird beim Schalten abgewiesen.
             return array_merge(
+                isset($roles['state']) ? ['on', 'off'] : [],
                 isset($roles['playback']) ? ['stop', 'play', 'pause', 'next', 'previous'] : [],
                 isset($roles['volume']) ? ['volume', 'volume_change'] : [],
                 isset($roles['mute']) ? ['mute'] : []

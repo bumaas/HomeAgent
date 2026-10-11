@@ -1400,4 +1400,22 @@ pruefe(($schema['mode']['type'] ?? null) === 'string' && !isset($schema['mode'][
 pruefe(($schema['fan_speed']['type'] ?? null) === 'string' && str_starts_with($schema['fan_speed']['description'] ?? '', 'Fan speed by name'), 'fan_speed als Text: ' . json_encode($schema['fan_speed'] ?? null));
 pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', 'give humidity, mode or fan_speed.') && str_contains($werkzeuge['set_state']['description'] ?? '', '"Set the dehumidifier fan to high" → type=humidifier, fan_speed=high.'), 'Aufzählung und Beispiel: ' . ($werkzeuge['set_state']['description'] ?? ''));
 
+/* --- Datum und Uhrzeit als Schlusszeile von get_state (Backlog B14) ------------------------------- */
+
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+pruefe(str_contains($werkzeuge['get_state']['description'] ?? '', 'The last line gives the current date and time.'), 'get_state nennt die Schlusszeile: ' . ($werkzeuge['get_state']['description'] ?? ''));
+$aufrufZeit = new ReflectionMethod(HomeAgent::class, 'callTool');
+$vorher = time();
+$r = $aufrufZeit->invoke($m, 'get_state', ['room' => 'Keller'], null);
+$letzte = (string)array_last(explode("\n", $r['text']));
+pruefe(preg_match('/^Now: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}) \((Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\)$/', $letzte, $treffer) === 1, 'letzte Zeile mit Datum, Uhrzeit und Wochentag: ' . $letzte);
+pruefe(isset($treffer[1]) && abs(strtotime($treffer[1]) - $vorher) < 120 && ($treffer[2] ?? '') === date('l', strtotime($treffer[1])), 'die Zeit stimmt: ' . ($treffer[1] ?? '-'));
+$r = $aufrufZeit->invoke($m, 'get_state', ['room' => 'nirgendwo'], null);
+pruefe(str_starts_with((string)array_last(explode("\n", $r['text'])), 'Now: '), 'auch bei leerem Treffer: ' . $r['text']);
+$r = $aufrufZeit->invoke($m, 'set_state', ['room' => 'Keller', 'humidity' => 55], null);
+pruefe(!str_contains($r['text'], 'Now: '), 'set_state bleibt ohne Zeitzeile: ' . $r['text']);
+foreach (['Now: %s', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $text) {
+    pruefe(isset($de[$text]), 'deutsche Übersetzung für „' . $text . '“');
+}
+
 ende('Modul');

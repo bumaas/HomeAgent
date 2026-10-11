@@ -145,6 +145,11 @@ Weitere Regeln, die nicht offensichtlich sind:
   Etage und Name (Typ höchstens `media`) setzt fort, was in der letzten Stunde per Werkzeug pausiert
   wurde (`recentlyPaused`, Merker über `DeviceBackend::rememberPaused`, im Modul Buffer `Paused`).
   Noch offen: Ein/Aus; das Sonos-Modul hat an `Volume` teils keine Aktion (dann „nicht stellbar“).
+- **Datum und Uhrzeit** hängt das Modul an jede Antwort von `get_state` (`withNow()` in `module.php`, nicht in
+  `DeviceIndex`, damit Skriptfunktionen und Bibliothekstests ohne sie bleiben). In Anleitung oder Werkzeugliste
+  veraltete sie, weil Claude-App und HA beides lange zwischenspeichern.
+- **Mediaplayer ein/aus** über den Schaltzustand, wenn er ein Wahrheitswert mit Aktion ist (Denon-Receiver am nuc:
+  an nach 0,5 s, aus nach 0,1 s); der Statustext des HomeAssistant-Moduls wird beim Schalten abgewiesen.
 - **Ein neues Feld** von `set_state` kostet: eine Fähigkeit in `ROLES`/`TYPE_ROLES`, einen Eintrag in
   `abilitiesOf()`, einen Zweig in `setState()`, eine Eigenschaft im Schema und ein Dialogfeld.
 

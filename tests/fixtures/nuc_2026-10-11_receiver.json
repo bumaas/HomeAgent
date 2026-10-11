@@ -1,0 +1,65 @@
+{
+    "_quelle": "11.10.2026 mittags, nuc, Denon-Receiver (Modul DenonAVRTelnet, Instanz #42150, „Zone 1: Power“ #35575), mit Burkhards OK eingeschaltet und wieder aus, alle 100 ms mitgeschnitten (messung). An nach 522 ms bestätigt, aus nach 117 ms. „reaktion“ je Befehlswert (true = \"1\", false = \"\") aufgerundet.",
+    "variablen": {
+        "35575": {
+            "name": "Zone 1: Power",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "verhalten": "reaktion",
+            "reaktion": {
+                "1": [
+                    [
+                        600,
+                        35575,
+                        true
+                    ]
+                ],
+                "": [
+                    [
+                        200,
+                        35575,
+                        false
+                    ]
+                ]
+            }
+        }
+    },
+    "geraete": [
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Receiver",
+            "Aliases": "",
+            "Type": "media",
+            "Invert": false,
+            "StateVariableID": 35575
+        }
+    ],
+    "messung": [
+        {
+            "befehl": true,
+            "ok": true,
+            "befehl_ms": 18,
+            "0": [
+                522,
+                true,
+                "An"
+            ],
+            "1": [
+                9379,
+                true,
+                "An"
+            ]
+        },
+        {
+            "befehl": false,
+            "ok": true,
+            "befehl_ms": 17,
+            "0": [
+                117,
+                false,
+                "Aus"
+            ]
+        }
+    ]
+}

@@ -51,7 +51,7 @@ pruefe(array_slice(DeviceIndex::COMMANDS, -4) === ['play', 'pause', 'next', 'pre
 pruefe(in_array('media', DeviceIndex::CONTROLLABLE, true), 'ein Mediaplayer ist steuerbar');
 pruefe(DeviceIndex::abilitiesOf($liste[0]) === ['stop', 'play', 'pause', 'next', 'previous', 'volume', 'volume_change', 'mute'], 'mit Wiedergabe: ' . json_encode(DeviceIndex::abilitiesOf($liste[0])));
 pruefe(DeviceIndex::abilitiesOf(['ReadOnly' => true] + $liste[0]) === [], 'nur abfragen versteht nichts');
-pruefe(DeviceIndex::offeredAbilities($liste) === ['stop', 'play', 'pause', 'next', 'previous', 'volume', 'volume_change', 'mute'], 'das Schema bietet die Befehle an: ' . json_encode(DeviceIndex::offeredAbilities($liste)));
+pruefe(DeviceIndex::offeredAbilities($liste) === ['on', 'off', 'stop', 'play', 'pause', 'next', 'previous', 'volume', 'volume_change', 'mute'], 'das Schema bietet die Befehle an, on/off wegen des Statustexts als Ein/Aus: ' . json_encode(DeviceIndex::offeredAbilities($liste)));
 
 /* --- Statustext des HomeAssistant-Moduls ---------------------------------------------------------- */
 

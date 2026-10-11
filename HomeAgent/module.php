@@ -759,7 +759,7 @@ class HomeAgent extends IPSModuleStrict
                 . ($hasHistory ? '"How warm was it in the guest room over the last 30 days?" → room=Gast, type=temperature, from=' . date('Y-m-d', strtotime('-29 days')) . ', to=' . date('Y-m-d') . '. ' : '')
                 . (array_any($this->deviceList(), static fn (array $row): bool => ($row['Type'] ?? '') === 'window' && in_array('open', DeviceIndex::abilitiesOf($row), true))
                     ? 'Windows marked "with drive" can be opened and closed with set_state, the others only report their state. ' : '')
-                . 'If nothing matches, the answer lists the known rooms and types.'
+                . 'If nothing matches, the answer lists the known rooms and types. The last line gives the current date and time.'
                 . ($readOnly ? ' ' . self::READ_ONLY_NOTE : ''),
             'inputSchema' => [
                 'type'                 => 'object',
@@ -963,13 +963,28 @@ class HomeAgent extends IPSModuleStrict
         $readOnly = ($access['ReadOnly'] ?? false) === true;
         $defaultRoom = (string)($access['DefaultRoom'] ?? '');
         $outcome = match (true) {
-            $name === 'get_state'                  => $this->deviceIndex($defaultRoom)->getState($arguments),
+            $name === 'get_state'                  => $this->withNow($this->deviceIndex($defaultRoom)->getState($arguments)),
             $readOnly                              => ['text' => 'Unknown tool ' . $name, 'isError' => true],
             $name === 'set_state'                  => $this->deviceIndex($defaultRoom)->setState($arguments),
             $name === 'run_scene'                  => $this->sceneIndex()->runScene($arguments),
             default                                => ['text' => 'Unknown tool ' . $name, 'isError' => true],
         };
         return $this->logged($name, $arguments, $outcome, $access);
+    }
+
+    /**
+     * Hängt Datum, Uhrzeit und Wochentag an eine Antwort von get_state. Zum Zeitpunkt des Aufrufs,
+     * weil Clients Anleitung und Werkzeugliste lange zwischenspeichern (Backlog B14, wie HAs
+     * GetDateTime). Die Skriptfunktionen bekommen die Zeile nicht.
+     *
+     * @param array{text: string, isError: bool} $outcome
+     * @return array{text: string, isError: bool}
+     */
+    private function withNow(array $outcome): array
+    {
+        $now = time();
+        $outcome['text'] .= "\n" . sprintf($this->Translate('Now: %s'), date('Y-m-d H:i', $now) . ' (' . $this->Translate(date('l', $now)) . ')');
+        return $outcome;
     }
 
     /**

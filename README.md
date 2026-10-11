@@ -190,7 +190,8 @@ Das Werkzeug **get_state** filtert nach Raum, Etage, Typ und Name und kann auf a
 (an, offen, Anwesenheit erkannt). Die erste Zeile der Antwort nennt immer die Anzahl, zum Beispiel
 „1 von 4 geprüften Geräten aktiv“. Geräte ohne an und aus, etwa Rollläden und Messwerte, zählen dabei
 nicht mit; eine Schlusszeile nennt ihre Zahl und ihre Typen. Findet es nichts, nennt es die bekannten Räume und Typen, damit
-der Assistent neu fragen kann.
+der Assistent neu fragen kann. Die letzte Zeile nennt Datum, Uhrzeit und Wochentag, etwa „Jetzt: 2026-10-11 12:19
+(Sonntag)“; so beantwortet der Assistent auch „Wie spät ist es?“ und rechnet „gestern“ richtig.
 
 Ein Thermostat nennt Soll- und Ist-Temperatur, etwa „Soll 21 °C (derzeit 20.6 °C)“. Fragt der
 Assistent nach `type=temperature`, findet er auch die Thermostate mit Ist-Temperatur; eine eigene
@@ -269,7 +270,7 @@ aus und gibt dazu einen Befehl oder einen Prozentwert an:
 
 | Angabe | Wirkung |
 |---|---|
-| `on`, `off` | schaltet Lichter, Schalter, Steckdosen und Geräte ein oder aus |
+| `on`, `off` | schaltet Lichter, Schalter, Steckdosen, Geräte, Mediaplayer und Luftentfeuchter ein oder aus |
 | `open`, `close` | fährt Rollläden und Fenster mit Antrieb ganz auf oder ganz zu |
 | `stop` | hält Rollläden und Fenster an, die gerade fahren, und beendet die Wiedergabe eines Mediaplayers |
 | `play`, `pause` | setzt die Wiedergabe eines Mediaplayers fort oder hält sie an |
@@ -405,7 +406,6 @@ echo HAGT_RunScene($InstanzID, '', 'Filmabend');
 ## Grenzen
 
 - Farbe als Text und die Betriebsart von Thermostaten (aus, heizen, automatisch) gehen noch nicht.
-- Einen Mediaplayer ein- und ausschalten geht noch nicht.
 - Ein batteriebetriebenes Thermostat übernimmt einen neuen Sollwert oft erst beim nächsten Funkkontakt.
   Die Zentrale meldet ihn trotzdem sofort zurück, „gestellt“ heißt dann „an die Zentrale übergeben“.
 - Bei einem Rollladen, der sich erst am Ziel meldet und keinen Fahrstatus hat, weiß das Modul nach

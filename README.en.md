@@ -180,7 +180,8 @@ The tool **get_state** filters by room, floor, type and name and can be limited 
 presence detected). The first line of the answer always gives the count, for example
 "1 of 4 checked devices active". Devices without on and off, such as blinds and measurements, are not
 counted; a closing line gives their number and types. If nothing matches, it lists the known rooms and types so the
-assistant can ask again. The answers follow the language of your Symcon system (English or German).
+assistant can ask again. The last line gives date, time and weekday, for example "Now: 2026-10-11 12:19
+(Sunday)", so the assistant can also answer "What time is it?" and work out "yesterday". The answers follow the language of your Symcon system (English or German).
 
 A thermostat reports target and current temperature, for example "setpoint 21 °C (currently 20.6 °C)".
 If the assistant asks for `type=temperature`, it also finds thermostats with a current temperature; you
@@ -256,7 +257,7 @@ when querying and adds a command or a percent value:
 
 | Input | Effect |
 |---|---|
-| `on`, `off` | switches lights, switches, sockets and appliances on or off |
+| `on`, `off` | switches lights, switches, sockets, appliances, media players and dehumidifiers on or off |
 | `open`, `close` | moves blinds and windows with a drive fully open or fully closed |
 | `stop` | stops blinds and windows that are moving and ends playback of a media player |
 | `play`, `pause` | resumes or pauses playback of a media player |
@@ -386,7 +387,6 @@ echo HAGT_RunScene($InstanceID, '', 'Filmabend');
 ## Limits
 
 - Colour as text and the operating mode of thermostats (off, heat, auto) are not supported yet.
-- Switching a media player on and off is not supported yet.
 - A battery-powered thermostat often takes a new setpoint only at its next radio contact. The central
   unit still confirms it right away, so "set" then means "handed over to the central unit".
 - For a blind that reports only on arrival and has no moving state, the module does not know after
