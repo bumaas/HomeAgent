@@ -127,11 +127,12 @@ then shows only the variables that belong to this type.
 |---|---|
 | Room | The way you call the room. Case and umlauts do not matter ("Küche" = "kueche"). |
 | Name, aliases | The name and further names, separated by commas. A partial word is enough when searching. If a device is found through an alias, the answer shows it in brackets after the name. |
-| Type | Light, switch, socket, appliance, blind, thermostat, media player, window, door, presence, water leak, temperature, humidity, air quality or other measured value. |
+| Type | Light, switch, socket, appliance, blind, thermostat, media player, humidifier, window, door, presence, water leak, temperature, humidity, air quality or other measured value. |
 | State or measured value | The variable for on/off, open/closed or detected, for measured values the value itself. For a thermostat the current temperature. |
 | Setpoint | Only for a thermostat: the variable with the target temperature. It needs an action. |
 | Colour temperature | Only for a light, optional: the variable with the colour temperature in Kelvin or mired. It needs an action. |
 | Colour | Only for a light, optional: the variable with the colour as an integer (RGB, for example profile `~HexColor`). It needs an action. |
+| Current humidity, target humidity | Only for a humidifier or dehumidifier: the measured humidity and the target humidity the assistant may set (range and step from presentation or profile). The state is called "On/off" there. |
 | Playback, volume, mute, title, artist | Only for a media player. These are the variables Symcon combines in the "Media Player" presentation: playback with one of the profiles `~Playback`, `~PlaybackNoStop`, `~PlaybackPreviousNext`, `~PlaybackPreviousNextNoStop` or `~PlayerStatus`, the volume (announced in percent of its range), mute as a boolean, title and artist as text. For a media player the state is called "On/off". |
 | Brightness/position | For a light the brightness. It is announced together with a light that is on and can be set in percent. For a blind the position, for a window the drive. |
 | Moving state | Only for blinds and windows with a drive, and only if such a variable exists: it reports whether the blind is moving, for example `WORKING` on Homematic or the run status on the Velux KLF200. The module then answers "moving" at once, even if the position only arrives at the end. |
@@ -152,6 +153,7 @@ Which variables a device needs depends on its type:
 | Blind | Position, optionally moving state and stop |
 | Thermostat | Setpoint, optionally the current temperature |
 | Media player | On/off, playback or volume, optionally mute, title and artist |
+| Humidifier | On/off or target humidity, optionally the current humidity |
 | Window | Contact, drive or both, optionally moving state and stop for the drive |
 | Door | Contact |
 | Presence, water leak | Detector |
@@ -184,6 +186,8 @@ A thermostat reports target and current temperature, for example "setpoint 21 °
 If the assistant asks for `type=temperature`, it also finds thermostats with a current temperature; you
 do not need a separate temperature entry on the same variable. A setpoint outside its range is called a
 special setpoint: some Homematic thermostats use 100 for "valve fully open".
+
+A dehumidifier reports "on (51 %, setpoint 55 %)" or "off" and counts as active while it runs.
 
 A media player reports for example "playing "Can't Get Enough" by Bad Company (volume 20 %)",
 "paused (volume 37 %, muted)" or "off". It counts as active while it plays. With the HomeAssistant
@@ -262,6 +266,7 @@ when querying and adds a command or a percent value:
 | `mute` | mutes a media player (`true`) or unmutes it (`false`) |
 | `percent` | sets the brightness of a light or how far a blind or window is open |
 | `temperature` | sets the setpoint of a thermostat in °C |
+| `humidity` | sets the target humidity of a humidifier or dehumidifier in percent |
 | `color_temperature` | sets the colour temperature of a light in Kelvin, for example 2700 for warm white |
 | `color` | sets the colour of a light: red, orange, yellow, green, turquoise, blue, purple, pink or white |
 

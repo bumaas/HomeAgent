@@ -242,7 +242,7 @@ function oderNull(callable $aufruf): mixed
 
 $rollen = oderNull(static fn () => DeviceIndex::ROLES);
 $typRollen = oderNull(static fn () => DeviceIndex::TYPE_ROLES) ?? [];
-pruefe($rollen === ['state' => 'StateVariableID', 'level' => 'LevelVariableID', 'moving' => 'MovingVariableID', 'stop' => 'StopVariableID', 'power' => 'PowerVariableID', 'energy' => 'EnergyVariableID', 'setpoint' => 'SetpointVariableID', 'colortemp' => 'ColorTempVariableID', 'color' => 'ColorVariableID', 'playback' => 'PlaybackVariableID', 'volume' => 'VolumeVariableID', 'mute' => 'MuteVariableID', 'title' => 'TitleVariableID', 'artist' => 'ArtistVariableID'], 'Fähigkeiten und ihre Schlüssel in der Zeile: ' . json_encode($rollen));
+pruefe($rollen === ['state' => 'StateVariableID', 'level' => 'LevelVariableID', 'moving' => 'MovingVariableID', 'stop' => 'StopVariableID', 'power' => 'PowerVariableID', 'energy' => 'EnergyVariableID', 'setpoint' => 'SetpointVariableID', 'colortemp' => 'ColorTempVariableID', 'color' => 'ColorVariableID', 'playback' => 'PlaybackVariableID', 'volume' => 'VolumeVariableID', 'mute' => 'MuteVariableID', 'title' => 'TitleVariableID', 'artist' => 'ArtistVariableID', 'humidity' => 'HumidityVariableID'], 'Fähigkeiten und ihre Schlüssel in der Zeile: ' . json_encode($rollen));
 pruefe(array_keys($typRollen) === array_keys(DeviceIndex::TYPES), 'jeder Typ hat einen Eintrag in der Fähigkeitstabelle: ' . json_encode(array_keys($typRollen)));
 $unstimmig = [];
 foreach ($typRollen as $typ => $def) {

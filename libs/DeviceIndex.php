@@ -22,6 +22,7 @@ final class DeviceIndex
         'blind'       => null,
         'thermostat'  => null,
         'media'       => ['on', 'off'],
+        'humidifier'  => ['on', 'off'],
         'window'      => ['open', 'closed'],
         'door'        => ['open', 'closed'],
         'presence'    => ['detected', 'not detected'],
@@ -33,7 +34,7 @@ final class DeviceIndex
     ];
 
     /** Nur diese Typen lassen sich schalten oder stellen; alle anderen sind Melder und Messwerte. */
-    public const CONTROLLABLE = ['light', 'switch', 'socket', 'appliance', 'blind', 'thermostat', 'media'];
+    public const CONTROLLABLE = ['light', 'switch', 'socket', 'appliance', 'blind', 'thermostat', 'media', 'humidifier'];
 
     /**
      * Fähigkeiten eines Geräts und der Schlüssel, unter dem ihre Variable in der Zeile steht.
@@ -59,6 +60,7 @@ final class DeviceIndex
         'mute'      => 'MuteVariableID',
         'title'     => 'TitleVariableID',
         'artist'    => 'ArtistVariableID',
+        'humidity'  => 'HumidityVariableID',
     ];
 
     /**
@@ -122,6 +124,7 @@ final class DeviceIndex
         'blind'       => ['roles' => ['level', 'moving', 'stop'], 'required' => ['level']],
         'thermostat'  => ['roles' => ['state', 'setpoint'], 'required' => ['setpoint']],
         'media'       => ['roles' => ['state', 'playback', 'volume', 'mute', 'title', 'artist'], 'required' => ['state', 'playback', 'volume']],
+        'humidifier'  => ['roles' => ['state', 'humidity', 'setpoint'], 'required' => ['state', 'setpoint']],
         'window'      => ['roles' => ['state', 'level', 'moving', 'stop'], 'required' => ['state', 'level']],
         'door'        => ['roles' => ['state'], 'required' => ['state']],
         'presence'    => ['roles' => ['state'], 'required' => ['state']],
@@ -840,6 +843,13 @@ final class DeviceIndex
         if ($sound !== [] && (count($sound) > 1 || $command !== '' || $percent !== null || $temperature !== null || $kelvin !== null || $color !== null)) {
             return $this->fail($this->t('Nothing was changed. Give volume, volume_change or mute alone, without another field.'));
         }
+        $humidity = $arguments['humidity'] ?? null;
+        if ($humidity !== null && ((!is_int($humidity) && !is_float($humidity)) || $humidity < 0 || $humidity > 100)) {
+            return $this->fail($this->t('Parameter "humidity" must be a number from 0 to 100.'));
+        }
+        if ($humidity !== null && ($command !== '' || $percent !== null || $temperature !== null || $kelvin !== null || $color !== null || $sound !== [])) {
+            return $this->fail($this->t('Nothing was changed. Give humidity alone, without command, percent or temperature.'));
+        }
         if ($color !== null) {
             $key = DeviceIndex::normalize((string)$color);
             $key = self::COLOR_WORDS[$key] ?? $key;
@@ -869,7 +879,7 @@ final class DeviceIndex
         if ($percent !== null && ((!is_int($percent) && !is_float($percent)) || $percent < 0 || $percent > 100)) {
             return $this->fail($this->t('Parameter "percent" must be a number from 0 to 100.'));
         }
-        if ($command === '' && $percent === null && $temperature === null && $kelvin === null && $color === null && $sound === []) {
+        if ($command === '' && $percent === null && $temperature === null && $kelvin === null && $color === null && $sound === [] && $humidity === null) {
             return $this->fail(sprintf($this->t('Nothing was changed: give a command (%s), a percent value or a temperature.'), implode(', ', self::COMMANDS)));
         }
         // Nur „on“ verträgt einen Wert, und dann einen über 0: „an und 0 %“ wäre zugleich aus.
@@ -889,7 +899,7 @@ final class DeviceIndex
         $type = trim((string)($arguments['type'] ?? ''));
 
         // Was verlangt ist, heißt wie das Feld des Werkzeugs; so kann der Assistent es korrigieren.
-        $ability = $mute !== null ? 'mute' : ($volumeChange !== null ? 'volume_change' : ($volume !== null ? 'volume' : ($color !== null ? 'color' : ($kelvin !== null ? 'color_temperature' : ($temperature !== null ? 'temperature' : ($percent !== null ? 'percent' : $command))))));
+        $ability = $mute !== null ? 'mute' : ($volumeChange !== null ? 'volume_change' : ($volume !== null ? 'volume' : ($color !== null ? 'color' : ($kelvin !== null ? 'color_temperature' : ($humidity !== null ? 'humidity' : ($temperature !== null ? 'temperature' : ($percent !== null ? 'percent' : $command)))))));
         $understand = array_filter($selection['entries'], static fn (array $e): bool => in_array($ability, self::abilitiesOf($e), true));
         $skipped = count($selection['entries']) - count($understand) + ($selection['windowsWithoutDrive'] ?? 0);
         if ($understand === []) {
@@ -925,6 +935,9 @@ final class DeviceIndex
         }
         if ($kelvin !== null) {
             return $this->setpointAnswer($this->runColorTemperature($understand, (float)$kelvin), $filter, $closing);
+        }
+        if ($humidity !== null) {
+            return $this->setpointAnswer($this->runSetpoint($understand, (float)$humidity), $filter, $closing);
         }
         if ($temperature !== null) {
             return $this->setpointAnswer($this->runSetpoint($understand, (float)$temperature), $filter, $closing);
@@ -1041,6 +1054,10 @@ final class DeviceIndex
         if ($type === 'thermostat') {
             return isset($roles['setpoint']) ? ['temperature'] : [];
         }
+        // Ein Luftentfeuchter schaltet und stellt seine Zielfeuchte.
+        if ($type === 'humidifier') {
+            return array_merge(isset($roles['state']) ? ['on', 'off'] : [], isset($roles['setpoint']) ? ['humidity'] : []);
+        }
         // Ein Mediaplayer versteht die Wiedergabebefehle; welche das Gerät kennt, sagt erst sein Profil.
         if ($type === 'media') {
             return array_merge(
@@ -1079,7 +1096,7 @@ final class DeviceIndex
         foreach ($rows as $row) {
             $found = array_merge($found, self::abilitiesOf($row));
         }
-        return array_values(array_intersect(array_merge(self::COMMANDS, ['percent', 'temperature', 'color_temperature', 'color', 'volume', 'volume_change', 'mute']), $found));
+        return array_values(array_intersect(array_merge(self::COMMANDS, ['percent', 'temperature', 'humidity', 'color_temperature', 'color', 'volume', 'volume_change', 'mute']), $found));
     }
 
     /**
@@ -1293,7 +1310,7 @@ final class DeviceIndex
         $targets = [];
         foreach ($entries as $index => $entry) {
             $variable = $entry['roles']['setpoint'];
-            $unit = $this->temperatureUnit($variable);
+            $unit = $this->temperatureUnit($variable, $entry['Type']);
             $job = ['entry' => $entry, 'variable' => $variable, 'target' => $temperature, 'note' => null, 'done' => false];
             $current = $this->backend->read($variable);
             $range = $this->backend->setpointRange($variable);
@@ -1343,7 +1360,7 @@ final class DeviceIndex
                     $job['note'] = sprintf($this->t('failed: %s'), $error);
                     $result['failed']++;
                 } elseif ($reached($job)) {
-                    $job['note'] = $this->thermostatText($job['entry']);
+                    $job['note'] = $this->mainStateOf($job['entry'])['text'];
                     $result['reached']++;
                 } else {
                     $job['note'] = sprintf($this->t('sent, but the device has not confirmed yet (currently %s)'), $this->setpointText($job['entry']));
@@ -1358,7 +1375,8 @@ final class DeviceIndex
         }
         // Die Kopfzeile nennt den gesendeten Wert, wenn er für alle gleich ist, sonst den verlangten.
         $result['target'] = count(array_unique(array_map('strval', $targets))) === 1 ? (float)$targets[0] : $temperature;
-        $result['unit'] = $entries === [] ? '°C' : $this->temperatureUnit((int)array_first($entries)['roles']['setpoint']);
+        $first = $entries === [] ? null : array_first($entries);
+        $result['unit'] = $first === null ? '°C' : $this->temperatureUnit((int)$first['roles']['setpoint'], $first['Type']);
         return $result;
     }
 
@@ -1557,11 +1575,11 @@ final class DeviceIndex
         return $this->answer($head, $result, $closing);
     }
 
-    /** Einheit des Sollwerts aus Profil oder Darstellung, ohne Angabe °C. */
-    private function temperatureUnit(int $variableId): string
+    /** Einheit des Sollwerts aus Profil oder Darstellung, ohne Angabe °C, beim Luftentfeuchter %. */
+    private function temperatureUnit(int $variableId, string $type = 'thermostat'): string
     {
         $unit = trim($this->backend->unit($variableId));
-        return $unit === '' ? '°C' : $unit;
+        return $unit !== '' ? $unit : ($type === 'humidifier' ? '%' : '°C');
     }
 
     /** „Soll 21 °C“, außerhalb des Bereichs „Sonder-Sollwert 100 °C außerhalb von 6 bis 30 °C“. */
@@ -1575,7 +1593,7 @@ final class DeviceIndex
         if (!is_int($setpoint['value']) && !is_float($setpoint['value'])) {
             return sprintf($this->t('setpoint %s'), $setpoint['formatted']);
         }
-        $unit = $this->temperatureUnit($variable);
+        $unit = $this->temperatureUnit($variable, (string)$entry['Type']);
         $text = self::formatNumber((float)$setpoint['value']) . ' ' . $unit;
         // Ein Wert außerhalb des Bereichs ist meist ein Sonderwert (HM-CC-TC: 100 = Ventil ganz offen).
         $range = $this->backend->setpointRange($variable);
@@ -1583,6 +1601,40 @@ final class DeviceIndex
             return sprintf($this->t('special setpoint %s outside %s to %s'), $text, self::formatNumber($range['min']), self::formatNumber($range['max']) . ' ' . $unit);
         }
         return sprintf($this->t('setpoint %s'), $text);
+    }
+
+    /**
+     * Zustand eines Luftentfeuchters: an oder aus, dahinter Ist-Feuchte und Zielfeuchte. Ohne
+     * Schaltzustand nur die Werte, dann zählt er bei den aktiven Geräten nicht mit.
+     *
+     * @return array{text: string, active: ?bool}
+     */
+    private function humidifierText(array $entry): array
+    {
+        $roles = $entry['roles'];
+        $extras = [];
+        if (isset($roles['humidity'])) {
+            $current = $this->backend->read($roles['humidity']);
+            $extras[] = $current === null ? sprintf($this->t('not available (variable %d is missing)'), $roles['humidity']) : $current['formatted'];
+        }
+        if (isset($roles['setpoint'])) {
+            $extras[] = $this->setpointText($entry);
+        }
+        if (isset($roles['state'])) {
+            $power = $this->backend->read($roles['state']);
+            if ($power === null) {
+                return ['text' => sprintf($this->t('not available (variable %d is missing)'), $roles['state']), 'active' => null];
+            }
+            if (is_bool($power['value'])) {
+                $on = $power['value'] !== $entry['Invert'];
+                if (!$on) {
+                    return ['text' => $this->t('off'), 'active' => false];
+                }
+                return ['text' => $this->t('on') . ($extras === [] ? '' : ' (' . implode(', ', $extras) . ')'), 'active' => true];
+            }
+            array_unshift($extras, $power['formatted']);
+        }
+        return ['text' => $extras === [] ? '-' : implode(', ', $extras), 'active' => null];
     }
 
     /** Zustand eines Thermostats: Sollwert, dahinter die Ist-Temperatur. */
@@ -2529,6 +2581,9 @@ final class DeviceIndex
         }
         if ($entry['Type'] === 'media') {
             return $this->mediaText($entry);
+        }
+        if ($entry['Type'] === 'humidifier') {
+            return $this->humidifierText($entry);
         }
         $main = $this->backend->read($this->mainVariable($entry));
         if ($main === null) {

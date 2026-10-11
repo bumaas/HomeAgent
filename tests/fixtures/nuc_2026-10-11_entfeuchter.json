@@ -1,0 +1,242 @@
+{
+    "_quelle": "11.10.2026 gegen 11:50, nuc, Luftentfeuchter #49151 (HomeAssistant-Modul) im Keller, mit Burkhards OK. Ausgangswerte und Darstellung gelesen, dann Zielfeuchte 56 und zurück, Lüfterstufe Medium und zurück, Modus Continuous und zurück, danach Zielfeuchte 60 und zurück; alle 100 ms mitgeschnitten (messung). Zielfeuchte 56 kam nie in der Variable an, 60 nach 2,3 s, 55 nach 0,5 s. Alles am Ende auf den Ausgangswerten. „reaktion“ je Befehlswert aus den Folgen abgelesen; Ein/Aus nicht gemessen.",
+    "variablen": {
+        "21135": {
+            "name": "Luftentfeuchter: Luftentfeuchter",
+            "wert": true,
+            "formatiert": "An",
+            "aktion": true
+        },
+        "57677": {
+            "name": "Luftentfeuchter: Aktuelle Feuchte",
+            "wert": 51.0,
+            "formatiert": "51 %",
+            "aktion": false,
+            "einheit": "%"
+        },
+        "31445": {
+            "name": "Luftentfeuchter: Zielfeuchte",
+            "wert": 55.0,
+            "formatiert": "55 %",
+            "aktion": true,
+            "einheit": "%",
+            "sollbereich": {
+                "min": 35,
+                "max": 85,
+                "schritt": 1
+            },
+            "verhalten": "reaktion",
+            "reaktion": {
+                "60": [
+                    [
+                        2300,
+                        31445,
+                        60.0
+                    ]
+                ],
+                "55": [
+                    [
+                        500,
+                        31445,
+                        55.0
+                    ]
+                ],
+                "56": []
+            }
+        },
+        "25833": {
+            "name": "Luftentfeuchter: Modus",
+            "wert": "Smart",
+            "formatiert": "Smart",
+            "aktion": true,
+            "optionen": [
+                [
+                    "Set",
+                    "Setzen"
+                ],
+                [
+                    "Smart",
+                    "Smart"
+                ],
+                [
+                    "Continuous",
+                    "Kontinuierlich"
+                ],
+                [
+                    "Dry",
+                    "Entfeuchten"
+                ]
+            ],
+            "verhalten": "reaktion",
+            "reaktion": {
+                "Continuous": [
+                    [
+                        800,
+                        25833,
+                        "Continuous"
+                    ]
+                ],
+                "Smart": [
+                    [
+                        500,
+                        25833,
+                        "Smart"
+                    ]
+                ]
+            }
+        },
+        "28873": {
+            "name": "Luftentfeuchter: Voreinstellung Lüfter",
+            "wert": "Low",
+            "formatiert": "Niedrig",
+            "aktion": true,
+            "optionen": [
+                [
+                    "Low",
+                    "Niedrig"
+                ],
+                [
+                    "Medium",
+                    "Medium"
+                ],
+                [
+                    "High",
+                    "Hoch"
+                ]
+            ],
+            "verhalten": "reaktion",
+            "reaktion": {
+                "Medium": [
+                    [
+                        1300,
+                        28873,
+                        "Medium"
+                    ]
+                ],
+                "Low": [
+                    [
+                        500,
+                        28873,
+                        "Low"
+                    ]
+                ]
+            }
+        },
+        "14959": {
+            "name": "Luftentfeuchter: Tank voll",
+            "wert": false,
+            "formatiert": "Kein Problem",
+            "aktion": false
+        }
+    },
+    "geraete": [
+        {
+            "Room": "Keller",
+            "Name": "Luftentfeuchter",
+            "Aliases": "Entfeuchter",
+            "Type": "humidifier",
+            "Invert": false,
+            "StateVariableID": 21135,
+            "HumidityVariableID": 57677,
+            "SetpointVariableID": 31445,
+            "ModeVariableID": 25833,
+            "FanVariableID": 28873
+        }
+    ],
+    "messung": [
+        {
+            "befehl": "ziel=56",
+            "ok": true,
+            "befehl_ms": 288,
+            "0": [
+                691,
+                {
+                    "feuchte": 52
+                }
+            ]
+        },
+        {
+            "befehl": "ziel=55",
+            "ok": true,
+            "befehl_ms": 298
+        },
+        {
+            "befehl": "luefter=\"Medium\"",
+            "ok": true,
+            "befehl_ms": 835,
+            "0": [
+                1238,
+                {
+                    "luefter": "Medium"
+                }
+            ],
+            "1": [
+                1541,
+                {
+                    "feuchte": 53
+                }
+            ]
+        },
+        {
+            "befehl": "luefter=\"Low\"",
+            "ok": true,
+            "befehl_ms": 191,
+            "0": [
+                493,
+                {
+                    "luefter": "Low"
+                }
+            ],
+            "1": [
+                796,
+                {
+                    "feuchte": 54
+                }
+            ]
+        },
+        {
+            "befehl": "modus=\"Continuous\"",
+            "ok": true,
+            "befehl_ms": 156,
+            "0": [
+                760,
+                {
+                    "modus": "Continuous"
+                }
+            ]
+        },
+        {
+            "befehl": "modus=\"Smart\"",
+            "ok": true,
+            "befehl_ms": 177,
+            "0": [
+                480,
+                {
+                    "modus": "Smart"
+                }
+            ]
+        }
+    ],
+    "messung_ziel": [
+        {
+            "befehl": 60,
+            "ok": true,
+            "befehl_ms": 182,
+            "0": [
+                2303,
+                60,
+                "aktualisiert 11:50:05"
+            ]
+        },
+        {
+            "befehl": 55,
+            "ok": true,
+            "befehl_ms": 167,
+            "0": [
+                469,
+                55,
+                "aktualisiert 11:50:13"
+            ]
+        }
+    ]
+}

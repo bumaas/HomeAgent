@@ -135,11 +135,12 @@ zeigt der Dialog nur die Variablen, die zu diesem Typ gehören.
 |---|---|
 | Raum | So, wie Sie den Raum nennen. Groß- und Kleinschreibung und Umlaute sind egal („Küche“ = „kueche“). |
 | Name, Aliase | Der Name und weitere Bezeichnungen, durch Komma getrennt. Ein Teilwort genügt beim Suchen. Wird ein Gerät über einen Alias gefunden, steht er in der Antwort in Klammern hinter dem Namen. |
-| Typ | Licht, Schalter, Steckdose, Gerät, Rollladen, Thermostat, Mediaplayer, Fenster, Tür, Anwesenheit, Wasserleck, Temperatur, Luftfeuchte, Luftqualität oder sonstiger Messwert. |
+| Typ | Licht, Schalter, Steckdose, Gerät, Rollladen, Thermostat, Mediaplayer, Luftbe-/entfeuchter, Fenster, Tür, Anwesenheit, Wasserleck, Temperatur, Luftfeuchte, Luftqualität oder sonstiger Messwert. |
 | Zustand oder Messwert | Die Variable für an/aus, offen/zu oder erkannt, bei Messwerten der Wert selbst. Beim Thermostat die Ist-Temperatur. |
 | Sollwert | Nur beim Thermostat: die Variable mit der Solltemperatur. Sie braucht eine Aktion. |
 | Farbtemperatur | Nur beim Licht, wahlweise: die Variable mit der Farbtemperatur in Kelvin oder Mired. Sie braucht eine Aktion. |
 | Farbe | Nur beim Licht, wahlweise: die Variable mit der Farbe als Ganzzahl (RGB, etwa Profil `~HexColor`). Sie braucht eine Aktion. |
+| Ist-Feuchte, Zielfeuchte | Nur beim Luftbe-/entfeuchter: die gemessene Luftfeuchte und die Zielfeuchte, die der Assistent stellen darf (Bereich und Schrittweite aus Darstellung oder Profil). Der Zustand heißt dort „Ein/Aus“. |
 | Wiedergabe, Lautstärke, Stumm, Titel, Interpret | Nur beim Mediaplayer. Es sind die Variablen, die Symcon in der Darstellung „Media Player“ zusammenfasst: die Wiedergabe mit einem der Profile `~Playback`, `~PlaybackNoStop`, `~PlaybackPreviousNext`, `~PlaybackPreviousNextNoStop` oder `~PlayerStatus`, die Lautstärke (in Prozent ihres Bereichs angesagt), Stumm als Wahrheitswert, Titel und Interpret als Text. Beim Mediaplayer heißt der Zustand „Ein/Aus“. |
 | Helligkeit/Position | Beim Licht die Helligkeit. Sie wird bei eingeschaltetem Licht mit angesagt und lässt sich in Prozent stellen. Beim Rollladen die Position, beim Fenster der Antrieb. |
 | Fahrstatus | Nur bei Rollladen und Fenster mit Antrieb und nur, wenn es so eine Variable gibt: sie meldet, ob er gerade fährt, etwa `WORKING` bei Homematic oder der Laufstatus beim Velux KLF200. Dann antwortet das Modul sofort mit „fährt“, auch wenn die Position erst am Ziel kommt. |
@@ -160,6 +161,7 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 | Rollladen | Position, dazu wahlweise Fahrstatus und Stopp |
 | Thermostat | Sollwert, wahlweise die Ist-Temperatur |
 | Mediaplayer | Ein/Aus, Wiedergabe oder Lautstärke, wahlweise Stumm, Titel und Interpret |
+| Luftbe-/entfeuchter | Ein/Aus oder Zielfeuchte, wahlweise die Ist-Feuchte |
 | Fenster | Kontakt, Antrieb oder beides, zum Antrieb wahlweise Fahrstatus und Stopp |
 | Tür | Kontakt |
 | Anwesenheit, Wasserleck | Melder |
@@ -194,6 +196,9 @@ Ein Thermostat nennt Soll- und Ist-Temperatur, etwa „Soll 21 °C (derzeit 20.6
 Assistent nach `type=temperature`, findet er auch die Thermostate mit Ist-Temperatur; eine eigene
 Temperaturzeile auf derselben Variable brauchen Sie dafür nicht. Steht der Sollwert außerhalb seines
 Bereichs, heißt er Sonder-Sollwert: Manche Homematic-Thermostate nutzen 100 für „Ventil ganz offen“.
+
+Ein Luftentfeuchter meldet sich mit „an (51 %, Soll 55 %)“ oder „aus“ und zählt als aktiv, solange er
+läuft.
 
 Ein Mediaplayer meldet sich etwa mit „spielt „Can't Get Enough“ von Bad Company (Lautstärke 20 %)“,
 „pausiert (Lautstärke 37 %, stumm)“ oder „aus“. Als aktiv zählt er, wenn er spielt. Beim
@@ -274,6 +279,7 @@ aus und gibt dazu einen Befehl oder einen Prozentwert an:
 | `mute` | schaltet einen Mediaplayer stumm (`true`) oder wieder laut (`false`) |
 | `percent` | stellt die Helligkeit eines Lichts oder die Öffnung eines Rollladens oder Fensters |
 | `temperature` | stellt den Sollwert eines Thermostats in °C |
+| `humidity` | stellt die Zielfeuchte eines Luftbe- oder -entfeuchters in Prozent |
 | `color_temperature` | stellt die Farbtemperatur eines Lichts in Kelvin, etwa 2700 für warmweiß |
 | `color` | stellt die Farbe eines Lichts: rot, orange, gelb, grün, türkis, blau, lila, pink oder weiß |
 
