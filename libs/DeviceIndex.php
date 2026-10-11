@@ -126,7 +126,7 @@ final class DeviceIndex
         'blind'       => ['roles' => ['level', 'moving', 'stop'], 'required' => ['level']],
         'thermostat'  => ['roles' => ['state', 'setpoint'], 'required' => ['setpoint']],
         'media'       => ['roles' => ['state', 'playback', 'volume', 'mute', 'title', 'artist'], 'required' => ['state', 'playback', 'volume']],
-        'humidifier'  => ['roles' => ['state', 'humidity', 'setpoint', 'mode', 'fan'], 'required' => ['state', 'setpoint']],
+        'humidifier'  => ['roles' => ['state', 'humidity', 'setpoint', 'mode', 'fan', 'power', 'energy'], 'required' => ['state', 'setpoint']],
         'window'      => ['roles' => ['state', 'level', 'moving', 'stop'], 'required' => ['state', 'level']],
         'door'        => ['roles' => ['state'], 'required' => ['state']],
         'presence'    => ['roles' => ['state'], 'required' => ['state']],
@@ -448,6 +448,29 @@ final class DeviceIndex
      * @return array{text: string, isError: bool}
      */
     /**
+     * Jede Zähler- bzw. Leistungsvariable nur einmal, unter dem ersten Gerät der Liste. Eine
+     * Messsteckdose und das Gerät dahinter dürfen dieselbe Variable tragen (Luftentfeuchter im Keller,
+     * 11.10.2026), ohne dass Raum oder Haus sie doppelt summieren. Wie beim Verlauf (history()).
+     *
+     * @param list<array<string, mixed>> $matches
+     * @return list<array<string, mixed>>
+     */
+    private static function firstPerVariable(array $matches, string $role): array
+    {
+        $seen = [];
+        return array_values(array_filter($matches, static function (array $entry) use ($role, &$seen): bool {
+            $id = $entry['roles'][$role] ?? 0;
+            if ($id === 0) {
+                return true;
+            }
+            if (isset($seen[$id])) {
+                return false;
+            }
+            return $seen[$id] = true;
+        }));
+    }
+
+    /**
      * Ist das Gerät ein Messwert mit Verlauf? Temperatur, Feuchte, Luftqualität und sonstige Messwerte,
      * dazu die Ist-Temperatur eines Thermostats.
      *
@@ -508,6 +531,7 @@ final class DeviceIndex
 
     private function consumption(array $matches, array $bounds, string $filter, bool $wholeHouse = false): array
     {
+        $matches = self::firstPerVariable($matches, 'energy');
         $metered = array_values(array_filter($matches, static fn (array $entry): bool => isset($entry['roles']['energy'])));
         $balance = $wholeHouse ? $this->balance : [];
         if ($metered === [] && $balance === []) {
@@ -645,6 +669,7 @@ final class DeviceIndex
      */
     private function power(array $matches, string $filter, bool $wholeHouse): array
     {
+        $matches = self::firstPerVariable($matches, 'power');
         $measured = array_values(array_filter($matches, static fn (array $entry): bool => isset($entry['roles']['power'])));
         $balance = $wholeHouse ? $this->powerBalance : [];
         if ($measured === [] && $balance === []) {

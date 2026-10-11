@@ -178,6 +178,7 @@
             "This access can only read the house, it cannot switch or set anything.": "Dieser Zugang kann das Haus nur abfragen, schalten oder stellen kann er nichts.",
             "tilted": "gekippt",
             "with drive": "mit Antrieb",
+            "Note: %s is used by %s and %s, consumption and power count it only once": "Hinweis: %s wird von %s und %s genutzt, Verbrauch und Leistung zählen sie nur einmal",
             "%d of %d windows have a drive.": "%d von %d Fenstern haben einen Antrieb.",
             "%s %% tilted": "%s %% gekippt",
             "%s %% open": "%s %% offen",

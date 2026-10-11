@@ -1418,4 +1418,18 @@ foreach (['Now: %s', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Sa
     pruefe(isset($de[$text]), 'deutsche Übersetzung für „' . $text . '“');
 }
 
+/* --- Leistung an zwei Geräten: Hinweis im Selbsttest (build 69, Backlog B47) ---------------------- */
+
+$steckdosenLeistung = variable(VARIABLETYPE_FLOAT, 264.6);
+IPS_SetName($steckdosenLeistung, 'Leistung Entfeuchter');
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Keller', 'Name' => 'Entfeuchter', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => $licht, 'PowerVariableID' => $steckdosenLeistung, 'Invert' => false],
+    ['Room' => 'Keller', 'Name' => 'Luftentfeuchter', 'Aliases' => '', 'Type' => 'humidifier', 'SetpointVariableID' => $feuchteSoll, 'PowerVariableID' => $steckdosenLeistung, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Luftentfeuchter mit Leistung ist gültig: ' . IPS_GetInstance($iid)['InstanceStatus']);
+$test = $m->RunSelfTest();
+pruefe(str_contains($test, 'Note: Leistung Entfeuchter is used by Keller Entfeuchter and Keller Luftentfeuchter, consumption and power count it only once'), 'der Selbsttest nennt die doppelt genutzte Leistung: ' . $test);
+pruefe(isset($de['Note: %s is used by %s and %s, consumption and power count it only once']), 'deutsche Übersetzung des Hinweises');
+
 ende('Modul');

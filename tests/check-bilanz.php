@@ -124,10 +124,15 @@ pruefe($geraeteZeilen === ['Technik | Wärmepumpe | appliance | 86 kWh', 'Keller
 $r = frage($idx, ['room' => 'Keller', 'period' => 'last_month']);
 pruefe(str_contains($r['text'], "Entfeuchter | switch | 74.1 kWh\nKeller | Waschmaschine | switch | 5.4 kWh\nKeller | Kühlschrank"), 'nach Raum bleibt die Reihenfolge der Liste: ' . $r['text']);
 // Mehr als fünf: dieselben Zähler unter weiteren Namen (die Werte sind echt, nur die Liste ist erweitert)
+// Drei weitere Geräte mit Kopien echter Zähler unter eigenen IDs: Dieselbe Variable an zwei Geräten zählt seit
+// build 69 nur einmal (Messsteckdose und Gerät dahinter), hier sollen es sieben verschiedene Zähler sein.
+foreach ([49570 => 949570, 41402 => 941402, 20404 => 920404] as $echt => $kopie) {
+    $werte[(string)$kopie] = $werte[(string)$echt];
+}
 $sieben = array_merge($liste, [
-    ['Name' => 'Entfeuchter 2', 'EnergyVariableID' => 49570] + $liste[0],
-    ['Name' => 'Waschmaschine 2', 'EnergyVariableID' => 41402] + $liste[1],
-    ['Name' => 'Wärmepumpe 2', 'EnergyVariableID' => 20404] + $liste[3],
+    ['Name' => 'Entfeuchter 2', 'EnergyVariableID' => 949570] + $liste[0],
+    ['Name' => 'Waschmaschine 2', 'EnergyVariableID' => 941402] + $liste[1],
+    ['Name' => 'Wärmepumpe 2', 'EnergyVariableID' => 920404] + $liste[3],
 ]);
 $r = frage(index($sieben, $werte, $bilanz), ['period' => 'last_month']);
 $geraeteZeilen = array_values(array_filter(explode("\n", $r['text']), static fn (string $z): bool => substr_count($z, ' | ') === 3));

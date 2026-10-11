@@ -310,6 +310,21 @@ class HomeAgent extends IPSModuleStrict
             $number = static fn (float $value): string => rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
             $lines[] = sprintf($this->Translate('Thermostat %s: %s to %s %s in steps of %s'), $label, $number($range['min']), $number($range['max']), $unit === '' ? '°C' : $unit, $number($range['step']));
         }
+        // Dieselbe Leistung oder derselbe Zähler an zwei Geräten (Messsteckdose und Gerät dahinter) zählt nur einmal.
+        foreach (['power', 'energy'] as $role) {
+            $users = [];
+            foreach ($list as $entry) {
+                $variable = DeviceIndex::rolesOf($entry)[$role] ?? 0;
+                if ($variable > 0) {
+                    $users[$variable][] = trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?'));
+                }
+            }
+            foreach ($users as $variable => $names) {
+                if (count($names) > 1) {
+                    $lines[] = sprintf($this->Translate('Note: %s is used by %s and %s, consumption and power count it only once'), IPS_VariableExists($variable) ? IPS_GetName($variable) : '#' . $variable, implode(', ', array_slice($names, 0, -1)), (string)array_last($names));
+                }
+            }
+        }
         foreach ($this->accessList() as $access) {
             if ($access['InPath'] && $access['Token'] !== '') {
                 $lines[] = sprintf($this->Translate('Note: access "%s" also accepts its token as the last part of the address, for clients that cannot send a login'), $access['Name']);
