@@ -409,7 +409,8 @@ echo HAGT_RunScene($InstanceID, '', 'Filmabend');
 - Login with `Authorization: Bearer <token>`, for accesses with the tick set also through the token
   as the last part of the path. If a client sends both, the header counts.
 - Supported protocol versions: 2025-11-25, 2025-06-18, 2025-03-26.
-- Status 104: no access with a token, the endpoint rejects all requests. Status 201: one of the lists
-  has errors (accesses, rooms, devices or scenes), the log names every affected entry, and the
+- Status 104: no access with a token, the endpoint rejects all requests. Status 201: rooms, devices or
+  scenes have errors, or there is no faultless access left; the log names every affected entry, and the
   endpoint stays closed until they are corrected. In both cases it answers with HTTP 503 ("not
-  ready"), not with a login error.
+  ready"), not with a login error. A faulty access alone (token too short or used twice, unknown
+  default room) only disables itself; the other accesses keep working, form and log name it.

@@ -427,7 +427,9 @@ echo HAGT_RunScene($InstanzID, '', 'Filmabend');
 - Anmeldung mit `Authorization: Bearer <Token>`, bei Zugängen mit gesetztem Haken auch über das Token
   als letzten Teil des Pfads. Schickt ein Client beides, zählt der Header.
 - Unterstützte Protokollversionen: 2025-11-25, 2025-06-18, 2025-03-26.
-- Status 104: kein Zugang mit Token, der Endpunkt weist alle Anfragen ab. Status 201: eine der Listen
-  ist fehlerhaft (Zugänge, Räume, Geräte oder Szenen), das Log nennt jeden betroffenen Eintrag, und
-  der Endpunkt bleibt bis zur Korrektur geschlossen. In beiden Fällen antwortet er mit HTTP 503
-  („nicht bereit“), nicht mit einem Anmeldefehler.
+- Status 104: kein Zugang mit Token, der Endpunkt weist alle Anfragen ab. Status 201: Räume, Geräte
+  oder Szenen sind fehlerhaft, oder es gibt keinen fehlerfreien Zugang mehr; das Log nennt jeden
+  betroffenen Eintrag, und der Endpunkt bleibt bis zur Korrektur geschlossen. In beiden Fällen
+  antwortet er mit HTTP 503 („nicht bereit“), nicht mit einem Anmeldefehler. Ein fehlerhafter Zugang
+  allein (Token zu kurz oder doppelt, unbekannter Standardraum) sperrt nur sich selbst; die übrigen
+  Zugänge arbeiten weiter, Formular und Log nennen ihn.

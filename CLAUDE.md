@@ -43,8 +43,10 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   „Nur abfragen“, „Token auch in der Adresse“). Mit `InPath` auch `/hook/homeagent/<InstanzID>/<Token>`
   für Clients ohne Anmeldung (Home Assistant, Claude-App mit „No sign-in“). Ein Header entscheidet allein.
 - **Die Adresse geht nie ins Debug oder Log**, sie kann das Token tragen. Tokens unter 24 Zeichen sind
-  ein Fehler der Liste (Status 201). Nach 20 abgewiesenen Anmeldungen in einer Minute ist der Hook 60 s zu.
-- Status 104 ohne Zugang mit Token, 201 bei fehlerhafter Liste; beides antwortet mit 503, nicht 401
+  ein Fehler der Zeile. Nach 20 abgewiesenen Anmeldungen in einer Minute ist der Hook 60 s zu.
+- **Ein fehlerhafter Zugang sperrt nur sich selbst** (`usableAccesses()`), Warnung im Log, Überschrift
+  im Formular „Fehlerhafte Zugänge sind gesperrt“. Status 104 ohne Zugang mit Token, 201 bei Fehlern in
+  Räumen, Geräten oder Szenen oder ohne fehlerfreien Zugang; beides antwortet mit 503, nicht 401
   (ein Client wie HA beginnt bei 401 die OAuth-Suche).
 - Eingaben sind begrenzt: Körper erst nach der Anmeldung lesen, Stapel höchstens 50 Nachrichten und ein
   `tools/call`, Argumente gegen das `inputSchema` prüfen.

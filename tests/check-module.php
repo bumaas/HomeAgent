@@ -207,7 +207,8 @@ $geraeteStart = json_decode(IPS_GetProperty($iid, 'Devices'), true);
 $setze('Accesses', [$zugang('Leer', '')]);
 pruefe($status() === 104, 'ein Zugang ohne Token zählt nicht: Status 104, nicht ' . $status());
 $setze('Accesses', [$zugang('A', 'abc-token-0123456789abcdef'), $zugang('', 'def-token-0123456789abcdef'), $zugang('C', ''), $zugang('D', 'abc-token-0123456789abcdef'), $zugang('E', 'xyz-token-0123456789abcdef', 'Dachboden')]);
-pruefe($status() === 201, 'fehlerhafte Zugänge: Status 201, nicht ' . $status());
+pruefe($status() === IS_ACTIVE, 'fehlerhafte Zugänge sperren nur sich selbst, A hält den Endpunkt offen: Status ' . $status());
+pruefe(str_contains($logText(), 'Faulty accesses are disabled until they are corrected: '), 'das Log sagt, dass die fehlerhaften Zugänge gesperrt sind: ' . $logText());
 $log = $logText();
 pruefe(str_contains($log, 'Access without a name: name is missing') && str_contains($log, 'Access "C": token is missing') && str_contains($log, 'Access "D": token is used twice'), 'Log nennt Zugänge ohne Name, ohne Token und mit doppeltem Token: ' . $log);
 pruefe(str_contains($log, 'Access "E": default room "Dachboden" is neither in the room list nor the room of a device'), 'unbekannter Standardraum wird benannt');
@@ -1165,7 +1166,7 @@ $formular = json_decode($m->GetConfigurationForm(), true);
 pruefe(array_filter($formular['elements'], static fn (array $e): bool => str_starts_with((string)($e['name'] ?? ''), 'ListError')) === [], 'ohne Fehler keine Fehlermeldung im Formular');
 pruefe(array_filter(array_column(array_column(flach($formular['elements']), null, 'name')['Accesses']['values'] ?? [], 'rowColor')) === [], 'und keine rote Zeile');
 $setze('Accesses', [$zugang('Kurz', 'abc123'), $zugang('Lang', 'lang-token-0123456789abcdef')]);
-pruefe($status() === 201, 'ein Token unter 24 Zeichen ist ein Fehler: Status 201, nicht ' . $status());
+pruefe($status() === IS_ACTIVE, 'ein Token unter 24 Zeichen sperrt nur seinen Zugang, „Lang“ bleibt offen: Status ' . $status());
 pruefe(str_contains($logText(), 'Access "Kurz": token is shorter than 24 characters') && !str_contains($logText(), 'abc123'), 'das Log nennt den Zugang, aber nicht das Token');
 
 // Fehler im Formular: oben die Meldungen, in der Liste die Zeile rot (Wunsch Burkhard 06.10.2026,
@@ -1174,6 +1175,7 @@ $formular = json_decode($m->GetConfigurationForm(), true);
 $elemente = array_column(flach($formular['elements']), null, 'name');
 $fehlerTexte = array_column(array_filter($formular['elements'], static fn (array $e): bool => str_starts_with((string)($e['name'] ?? ''), 'ListError')), 'caption');
 pruefe(count($fehlerTexte) === 2 && in_array('Access "Kurz": token is shorter than 24 characters', $fehlerTexte, true), 'oben im Formular stehen Überschrift und Fehler: ' . json_encode($fehlerTexte));
+pruefe(in_array('Faulty accesses are disabled until they are corrected:', $fehlerTexte, true), 'die Überschrift sagt, dass nur die Zugänge gesperrt sind: ' . json_encode($fehlerTexte));
 pruefe(array_column($elemente['Accesses']['values'] ?? [], 'rowColor') === ['#FFC0C0', ''], 'die fehlerhafte Zeile ist rot, die andere nicht: ' . json_encode($elemente['Accesses']['values'] ?? null));
 pruefe(!str_contains(json_encode($formular), 'abc123'), 'das Formular trägt das Token nicht in die Werte');
 $tokenSpalte = array_column($elemente['Accesses']['columns'] ?? [], null, 'name')['Token']['edit'] ?? [];
@@ -1344,5 +1346,25 @@ IPS_SetProperty($iid, 'Devices', json_encode([
 IPS_ApplyChanges($iid);
 $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
 pruefe(str_contains($werkzeuge['get_state']['description'] ?? '', 'Windows marked "with drive" can be opened and closed with set_state, the others only report their state.'), 'get_state erklärt „with drive“: ' . ($werkzeuge['get_state']['description'] ?? ''));
+
+/* --- Fehlerhafter Zugang sperrt nur sich selbst (build 64, Backlog B06) --------------------------- */
+
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
+IPS_SetProperty($iid, 'Devices', json_encode($geraeteStart));
+$setze('Accesses', [$zugang('Kurz', 'abc123'), $zugang('Lang', $token), $zugang('Dachboden', 'boden-token-0123456789abcdef', 'Dachboden')]);
+pruefe($status() === IS_ACTIVE, 'zwei fehlerhafte Zugänge, einer gültig: aktiv, nicht ' . $status());
+pruefe(str_contains($anfrage('Bearer ' . $token), 'Parse error'), 'der gültige Zugang kommt durch');
+$a = $anfrage('Bearer abc123');
+pruefe(str_contains($a, 'Missing or invalid bearer token'), 'der Zugang mit zu kurzem Token ist gesperrt: ' . $a);
+$a = $anfrage('Bearer boden-token-0123456789abcdef');
+pruefe(str_contains($a, 'Missing or invalid bearer token'), 'der Zugang mit unbekanntem Standardraum ist gesperrt: ' . $a);
+$setze('Accesses', [$zugang('Kurz', 'abc123'), $zugang('Dachboden', 'boden-token-0123456789abcdef', 'Dachboden')]);
+pruefe($status() === 201, 'ohne einen gültigen Zugang bleibt der Endpunkt zu: Status ' . $status());
+$setze('Accesses', [$zugang('Lang', $token)]);
+IPS_SetProperty($iid, 'Devices', json_encode([['Room' => 'Küche', 'Name' => '', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $licht, 'Invert' => false]]));
+IPS_ApplyChanges($iid);
+pruefe($status() === 201, 'ein Fehler in der Geräteliste schließt weiterhin alles: Status ' . $status());
+IPS_SetProperty($iid, 'Devices', json_encode($geraeteStart));
+IPS_ApplyChanges($iid);
 
 ende('Modul');

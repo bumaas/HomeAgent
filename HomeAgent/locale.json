@@ -152,6 +152,7 @@
             "Action on variable %d failed: %s": "Aktion an Variable %d fehlgeschlagen: %s",
             "script does not exist": "Skript existiert nicht",
             "The lists have errors, the endpoint stays closed until they are corrected": "Die Listen sind fehlerhaft, der Endpunkt bleibt geschlossen, bis sie korrigiert sind",
+            "Faulty accesses are disabled until they are corrected": "Fehlerhafte Zugänge sind gesperrt, bis sie korrigiert sind",
             "Configuration is valid again, the endpoint is ready": "Die Konfiguration ist wieder gültig, der Endpunkt ist bereit",
             "Device \"%s\"": "Gerät „%s“",
             "Device without a name": "Gerät ohne Namen",

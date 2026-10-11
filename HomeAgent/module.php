@@ -82,11 +82,17 @@ class HomeAgent extends IPSModuleStrict
             return;
         }
 
-        $errors = $this->validateDeviceList();
-        if ($errors !== []) {
+        // Ein fehlerhafter Zugang sperrt nur sich selbst; Fehler in den übrigen Listen, oder kein
+        // gültiger Zugang mehr, schließen den Endpunkt.
+        $problems = $this->validateLists();
+        $accessErrors = array_column(array_filter($problems, static fn (array $p): bool => $p['list'] === 'Accesses'), 'text');
+        if (count($accessErrors) < count($problems) || $this->usableAccesses() === []) {
             $this->SetStatus(self::STATUS_LIST_INVALID);
-            $this->LogMessage($this->Translate('The lists have errors, the endpoint stays closed until they are corrected') . ': ' . implode('; ', $errors), KL_ERROR);
+            $this->LogMessage($this->Translate('The lists have errors, the endpoint stays closed until they are corrected') . ': ' . implode('; ', array_column($problems, 'text')), KL_ERROR);
             return;
+        }
+        if ($accessErrors !== []) {
+            $this->LogMessage($this->Translate('Faulty accesses are disabled until they are corrected') . ': ' . implode('; ', $accessErrors), KL_WARNING);
         }
 
         if ($this->GetStatus() !== IS_ACTIVE && $this->GetStatus() !== IS_CREATING) {
@@ -382,7 +388,9 @@ class HomeAgent extends IPSModuleStrict
 
         // Die Fehler stehen oben im Formular, nicht nur im Log.
         if ($problems !== []) {
-            $labels = [['type' => 'Label', 'name' => 'ListErrors', 'caption' => $this->Translate('The lists have errors, the endpoint stays closed until they are corrected') . ':', 'bold' => true, 'color' => self::LABEL_COLOR_ERROR]];
+            $onlyAccesses = !array_any($problems, static fn (array $p): bool => $p['list'] !== 'Accesses') && $this->usableAccesses() !== [];
+            $heading = $onlyAccesses ? 'Faulty accesses are disabled until they are corrected' : 'The lists have errors, the endpoint stays closed until they are corrected';
+            $labels = [['type' => 'Label', 'name' => 'ListErrors', 'caption' => $this->Translate($heading) . ':', 'bold' => true, 'color' => self::LABEL_COLOR_ERROR]];
             foreach ($problems as $number => $problem) {
                 $labels[] = ['type' => 'Label', 'name' => 'ListError' . $number, 'caption' => $problem['text'], 'color' => self::LABEL_COLOR_ERROR];
             }
@@ -660,7 +668,7 @@ class HomeAgent extends IPSModuleStrict
         // Die Anmeldung bestimmt den Zugang, und der Zugang bestimmt Werkzeugliste, Standardraum und
         // Anleitung. Die Adresse geht nie ins Debug oder Log: Bei Zugängen mit Token im Pfad trägt
         // sie das Token.
-        $accesses = $this->accessList();
+        $accesses = $this->usableAccesses();
         $pathToken = McpProtocol::tokenFromPath($_SERVER['REQUEST_URI'] ?? '', $this->GetEndpoint());
         $index = McpProtocol::findAccess($_SERVER['HTTP_AUTHORIZATION'] ?? '', $pathToken, $accesses);
         $access = $index === null ? null : $accesses[$index];
@@ -1044,6 +1052,18 @@ class HomeAgent extends IPSModuleStrict
             'ReadOnly'    => (bool)($row['ReadOnly'] ?? false),
             'InPath'      => (bool)($row['InPath'] ?? false),
         ], $this->listProperty('Accesses'));
+    }
+
+    /**
+     * Zugänge, über die man sich anmelden kann: mit Token und ohne Fehler in ihrer Zeile. Die
+     * Schlüssel bleiben die Zeilen der Property.
+     *
+     * @return array<int, array{Name: string, Token: string, DefaultRoom: string, ReadOnly: bool, InPath: bool}>
+     */
+    private function usableAccesses(): array
+    {
+        $faulty = array_column(array_filter($this->validateLists(), static fn (array $p): bool => $p['list'] === 'Accesses'), 'index');
+        return array_filter($this->accessList(), static fn (array $access, int $index): bool => $access['Token'] !== '' && !in_array($index, $faulty, true), ARRAY_FILTER_USE_BOTH);
     }
 
     private function hasAccessWithToken(): bool
