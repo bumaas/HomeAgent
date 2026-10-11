@@ -203,9 +203,19 @@ if (!$hat('redeemCode') || !$hat('refresh')) {
     ende('OAuth');
 }
 
+// Seit dem Mitschnitt vom 11.10.2026 belegt: Claude schickt genau diese Felder, ohne scope und ohne
+// Authorization-Header; code hat 43, code_verifier 128 Zeichen.
+$mitschnittToken = $mitschnitt['token_request'] ?? [];
+pruefe(($mitschnittToken['content_type'] ?? '') === 'application/x-www-form-urlencoded' && array_key_exists('authorization', $mitschnittToken) && $mitschnittToken['authorization'] === null, 'Token-Anfrage im Mitschnitt: Formular ohne Client-Anmeldung');
 $verifierRfc = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 $codes = OAuthServer::issueCode([], 'CODE-1', ['code_challenge' => $challenge] + $grant, $t);
 $einloesen = ['grant_type' => 'authorization_code', 'code' => 'CODE-1', 'redirect_uri' => $cb, 'code_verifier' => $verifierRfc, 'client_id' => $claudeId, 'resource' => $endpunkt];
+$felder = array_keys($mitschnittToken['fields'] ?? []);
+sort($felder);
+$erwartet = array_keys($einloesen);
+sort($erwartet);
+pruefe($felder === $erwartet, 'der Test löst mit genau den Feldern ein, die Claude schickt: ' . json_encode($felder));
+pruefe(($mitschnittToken['fields']['resource'] ?? '') === $endpunkt && ($mitschnittToken['fields']['redirect_uri'] ?? '') === $cb, 'resource und redirect_uri wie bei der Autorisierung');
 $r = OAuthServer::redeemCode($codes, $einloesen, $endpunkt, $t + 5);
 pruefe(($r['error'] ?? null) === null && ($r['grant']['access'] ?? '') === 'zugang-a' && ($r['grant']['scope'] ?? '') === 'mcp offline_access', 'gültiger Code mit passendem Prüfwert wird eingelöst: ' . json_encode($r['error'] ?? null));
 pruefe(OAuthServer::redeemCode($r['codes'], $einloesen, $endpunkt, $t + 6)['error'] === 'invalid_grant', 'ein Code gilt nur einmal');

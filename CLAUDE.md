@@ -89,6 +89,8 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   benutzbar und mit demselben Token. Der Client bekommt Werkzeuge, Rechte und Standardraum dieses
   Zugangs. Jede Kopplung hat eine Familie, auch ohne `offline_access`, damit sie sich widerrufen lässt.
   Kam ein Token mit und gilt nicht, sagt der 401 zusätzlich `error="invalid_token"` (RFC 6750).
+  Ende zu Ende mit der Claude-App erprobt am 11.10.2026 (Connector mit „Jetzt anmelden“ und CIMD,
+  Kopplungscode, danach `get_state`); die Token-Anfrage steht als Mitschnitt in der Fixture.
 
 ## Werkzeuge
 
