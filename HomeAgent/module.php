@@ -84,6 +84,8 @@ class HomeAgent extends IPSModuleStrict
         $this->RegisterPropertyString('Scenes', '[]');
         // Anmeldung per OAuth (Claude-App mit „Sign in“), anfangs aus; feste Tokens gelten weiter.
         $this->RegisterPropertyBoolean('OAuthEnabled', false);
+        // Gekoppelte OAuth-Clients (Familien von Erneuerungstokens, nur Hashes); überlebt einen Neustart.
+        $this->RegisterAttributeString('OAuthGrants', '{}');
         // Aufgeklappte Bereiche des Formulars, damit sie beim nächsten Öffnen wieder so stehen.
         $this->RegisterAttributeString('ExpandedPanels', '[]');
         foreach (array_merge(array_values(DeviceIndex::BALANCE), array_values(DeviceIndex::BALANCE_POWER)) as $property) {
@@ -743,6 +745,7 @@ class HomeAgent extends IPSModuleStrict
             $response = match (true) {
                 $oauthBase === ''            => OAuthServer::error(404, 'invalid_request', 'Sign-in with OAuth is not enabled for this endpoint'),
                 $route === 'oauth/authorize' => $this->authorize($oauthBase),
+                $route === 'oauth/token'     => $this->token($oauthBase),
                 default                      => OAuthServer::metadata($_SERVER['REQUEST_METHOD'] ?? 'GET', $route, $oauthBase)
                     ?? OAuthServer::error(503, 'temporarily_unavailable', 'Sign-in is not available yet'),
             };
@@ -846,19 +849,14 @@ class HomeAgent extends IPSModuleStrict
             $access = $used['access'];
             return $used['pairings'];
         });
-        $accessName = null;
-        foreach ($this->usableAccesses() as $candidate) {
-            if ($access !== null && hash_equals($access, hash('sha256', $candidate['Token']))) {
-                $accessName = $candidate['Name'];
-            }
-        }
+        $accessName = $access === null ? null : $this->accessNameFor($access);
         if ($accessName === null) {
             $this->SendDebug('OAuth', 'authorize: wrong or expired pairing code', 0);
             $this->recordSignInFailure((string)($_SERVER['REMOTE_ADDR'] ?? '?'));
             return $this->consentPage($client, $params, $base, $this->Translate('The pairing code is wrong or has expired.'));
         }
 
-        $code = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+        $code = OAuthServer::newToken();
         $grant = [
             'client_id'      => $client['client_id'],
             'redirect_uri'   => $params['redirect_uri'],
@@ -870,6 +868,120 @@ class HomeAgent extends IPSModuleStrict
         $this->changeBuffer('OAuthCodes', static fn (array $codes): array => OAuthServer::issueCode($codes, $code, $grant, $now));
         $this->SendDebug('OAuth', 'authorization code issued for ' . $client['client_name'] . ', access ' . $accessName, 0);
         return $this->redirectTo($back(['code' => $code]));
+    }
+
+    /**
+     * Token-Endpunkt: löst einen Autorisierungscode ein oder erneuert mit einem Erneuerungstoken.
+     * Erneuerungstokens rotieren; der Zugang muss noch benutzbar sein und dasselbe Token tragen.
+     *
+     * @return array{status: int, headers: array<string, string>, body: string}
+     */
+    private function token(string $base): array
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            $response = OAuthServer::error(405, 'invalid_request', 'Only POST is supported');
+            $response['headers']['Allow'] = 'POST';
+            return $response;
+        }
+        parse_str($this->requestBody(), $params);
+        $params = array_filter($params, 'is_string');
+        $now = time();
+        $grantType = (string)($params['grant_type'] ?? '');
+        if ($grantType === 'authorization_code') {
+            $redeemed = null;
+            $this->changeBuffer('OAuthCodes', static function (array $codes) use ($params, $base, $now, &$redeemed): array {
+                $redeemed = OAuthServer::redeemCode($codes, $params, $base, $now);
+                return $redeemed['codes'];
+            });
+            if ($redeemed === null || $redeemed['error'] !== null) {
+                return $this->tokenError($redeemed['error'] ?? 'temporarily_unavailable', $grantType);
+            }
+            $grant = $redeemed['grant'];
+            $accessName = $this->accessNameFor($grant['access']);
+            if ($accessName === null) {
+                return $this->tokenError('invalid_grant', $grantType);
+            }
+            $family = bin2hex(random_bytes(8));
+            $refreshToken = in_array('offline_access', explode(' ', $grant['scope']), true) ? OAuthServer::newToken() : null;
+            if ($refreshToken !== null) {
+                $this->changeGrants(static fn (array $families): array => OAuthServer::startFamily($families, $family, $grant, $refreshToken, $now));
+            }
+            return $this->issueTokens(['family' => $family, 'access' => $grant['access'], 'client_id' => $grant['client_id'], 'scope' => $grant['scope']], $refreshToken, $accessName, $now);
+        }
+        if ($grantType === 'refresh_token') {
+            $refreshToken = OAuthServer::newToken();
+            $refreshed = null;
+            $this->changeGrants(static function (array $families) use ($params, $refreshToken, $base, $now, &$refreshed): array {
+                $refreshed = OAuthServer::refresh($families, $params, $refreshToken, $base, $now);
+                return $refreshed['families'];
+            });
+            if ($refreshed === null || $refreshed['error'] !== null) {
+                return $this->tokenError($refreshed['error'] ?? 'temporarily_unavailable', $grantType);
+            }
+            $family = $refreshed['family'];
+            $accessName = $this->accessNameFor($family['access']);
+            if ($accessName === null) {
+                return $this->tokenError('invalid_grant', $grantType);
+            }
+            return $this->issueTokens(['family' => $family['id'], 'access' => $family['access'], 'client_id' => $family['client_id'], 'scope' => $family['scope']], $refreshToken, $accessName, $now);
+        }
+        return $this->tokenError($grantType === '' ? 'invalid_request' : 'unsupported_grant_type', $grantType);
+    }
+
+    /** @return array{status: int, headers: array<string, string>, body: string} */
+    private function issueTokens(array $binding, ?string $refreshToken, string $accessName, int $now): array
+    {
+        $accessToken = OAuthServer::newToken();
+        $this->changeBuffer('OAuthTokens', static fn (array $tokens): array => OAuthServer::issueAccessToken($tokens, $accessToken, $binding, $now));
+        $this->SendDebug('OAuth', 'tokens issued for ' . $binding['client_id'] . ', access ' . $accessName, 0);
+        return OAuthServer::tokenResponse($accessToken, $refreshToken, $binding['scope']);
+    }
+
+    /**
+     * Fehlerantwort des Token-Endpunkts. Ein ungültiger Code oder ein ungültiges Erneuerungstoken
+     * zählt als Fehlversuch.
+     *
+     * @return array{status: int, headers: array<string, string>, body: string}
+     */
+    private function tokenError(string $error, string $grantType): array
+    {
+        $this->SendDebug('OAuth', 'token rejected (' . ($grantType === '' ? '-' : $grantType) . '): ' . $error, 0);
+        if ($error === 'invalid_grant') {
+            $this->recordSignInFailure((string)($_SERVER['REMOTE_ADDR'] ?? '?'));
+        }
+        return OAuthServer::error(400, $error, match ($error) {
+            'invalid_grant'          => 'The code or refresh token is invalid, expired or was issued to another client',
+            'unsupported_grant_type' => 'Only authorization_code and refresh_token are supported',
+            'invalid_target'         => 'The resource is not this endpoint',
+            'invalid_scope'          => 'The scope exceeds the granted scope',
+            default                  => 'A required parameter is missing',
+        });
+    }
+
+    /** Name des benutzbaren Zugangs, dessen Token diesen Hash hat; null = keiner (gelöscht oder Token geändert). */
+    private function accessNameFor(string $accessHash): ?string
+    {
+        foreach ($this->usableAccesses() as $access) {
+            if (hash_equals($accessHash, hash('sha256', $access['Token']))) {
+                return $access['Name'];
+            }
+        }
+        return null;
+    }
+
+    /** Liest, ändert und schreibt die gekoppelten Clients (Attribut OAuthGrants) unter einer Sperre. */
+    private function changeGrants(callable $change): void
+    {
+        $lock = 'HAGT_OAuthGrants_' . $this->InstanceID;
+        if (!IPS_SemaphoreEnter($lock, 1000)) {
+            return;
+        }
+        try {
+            $value = json_decode($this->ReadAttributeString('OAuthGrants'), true);
+            $this->WriteAttributeString('OAuthGrants', (string)json_encode((object)$change(is_array($value) ? $value : [])));
+        } finally {
+            IPS_SemaphoreLeave($lock);
+        }
     }
 
     /**

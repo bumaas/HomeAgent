@@ -191,4 +191,65 @@ pruefe(str_contains($seite, 'name="state" value="' . str_repeat('s', 43) . '"') 
 $boese = OAuthServer::consentPage($texte, ['client_name' => '<script>x</script>'] + $client, ['state' => '"><b>'] + $anfrage, $endpunkt . '/oauth/authorize');
 pruefe(!str_contains($boese, '<script>x') && !str_contains($boese, '"><b>'), 'Name und Parameter werden maskiert');
 
+/* --- Teil 3: Token-Endpunkt ---------------------------------------------------------------------- */
+
+// Die Form der Token-Anfrage ist noch nicht mitgeschnitten. Angenommen nach Claude-Doku
+// („Authentication for connectors“) und RFC 6749/7636: grant_type, code, redirect_uri, code_verifier,
+// client_id, resource als application/x-www-form-urlencoded.
+foreach (['redeemCode', 'startFamily', 'refresh', 'issueAccessToken', 'tokenResponse'] as $methode) {
+    pruefe($hat($methode), 'OAuthServer::' . $methode . ' gibt es');
+}
+if (!$hat('redeemCode') || !$hat('refresh')) {
+    ende('OAuth');
+}
+
+$verifierRfc = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
+$codes = OAuthServer::issueCode([], 'CODE-1', ['code_challenge' => $challenge] + $grant, $t);
+$einloesen = ['grant_type' => 'authorization_code', 'code' => 'CODE-1', 'redirect_uri' => $cb, 'code_verifier' => $verifierRfc, 'client_id' => $claudeId, 'resource' => $endpunkt];
+$r = OAuthServer::redeemCode($codes, $einloesen, $endpunkt, $t + 5);
+pruefe(($r['error'] ?? null) === null && ($r['grant']['access'] ?? '') === 'zugang-a' && ($r['grant']['scope'] ?? '') === 'mcp offline_access', 'gültiger Code mit passendem Prüfwert wird eingelöst: ' . json_encode($r['error'] ?? null));
+pruefe(OAuthServer::redeemCode($r['codes'], $einloesen, $endpunkt, $t + 6)['error'] === 'invalid_grant', 'ein Code gilt nur einmal');
+$abweichend = static fn (array $aenderung, int $zeit = 5): ?string => OAuthServer::redeemCode($codes, array_merge($einloesen, $aenderung), $endpunkt, $t + $zeit)['error'];
+pruefe($abweichend(['code_verifier' => str_repeat('x', 43)]) === 'invalid_grant', 'falscher Prüfwert (PKCE): invalid_grant');
+pruefe($abweichend(['redirect_uri' => $cb . '/x']) === 'invalid_grant', 'andere Rücksprungadresse: invalid_grant');
+pruefe($abweichend(['client_id' => 'https://evil.example/client']) === 'invalid_grant', 'anderer Client: invalid_grant');
+pruefe($abweichend(['resource' => $endpunkt . '/x']) === 'invalid_target', 'andere Ressource: invalid_target');
+pruefe($abweichend([], 600) === 'invalid_grant', 'abgelaufener Code: invalid_grant');
+pruefe($abweichend(['code' => 'CODE-2']) === 'invalid_grant', 'unbekannter Code: invalid_grant');
+$ohneVerifier = $einloesen;
+unset($ohneVerifier['code_verifier']);
+pruefe(OAuthServer::redeemCode($codes, $ohneVerifier, $endpunkt, $t + 5)['error'] === 'invalid_request', 'ohne code_verifier: invalid_request');
+$ohneResource = $einloesen;
+unset($ohneResource['resource']);
+pruefe(OAuthServer::redeemCode($codes, $ohneResource, $endpunkt, $t + 5)['error'] === null, 'resource darf fehlen');
+$falsch = OAuthServer::redeemCode($codes, ['code_verifier' => str_repeat('x', 43)] + $einloesen, $endpunkt, $t + 5);
+pruefe(OAuthServer::redeemCode($falsch['codes'], $einloesen, $endpunkt, $t + 6)['error'] === 'invalid_grant', 'ein falscher Versuch verbraucht den Code (kein Raten des Prüfwerts)');
+
+// Familie mit rotierendem Erneuerungstoken
+$f = OAuthServer::startFamily([], 'fam-1', $r['grant'], 'REFRESH-1', $t);
+pruefe(!str_contains((string)json_encode($f), 'REFRESH-1') && ($f['fam-1']['expires'] ?? 0) === $t + 90 * 86400, 'Erneuerungstoken nur als Hash, 90 Tage gültig: ' . json_encode($f));
+$e = OAuthServer::refresh($f, ['grant_type' => 'refresh_token', 'refresh_token' => 'REFRESH-1', 'client_id' => $claudeId], 'REFRESH-2', $endpunkt, $t + 3600);
+pruefe(($e['error'] ?? null) === null && ($e['family']['id'] ?? '') === 'fam-1' && ($e['family']['access'] ?? '') === 'zugang-a', 'Erneuern liefert die Familie mit Zugang: ' . json_encode($e['error'] ?? null));
+pruefe(($e['families']['fam-1']['expires'] ?? 0) === $t + 3600 + 90 * 86400, 'jedes Erneuern verlängert um 90 Tage');
+$e2 = OAuthServer::refresh($e['families'], ['grant_type' => 'refresh_token', 'refresh_token' => 'REFRESH-2', 'client_id' => $claudeId], 'REFRESH-3', $endpunkt, $t + 7200);
+pruefe(($e2['error'] ?? null) === null, 'das neue Erneuerungstoken gilt');
+$alt = OAuthServer::refresh($e2['families'], ['grant_type' => 'refresh_token', 'refresh_token' => 'REFRESH-1', 'client_id' => $claudeId], 'REFRESH-X', $endpunkt, $t + 7300);
+pruefe($alt['error'] === 'invalid_grant' && !isset($alt['families']['fam-1']), 'ein schon verbrauchtes Erneuerungstoken widerruft die ganze Familie');
+pruefe(OAuthServer::refresh($alt['families'], ['grant_type' => 'refresh_token', 'refresh_token' => 'REFRESH-3', 'client_id' => $claudeId], 'REFRESH-Y', $endpunkt, $t + 7400)['error'] === 'invalid_grant', 'danach gilt auch das jüngste nicht mehr');
+pruefe(OAuthServer::refresh($e['families'], ['grant_type' => 'refresh_token', 'refresh_token' => 'REFRESH-2', 'client_id' => 'https://evil.example/client'], 'R', $endpunkt, $t + 7200)['error'] === 'invalid_grant', 'Erneuern nur durch denselben Client');
+pruefe(OAuthServer::refresh($e['families'], ['grant_type' => 'refresh_token', 'refresh_token' => 'REFRESH-2', 'client_id' => $claudeId], 'R', $endpunkt, $t + 3600 + 90 * 86400)['error'] === 'invalid_grant', 'nach 90 Tagen ohne Erneuern verfallen');
+pruefe(OAuthServer::refresh($e['families'], ['grant_type' => 'refresh_token', 'refresh_token' => 'REFRESH-2', 'client_id' => $claudeId, 'scope' => 'mcp admin'], 'R', $endpunkt, $t + 7200)['error'] === 'invalid_scope', 'Erneuern kann den Scope nicht erweitern');
+
+// Zugriffstoken und Antwort
+$tok = OAuthServer::issueAccessToken([], 'ACCESS-1', ['family' => 'fam-1', 'access' => 'zugang-a', 'client_id' => $claudeId, 'scope' => 'mcp offline_access'], $t);
+$tEintrag = array_values($tok)[0] ?? [];
+pruefe(!str_contains((string)json_encode($tok), 'ACCESS-1') && ($tEintrag['expires'] ?? 0) === $t + 3600 && ($tEintrag['family'] ?? '') === 'fam-1', 'Zugriffstoken nur als Hash, 1 h gültig');
+$tok = OAuthServer::issueAccessToken($tok, 'ACCESS-2', $tEintrag, $t + 3601);
+pruefe(count($tok) === 1, 'abgelaufene Zugriffstokens fallen heraus');
+$a = OAuthServer::tokenResponse('ACCESS-1', 'REFRESH-1', 'mcp offline_access');
+$k = json_decode($a['body'], true);
+pruefe($a['status'] === 200 && ($a['headers']['Cache-Control'] ?? '') === 'no-store' && $k === ['access_token' => 'ACCESS-1', 'token_type' => 'Bearer', 'expires_in' => 3600, 'refresh_token' => 'REFRESH-1', 'scope' => 'mcp offline_access'], 'Token-Antwort nach RFC 6749: ' . $a['body']);
+$k = json_decode(OAuthServer::tokenResponse('ACCESS-1', null, 'mcp')['body'], true);
+pruefe(!array_key_exists('refresh_token', $k), 'ohne offline_access kein Erneuerungstoken');
+
 ende('OAuth');

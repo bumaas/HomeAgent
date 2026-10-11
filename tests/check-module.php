@@ -1684,7 +1684,9 @@ $a = $oauthAnfrage('GET', '/.well-known/oauth-protected-resource?x=1');
 pruefe($a['status'] === 200, 'ein Query-String stört die Metadaten nicht');
 $a = $oauthAnfrage('GET', '/oauth/authorize?response_type=code');
 pruefe($a['status'] === 400 && !isset($a['headers']['Location']), 'authorize ohne Client (seit Teil 2): Fehlerseite ohne Weiterleitung: ' . $a['status']);
-foreach (['/oauth/token', '/oauth/register'] as $pfad) {
+$a = $oauthAnfrage('POST', '/oauth/token');
+pruefe($a['status'] === 400 && str_contains($a['body'], 'invalid_request'), 'token ohne Felder (seit Teil 3): 400 invalid_request: ' . $a['status'] . ' ' . $a['body']);
+foreach (['/oauth/register'] as $pfad) {
     $a = $oauthAnfrage('POST', $pfad);
     pruefe($a['status'] === 503 && str_contains($a['body'], 'temporarily_unavailable'), 'noch nicht gebaut: ' . $pfad . ' antwortet 503 temporarily_unavailable: ' . $a['status'] . ' ' . $a['body']);
 }
@@ -1793,6 +1795,89 @@ pruefe($puffer !== '' && !str_contains($puffer, $autCode) && !str_contains($puff
 pruefe(!str_contains($logText(), $autCode) && !str_contains($logText(), $code), 'kein Code im Log');
 $a = $autorisieren('POST', $abfrage, ['pairing_code' => $code, 'decision' => 'allow']);
 pruefe($a['status'] === 200 && !isset($a['headers']['Location']), 'derselbe Kopplungscode gilt nur einmal');
+
+try {
+    IPS_SetProperty($iid, 'OAuthEnabled', false);
+    IPS_ApplyChanges($iid);
+} catch (Throwable) {
+}
+HomeAgentHarness::$connect = '';
+
+/* --- OAuth Teil 3: Token-Endpunkt (build 75) ------------------------------------------------------ */
+
+// Form der Token-Anfrage angenommen nach Claude-Doku und RFC 6749 (noch kein Mitschnitt).
+HomeAgentHarness::$connect = 'https://example.ipmagic.de';
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
+IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', $token, 'Halle', true), $zugang('Andere', 'andere-token-0123456789abcdef')]));
+try {
+    IPS_SetProperty($iid, 'OAuthEnabled', true);
+} catch (Throwable) {
+}
+IPS_ApplyChanges($iid);
+$tokenAnfrage = static function (array $formular, string $methode = 'POST') use ($hook, $m, $iid): array {
+    $_SERVER = ['REQUEST_METHOD' => $methode, 'REQUEST_URI' => '/hook/homeagent/' . $iid . '/oauth/token', 'REMOTE_ADDR' => '127.0.0.1', 'HTTP_X_FORWARDED_FOR' => '160.79.106.181', 'CONTENT_TYPE' => 'application/x-www-form-urlencoded'];
+    HomeAgentHarness::$body = http_build_query($formular);
+    $m->response = null;
+    ob_start();
+    try {
+        $hook->invoke($m);
+    } finally {
+        ob_end_clean();
+        HomeAgentHarness::$body = '';
+    }
+    $antwort = $m->response ?? ['status' => 0, 'headers' => [], 'body' => ''];
+    return $antwort + ['json' => json_decode($antwort['body'], true) ?? []];
+};
+$neuerCode = static function () use ($kopplung, $autorisieren, $abfrage): string {
+    $text = $kopplung('Claude-App');
+    $kopplungscode = preg_match('/\b(\d{6})\b/', $text, $t) === 1 ? $t[1] : '';
+    $a = $autorisieren('POST', $abfrage, ['pairing_code' => $kopplungscode, 'decision' => 'allow']);
+    parse_str((string)parse_url((string)($a['headers']['Location'] ?? ''), PHP_URL_QUERY), $q);
+    return (string)($q['code'] ?? '');
+};
+$autCode = $neuerCode();
+pruefe($autCode !== '', 'Ausgangslage Token: ein Autorisierungscode aus Teil 2');
+$einloesen = ['grant_type' => 'authorization_code', 'code' => $autCode, 'redirect_uri' => $callback, 'code_verifier' => 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk', 'client_id' => $claudeId, 'resource' => $basis];
+
+$a = $tokenAnfrage($einloesen);
+pruefe($a['status'] === 200 && ($a['json']['token_type'] ?? '') === 'Bearer' && ($a['json']['expires_in'] ?? 0) === 3600 && strlen((string)($a['json']['access_token'] ?? '')) >= 43 && strlen((string)($a['json']['refresh_token'] ?? '')) >= 43, 'Code eingelöst: Zugriffs- und Erneuerungstoken: ' . $a['status'] . ' ' . $a['body']);
+pruefe(($a['headers']['Cache-Control'] ?? '') === 'no-store' && ($a['headers']['Content-Type'] ?? '') === 'application/json', 'Token-Antwort nicht zwischenspeichern');
+$zugriff1 = (string)($a['json']['access_token'] ?? '');
+$erneuern1 = (string)($a['json']['refresh_token'] ?? '');
+try {
+    $gespeichert = (string)(new ReflectionMethod($m, 'ReadAttributeString'))->invoke($m, 'OAuthGrants') . (string)(new ReflectionMethod($m, 'GetBuffer'))->invoke($m, 'OAuthTokens');
+} catch (Throwable) {
+    $gespeichert = ''; // ohne das Attribut (roter Lauf)
+}
+pruefe($gespeichert !== '' && $zugriff1 !== '' && !str_contains($gespeichert, $zugriff1) && !str_contains($gespeichert, $erneuern1), 'Tokens nur als Hash im Attribut und Buffer');
+pruefe(!str_contains($logText(), $zugriff1 ?: 'x') && !str_contains($logText(), $erneuern1 ?: 'x'), 'kein Token im Log');
+
+$a = $tokenAnfrage($einloesen);
+pruefe($a['status'] === 400 && ($a['json']['error'] ?? '') === 'invalid_grant', 'derselbe Code ein zweites Mal: invalid_grant');
+$a = $tokenAnfrage(['grant_type' => 'password', 'client_id' => $claudeId]);
+pruefe($a['status'] === 400 && ($a['json']['error'] ?? '') === 'unsupported_grant_type', 'andere grant_type: unsupported_grant_type');
+$a = $tokenAnfrage([], 'GET');
+pruefe($a['status'] === 405, 'Token-Endpunkt nur per POST');
+
+// Erneuern mit Rotation, Wiederverwendung widerruft die Familie
+$a = $tokenAnfrage(['grant_type' => 'refresh_token', 'refresh_token' => $erneuern1, 'client_id' => $claudeId]);
+$erneuern2 = (string)($a['json']['refresh_token'] ?? '');
+pruefe($a['status'] === 200 && $erneuern2 !== '' && $erneuern2 !== $erneuern1 && ($a['json']['access_token'] ?? '') !== $zugriff1, 'Erneuern liefert neue Tokens: ' . $a['status'] . ' ' . ($a['json']['error'] ?? ''));
+$a = $tokenAnfrage(['grant_type' => 'refresh_token', 'refresh_token' => $erneuern1, 'client_id' => $claudeId]);
+pruefe($a['status'] === 400 && ($a['json']['error'] ?? '') === 'invalid_grant', 'altes Erneuerungstoken: invalid_grant');
+$a = $tokenAnfrage(['grant_type' => 'refresh_token', 'refresh_token' => $erneuern2, 'client_id' => $claudeId]);
+pruefe($a['status'] === 400 && ($a['json']['error'] ?? '') === 'invalid_grant', 'nach der Wiederverwendung gilt auch das neue nicht mehr');
+
+// Ein geändertes Token des Zugangs trennt dessen OAuth-Clients
+$autCode = $neuerCode();
+$a = $tokenAnfrage(['code' => $autCode] + $einloesen);
+$erneuern3 = (string)($a['json']['refresh_token'] ?? '');
+IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', 'neues-token-0123456789abcdef', 'Halle', true)]));
+IPS_ApplyChanges($iid);
+$a = $tokenAnfrage(['grant_type' => 'refresh_token', 'refresh_token' => $erneuern3, 'client_id' => $claudeId]);
+pruefe($erneuern3 !== '' && $a['status'] === 400 && ($a['json']['error'] ?? '') === 'invalid_grant', 'Zugang mit neuem Token: Erneuern scheitert mit invalid_grant');
+$a = $tokenAnfrage(['grant_type' => 'refresh_token', 'refresh_token' => 'erfunden-0123456789', 'client_id' => $claudeId]);
+pruefe($fehlversuche() !== '', 'ungültige Erneuerungen zählen als Fehlversuch');
 
 try {
     IPS_SetProperty($iid, 'OAuthEnabled', false);

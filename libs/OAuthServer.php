@@ -35,6 +35,13 @@ final class OAuthServer
     public const CODE_SECONDS = 600;
     private const MAX_OPEN_CODES = 20;
 
+    /** Zugriffstoken 1 Stunde, Erneuerungstoken 90 Tage ab der letzten Erneuerung. */
+    public const ACCESS_SECONDS = 3600;
+    public const REFRESH_SECONDS = 90 * 86400;
+    private const MAX_ACCESS_TOKENS = 200;
+    private const MAX_FAMILIES = 50;
+    private const MAX_USED_REFRESH = 20;
+
     /** Parameter der Autorisierungsanfrage, die die Einwilligungsseite verdeckt weitergibt. */
     private const AUTHORIZE_PARAMS = ['response_type', 'client_id', 'redirect_uri', 'code_challenge', 'code_challenge_method', 'state', 'scope', 'resource'];
 
@@ -262,6 +269,133 @@ final class OAuthServer
         $codes = array_filter($codes, static fn (array $c): bool => $c['expires'] > $now);
         $codes[hash('sha256', $code)] = $grant + ['expires' => $now + self::CODE_SECONDS];
         return array_slice($codes, -self::MAX_OPEN_CODES, null, true);
+    }
+
+    /**
+     * Löst einen Autorisierungscode ein (grant_type=authorization_code). Der Code ist danach in jedem
+     * Fall verbraucht, auch bei falschem Prüfwert; sonst ließe sich der Prüfwert raten.
+     *
+     * @return array{codes: array, grant: ?array, error: ?string} error nach RFC 6749, Abschnitt 5.2
+     */
+    public static function redeemCode(array $codes, array $params, string $base, int $now): array
+    {
+        $text = static fn (string $key): string => is_string($params[$key] ?? null) ? $params[$key] : '';
+        if ($text('code') === '' || $text('code_verifier') === '' || $text('client_id') === '' || $text('redirect_uri') === '') {
+            return ['codes' => $codes, 'grant' => null, 'error' => 'invalid_request'];
+        }
+        $hash = hash('sha256', $text('code'));
+        $grant = $codes[$hash] ?? null;
+        unset($codes[$hash]);
+        $codes = array_filter($codes, static fn (array $c): bool => $c['expires'] > $now);
+        if (!is_array($grant) || $grant['expires'] <= $now || !hash_equals($grant['client_id'], $text('client_id'))
+            || !hash_equals($grant['redirect_uri'], $text('redirect_uri')) || !hash_equals($grant['code_challenge'], self::s256($text('code_verifier')))) {
+            return ['codes' => $codes, 'grant' => null, 'error' => 'invalid_grant'];
+        }
+        if ($text('resource') !== '' && rtrim($text('resource'), '/') !== rtrim($base, '/')) {
+            return ['codes' => $codes, 'grant' => null, 'error' => 'invalid_target'];
+        }
+        unset($grant['expires'], $grant['code_challenge'], $grant['redirect_uri']);
+        return ['codes' => $codes, 'grant' => $grant, 'error' => null];
+    }
+
+    /**
+     * Neue Familie von Erneuerungstokens nach einem eingelösten Code. Eine Familie ist eine Kopplung
+     * eines Clients mit einem Zugang; gespeichert wird der Hash des aktuellen Erneuerungstokens und
+     * der verbrauchten, damit eine Wiederverwendung auffällt.
+     *
+     * @param array{client_id: string, scope: string, resource: string, access: string} $grant
+     */
+    public static function startFamily(array $families, string $id, array $grant, string $refreshToken, int $now): array
+    {
+        $families = array_filter($families, static fn (array $f): bool => $f['expires'] > $now);
+        $families[$id] = [
+            'id'        => $id,
+            'client_id' => $grant['client_id'],
+            'access'    => $grant['access'],
+            'scope'     => $grant['scope'],
+            'resource'  => $grant['resource'],
+            'refresh'   => hash('sha256', $refreshToken),
+            'used'      => [],
+            'created'   => $now,
+            'expires'   => $now + self::REFRESH_SECONDS,
+        ];
+        return array_slice($families, -self::MAX_FAMILIES, null, true);
+    }
+
+    /**
+     * Erneuert mit einem Erneuerungstoken (grant_type=refresh_token) und rotiert es. Ein schon
+     * verbrauchtes Token widerruft die ganze Familie (RFC 9700, Abschnitt 4.14.2).
+     *
+     * @return array{families: array, family: ?array, error: ?string}
+     */
+    public static function refresh(array $families, array $params, string $newRefreshToken, string $base, int $now): array
+    {
+        $text = static fn (string $key): string => is_string($params[$key] ?? null) ? $params[$key] : '';
+        if ($text('refresh_token') === '' || $text('client_id') === '') {
+            return ['families' => $families, 'family' => null, 'error' => 'invalid_request'];
+        }
+        $families = array_filter($families, static fn (array $f): bool => $f['expires'] > $now);
+        $hash = hash('sha256', $text('refresh_token'));
+        foreach ($families as $id => $family) {
+            if (in_array($hash, $family['used'], true)) {
+                unset($families[$id]);
+                return ['families' => $families, 'family' => null, 'error' => 'invalid_grant'];
+            }
+            if (!hash_equals($family['refresh'], $hash)) {
+                continue;
+            }
+            if (!hash_equals($family['client_id'], $text('client_id'))) {
+                return ['families' => $families, 'family' => null, 'error' => 'invalid_grant'];
+            }
+            if ($text('resource') !== '' && rtrim($text('resource'), '/') !== rtrim($base, '/')) {
+                return ['families' => $families, 'family' => null, 'error' => 'invalid_target'];
+            }
+            $requested = array_filter(explode(' ', $text('scope')), static fn (string $s): bool => $s !== '');
+            if (array_diff($requested, explode(' ', $family['scope'])) !== []) {
+                return ['families' => $families, 'family' => null, 'error' => 'invalid_scope'];
+            }
+            $family['used'] = array_slice(array_merge($family['used'], [$hash]), -self::MAX_USED_REFRESH);
+            $family['refresh'] = hash('sha256', $newRefreshToken);
+            $family['expires'] = $now + self::REFRESH_SECONDS;
+            $families[$id] = $family;
+            return ['families' => $families, 'family' => $family, 'error' => null];
+        }
+        return ['families' => $families, 'family' => null, 'error' => 'invalid_grant'];
+    }
+
+    /**
+     * Legt ein Zugriffstoken ab, nur als Hash, mit Familie, Zugang und Ablauf.
+     *
+     * @param array{family: string, access: string, client_id: string, scope: string} $binding
+     */
+    public static function issueAccessToken(array $tokens, string $token, array $binding, int $now): array
+    {
+        $tokens = array_filter($tokens, static fn (array $t): bool => $t['expires'] > $now);
+        $tokens[hash('sha256', $token)] = ['family' => $binding['family'], 'access' => $binding['access'], 'client_id' => $binding['client_id'], 'scope' => $binding['scope'], 'expires' => $now + self::ACCESS_SECONDS];
+        return array_slice($tokens, -self::MAX_ACCESS_TOKENS, null, true);
+    }
+
+    /**
+     * Erfolgreiche Antwort des Token-Endpunkts (RFC 6749, Abschnitt 5.1).
+     *
+     * @return array{status: int, headers: array<string, string>, body: string}
+     */
+    public static function tokenResponse(string $accessToken, ?string $refreshToken, string $scope): array
+    {
+        $content = ['access_token' => $accessToken, 'token_type' => 'Bearer', 'expires_in' => self::ACCESS_SECONDS];
+        if ($refreshToken !== null) {
+            $content['refresh_token'] = $refreshToken;
+        }
+        if ($scope !== '') {
+            $content['scope'] = $scope;
+        }
+        return self::json(200, $content, ['Pragma' => 'no-cache']);
+    }
+
+    /** Zufälliges Token mit 256 Bit, base64url ohne Auffüllung. */
+    public static function newToken(): string
+    {
+        return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
     }
 
     /**

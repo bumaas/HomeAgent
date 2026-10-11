@@ -78,6 +78,13 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   OAuth-Clients. Kopplungs- und Autorisierungscodes liegen nur als Hash in den Buffern
   `OAuthPairings` und `OAuthCodes`. Fehler vor geprüfter Rücksprungadresse ergeben eine Fehlerseite
   (keine offene Weiterleitung), danach eine Weiterleitung mit `error`, `state` und `iss`.
+  Der Token-Endpunkt (`oauth/token`, nur POST, Formular) löst den Code einmal ein (danach verbraucht,
+  auch bei falschem `code_verifier`, sonst ließe sich der Prüfwert raten) und gibt ein Zugriffstoken für
+  1 h aus, mit `offline_access` auch ein Erneuerungstoken. Erneuerungstokens rotieren und gelten 90 Tage
+  ab der letzten Erneuerung; ein schon verbrauchtes widerruft die ganze Familie (Kopplung eines Clients
+  mit einem Zugang, Attribut `OAuthGrants`, überlebt einen Neustart). Zugriffstokens liegen nur im
+  Buffer `OAuthTokens`; nach einem Neustart erneuert der Client. Ein ungültiger Code oder ein ungültiges
+  Erneuerungstoken zählt im `SignInGuard`.
 
 ## Werkzeuge
 
