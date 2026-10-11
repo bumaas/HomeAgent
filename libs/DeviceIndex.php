@@ -390,6 +390,8 @@ final class DeviceIndex
         $active = 0;
         $checked = 0;
         $uncounted = [];
+        $windows = 0;
+        $driven = 0;
         foreach ($matches as $entry) {
             $state = $this->stateOf($entry);
             if ($state['active'] !== null) {
@@ -405,7 +407,11 @@ final class DeviceIndex
             }
             // Fenster, die set_state fahren kann, sonst sehen alle Fensterzeilen gleich aus (Claude-App
             // 11.10.2026: „Welche Fenster kannst du öffnen?“ blieb unbeantwortet).
+            if ($entry['Type'] === 'window') {
+                $windows++;
+            }
             if ($entry['Type'] === 'window' && in_array('open', self::abilitiesOf($entry), true)) {
+                $driven++;
                 $drive = $this->t('with drive');
                 $state['text'] = str_ends_with($state['text'], ')') ? substr($state['text'], 0, -1) . ', ' . $drive . ')' : $state['text'] . ' (' . $drive . ')';
             }
@@ -422,6 +428,11 @@ final class DeviceIndex
             }
         } else {
             $head = sprintf($this->t('%d device(s) found (%s).'), count($matches), $filter);
+        }
+        // Das Werkzeug zählt, nicht das Modell: Die Claude-App schrieb zweimal „fünf Fenster mit Antrieb“ und
+        // zählte dann sechs auf (11.10.2026). Nur bei gemischten Treffern, sonst sagt die Zeile nichts Neues.
+        if ($driven > 0 && $driven < $windows) {
+            $lines[] = sprintf($this->t('%d of %d windows have a drive.'), $driven, $windows);
         }
         return ['text' => implode("\n", array_merge([$head], $lines)), 'isError' => false];
     }

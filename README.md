@@ -297,7 +297,8 @@ Das Werkzeug bietet nur an, was Ihre freigegebenen Geräte können. Ohne Rolllad
 Antrieb gibt es `open` und `close` nicht, ohne dimmbares Licht und ohne beides keinen Prozentwert. Ein
 Fenster nur mit Kontakt lässt sich nur abfragen; bei „alle Fenster zu“ nennt die Antwort, wie viele
 solcher Fenster ausgelassen wurden. In der Abfrage tragen Fenster, die das Werkzeug fahren kann, den
-Zusatz „mit Antrieb“, etwa „gekippt (mit Antrieb)“.
+Zusatz „mit Antrieb“, etwa „gekippt (mit Antrieb)“. Sind Fenster mit und ohne Antrieb dabei, nennt eine Schlusszeile
+ihre Zahl, etwa „6 von 21 Fenstern haben einen Antrieb“.
 
 Beim Mediaplayer gilt Play, Pause oder Stop als erledigt, wenn der Wiedergabezustand passt, Weiter und
 Zurück, sobald sich Titel oder Wiedergabezustand ändern. Ein Player, der schon pausiert ist, bekommt

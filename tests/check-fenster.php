@@ -50,6 +50,26 @@ pruefe(!str_contains($r['text'], 'with drive'), 'mit „nur abfragen“ kein Hin
 $r = frage($liste, $werte, ['room' => 'Flur', 'type' => 'window', 'command' => 'close'], null, true);
 pruefe(!str_contains($r['text'], 'with drive'), 'set_state ohne Hinweis: ' . $r['text']);
 
+/* --- Zählzeile (build 68, Backlog B09) ------------------------------------------------------------ */
+// Anlass: Die Claude-App schrieb im neuen Chat erneut „Fünf Fenster haben einen Antrieb“ und zählte dann sechs auf.
+
+$letzte = static fn (array $r): string => (string)array_last(explode("\n", $r['text']));
+$r = frage($liste, $werte, ['type' => 'window']);
+pruefe($letzte($r) === '6 of 21 windows have a drive.', 'das Werkzeug zählt die Fenster mit Antrieb: ' . $letzte($r));
+$r = frage($liste, $werte, ['type' => 'window'], $de);
+pruefe($letzte($r) === '6 von 21 Fenstern haben einen Antrieb.', 'auf Deutsch: ' . $letzte($r));
+$r = frage($liste, $werte, ['room' => 'Küche', 'type' => 'window']);
+pruefe($letzte($r) === '1 of 2 windows have a drive.', 'in der Küche eins von zwei: ' . $r['text']);
+$r = frage($liste, $werte, ['room' => 'Flur', 'type' => 'window']);
+pruefe(!str_contains($r['text'], 'have a drive'), 'nur Fenster mit Antrieb: keine Zählzeile: ' . $r['text']);
+$r = frage($liste, $werte, ['room' => 'Gast', 'type' => 'window']);
+pruefe(!str_contains($r['text'], 'have a drive'), 'nur Kontakte: keine Zählzeile: ' . $r['text']);
+$r = frage($liste, $werte, ['type' => 'window', 'active_only' => true]);
+pruefe(!str_contains($r['text'], 'have a drive'), 'die beiden offenen haben beide einen Antrieb: keine Zählzeile: ' . $r['text']);
+$r = frage($gesperrt, $werte, ['type' => 'window']);
+pruefe(!str_contains($r['text'], 'have a drive'), 'mit „nur abfragen“ keine Zählzeile: ' . $r['text']);
+
 pruefe(isset($de['with drive']), 'deutsche Übersetzung für „with drive“');
+pruefe(isset($de['%d of %d windows have a drive.']), 'deutsche Übersetzung der Zählzeile');
 
 ende('Fenster mit Antrieb');

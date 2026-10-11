@@ -101,6 +101,8 @@ Weitere Regeln, die nicht offensichtlich sind:
 - **Fenster mit Antrieb** tragen in `get_state` den Zusatz „with drive“, sofern `set_state` sie fahren kann
   (nicht bei „nur abfragen“); die Beschreibung von `get_state` erklärt ihn. Anlass: Die Claude-App konnte
   „Welche Fenster kannst du öffnen?“ nicht beantworten. Antworten von `set_state` bleiben ohne Zusatz.
+  Bei gemischten Treffern zählt eine Schlusszeile die Fenster mit Antrieb (build 68): die Claude-App verzählte
+  sich zweimal („fünf“, dann sechs aufgezählt).
 - **Räume als Vokabular:** Die Beschreibung von `room` nennt die Räume der Geräte und der Raumliste
   („Known rooms: …“), sonst kürzt ein Modell „Bad oben“ zu `room=Bad`.
 - **Nur-Lese-Zugang:** `instructions` und die Beschreibung von `get_state` sagen dem Assistenten, dass

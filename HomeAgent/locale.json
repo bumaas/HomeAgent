@@ -178,6 +178,7 @@
             "This access can only read the house, it cannot switch or set anything.": "Dieser Zugang kann das Haus nur abfragen, schalten oder stellen kann er nichts.",
             "tilted": "gekippt",
             "with drive": "mit Antrieb",
+            "%d of %d windows have a drive.": "%d von %d Fenstern haben einen Antrieb.",
             "%s %% tilted": "%s %% gekippt",
             "%s %% open": "%s %% offen",
             "Nothing was changed: percent would set lights and windows at once (%s). Give the type.": "Nichts geändert: percent würde Lichter und Fenster zugleich stellen (%s). Gib den Typ an.",
