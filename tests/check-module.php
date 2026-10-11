@@ -236,7 +236,7 @@ $setze('Accesses', [$zugang('Leer', '')]);
 pruefe($status() === 104, 'ein Zugang ohne Token zählt nicht: Status 104, nicht ' . $status());
 $setze('Accesses', [$zugang('A', 'abc-token-0123456789abcdef'), $zugang('', 'def-token-0123456789abcdef'), $zugang('C', ''), $zugang('D', 'abc-token-0123456789abcdef'), $zugang('E', 'xyz-token-0123456789abcdef', 'Dachboden')]);
 pruefe($status() === IS_ACTIVE, 'fehlerhafte Zugänge sperren nur sich selbst, A hält den Endpunkt offen: Status ' . $status());
-pruefe(str_contains($logText(), 'Faulty accesses are disabled until they are corrected: '), 'das Log sagt, dass die fehlerhaften Zugänge gesperrt sind: ' . $logText());
+pruefe(str_contains($logText(), 'Faulty entries are disabled until they are corrected: '), 'das Log sagt, dass die fehlerhaften Zugänge gesperrt sind: ' . $logText());
 $log = $logText();
 pruefe(str_contains($log, 'Access without a name: name is missing') && str_contains($log, 'Access "C": token is missing') && str_contains($log, 'Access "D": token is used twice'), 'Log nennt Zugänge ohne Name, ohne Token und mit doppeltem Token: ' . $log);
 pruefe(str_contains($log, 'Access "E": default room "Dachboden" is neither in the room list nor the room of a device'), 'unbekannter Standardraum wird benannt');
@@ -377,7 +377,7 @@ $setze('Devices', $geraeteStart);
 
 IPS_SetProperty($iid, 'Scenes', json_encode([['Room' => '', 'Name' => '', 'Aliases' => '', 'ScriptID' => 1]]));
 IPS_ApplyChanges($iid);
-pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201, 'fehlerhafte Szenenliste: Status 201');
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'fehlerhafte Szene sperrt nur sich selbst: aktiv');
 $log = implode("\n", array_column($m->logs(), 'Message'));
 pruefe(str_contains($log, 'Scene without a name: name is missing') && str_contains($log, 'Scene without a name: script does not exist'), 'Log nennt die fehlerhafte Szene: ' . $log);
 IPS_SetProperty($iid, 'Scenes', '[]');
@@ -392,7 +392,7 @@ IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Küche', 'Name' => 'Temperatur', 'Aliases' => '', 'Type' => 'temperature', 'StateVariableID' => 59998, 'LevelVariableID' => 0, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
-pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201, 'Zeilen ohne die Fähigkeit ihres Typs: Status 201');
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Zeilen ohne die Fähigkeit ihres Typs sperren nur sich selbst: aktiv');
 $log = implode("\n", array_column($m->logs(), 'Message'));
 pruefe(str_contains($log, 'Device "Rollo" (Küche): no variable selected for Position'), 'Rollladen ohne Position wird benannt: ' . $log);
 pruefe(str_contains($log, 'Device "Lampe" (Küche): no variable selected for Switching state / Brightness'), 'Licht braucht Schaltzustand oder Helligkeit');
@@ -563,16 +563,17 @@ IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Küche', 'Name' => 'Ofen', 'Aliases' => '', 'Type' => 'herd', 'StateVariableID' => $licht, 'LevelVariableID' => 0, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
-pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201, 'fehlerhafte Liste: Status 201');
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'fehlerhafte Geräte sperren nur sich selbst: aktiv');
 $geraeteBereich = array_values(array_filter(json_decode($m->GetConfigurationForm(), true)['elements'], static fn (array $e): bool => in_array('Devices', array_column($e['items'] ?? [], 'name'), true)))[0] ?? [];
 pruefe(($geraeteBereich['expanded'] ?? false) === false, 'eine fehlerhafte Geräteliste ändert den gemerkten Zustand nicht, der Fehler steht oben im Formular');
 $log = implode("\n", array_column($m->logs(), 'Message'));
 pruefe(str_contains($log, 'Device without a name (Küche): name is missing') && str_contains($log, 'Device without a name (Küche): variable for Switching state does not exist') && str_contains($log, 'Device "Ofen" (Küche): unknown type'), 'Log nennt jeden fehlerhaften Eintrag: ' . $log);
 
 IPS_SetProperty($iid, 'Devices', '[]');
+$logsVorher = count($m->logs());
 IPS_ApplyChanges($iid);
-pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'nach Korrektur wieder aktiv');
-pruefe(str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Configuration is valid again'), 'Behebung wird gemeldet');
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'nach Korrektur aktiv');
+pruefe(!str_contains(implode("\n", array_column(array_slice($m->logs(), $logsVorher), 'Message')), 'Faulty entries'), 'nach Korrektur keine Warnung mehr');
 
 pruefe(str_starts_with($m->RunSelfTest(), "ERROR\n") && str_contains($m->RunSelfTest(), 'is empty'), 'Selbsttest meldet die leere Liste: ' . $m->RunSelfTest());
 
@@ -640,7 +641,7 @@ IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'MovingVariableID' => 59997, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
-pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201, 'gelöschte Fahrstatus-Variable: Status 201');
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'gelöschte Fahrstatus-Variable sperrt nur das Gerät: aktiv');
 pruefe(str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Device "Rollo" (Küche): variable for Moving state does not exist'), 'das Log nennt den fehlenden Fahrstatus');
 IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'MovingVariableID' => $laeuft, 'Invert' => false],
@@ -739,7 +740,7 @@ IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Gast', 'Name' => 'Rollladen', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $position, 'StopVariableID' => 59996, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
-pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201 && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Device "Rollladen" (Gast): variable for Stop does not exist'), 'gelöschte Stoppvariable: Status 201 und Log');
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Device "Rollladen" (Gast): variable for Stop does not exist'), 'gelöschte Stoppvariable: aktiv, das Log nennt sie');
 IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'MovingVariableID' => $laeuft, 'Invert' => false],
 ]));
@@ -768,7 +769,7 @@ pruefe(in_array(['PowerLabel', 'value', 'POWER'], $m->formUpdates, true) && in_a
 $entfeuchter = ['Room' => 'Keller', 'Name' => 'Entfeuchter', 'Aliases' => '', 'Type' => 'socket', 'StateVariableID' => $steckdose, 'PowerVariableID' => $leistung, 'EnergyVariableID' => $zaehler, 'Invert' => false];
 IPS_SetProperty($iid, 'Devices', json_encode([['EnergyVariableID' => 59996] + $entfeuchter]));
 IPS_ApplyChanges($iid);
-pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201 && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Device "Entfeuchter" (Keller): variable for Energy meter (archived as counter) does not exist'), 'gelöschter Zähler: Status 201, das Log nennt ihn');
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Device "Entfeuchter" (Keller): variable for Energy meter (archived as counter) does not exist'), 'gelöschter Zähler: aktiv, das Log nennt ihn');
 
 // Ohne Archiv: gültig, aber der Selbsttest sagt, dass es keinen Verlauf gibt
 IPS_SetProperty($iid, 'Devices', json_encode([$entfeuchter]));
@@ -859,7 +860,10 @@ pruefe(!str_contains($m->RunSelfTest(), 'energy balance'), 'archivierter Netzbez
 $setzeBilanz(['GridImportVariableID' => $zaehler, 'SolarVariableID' => $leistung]);
 pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: solar production POWER is not archived as a counter, so there is no house consumption'), 'Selbsttest: Bilanzzähler nicht als Zähler archiviert: ' . $m->RunSelfTest());
 $setzeBilanz(['GridImportVariableID' => $zaehler, 'BatteryChargeVariableID' => 59995]);
-pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201 && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Energy balance: variable for battery charge does not exist'), 'gelöschter Bilanzzähler: Status 201, das Log nennt ihn');
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Energy balance: variable for battery charge does not exist'), 'gelöschter Bilanzzähler: aktiv, das Log nennt ihn');
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+pruefe(!str_contains($werkzeuge['get_state']['inputSchema']['properties']['period']['description'] ?? '', 'house consumption'), 'eine Bilanz mit gelöschtem Zähler ist gesperrt, period nennt keinen Hausverbrauch mehr: ' . json_encode($werkzeuge['get_state']['inputSchema']['properties']['period'] ?? null));
+pruefe(in_array($zaehler, $m->GetReferenceList(), true), 'die Zähler der Bilanz sind als Referenz gemeldet: ' . json_encode($m->GetReferenceList()));
 // Aktuelle Leistung (09.10.2026): fünf weitere Felder, period=now
 $setzeBilanz([]); // der Abschnitt davor hinterlässt einen gelöschten Bilanzzähler
 $leistungFelder = ['GridImportPowerVariableID', 'GridExportPowerVariableID', 'SolarPowerVariableID', 'BatteryChargePowerVariableID', 'BatteryDischargePowerVariableID'];
@@ -892,7 +896,7 @@ foreach ($leistungFelder as $feld) {
     }
 }
 IPS_ApplyChanges($iid);
-pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201 && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Energy balance: variable for solar power does not exist'), 'gelöschte Leistungsvariable: Status 201, das Log nennt sie');
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Energy balance: variable for solar power does not exist'), 'gelöschte Leistungsvariable: aktiv, das Log nennt sie');
 foreach ($leistungFelder as $feld) {
     try {
         IPS_SetProperty($iid, $feld, 0);
@@ -1000,7 +1004,7 @@ IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Gast', 'Name' => 'Heizung', 'Aliases' => '', 'Type' => 'thermostat', 'StateVariableID' => $ist, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
-pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 201 && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Device "Heizung" (Gast): no variable selected for Setpoint'), 'Thermostat ohne Sollwert: Status 201 und Log');
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Device "Heizung" (Gast): no variable selected for Setpoint'), 'Thermostat ohne Sollwert: aktiv, das Log nennt es');
 IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'MovingVariableID' => $laeuft, 'Invert' => false],
 ]));
@@ -1229,7 +1233,7 @@ $formular = json_decode($m->GetConfigurationForm(), true);
 $elemente = array_column(flach($formular['elements']), null, 'name');
 $fehlerTexte = array_column(array_filter($formular['elements'], static fn (array $e): bool => str_starts_with((string)($e['name'] ?? ''), 'ListError')), 'caption');
 pruefe(count($fehlerTexte) === 2 && in_array('Access "Kurz": token is shorter than 24 characters', $fehlerTexte, true), 'oben im Formular stehen Überschrift und Fehler: ' . json_encode($fehlerTexte));
-pruefe(in_array('Faulty accesses are disabled until they are corrected:', $fehlerTexte, true), 'die Überschrift sagt, dass nur die Zugänge gesperrt sind: ' . json_encode($fehlerTexte));
+pruefe(in_array('Faulty entries are disabled until they are corrected:', $fehlerTexte, true), 'die Überschrift sagt, dass nur die Zugänge gesperrt sind: ' . json_encode($fehlerTexte));
 pruefe(array_column($elemente['Accesses']['values'] ?? [], 'rowColor') === ['#FFC0C0', ''], 'die fehlerhafte Zeile ist rot, die andere nicht: ' . json_encode($elemente['Accesses']['values'] ?? null));
 pruefe(!str_contains(json_encode($formular), 'abc123'), 'das Formular trägt das Token nicht in die Werte');
 $tokenSpalte = array_column($elemente['Accesses']['columns'] ?? [], null, 'name')['Token']['edit'] ?? [];
@@ -1417,9 +1421,43 @@ pruefe($status() === 201, 'ohne einen gültigen Zugang bleibt der Endpunkt zu: S
 $setze('Accesses', [$zugang('Lang', $token)]);
 IPS_SetProperty($iid, 'Devices', json_encode([['Room' => 'Küche', 'Name' => '', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $licht, 'Invert' => false]]));
 IPS_ApplyChanges($iid);
-pruefe($status() === 201, 'ein Fehler in der Geräteliste schließt weiterhin alles: Status ' . $status());
+pruefe($status() === IS_ACTIVE, 'ein Fehler in der Geräteliste sperrt nur das Gerät: Status ' . $status());
 IPS_SetProperty($iid, 'Devices', json_encode($geraeteStart));
 IPS_ApplyChanges($iid);
+
+/* --- Fehlerhaftes Gerät, Szene oder Bilanz sperrt nur sich selbst, Referenzen (Blindtest 11.10.2026) --- */
+// Anlass: Geräte der Blindtest-Instanz zeigten auf Variablen, die danach gelöscht wurden. Das Formular meldete
+// die Fehler, der Status blieb 102, und die Referenzsuche von Symcon fand die Instanz nicht.
+$weg = variable(VARIABLETYPE_BOOLEAN, true);
+$setze('Devices', array_merge($geraeteStart, [['Room' => 'Keller', 'Name' => 'Zwischenstecker', 'Aliases' => '', 'Type' => 'socket', 'StateVariableID' => $weg, 'Invert' => false]]));
+pruefe($status() === IS_ACTIVE && str_contains($m->QueryState('Keller', '', '', false), 'Zwischenstecker'), 'Ausgangslage: Zwischenstecker freigegeben: ' . $m->QueryState('Keller', '', '', false));
+pruefe(in_array($weg, $m->GetReferenceList(), true) && in_array($licht, $m->GetReferenceList(), true), 'die Variablen der Geräte sind als Referenz gemeldet: ' . json_encode($m->GetReferenceList()));
+IPS_DeleteVariable($weg);
+pruefe($status() === IS_ACTIVE, 'Variable gelöscht: der Endpunkt bleibt offen');
+$text = $m->QueryState('', '', '', false);
+pruefe(!str_contains($text, 'Zwischenstecker') && str_contains($text, 'Deckenlicht'), 'das Gerät ohne Variable ist sofort gesperrt, die übrigen bleiben: ' . $text);
+$text = $m->SwitchDevices('', '', 'Zwischenstecker', true);
+pruefe(!str_contains($text, '| on'), 'das gesperrte Gerät lässt sich nicht schalten: ' . $text);
+$formular = json_decode($m->GetConfigurationForm(), true);
+$fehlerTexte = array_column(array_filter($formular['elements'], static fn (array $e): bool => str_starts_with((string)($e['name'] ?? ''), 'ListError')), 'caption');
+pruefe(in_array('Faulty entries are disabled until they are corrected:', $fehlerTexte, true) && array_any($fehlerTexte, static fn (string $t): bool => str_starts_with($t, 'Device "Zwischenstecker" (Keller): variable for')), 'das Formular sagt, dass nur der Eintrag gesperrt ist: ' . json_encode($fehlerTexte));
+pruefe(!str_contains(json_encode($formular), 'endpoint stays closed'), 'und nicht, dass der Endpunkt zu ist');
+IPS_ApplyChanges($iid);
+pruefe($status() === IS_ACTIVE && str_contains($logText(), 'Faulty entries are disabled until they are corrected: Device "Zwischenstecker" (Keller)'), 'beim Übernehmen: aktiv, Warnung im Log: ' . $logText());
+pruefe(!in_array($weg, $m->GetReferenceList(), true) && in_array($licht, $m->GetReferenceList(), true), 'die gelöschte Variable ist keine Referenz mehr: ' . json_encode($m->GetReferenceList()));
+$kino = IPS_CreateScript(SCRIPTTYPE_PHP);
+$setze('Scenes', [['Room' => '', 'Name' => 'Kino', 'Aliases' => '', 'ScriptID' => $kino], ['Room' => '', 'Name' => 'Party', 'Aliases' => '', 'ScriptID' => 59993]]);
+pruefe($status() === IS_ACTIVE && in_array($kino, $m->GetReferenceList(), true), 'Szene mit gelöschtem Skript: aktiv, das gültige Skript ist Referenz');
+pruefe(str_starts_with($m->RunScene('', 'Party'), 'Nothing was started'), 'die gesperrte Szene startet nicht: ' . $m->RunScene('', 'Party'));
+pruefe($m->RunScene('', 'Kino') === 'Scene "Kino" was started.', 'die gültige startet: ' . $m->RunScene('', 'Kino'));
+$setze('Scenes', []);
+$setze('Rooms', [['Name' => '', 'Aliases' => '', 'Floor' => '']]);
+pruefe($status() === 201, 'ein Fehler in der Raumliste schließt weiterhin den Endpunkt: Status ' . $status());
+$formular = json_decode($m->GetConfigurationForm(), true);
+pruefe(str_contains(json_encode($formular), 'The lists have errors, the endpoint stays closed until they are corrected'), 'das Formular sagt dann, dass der Endpunkt zu ist');
+$setze('Rooms', []);
+$setze('Devices', $geraeteStart);
+pruefe($status() === IS_ACTIVE, 'Ausgangslage wiederhergestellt');
 
 /* --- Luftentfeuchter im Werkzeugschema (build 65) ------------------------------------------------- */
 

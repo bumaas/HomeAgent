@@ -167,7 +167,9 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 | Anwesenheit, Wasserleck | Melder |
 | Temperatur, Luftfeuchte, Luftqualität, sonstiger Messwert | Messwert |
 
-Fehlt einer Zeile die Variable ihres Typs, zeigt die Instanz den Status 201, und das Log nennt die Zeile.
+Fehlt einer Zeile die Variable ihres Typs, oder wird eine eingetragene Variable gelöscht, ist nur dieses
+Gerät gesperrt. Die Zeile wird rot, Formular und Log nennen sie, alle anderen Geräte bleiben erreichbar.
+Symcon nennt die Instanz außerdem beim Löschen einer eingetragenen Variable als Referenz.
 
 Geben Sie nur frei, was Sie per Sprache wirklich brauchen, je Raum etwa einen Temperatur- und einen
 Feuchtesensor. Jedes Gerät mehr macht die Antworten des Assistenten langsamer und unsicherer.
@@ -443,9 +445,10 @@ echo HAGT_RunScene($InstanzID, '', 'Filmabend');
 - Anmeldung mit `Authorization: Bearer <Token>`, bei Zugängen mit gesetztem Haken auch über das Token
   als letzten Teil des Pfads. Schickt ein Client beides, zählt der Header.
 - Unterstützte Protokollversionen: 2025-11-25, 2025-06-18, 2025-03-26.
-- Status 104: kein Zugang mit Token, der Endpunkt weist alle Anfragen ab. Status 201: Räume, Geräte
-  oder Szenen sind fehlerhaft, oder es gibt keinen fehlerfreien Zugang mehr; das Log nennt jeden
-  betroffenen Eintrag, und der Endpunkt bleibt bis zur Korrektur geschlossen. In beiden Fällen
-  antwortet er mit HTTP 503 („nicht bereit“), nicht mit einem Anmeldefehler. Ein fehlerhafter Zugang
-  allein (Token zu kurz oder doppelt, unbekannter Standardraum) sperrt nur sich selbst; die übrigen
-  Zugänge arbeiten weiter, Formular und Log nennen ihn.
+- Status 104: kein Zugang mit Token, der Endpunkt weist alle Anfragen ab. Status 201: Die Raumliste ist
+  fehlerhaft, oder es gibt keinen fehlerfreien Zugang mehr; das Log nennt jeden betroffenen Eintrag, und
+  der Endpunkt bleibt bis zur Korrektur geschlossen. In beiden Fällen antwortet er mit HTTP 503
+  („nicht bereit“), nicht mit einem Anmeldefehler. Ein fehlerhafter Zugang (Token zu kurz oder doppelt,
+  unbekannter Standardraum), ein Gerät oder eine Szene mit fehlender Variable bzw. fehlendem Skript
+  sperrt nur sich selbst; der Rest arbeitet weiter, Formular und Log nennen den Eintrag. Fehlt eine
+  Variable der Energiebilanz, ist die ganze Bilanz gesperrt, sonst wäre der Hausverbrauch falsch.

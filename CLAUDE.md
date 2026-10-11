@@ -44,10 +44,16 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   für Clients ohne Anmeldung (Home Assistant, Claude-App mit „No sign-in“). Ein Header entscheidet allein.
 - **Die Adresse geht nie ins Debug oder Log**, sie kann das Token tragen. Tokens unter 24 Zeichen sind
   ein Fehler der Zeile. Nach 20 abgewiesenen Anmeldungen in einer Minute ist der Hook 60 s zu.
-- **Ein fehlerhafter Zugang sperrt nur sich selbst** (`usableAccesses()`), Warnung im Log, Überschrift
-  im Formular „Fehlerhafte Zugänge sind gesperrt“. Status 104 ohne Zugang mit Token, 201 bei Fehlern in
-  Räumen, Geräten oder Szenen oder ohne fehlerfreien Zugang; beides antwortet mit 503, nicht 401
-  (ein Client wie HA beginnt bei 401 die OAuth-Suche).
+- **Ein fehlerhafter Eintrag sperrt nur sich selbst**: Zugang (`usableAccesses()`), Gerät
+  (`usableDevices()`), Szene (`usableScenes()`), Energiebilanz als Ganzes (`usableBalance()`). Geprüft wird
+  bei jedem Aufruf, eine gelöschte Variable sperrt ihr Gerät also sofort, ohne Übernehmen. Warnung im Log,
+  Überschrift im Formular „Fehlerhafte Einträge sind gesperrt“. Status 104 ohne Zugang mit Token, 201 bei
+  Fehlern in der Raumliste oder ohne fehlerfreien Zugang (`endpointClosed()`); beides antwortet mit 503,
+  nicht 401 (ein Client wie HA beginnt bei 401 die OAuth-Suche). Anlass: Im Blindtest vom 11.10.2026 zeigte
+  das Formular Fehler gelöschter Variablen, der Status blieb 102.
+- **Referenzen** wie BlindControl: `registerReferences()` in `ApplyChanges` (erst bei `KR_READY`, sonst über
+  `MessageSink`) meldet jede Variable der Geräte und der Bilanz und jedes Szenenskript an, vorher fallen die
+  alten weg. Dann nennt Symcon die Instanz beim Löschen einer Variable.
 - Eingaben sind begrenzt: Körper erst nach der Anmeldung lesen, Stapel höchstens 50 Nachrichten und ein
   `tools/call`, Argumente gegen das `inputSchema` prüfen.
 

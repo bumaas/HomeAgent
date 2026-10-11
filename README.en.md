@@ -159,7 +159,9 @@ Which variables a device needs depends on its type:
 | Presence, water leak | Detector |
 | Temperature, humidity, air quality, other measured value | Measured value |
 
-If a row lacks the variable of its type, the instance shows status 201 and the log names the row.
+If a row lacks the variable of its type, or an entered variable is deleted, only this device is
+disabled. The row turns red, form and log name it, all other devices stay reachable. Symcon also
+names the instance as a reference when an entered variable is about to be deleted.
 
 Only release what you really need by voice, about one temperature and one humidity sensor per room.
 Every additional device makes the assistant's answers slower and less reliable.
@@ -423,8 +425,10 @@ echo HAGT_RunScene($InstanceID, '', 'Filmabend');
 - Login with `Authorization: Bearer <token>`, for accesses with the tick set also through the token
   as the last part of the path. If a client sends both, the header counts.
 - Supported protocol versions: 2025-11-25, 2025-06-18, 2025-03-26.
-- Status 104: no access with a token, the endpoint rejects all requests. Status 201: rooms, devices or
-  scenes have errors, or there is no faultless access left; the log names every affected entry, and the
-  endpoint stays closed until they are corrected. In both cases it answers with HTTP 503 ("not
-  ready"), not with a login error. A faulty access alone (token too short or used twice, unknown
-  default room) only disables itself; the other accesses keep working, form and log name it.
+- Status 104: no access with a token, the endpoint rejects all requests. Status 201: the room list has
+  errors, or there is no faultless access left; the log names every affected entry, and the endpoint
+  stays closed until they are corrected. In both cases it answers with HTTP 503 ("not ready"), not
+  with a login error. A faulty access (token too short or used twice, unknown default room), or a
+  device or scene whose variable or script is missing, only disables itself; the rest keeps working,
+  form and log name the entry. If a variable of the energy balance is missing, the whole balance is
+  disabled, otherwise the house consumption would be wrong.

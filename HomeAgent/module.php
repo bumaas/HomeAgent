@@ -73,32 +73,47 @@ class HomeAgent extends IPSModuleStrict
 
     public function ApplyChanges(): void
     {
+        // Die Referenzen erst, wenn der Kernel bereit ist (wie BlindControl).
+        $this->RegisterMessage(0, IPS_KERNELMESSAGE);
+
         parent::ApplyChanges();
 
         $this->SetSummary($this->GetEndpoint());
+
+        if (IPS_GetKernelRunlevel() === KR_READY) {
+            $this->registerReferences();
+        }
 
         if (!$this->hasAccessWithToken()) {
             $this->SetStatus(self::STATUS_NO_TOKEN);
             return;
         }
 
-        // Ein fehlerhafter Zugang sperrt nur sich selbst; Fehler in den übrigen Listen, oder kein
-        // gültiger Zugang mehr, schließen den Endpunkt.
+        // Ein fehlerhafter Eintrag (Zugang, Gerät, Szene, Energiebilanz) sperrt nur sich selbst, auch
+        // wenn seine Variable erst später gelöscht wird. Fehler in der Raumliste, oder kein gültiger
+        // Zugang mehr, schließen den Endpunkt.
         $problems = $this->validateLists();
-        $accessErrors = array_column(array_filter($problems, static fn (array $p): bool => $p['list'] === 'Accesses'), 'text');
-        if (count($accessErrors) < count($problems) || $this->usableAccesses() === []) {
+        if ($this->endpointClosed($problems)) {
             $this->SetStatus(self::STATUS_LIST_INVALID);
             $this->LogMessage($this->Translate('The lists have errors, the endpoint stays closed until they are corrected') . ': ' . implode('; ', array_column($problems, 'text')), KL_ERROR);
             return;
         }
-        if ($accessErrors !== []) {
-            $this->LogMessage($this->Translate('Faulty accesses are disabled until they are corrected') . ': ' . implode('; ', $accessErrors), KL_WARNING);
+        if ($problems !== []) {
+            $this->LogMessage($this->Translate('Faulty entries are disabled until they are corrected') . ': ' . implode('; ', array_column($problems, 'text')), KL_WARNING);
         }
 
         if ($this->GetStatus() !== IS_ACTIVE && $this->GetStatus() !== IS_CREATING) {
             $this->LogMessage($this->Translate('Configuration is valid again, the endpoint is ready'), KL_MESSAGE);
         }
         $this->SetStatus(IS_ACTIVE);
+    }
+
+    public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void
+    {
+        parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
+        if ($Message === IPS_KERNELMESSAGE && ($Data[0] ?? 0) === KR_READY) {
+            $this->registerReferences();
+        }
     }
 
     /**
@@ -177,9 +192,9 @@ class HomeAgent extends IPSModuleStrict
             $ok = false;
             $lines[] = $error;
         }
-        $list = $this->deviceList();
+        $list = $this->usableDevices();
         $count = count($list);
-        $sceneCount = count($this->sceneList());
+        $sceneCount = count($this->usableScenes());
         if ($count === 0 && $sceneCount === 0) {
             $ok = false;
             $lines[] = $this->Translate('The device list is empty, the assistant sees no devices');
@@ -404,8 +419,7 @@ class HomeAgent extends IPSModuleStrict
 
         // Die Fehler stehen oben im Formular, nicht nur im Log.
         if ($problems !== []) {
-            $onlyAccesses = !array_any($problems, static fn (array $p): bool => $p['list'] !== 'Accesses') && $this->usableAccesses() !== [];
-            $heading = $onlyAccesses ? 'Faulty accesses are disabled until they are corrected' : 'The lists have errors, the endpoint stays closed until they are corrected';
+            $heading = $this->endpointClosed($problems) ? 'The lists have errors, the endpoint stays closed until they are corrected' : 'Faulty entries are disabled until they are corrected';
             $labels = [['type' => 'Label', 'name' => 'ListErrors', 'caption' => $this->Translate($heading) . ':', 'bold' => true, 'color' => self::LABEL_COLOR_ERROR]];
             foreach ($problems as $number => $problem) {
                 $labels[] = ['type' => 'Label', 'name' => 'ListError' . $number, 'caption' => $problem['text'], 'color' => self::LABEL_COLOR_ERROR];
@@ -734,7 +748,7 @@ class HomeAgent extends IPSModuleStrict
         // HA Assist am nuc (10.10.2026): „Rollladen im Bad oben“ wurde zu room=Bad, weil das Modell
         // die Raumnamen nicht kannte. Räume sind Vokabular wie die Etagen.
         $knownRooms = array_values(array_unique(array_filter(array_merge(
-            array_map(static fn (array $row): string => trim((string)($row['Room'] ?? '')), $this->deviceList()),
+            array_map(static fn (array $row): string => trim((string)($row['Room'] ?? '')), $this->usableDevices()),
             $this->roomIndex()->names()
         ), static fn (string $room): bool => $room !== '')));
         sort($knownRooms, SORT_STRING | SORT_FLAG_CASE);
@@ -742,12 +756,12 @@ class HomeAgent extends IPSModuleStrict
         // Verbrauch über Zeiträume nur, wenn ein freigegebenes Gerät einen Zähler hat oder die
         // Energiebilanz eingetragen ist. Ohne Bilanz muss die Beschreibung die Grenze nennen: HA Assist
         // gab die Summe der Geräte sonst als Hausverbrauch aus (09.10.2026).
-        $hasMeters = array_any($this->deviceList(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['energy']));
-        $hasBalance = $this->balance() !== [];
+        $hasMeters = array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['energy']));
+        $hasBalance = $this->usableBalance($this->balance()) !== [];
         // Die Leistung jetzt (period=now) mit einem Gerät mit Leistung oder der Leistungsbilanz.
-        $hasPower = $this->powerBalance() !== [] || array_any($this->deviceList(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['power']));
+        $hasPower = $this->usableBalance($this->powerBalance()) !== [] || array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['power']));
         // Verlauf von Messwerten (Temperatur, Feuchte …) über dieselben Zeiträume.
-        $hasHistory = array_any($this->deviceList(), static fn (array $row): bool => DeviceIndex::isMeasured($row));
+        $hasHistory = array_any($this->usableDevices(), static fn (array $row): bool => DeviceIndex::isMeasured($row));
         $consumption = $hasMeters || $hasBalance
             ? 'Energy consumption over this period instead of the state, in kWh; the first line gives the total. '
                 . ($hasBalance
@@ -773,7 +787,7 @@ class HomeAgent extends IPSModuleStrict
                 . ($hasBalance ? '"How much electricity did we use yesterday?" → period=yesterday. ' : '')
                 . ($hasPower ? '"How much power are we using right now?" → period=now. ' : '')
                 . ($hasHistory ? '"How warm was it in the guest room over the last 30 days?" → room=Gast, type=temperature, from=' . date('Y-m-d', strtotime('-29 days')) . ', to=' . date('Y-m-d') . '. ' : '')
-                . (array_any($this->deviceList(), static fn (array $row): bool => ($row['Type'] ?? '') === 'window' && in_array('open', DeviceIndex::abilitiesOf($row), true))
+                . (array_any($this->usableDevices(), static fn (array $row): bool => ($row['Type'] ?? '') === 'window' && in_array('open', DeviceIndex::abilitiesOf($row), true))
                     ? 'Windows marked "with drive" can be opened and closed with set_state, the others only report their state. ' : '')
                 . 'If nothing matches, the answer lists the known rooms and types. The last line gives the current date and time.'
                 . ($readOnly ? ' ' . self::READ_ONLY_NOTE : ''),
@@ -1018,12 +1032,85 @@ class HomeAgent extends IPSModuleStrict
 
     private function deviceIndex(string $defaultRoom = ''): DeviceIndex
     {
-        return new DeviceIndex($this->deviceList(), $this->backend(), $this->roomIndex(), $defaultRoom, $this->balance(), $this->powerBalance());
+        return new DeviceIndex($this->usableDevices(), $this->backend(), $this->roomIndex(), $defaultRoom, $this->usableBalance($this->balance()), $this->usableBalance($this->powerBalance()));
     }
 
     private function sceneIndex(): SceneIndex
     {
-        return new SceneIndex($this->sceneList(), $this->backend(), $this->roomIndex());
+        return new SceneIndex($this->usableScenes(), $this->backend(), $this->roomIndex());
+    }
+
+    /**
+     * Geräte ohne Fehler in ihrer Zeile. Geprüft wird bei jedem Aufruf, damit ein Gerät, dessen
+     * Variable gelöscht wurde, sofort gesperrt ist und nicht erst nach dem nächsten Übernehmen.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function usableDevices(): array
+    {
+        return $this->withoutFaultyRows($this->deviceList(), 'Devices');
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function usableScenes(): array
+    {
+        return $this->withoutFaultyRows($this->sceneList(), 'Scenes');
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    private function withoutFaultyRows(array $rows, string $listName): array
+    {
+        $faulty = array_column(array_filter($this->validateLists(), static fn (array $p): bool => $p['list'] === $listName), 'index');
+        return array_values(array_filter($rows, static fn (array $row, int $index): bool => !in_array($index, $faulty, true), ARRAY_FILTER_USE_BOTH));
+    }
+
+    /**
+     * Die Energiebilanz gilt nur vollständig: Fehlt eine ihrer Variablen, wäre der Hausverbrauch
+     * falsch, also ist sie dann ganz gesperrt.
+     *
+     * @param array<string, int> $balance
+     * @return array<string, int>
+     */
+    private function usableBalance(array $balance): array
+    {
+        return array_all($balance, static fn (int $variableId): bool => IPS_VariableExists($variableId)) ? $balance : [];
+    }
+
+    /**
+     * Der Endpunkt schließt nur bei Fehlern in der Raumliste oder ohne gültigen Zugang; alle anderen
+     * Fehler sperren ihren Eintrag.
+     *
+     * @param list<array{list: string, index: int, text: string}> $problems
+     */
+    private function endpointClosed(array $problems): bool
+    {
+        return array_any($problems, static fn (array $p): bool => $p['list'] === 'Rooms') || $this->usableAccesses() === [];
+    }
+
+    /**
+     * Meldet jedes Objekt der Listen als Referenz, damit Symcon beim Löschen einer Variable oder
+     * eines Skripts die Instanz nennt (wie BlindControl). Alte Referenzen fallen vorher weg.
+     */
+    private function registerReferences(): void
+    {
+        foreach ($this->GetReferenceList() as $reference) {
+            $this->UnregisterReference($reference);
+        }
+        $variables = array_merge(array_values($this->balance()), array_values($this->powerBalance()));
+        foreach ($this->deviceList() as $entry) {
+            $variables = array_merge($variables, array_values(DeviceIndex::rolesOf($entry)));
+        }
+        $scripts = array_map(static fn (array $entry): int => (int)($entry['ScriptID'] ?? 0), $this->sceneList());
+        $ids = array_merge(
+            array_filter(array_unique($variables), static fn (int $id): bool => IPS_VariableExists($id)),
+            array_filter(array_unique($scripts), static fn (int $id): bool => IPS_ScriptExists($id))
+        );
+        foreach ($ids as $id) {
+            $this->RegisterReference($id);
+        }
     }
 
     private function roomIndex(): RoomIndex
