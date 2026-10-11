@@ -398,6 +398,12 @@ final class DeviceIndex
             if ($activeOnly && $state['active'] !== true) {
                 continue;
             }
+            // Fenster, die set_state fahren kann, sonst sehen alle Fensterzeilen gleich aus (Claude-App
+            // 11.10.2026: „Welche Fenster kannst du öffnen?“ blieb unbeantwortet).
+            if ($entry['Type'] === 'window' && in_array('open', self::abilitiesOf($entry), true)) {
+                $drive = $this->t('with drive');
+                $state['text'] = str_ends_with($state['text'], ')') ? substr($state['text'], 0, -1) . ', ' . $drive . ')' : $state['text'] . ' (' . $drive . ')';
+            }
             $lines[] = $this->line($entry, $state['text']);
         }
 

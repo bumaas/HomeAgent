@@ -1,0 +1,532 @@
+{
+    "_quelle": "11.10.2026 morgens, nuc, nur gelesen: alle 21 Fensterzeilen der Freigabeliste von Home Agent #15877 mit Wert, Anzeigetext, Aktion und Bereich (wie SymconDeviceBackend::range). 15 Fenster nur mit Kontakt, 6 Kippfenster mit Antrieb (Homematic-Rollladenaktor). Ein Raum mit Vornamen heißt wie in den anderen Fixtures „Atelier“. Anlass: Die Claude-App konnte nicht sagen, welches Fenster sich öffnen lässt.",
+    "variablen": {
+        "42936": {
+            "name": "DG_Bad.Verschluss.Fenster:1: STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 2,
+                "offen": 0,
+                "geschlossen": 2,
+                "herkunft": "default",
+                "profil": "~Window.HM"
+            }
+        },
+        "57490": {
+            "name": "Dachboden.Verschluss.Dachfenster:1: STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 2,
+                "offen": 0,
+                "geschlossen": 2,
+                "herkunft": "default",
+                "profil": "~Window.HM"
+            }
+        },
+        "34258": {
+            "name": "Dachboden.Verschluss.Fenster:1: STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 2,
+                "offen": 0,
+                "geschlossen": 2,
+                "herkunft": "default",
+                "profil": "~Window.HM"
+            }
+        },
+        "24052": {
+            "name": "Gast.Verschluss.Fenster Links:1: STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 2,
+                "offen": 0,
+                "geschlossen": 2,
+                "herkunft": "default",
+                "profil": "~Window.HM"
+            }
+        },
+        "53129": {
+            "name": "Gast.Verschluss.Fenster Rechts:1: STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 2,
+                "offen": 0,
+                "geschlossen": 2,
+                "herkunft": "default",
+                "profil": "~Window.HM"
+            }
+        },
+        "12203": {
+            "name": "Heike.Verschluss.Fenster:1: STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 2,
+                "offen": 0,
+                "geschlossen": 2,
+                "herkunft": "default",
+                "profil": "~Window.HM"
+            }
+        },
+        "25360": {
+            "name": "Keller.Verschluss.Fenster:1: STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 1,
+                "offen": 0,
+                "geschlossen": 1,
+                "herkunft": "default",
+                "profil": "Window.HM_0_1"
+            }
+        },
+        "58059": {
+            "name": "Küche.Verschluss.Fenster rechts:1: STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 2,
+                "offen": 0,
+                "geschlossen": 2,
+                "herkunft": "default",
+                "profil": "~Window.HM"
+            }
+        },
+        "18510": {
+            "name": "Musik.Verschluss.Fenster links:1: STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 2,
+                "offen": 0,
+                "geschlossen": 2,
+                "herkunft": "default",
+                "profil": "~Window.HM"
+            }
+        },
+        "34463": {
+            "name": "Musik.Verschluss.Fenster rechts:1: STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 2,
+                "offen": 0,
+                "geschlossen": 2,
+                "herkunft": "default",
+                "profil": "~Window.HM"
+            }
+        },
+        "50333": {
+            "name": "Schlafen.Verschluss.Fenster Süd Links:1: STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 2,
+                "offen": 0,
+                "geschlossen": 2,
+                "herkunft": "default",
+                "profil": "~Window.HM"
+            }
+        },
+        "10135": {
+            "name": "Schlafen.Verschluss.Fenster Süd Rechts:1: STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 2,
+                "offen": 0,
+                "geschlossen": 2,
+                "herkunft": "default",
+                "profil": "~Window.HM"
+            }
+        },
+        "51361": {
+            "name": "Atelier.Verschluss.Fenster links:1: STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 2,
+                "offen": 0,
+                "geschlossen": 2,
+                "herkunft": "default",
+                "profil": "~Window.HM"
+            }
+        },
+        "27724": {
+            "name": "Atelier.Verschluss.Fenster rechts:1: STATE",
+            "wert": 0,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 2,
+                "offen": 0,
+                "geschlossen": 2,
+                "herkunft": "default",
+                "profil": "~Window.HM"
+            }
+        },
+        "28760": {
+            "name": "Wintergarten.Verschluss.Fensterkontakt:1: STATE",
+            "wert": false,
+            "formatiert": "Geschlossen",
+            "aktion": false,
+            "bereich": {
+                "min": 0,
+                "max": 1,
+                "offen": 0,
+                "geschlossen": 1,
+                "herkunft": "default",
+                "profil": "FensterStatus"
+            }
+        },
+        "20009": {
+            "name": "Flur.Verschluss.Fenster:1: LEVEL",
+            "wert": 0,
+            "formatiert": "0.0 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 1,
+                "offen": 1,
+                "geschlossen": 0,
+                "herkunft": "reversed",
+                "profil": "Intensity.1.Reversed"
+            }
+        },
+        "20675": {
+            "name": "Flur.Verschluss.Fenster:1: WORKING",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": false
+        },
+        "10517": {
+            "name": "Wohnzimmer.Verschluss.Fenster_NB:1: LEVEL",
+            "wert": 0,
+            "formatiert": "0.0 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 1,
+                "offen": 1,
+                "geschlossen": 0,
+                "herkunft": "reversed",
+                "profil": "Intensity.1.Reversed"
+            }
+        },
+        "41069": {
+            "name": "Wohnzimmer.Verschluss.Fenster_NB:1: WORKING",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": false
+        },
+        "32587": {
+            "name": "Wohnzimmer.Verschluss.Fenster_SP:1: LEVEL",
+            "wert": 0,
+            "formatiert": "0.0 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 1,
+                "offen": 1,
+                "geschlossen": 0,
+                "herkunft": "reversed",
+                "profil": "Intensity.1.Reversed"
+            }
+        },
+        "26483": {
+            "name": "Wohnzimmer.Verschluss.Fenster_SP:1: WORKING",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": false
+        },
+        "57075": {
+            "name": "Küche.Verschluss.Fenster links:1: LEVEL",
+            "wert": 1,
+            "formatiert": "100.0 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 1,
+                "offen": 1,
+                "geschlossen": 0,
+                "herkunft": "reversed",
+                "profil": "Intensity.1.Reversed"
+            }
+        },
+        "46395": {
+            "name": "Küche.Verschluss.Fenster links:1: WORKING",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": false
+        },
+        "24234": {
+            "name": "Bad.Verschluss.Fenster:1: LEVEL",
+            "wert": 0,
+            "formatiert": "0.0 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 1,
+                "offen": 1,
+                "geschlossen": 0,
+                "herkunft": "reversed",
+                "profil": "Intensity.1.Reversed"
+            }
+        },
+        "46693": {
+            "name": "Bad.Verschluss.Fenster:1: WORKING",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": false
+        },
+        "22996": {
+            "name": "Schlafen.Verschluss.Fenster West:1: LEVEL",
+            "wert": 1,
+            "formatiert": "100.0 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 1,
+                "offen": 1,
+                "geschlossen": 0,
+                "herkunft": "reversed",
+                "profil": "Intensity.1.Reversed"
+            }
+        },
+        "27170": {
+            "name": "Schlafen.Verschluss.Fenster West:1: WORKING",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": false
+        }
+    },
+    "geraete": [
+        {
+            "Room": "Bad oben",
+            "Name": "Dachfenster",
+            "Aliases": "Fenster",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 42936
+        },
+        {
+            "Room": "Dachboden",
+            "Name": "Dachfenster",
+            "Aliases": "",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 57490
+        },
+        {
+            "Room": "Dachboden",
+            "Name": "Giebelfenster",
+            "Aliases": "Fenster, Giebel",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 34258
+        },
+        {
+            "Room": "Gast",
+            "Name": "Fenster links",
+            "Aliases": "",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 24052
+        },
+        {
+            "Room": "Gast",
+            "Name": "Fenster rechts",
+            "Aliases": "",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 53129
+        },
+        {
+            "Room": "Heike",
+            "Name": "Fenster",
+            "Aliases": "",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 12203
+        },
+        {
+            "Room": "Keller",
+            "Name": "Fenster",
+            "Aliases": "Kellerfenster",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 25360
+        },
+        {
+            "Room": "Küche",
+            "Name": "Fenster rechts",
+            "Aliases": "",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 58059
+        },
+        {
+            "Room": "Musikzimmer",
+            "Name": "Fenster links",
+            "Aliases": "",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 18510
+        },
+        {
+            "Room": "Musikzimmer",
+            "Name": "Fenster rechts",
+            "Aliases": "",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 34463
+        },
+        {
+            "Room": "Schlafen",
+            "Name": "Fenster links",
+            "Aliases": "Südfenster links",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 50333
+        },
+        {
+            "Room": "Schlafen",
+            "Name": "Fenster rechts",
+            "Aliases": "Südfenster rechts",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 10135
+        },
+        {
+            "Room": "Atelier",
+            "Name": "Fenster links",
+            "Aliases": "",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 51361
+        },
+        {
+            "Room": "Atelier",
+            "Name": "Fenster rechts",
+            "Aliases": "",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 27724
+        },
+        {
+            "Room": "Wintergarten",
+            "Name": "Fenster",
+            "Aliases": "",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": false,
+            "StateVariableID": 28760
+        },
+        {
+            "Room": "Flur",
+            "Name": "Fenster",
+            "Aliases": "Flurfenster",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": true,
+            "LevelVariableID": 20009,
+            "MovingVariableID": 20675
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Fenster Nachbarseite",
+            "Aliases": "",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": true,
+            "LevelVariableID": 10517,
+            "MovingVariableID": 41069
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Fenster Sportplatzseite",
+            "Aliases": "",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": true,
+            "LevelVariableID": 32587,
+            "MovingVariableID": 26483
+        },
+        {
+            "Room": "Küche",
+            "Name": "Fenster links",
+            "Aliases": "",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": true,
+            "LevelVariableID": 57075,
+            "MovingVariableID": 46395
+        },
+        {
+            "Room": "Bad",
+            "Name": "Fenster",
+            "Aliases": "Badfenster",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": true,
+            "LevelVariableID": 24234,
+            "MovingVariableID": 46693
+        },
+        {
+            "Room": "Schlafen",
+            "Name": "Westfenster",
+            "Aliases": "Fenster West",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": true,
+            "LevelVariableID": 22996,
+            "MovingVariableID": 27170
+        }
+    ]
+}

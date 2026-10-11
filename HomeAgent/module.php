@@ -749,6 +749,8 @@ class HomeAgent extends IPSModuleStrict
                 . ($hasBalance ? '"How much electricity did we use yesterday?" → period=yesterday. ' : '')
                 . ($hasPower ? '"How much power are we using right now?" → period=now. ' : '')
                 . ($hasHistory ? '"How warm was it in the guest room over the last 30 days?" → room=Gast, type=temperature, from=' . date('Y-m-d', strtotime('-29 days')) . ', to=' . date('Y-m-d') . '. ' : '')
+                . (array_any($this->deviceList(), static fn (array $row): bool => ($row['Type'] ?? '') === 'window' && in_array('open', DeviceIndex::abilitiesOf($row), true))
+                    ? 'Windows marked "with drive" can be opened and closed with set_state, the others only report their state. ' : '')
                 . 'If nothing matches, the answer lists the known rooms and types.'
                 . ($readOnly ? ' ' . self::READ_ONLY_NOTE : ''),
             'inputSchema' => [

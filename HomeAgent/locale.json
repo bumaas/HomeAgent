@@ -176,6 +176,7 @@
             "\"moving\" or \"command sent\" means the device has not arrived yet; then say that it is still moving.": "„fährt“ oder „Fahrbefehl gesendet“ heißt, dass das Gerät noch nicht am Ziel ist; sag dann, dass es noch fährt.",
             "This access can only read the house, it cannot switch or set anything.": "Dieser Zugang kann das Haus nur abfragen, schalten oder stellen kann er nichts.",
             "tilted": "gekippt",
+            "with drive": "mit Antrieb",
             "%s %% tilted": "%s %% gekippt",
             "%s %% open": "%s %% offen",
             "Nothing was changed: percent would set lights and windows at once (%s). Give the type.": "Nichts geändert: percent würde Lichter und Fenster zugleich stellen (%s). Gib den Typ an.",

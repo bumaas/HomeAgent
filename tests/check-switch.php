@@ -271,9 +271,9 @@ merke($b);
 // Fenster mit Kontakt und Antrieb: der Kontakt entscheidet, die Stufe kommt nur dazu, wenn sie etwas sagt
 $fensterBeides = static fn (bool $kipp): array => [['Room' => 'Küche', 'Name' => 'Fenster', 'Aliases' => '', 'Type' => 'window', 'StateVariableID' => 45892, 'LevelVariableID' => 20009, 'Invert' => true, 'Tilt' => $kipp]];
 [$idx, $b] = anlage($fensterBeides(true), ['20009' => ['wert' => 0.5]]);
-pruefe(str_ends_with($idx->getState([])['text'], '| window | offen (50 % gekippt)'), 'Kontakt offen, Antrieb halb gekippt: ' . $idx->getState([])['text']);
+pruefe(str_ends_with($idx->getState([])['text'], '| window | offen (50 % gekippt, mit Antrieb)'), 'Kontakt offen, Antrieb halb gekippt: ' . $idx->getState([])['text']);
 [$idx, $b] = anlage($fensterBeides(false));
-pruefe(str_ends_with($idx->getState([])['text'], '| window | offen'), 'Kontakt offen, Antrieb ganz offen: kein „offen (offen)“: ' . $idx->getState([])['text']);
+pruefe(str_ends_with($idx->getState([])['text'], '| window | offen (mit Antrieb)'), 'Kontakt offen, Antrieb ganz offen: kein „offen (offen)“: ' . $idx->getState([])['text']);
 merke($b);
 
 // Rollladen: gestellt wird die Position, auch wenn in der Zeile noch eine Zustandsvariable steht
@@ -929,7 +929,7 @@ pruefe(DeviceIndex::abilitiesOf(['Type' => 'window', 'LevelVariableID' => 20009,
 // Abfragen: Kippfenster, ganz offen = gekippt; zählt bei „nur aktive“ als offen
 [$idx, $b] = anlage($flur());
 $r = $idx->getState(['room' => 'Flur']);
-pruefe(str_ends_with($r['text'], 'Flur | Fenster | window | gekippt'), 'Kippfenster, Rohwert 1: gekippt: ' . $r['text']);
+pruefe(str_ends_with($r['text'], 'Flur | Fenster | window | gekippt (mit Antrieb)'), 'Kippfenster, Rohwert 1: gekippt: ' . $r['text']);
 $r = $idx->getState(['type' => 'window', 'active_only' => true]);
 pruefe(str_starts_with($r['text'], '1 von 1 geprüften Geräten aktiv (type=window).') && str_contains($r['text'], 'Flur | Fenster | window | gekippt'), '„Ist ein Fenster offen?“ findet das gekippte Fenster: ' . $r['text']);
 
@@ -938,9 +938,9 @@ $r = stelle($idx, ['room' => 'Flur', 'name' => 'Fenster', 'command' => 'close'])
 pruefe($b->requests === [[20009, 0.0]], 'close setzt den Antrieb auf geschlossen (Rohwert 0): ' . json_encode($b->requests));
 pruefe($r['text'] === "0 von 1 Geräten sind jetzt geschlossen, 1 noch nicht bestätigt (room=Flur, name=Fenster).\nFlur | Fenster | window | fährt (derzeit gekippt)" && $b->slept <= 350, 'Antwort mit der Startmeldung: ' . $b->slept . ' ms, ' . $r['text']);
 $b->sleep(5000);
-pruefe(str_ends_with($idx->getState(['room' => 'Flur'])['text'], '| window | fährt auf geschlossen (derzeit gekippt)'), 'Nachfrage während der Fahrt nennt das Ziel: ' . $idx->getState(['room' => 'Flur'])['text']);
+pruefe(str_ends_with($idx->getState(['room' => 'Flur'])['text'], '| window | fährt auf geschlossen (derzeit gekippt, mit Antrieb)'), 'Nachfrage während der Fahrt nennt das Ziel: ' . $idx->getState(['room' => 'Flur'])['text']);
 $b->sleep(45000);
-pruefe(str_ends_with($idx->getState(['room' => 'Flur'])['text'], '| window | geschlossen'), 'nach 45 s geschlossen: ' . $idx->getState(['room' => 'Flur'])['text']);
+pruefe(str_ends_with($idx->getState(['room' => 'Flur'])['text'], '| window | geschlossen (mit Antrieb)'), 'nach 45 s geschlossen: ' . $idx->getState(['room' => 'Flur'])['text']);
 pruefe(str_starts_with($idx->getState(['type' => 'window', 'active_only' => true])['text'], '0 von 1 geprüften Geräten aktiv'), 'und zählt nicht mehr als offen');
 
 // Prozent ist der Öffnungsgrad: 50 % heißt halb gekippt
@@ -948,16 +948,16 @@ $r = stelle($idx, ['room' => 'Flur', 'name' => 'Fenster', 'percent' => 50]);
 pruefe(($b->requests[1] ?? null) === [20009, 0.5], '50 % offen ist Rohwert 0,5: ' . json_encode($b->requests));
 pruefe(str_starts_with($r['text'], '0 von 1 Geräten auf 50 % gestellt, 1 noch nicht bestätigt'), 'Kopfzeile mit dem Öffnungsgrad: ' . $r['text']);
 $b->sleep(30000);
-pruefe(str_ends_with($idx->getState(['room' => 'Flur'])['text'], '| window | 50 % gekippt'), 'Zwischenstand beim Kippfenster: 50 % gekippt: ' . $idx->getState(['room' => 'Flur'])['text']);
+pruefe(str_ends_with($idx->getState(['room' => 'Flur'])['text'], '| window | 50 % gekippt (mit Antrieb)'), 'Zwischenstand beim Kippfenster: 50 % gekippt: ' . $idx->getState(['room' => 'Flur'])['text']);
 $r = stelle($idx, ['room' => 'Flur', 'name' => 'Fenster', 'command' => 'open']);
 pruefe(($b->requests[2] ?? null) === [20009, 1.0], 'open heißt ganz auf bzw. ganz gekippt (Rohwert 1): ' . json_encode($b->requests));
 merke($b);
 
 // Ohne den Haken „Kippfenster“: offen statt gekippt
 [$idx, $b] = anlage($flur(false), ['20009' => ['wert' => 0.5]]);
-pruefe(str_ends_with($idx->getState(['room' => 'Flur'])['text'], '| window | 50 % offen'), 'ohne Haken: 50 % offen: ' . $idx->getState(['room' => 'Flur'])['text']);
+pruefe(str_ends_with($idx->getState(['room' => 'Flur'])['text'], '| window | 50 % offen (mit Antrieb)'), 'ohne Haken: 50 % offen: ' . $idx->getState(['room' => 'Flur'])['text']);
 [$idx, $b] = anlage($flur(false));
-pruefe(str_ends_with($idx->getState(['room' => 'Flur'])['text'], '| window | offen'), 'ohne Haken, Rohwert 1: offen: ' . $idx->getState(['room' => 'Flur'])['text']);
+pruefe(str_ends_with($idx->getState(['room' => 'Flur'])['text'], '| window | offen (mit Antrieb)'), 'ohne Haken, Rohwert 1: offen: ' . $idx->getState(['room' => 'Flur'])['text']);
 merke($b);
 
 // Richtung beim Fenster: der größte Wert ist offen, außer die Darstellung Rollladen sagt es anders

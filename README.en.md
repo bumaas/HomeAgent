@@ -275,7 +275,8 @@ open", for a tilt window "tilted" and "30 % tilted".
 The tool only offers what your released devices can do. Without a blind and without a window with a
 drive there is no `open` and `close`, without a dimmable light and without both no percent value. A
 window with only a contact can only be queried; for "close all windows" the answer says how many such
-windows were left out.
+windows were left out. In a query, windows the tool can move carry the note "with drive", for example
+"tilted (with drive)".
 
 For a media player, play, pause or stop count as done when the playback state matches, next and previous
 as soon as title or playback state change. A player that is already paused gets no command, the line says

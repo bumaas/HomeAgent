@@ -1326,4 +1326,23 @@ pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', '"Louder in th
 pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', 'command=play alone resumes the media players paused in the last hour.'), 'play allein ist erklärt: ' . ($werkzeuge['set_state']['description'] ?? ''));
 pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', 'give a command, volume, volume_change or mute.'), 'die Felder stehen in der Aufzählung: ' . ($werkzeuge['set_state']['description'] ?? ''));
 
+/* --- Fenster mit Antrieb in der Beschreibung von get_state (build 63) ----------------------------- */
+
+$kontakt = variable(VARIABLETYPE_BOOLEAN, false);
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Dachboden', 'Name' => 'Giebelfenster', 'Aliases' => '', 'Type' => 'window', 'StateVariableID' => $kontakt, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+pruefe(!str_contains($werkzeuge['get_state']['description'] ?? '', 'with drive'), 'nur Kontakte: kein Satz zum Antrieb');
+$antrieb = variable(VARIABLETYPE_FLOAT, 0.0);
+IPS_SetVariableCustomAction($antrieb, $antriebAktion);
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Dachboden', 'Name' => 'Giebelfenster', 'Aliases' => '', 'Type' => 'window', 'StateVariableID' => $kontakt, 'Invert' => false],
+    ['Room' => 'Flur', 'Name' => 'Fenster', 'Aliases' => '', 'Type' => 'window', 'LevelVariableID' => $antrieb, 'Invert' => false, 'Tilt' => true],
+]));
+IPS_ApplyChanges($iid);
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+pruefe(str_contains($werkzeuge['get_state']['description'] ?? '', 'Windows marked "with drive" can be opened and closed with set_state, the others only report their state.'), 'get_state erklärt „with drive“: ' . ($werkzeuge['get_state']['description'] ?? ''));
+
 ende('Modul');
