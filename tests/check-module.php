@@ -56,6 +56,23 @@ final class HomeAgentHarness extends HomeAgent
         return self::$body;
     }
 
+    /** Connect-Adresse der Anlage; der Kernel-Stub kennt CC_GetConnectURL nicht. */
+    public static string $connect = '';
+
+    protected function connectUrl(): string
+    {
+        return self::$connect;
+    }
+
+    /** @var ?array{status: int, headers: array<string, string>, body: string} letzte Antwort des Hooks */
+    public ?array $response = null;
+
+    protected function send(array $response): void
+    {
+        $this->response = $response;
+        echo $response['body'];
+    }
+
     /** Das Backend, mit dem die Werkzeuge arbeiten (Fahrtmerker im Buffer „Travels“). */
     public function testBackend(): SymconDeviceBackend
     {
@@ -1587,5 +1604,89 @@ $test = $m->RunSelfTest();
 pruefe(str_contains($test, 'Device "Weg" (Halle): variable for Switching state does not exist'), 'der Fehlertext nennt weiter Gerät, Raum und Fähigkeit: ' . $test);
 $a = $werkzeugAufruf(['room' => 'Halle']);
 pruefe(str_contains($a, '40 of 40 checked devices active') || str_contains($a, '40 device'), 'das fehlerhafte Gerät bleibt gesperrt, die übrigen 40 antworten: ' . substr($a, 0, 200));
+
+/* --- OAuth Teil 1: Schalter, Metadaten unter dem Hook (build 72) --------------------------------- */
+
+// Anfragen wie im Mitschnitt vom 11.10.2026: über Connect, also von 127.0.0.1 mit X-Forwarded-For
+$fehlversuche = static fn (): string => (string)(new ReflectionMethod($m, 'GetBuffer'))->invoke($m, 'SignInFailures');
+$oauthAnfrage = static function (string $methode, string $pfad, string $auth = '') use ($hook, $m, $iid): array {
+    $_SERVER = ['REQUEST_METHOD' => $methode, 'REQUEST_URI' => '/hook/homeagent/' . $iid . $pfad, 'REMOTE_ADDR' => '127.0.0.1', 'HTTP_X_FORWARDED_FOR' => '160.79.106.181'];
+    if ($auth !== '') {
+        $_SERVER['HTTP_AUTHORIZATION'] = $auth;
+    }
+    $m->response = null;
+    ob_start();
+    try {
+        $hook->invoke($m);
+    } finally {
+        ob_end_clean();
+    }
+    return $m->response ?? ['status' => 0, 'headers' => [], 'body' => ''];
+};
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
+$setze('Accesses', [$zugang('Pfad', $token, '', false, true)]);
+pruefe($status() === IS_ACTIVE, 'Ausgangslage OAuth: aktiv, nicht ' . $status());
+
+try {
+    $schalter = IPS_GetProperty($iid, 'OAuthEnabled');
+} catch (Throwable) {
+    $schalter = null;
+}
+pruefe($schalter === false, 'Schalter „Anmeldung per OAuth“ ist anfangs aus: ' . json_encode($schalter));
+
+// Schalter aus: wie bisher, die reservierten Pfade sind aber nie ein Token und zählen nicht als Fehlversuch
+$a = $oauthAnfrage('POST', '');
+pruefe($a['status'] === 401 && ($a['headers']['WWW-Authenticate'] ?? '') === 'Bearer', 'Schalter aus: 401 ohne Metadaten: ' . json_encode($a['headers']['WWW-Authenticate'] ?? null));
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
+$a = $oauthAnfrage('GET', '/.well-known/oauth-protected-resource');
+pruefe($a['status'] === 404 && !str_contains($a['body'], 'resource'), 'Schalter aus: Metadaten gibt es nicht (404): ' . $a['status']);
+pruefe($fehlversuche() === '', 'Schalter aus: die Metadatenabfrage zählt nicht als Fehlversuch: ' . $fehlversuche());
+
+// Schalter an, aber ohne Connect: Claude erreicht die Anlage nicht, also wie aus
+try {
+    IPS_SetProperty($iid, 'OAuthEnabled', true);
+    IPS_ApplyChanges($iid);
+} catch (Throwable $e) {
+    pruefe(false, 'die Property OAuthEnabled fehlt: ' . $e->getMessage());
+}
+HomeAgentHarness::$connect = '';
+$a = $oauthAnfrage('GET', '/.well-known/openid-configuration');
+pruefe($a['status'] === 404, 'Schalter an ohne Connect: keine Metadaten: ' . $a['status']);
+$a = $oauthAnfrage('POST', '');
+pruefe(($a['headers']['WWW-Authenticate'] ?? '') === 'Bearer', 'Schalter an ohne Connect: 401 ohne Metadaten');
+
+// Schalter an mit Connect: Ablauf wie im Mitschnitt
+HomeAgentHarness::$connect = 'https://example.ipmagic.de/';
+$basis = 'https://example.ipmagic.de/hook/homeagent/' . $iid;
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
+$a = $oauthAnfrage('POST', '');
+pruefe($a['status'] === 401 && ($a['headers']['WWW-Authenticate'] ?? '') === 'Bearer resource_metadata="' . $basis . '/.well-known/oauth-protected-resource", scope="mcp"', 'Schalter an: 401 nennt die Metadaten unter dem Hook: ' . json_encode($a['headers']['WWW-Authenticate'] ?? null));
+$stand = $fehlversuche();
+$a = $oauthAnfrage('GET', '/.well-known/oauth-protected-resource');
+$pr = json_decode($a['body'], true);
+pruefe($a['status'] === 200 && ($pr['resource'] ?? null) === $basis && ($pr['authorization_servers'] ?? null) === [$basis], 'Ressourcen-Metadaten mit der Connect-Adresse: ' . $a['body']);
+$a = $oauthAnfrage('GET', '/.well-known/openid-configuration');
+$as = json_decode($a['body'], true);
+pruefe($a['status'] === 200 && ($as['issuer'] ?? null) === $basis && ($as['authorization_endpoint'] ?? null) === $basis . '/oauth/authorize', 'Autorisierungsserver-Metadaten unter dem Hook: ' . $a['body']);
+$a = $oauthAnfrage('GET', '/.well-known/oauth-protected-resource?x=1');
+pruefe($a['status'] === 200, 'ein Query-String stört die Metadaten nicht');
+foreach (['/oauth/authorize?response_type=code', '/oauth/token', '/oauth/register'] as $pfad) {
+    $a = $oauthAnfrage($pfad === '/oauth/authorize?response_type=code' ? 'GET' : 'POST', $pfad);
+    pruefe($a['status'] === 503 && str_contains($a['body'], 'temporarily_unavailable'), 'noch nicht gebaut: ' . $pfad . ' antwortet 503 temporarily_unavailable: ' . $a['status'] . ' ' . $a['body']);
+}
+pruefe($stand !== '' && $fehlversuche() === $stand, 'nur das POST ohne Anmeldung zählt als Fehlversuch, keine der OAuth-Adressen: ' . $fehlversuche());
+
+// Feste Tokens gelten weiter, im Header und in der Adresse
+pruefe(str_contains($oauthAnfrage('POST', '', 'Bearer ' . $token)['body'], 'Parse error'), 'Schalter an: Token im Header kommt durch');
+pruefe(str_contains($oauthAnfrage('POST', '/' . $token)['body'], 'Parse error'), 'Schalter an: Token in der Adresse kommt durch');
+$a = $oauthAnfrage('POST', '', 'Bearer falsch-0123456789abcdefghij');
+pruefe($a['status'] === 401 && str_contains($a['headers']['WWW-Authenticate'] ?? '', 'resource_metadata='), 'falsches Token: 401 mit Metadaten, damit Claude die Anmeldung neu startet');
+try {
+    IPS_SetProperty($iid, 'OAuthEnabled', false);
+    IPS_ApplyChanges($iid);
+} catch (Throwable) {
+    // ohne die Property (roter Lauf) gibt es nichts zurückzusetzen
+}
+HomeAgentHarness::$connect = '';
 
 ende('Modul');

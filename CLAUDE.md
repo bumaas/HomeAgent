@@ -25,6 +25,7 @@ Home Assistant, ohne kleineren Umfang. Daraus folgen die Grundsätze:
 | Datei | Aufgabe |
 |---|---|
 | `libs/McpProtocol.php` | zustandsloser MCP-Server über Streamable HTTP (JSON-RPC 2.0), ohne Symcon-Abhängigkeit; Zugangswahl (`findAccess`), Token aus dem Pfad |
+| `libs/OAuthServer.php` | OAuth ohne Symcon-Abhängigkeit: reservierte Unterpfade, Anmeldeaufforderung im 401, Metadaten |
 | `libs/SignInGuard.php` | Bremse gegen Durchprobieren von Tokens |
 | `libs/RoomIndex.php` | Raumliste mit Aliasen und Etage; Raumerkennung für den Alexa-Vorschlag (`bestMatch`, `nameOf`) |
 | `libs/DeviceIndex.php` | Freigabeliste: Geräte mit Fähigkeiten (`ROLES`, `TYPE_ROLES`), Suche nach Raum, Etage, Typ und Name, Zustandstexte, Schalten, Stellen, Sollwert, Verbrauch und Leistung |
@@ -59,6 +60,15 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   alten weg. Dann nennt Symcon die Instanz beim Löschen einer Variable.
 - Eingaben sind begrenzt: Körper erst nach der Anmeldung lesen, Stapel höchstens 50 Nachrichten und ein
   `tools/call`, Argumente gegen das `inputSchema` prüfen.
+- **OAuth (im Aufbau, Property `OAuthEnabled`, noch ohne Formularfeld):** Autorisierungsserver und
+  Ressource sind der Endpunkt selbst, der Issuer liegt unter dem Hook. Die Wurzel des Webservers
+  (`/.well-known/…`) erreicht ein Modul nicht; Claude findet die Metadaten über
+  `<Endpunkt>/.well-known/openid-configuration` (Mitschnitt 11.10.2026, `tests/fixtures/oauth_claude_2026-10-11.json`).
+  Basis ist die Connect-Adresse (`CC_GetConnectURL`), nicht der Host der Anfrage; ohne Schalter oder
+  ohne aktives Connect gibt es die reservierten Pfade nicht (404). Sie gelten nie als Token in der
+  Adresse und zählen nie als Fehlversuch. Über Connect kommt jede Anfrage von 127.0.0.1, der Absender
+  steht nur in `X-Forwarded-For`. Die Anmeldeseite (`oauth/authorize`) kann zweimal kommen, der Service
+  Worker der Kachel-Visu auf demselben Host ruft sie nach; ein GET darf nichts verbrauchen.
 
 ## Werkzeuge
 

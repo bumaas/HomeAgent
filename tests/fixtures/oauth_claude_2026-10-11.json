@@ -1,0 +1,21 @@
+{
+    "_quelle": "Mitschnitt am Hook der nuc-Instanz, 11.10.2026 20:12, claude.ai Connector \"Jetzt anmelden\" mit \"Claudes veröffentlichte Identität verwenden\" (CIMD). Connect-Host durch example.ipmagic.de ersetzt, Instanz 15877 durch 12345, state und code_challenge nur als Länge, Absenderadressen gekürzt. Die zweite authorize-Anfrage kam vom Service Worker der Visualisierung auf demselben Host (Referer flutter_service_worker.js).",
+    "endpoint": "https://example.ipmagic.de/hook/homeagent/12345",
+    "requests": [
+        {"method": "POST", "route": "", "user_agent": "python-httpx/0.28.1", "accept": "application/json, text/event-stream", "mcp_protocol_version": "2025-11-25", "authorization": null, "forwarded_for": "160.79.106.x", "remote_addr": "127.0.0.1", "answer": 401},
+        {"method": "GET", "route": ".well-known/oauth-protected-resource", "user_agent": "python-httpx/0.28.1", "accept": "*/*", "mcp_protocol_version": "2025-11-25", "authorization": null, "forwarded_for": "160.79.106.x", "remote_addr": "127.0.0.1", "answer": 200},
+        {"method": "GET", "route": ".well-known/openid-configuration", "user_agent": "python-httpx/0.28.1", "accept": "*/*", "mcp_protocol_version": "2025-11-25", "authorization": null, "forwarded_for": "160.79.106.x", "remote_addr": "127.0.0.1", "answer": 200},
+        {"method": "GET", "route": "oauth/authorize", "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/154.0.0.0", "referer": "https://claude.ai/", "remote_addr": "127.0.0.1", "query": {"response_type": "code", "client_id": "https://claude.ai/oauth/mcp-oauth-client-metadata", "redirect_uri": "https://claude.ai/api/mcp/auth_callback", "code_challenge": "(43 chars)", "code_challenge_method": "S256", "state": "(43 chars)", "scope": "mcp offline_access", "resource": "https://example.ipmagic.de/hook/homeagent/12345", "prompt": "consent"}},
+        {"method": "GET", "route": "oauth/authorize", "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/154.0.0.0", "referer": "https://example.ipmagic.de/flutter_service_worker.js?v=392400787", "remote_addr": "127.0.0.1", "query": {"response_type": "code", "client_id": "https://claude.ai/oauth/mcp-oauth-client-metadata", "redirect_uri": "https://claude.ai/api/mcp/auth_callback", "code_challenge": "(43 chars)", "code_challenge_method": "S256", "state": "(43 chars)", "scope": "mcp offline_access", "resource": "https://example.ipmagic.de/hook/homeagent/12345", "prompt": "consent"}}
+    ],
+    "client_metadata_document": {
+        "_quelle": "GET https://claude.ai/oauth/mcp-oauth-client-metadata am 11.10.2026, Cache-Control: public, max-age=300, 342 Bytes",
+        "client_id": "https://claude.ai/oauth/mcp-oauth-client-metadata",
+        "client_name": "Claude",
+        "client_uri": "https://claude.ai",
+        "redirect_uris": ["https://claude.ai/api/mcp/auth_callback"],
+        "grant_types": ["authorization_code", "refresh_token", "urn:ietf:params:oauth:grant-type:jwt-bearer"],
+        "response_types": ["code"],
+        "token_endpoint_auth_method": "none"
+    }
+}

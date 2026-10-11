@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../libs/McpProtocol.php';
+require_once __DIR__ . '/../libs/OAuthServer.php';
 require_once __DIR__ . '/../libs/DeviceIndex.php';
 require_once __DIR__ . '/../libs/RoomIndex.php';
 require_once __DIR__ . '/../libs/SceneIndex.php';
@@ -54,6 +55,9 @@ class HomeAgent extends IPSModuleStrict
 
     private const LABEL_COLOR_ERROR = 0xC00000;
 
+    /** Connect Control; seine Adresse ist die öffentliche Basis für OAuth. */
+    private const CONNECT_MODULE_ID = '{9486D575-BE8C-4ED8-B5B5-20930E26DE6F}';
+
     public function Create(): void
     {
         parent::Create();
@@ -62,6 +66,8 @@ class HomeAgent extends IPSModuleStrict
         $this->RegisterPropertyString('Rooms', '[]');
         $this->RegisterPropertyString('Devices', '[]');
         $this->RegisterPropertyString('Scenes', '[]');
+        // Anmeldung per OAuth (Claude-App mit „Sign in“), anfangs aus; feste Tokens gelten weiter.
+        $this->RegisterPropertyBoolean('OAuthEnabled', false);
         // Aufgeklappte Bereiche des Formulars, damit sie beim nächsten Öffnen wieder so stehen.
         $this->RegisterAttributeString('ExpandedPanels', '[]');
         foreach (array_merge(array_values(DeviceIndex::BALANCE), array_values(DeviceIndex::BALANCE_POWER)) as $property) {
@@ -713,6 +719,19 @@ class HomeAgent extends IPSModuleStrict
             $this->send(['status' => 429, 'headers' => ['Retry-After' => (string)$blocked] + McpProtocol::BASE_HEADERS, 'body' => (string)json_encode(['error' => 'Too many rejected sign-ins, retry after ' . $blocked . ' s'])]);
             return;
         }
+        // OAuth: Die reservierten Unterpfade beantwortet das Modul selbst. Sie sind nie ein Token in
+        // der Adresse und zählen nie als Fehlversuch; ohne Schalter oder ohne Connect gibt es sie nicht.
+        $oauthBase = $this->oauthBase();
+        $route = OAuthServer::route($_SERVER['REQUEST_URI'] ?? '', $this->GetEndpoint());
+        if ($route !== null) {
+            $response = $oauthBase === ''
+                ? OAuthServer::error(404, 'invalid_request', 'Sign-in with OAuth is not enabled for this endpoint')
+                : (OAuthServer::metadata($_SERVER['REQUEST_METHOD'] ?? 'GET', $route, $oauthBase)
+                    ?? OAuthServer::error(503, 'temporarily_unavailable', 'Sign-in is not available yet'));
+            $this->SendDebug('OAuth', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . $route . ' → HTTP ' . $response['status'], 0);
+            $this->send($response);
+            return;
+        }
         // Die Anmeldung bestimmt den Zugang, und der Zugang bestimmt Werkzeugliste, Standardraum und
         // Anleitung. Die Adresse geht nie ins Debug oder Log: Bei Zugängen mit Token im Pfad trägt
         // sie das Token.
@@ -729,6 +748,10 @@ class HomeAgent extends IPSModuleStrict
             $this->serverInfo($access)
         );
 
+        // Mit OAuth nennt der 401 die Metadaten; daran erkennt ein Client, dass er sich anmelden kann.
+        if ($access === null && $oauthBase !== '' && $response['status'] === 401) {
+            $response['headers']['WWW-Authenticate'] = OAuthServer::challenge($oauthBase);
+        }
         if ($access === null) {
             $this->SendDebug('Hook', 'rejected: authorization missing or wrong', 0);
             $this->recordSignInFailure((string)($_SERVER['REMOTE_ADDR'] ?? '?'));
@@ -738,8 +761,29 @@ class HomeAgent extends IPSModuleStrict
         $this->send($response);
     }
 
+    /** Öffentliche Adresse des Endpunkts für OAuth; '' = OAuth aus (Schalter aus oder ohne Connect). */
+    private function oauthBase(): string
+    {
+        if (!$this->ReadPropertyBoolean('OAuthEnabled')) {
+            return '';
+        }
+        $connect = rtrim($this->connectUrl(), '/');
+        return $connect === '' ? '' : $connect . $this->GetEndpoint();
+    }
+
+    /** Adresse der Anlage über Symcon Connect, '' ohne aktive Connect-Instanz. */
+    protected function connectUrl(): string
+    {
+        foreach (IPS_GetInstanceListByModuleID(self::CONNECT_MODULE_ID) as $id) {
+            if (IPS_GetInstance($id)['InstanceStatus'] === IS_ACTIVE) {
+                return CC_GetConnectURL($id);
+            }
+        }
+        return '';
+    }
+
     /** @param array{status: int, headers: array<string, string>, body: string} $response */
-    private function send(array $response): void
+    protected function send(array $response): void
     {
         http_response_code($response['status']);
         foreach ($response['headers'] as $name => $value) {
