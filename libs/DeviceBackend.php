@@ -83,6 +83,17 @@ interface DeviceBackend
     public function rememberTravel(int $levelVariable, ?array $travel): void;
 
     /**
+     * Merkt die Wiedergabevariablen der Mediaplayer, die gerade per Werkzeug pausiert wurden, mit
+     * der Uhrzeit von now(). „play“ ohne Raum setzt sie später fort.
+     *
+     * @param list<int> $playbackVariables
+     */
+    public function rememberPaused(array $playbackVariables): void;
+
+    /** @return array<int, int> gemerkte Wiedergabevariable => Zeitpunkt in ms (Uhr von now()) */
+    public function rememberedPaused(): array;
+
+    /**
      * Summe eines als Zähler archivierten Werts über die Aggregate einer Stufe (1 Tag, 2 Woche,
      * 3 Monat, 4 Jahr), deren Beginn zwischen $from und $to liegt; $to = 0 heißt bis jetzt, der
      * laufende Zeitraum zählt dann mit. „unit“ ist die Einheit der Variable (etwa Wh oder kWh).

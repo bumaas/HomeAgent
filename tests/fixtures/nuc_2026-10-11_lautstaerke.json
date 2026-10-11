@@ -1,0 +1,418 @@
+{
+    "_quelle": "11.10.2026 morgens, nuc. Ausgangswerte gelesen (Sonos Bad #42841 spielte WDR 2, Wintergarten #13088 stand). Lautstärke und Stumm am Wintergarten (nicht hörbar, Player stand) über das Sonos-Modul und über das HomeAssistant-Modul #24294 gesetzt, alle 100 ms mitgeschnitten (messung). Die Lautstärke des HomeAssistant-Moduls ist eine Kommazahl 0 bis 1 (Darstellung MIN 0, MAX 1, Schritt 0.01): der Befehl 25 wurde 1 und damit 100 % (danach zurückgestellt). Der Bereich von 39166 und 47436 steht im Profil wie beim Wintergarten. „verzoegerungMs“ aus der Messung aufgerundet; „reaktion“ für Play und Pause aus nuc_2026-10-10_wiedergabe.json übernommen, am Bad nicht gemessen.",
+    "variablen": {
+        "39166": {
+            "name": "Bad: Status",
+            "wert": 2,
+            "formatiert": "Play",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 4,
+                "profil": "~PlaybackPreviousNext"
+            },
+            "verhalten": "reaktion",
+            "reaktion": {
+                "2": [
+                    [
+                        100,
+                        39166,
+                        2
+                    ]
+                ],
+                "3": [
+                    [
+                        100,
+                        39166,
+                        3
+                    ]
+                ]
+            }
+        },
+        "47436": {
+            "name": "Bad: Lautstärke",
+            "wert": 20,
+            "formatiert": "20 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 100,
+                "profil": "~Volume"
+            },
+            "verhalten": "traege",
+            "verzoegerungMs": 100
+        },
+        "55639": {
+            "name": "Bad: Titel",
+            "wert": "WDR 2 Ostwestfalen-Lippe",
+            "formatiert": "WDR 2 Ostwestfalen-Lippe...",
+            "aktion": false
+        },
+        "25068": {
+            "name": "Bad: Künstler",
+            "wert": "",
+            "formatiert": "...",
+            "aktion": false
+        },
+        "27341": {
+            "name": "Wintergarten: Status",
+            "wert": 1,
+            "formatiert": "Stop",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 4,
+                "profil": "~PlaybackPreviousNext"
+            },
+            "verhalten": "reaktion",
+            "reaktion": {
+                "2": [
+                    [
+                        100,
+                        27341,
+                        2
+                    ]
+                ],
+                "3": [
+                    [
+                        100,
+                        27341,
+                        3
+                    ]
+                ]
+            }
+        },
+        "27915": {
+            "name": "Wintergarten: Lautstärke",
+            "wert": 20,
+            "formatiert": "20 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 100,
+                "profil": "~Volume"
+            },
+            "verhalten": "traege",
+            "verzoegerungMs": 100
+        },
+        "28490": {
+            "name": "Wintergarten: Mute",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "verhalten": "traege",
+            "verzoegerungMs": 100
+        },
+        "31197": {
+            "name": "Wintergarten: Titel",
+            "wert": "",
+            "formatiert": "...",
+            "aktion": false
+        },
+        "35899": {
+            "name": "Wintergarten: Künstler",
+            "wert": "",
+            "formatiert": "...",
+            "aktion": false
+        },
+        "45169": {
+            "name": "Wintergarten (Sonos): Status",
+            "wert": "paused",
+            "formatiert": "Pausiert",
+            "aktion": false
+        },
+        "11085": {
+            "name": "Wintergarten (Sonos): Wiedergabe",
+            "wert": -1,
+            "formatiert": "",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 4,
+                "profil": "~PlaybackPreviousNext"
+            },
+            "verhalten": "reaktion",
+            "reaktion": {
+                "2": [
+                    [
+                        100,
+                        11085,
+                        -1
+                    ],
+                    [
+                        900,
+                        45169,
+                        "playing"
+                    ]
+                ]
+            }
+        },
+        "31588": {
+            "name": "Wintergarten (Sonos): Lautstärke",
+            "wert": 0.2,
+            "formatiert": "20 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 1
+            },
+            "verhalten": "traege",
+            "verzoegerungMs": 400
+        },
+        "21842": {
+            "name": "Wintergarten (Sonos): Stumm",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "verhalten": "traege",
+            "verzoegerungMs": 500
+        },
+        "53862": {
+            "name": "Wintergarten (Sonos): Titel",
+            "wert": "Can't Get Enough",
+            "formatiert": "Can't Get Enough...",
+            "aktion": false
+        },
+        "12831": {
+            "name": "Wintergarten (Sonos): Interpret",
+            "wert": "Bad Company",
+            "formatiert": "Bad Company...",
+            "aktion": false
+        }
+    },
+    "geraete": [
+        {
+            "Room": "Wintergarten",
+            "Name": "Sonos",
+            "Aliases": "",
+            "Type": "media",
+            "Invert": false,
+            "PlaybackVariableID": 27341,
+            "VolumeVariableID": 27915,
+            "MuteVariableID": 28490,
+            "TitleVariableID": 31197,
+            "ArtistVariableID": 35899
+        },
+        {
+            "Room": "Wintergarten",
+            "Name": "Sonos über HA",
+            "Aliases": "",
+            "Type": "media",
+            "Invert": false,
+            "StateVariableID": 45169,
+            "PlaybackVariableID": 11085,
+            "VolumeVariableID": 31588,
+            "MuteVariableID": 21842,
+            "TitleVariableID": 53862,
+            "ArtistVariableID": 12831
+        },
+        {
+            "Room": "Bad",
+            "Name": "Sonos",
+            "Aliases": "",
+            "Type": "media",
+            "Invert": false,
+            "PlaybackVariableID": 39166,
+            "VolumeVariableID": 47436,
+            "TitleVariableID": 55639,
+            "ArtistVariableID": 25068
+        }
+    ],
+    "messung": [
+        {
+            "befehl": "vol_sonos=25",
+            "ok": true,
+            "befehl_ms": 62,
+            "0": [
+                62,
+                {
+                    "vol_sonos": 25
+                }
+            ],
+            "1": [
+                464,
+                {
+                    "vol_ha": 0.25
+                }
+            ]
+        },
+        {
+            "befehl": "vol_sonos=20",
+            "ok": true,
+            "befehl_ms": 20,
+            "0": [
+                21,
+                {
+                    "vol_sonos": 20
+                }
+            ],
+            "1": [
+                323,
+                {
+                    "vol_ha": 0.2
+                }
+            ]
+        },
+        {
+            "befehl": "mute_sonos=true",
+            "ok": true,
+            "befehl_ms": 25,
+            "0": [
+                25,
+                {
+                    "mute_sonos": true
+                }
+            ],
+            "1": [
+                327,
+                {
+                    "mute_ha": true
+                }
+            ]
+        },
+        {
+            "befehl": "mute_sonos=false",
+            "ok": true,
+            "befehl_ms": 23,
+            "0": [
+                23,
+                {
+                    "mute_sonos": false
+                }
+            ],
+            "1": [
+                324,
+                {
+                    "mute_ha": false
+                }
+            ]
+        },
+        {
+            "befehl": "vol_ha=25",
+            "ok": true,
+            "befehl_ms": 73,
+            "0": [
+                375,
+                {
+                    "vol_ha": 1
+                }
+            ],
+            "1": [
+                3293,
+                {
+                    "vol_sonos": 100
+                }
+            ]
+        },
+        {
+            "befehl": "vol_ha=20",
+            "ok": true,
+            "befehl_ms": 62
+        },
+        {
+            "befehl": "mute_ha=true",
+            "ok": true,
+            "befehl_ms": 58,
+            "0": [
+                462,
+                {
+                    "mute_ha": true
+                }
+            ],
+            "1": [
+                3330,
+                {
+                    "mute_sonos": true
+                }
+            ]
+        },
+        {
+            "befehl": "mute_ha=false",
+            "ok": true,
+            "befehl_ms": 58,
+            "0": [
+                461,
+                {
+                    "mute_ha": false
+                }
+            ],
+            "1": [
+                3487,
+                {
+                    "mute_sonos": false
+                }
+            ]
+        }
+    ],
+    "messung_info": {
+        "vol_sonos": {
+            "typ": 1,
+            "profil": "~Volume",
+            "aktion": true,
+            "wert": 20,
+            "formatiert": "20 %",
+            "bereich": {
+                "MaxValue": 100,
+                "MinValue": 0,
+                "StepSize": 1,
+                "Suffix": " %"
+            },
+            "darstellung": []
+        },
+        "mute_sonos": {
+            "typ": 0,
+            "profil": "SONOS.Switch",
+            "aktion": true,
+            "wert": false,
+            "formatiert": "Aus",
+            "bereich": {
+                "MaxValue": 0,
+                "MinValue": 0,
+                "StepSize": 0,
+                "Suffix": ""
+            },
+            "darstellung": []
+        },
+        "vol_ha": {
+            "typ": 2,
+            "profil": "",
+            "aktion": true,
+            "wert": 0.2,
+            "formatiert": "20 %",
+            "bereich": null,
+            "darstellung": []
+        },
+        "mute_ha": {
+            "typ": 0,
+            "profil": "",
+            "aktion": true,
+            "wert": false,
+            "formatiert": "Aus",
+            "bereich": null,
+            "darstellung": []
+        },
+        "status_sonos": {
+            "typ": 1,
+            "profil": "~PlaybackPreviousNext",
+            "aktion": true,
+            "wert": 1,
+            "formatiert": "Stop",
+            "bereich": {
+                "MaxValue": 4,
+                "MinValue": 0,
+                "StepSize": 0,
+                "Suffix": ""
+            },
+            "darstellung": []
+        },
+        "status_ha": {
+            "typ": 3,
+            "profil": "",
+            "aktion": false,
+            "wert": "paused",
+            "formatiert": "Pausiert",
+            "bereich": null,
+            "darstellung": []
+        }
+    }
+}

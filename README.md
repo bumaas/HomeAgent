@@ -10,7 +10,7 @@ die Geräte, die Sie freigeben.
 
 > **Stand:** frühe Vorschau. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Farbe, Position und
 > Heizungs-Sollwert, das Anhalten von Rollläden, Verbrauch und Leistung, der Verlauf von Messwerten
-> das Starten von Szenen und die Wiedergabe von Mediaplayern gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen. Erprobt ist das Modul bisher
+> das Starten von Szenen sowie Wiedergabe und Lautstärke von Mediaplayern gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen. Erprobt ist das Modul bisher
 > auf drei Anlagen.
 
 ## Wann brauche ich das?
@@ -269,6 +269,9 @@ aus und gibt dazu einen Befehl oder einen Prozentwert an:
 | `stop` | hält Rollläden und Fenster an, die gerade fahren, und beendet die Wiedergabe eines Mediaplayers |
 | `play`, `pause` | setzt die Wiedergabe eines Mediaplayers fort oder hält sie an |
 | `next`, `previous` | springt beim Mediaplayer zum nächsten oder vorigen Titel |
+| `volume` | stellt die Lautstärke eines Mediaplayers in Prozent |
+| `volume_change` | macht einen Mediaplayer um so viele Prozentpunkte lauter oder leiser, ohne Zahl um 10 |
+| `mute` | schaltet einen Mediaplayer stumm (`true`) oder wieder laut (`false`) |
 | `percent` | stellt die Helligkeit eines Lichts oder die Öffnung eines Rollladens oder Fensters |
 | `temperature` | stellt den Sollwert eines Thermostats in °C |
 | `color_temperature` | stellt die Farbtemperatur eines Lichts in Kelvin, etwa 2700 für warmweiß |
@@ -293,6 +296,13 @@ keinen Befehl, die Zeile sagt „war schon pausiert“. Manche Player melden den
 einigen Sekunden; dann sagt die Antwort „gesendet, aber das Gerät hat noch nicht bestätigt“. Welche
 Werte die Wiedergabevariable versteht, liest das Modul aus ihrem Profil; bei einem fremden Profil
 lässt es die Finger davon und sagt das.
+
+`play` ganz ohne Raum, Etage und Name setzt die Mediaplayer fort, die in der letzten Stunde über das
+Werkzeug pausiert wurden. So klappt „Musik aus“ und später „weiter“, ohne den Raum zu wiederholen. Gibt
+es keinen solchen Player, verlangt das Werkzeug wie sonst einen Raum.
+
+Die Lautstärke rechnet das Modul in Prozent des Bereichs, den die Darstellung oder das Profil der
+Variable nennt. Beim Sonos-Modul geht er von 0 bis 100, beim HomeAssistant-Modul von 0 bis 1.
 
 Eine Temperatur prüft das Modul gegen den Bereich des Sollwerts, den es aus der Darstellung oder dem
 Profil der Variable liest. Liegt sie außerhalb, geht nichts hinaus, und die Antwort nennt den Bereich.
@@ -382,7 +392,7 @@ echo HAGT_RunScene($InstanzID, '', 'Filmabend');
 ## Grenzen
 
 - Farbe als Text und die Betriebsart von Thermostaten (aus, heizen, automatisch) gehen noch nicht.
-- Lautstärke, Stumm und Ein/Aus eines Mediaplayers lassen sich noch nicht stellen.
+- Einen Mediaplayer ein- und ausschalten geht noch nicht.
 - Ein batteriebetriebenes Thermostat übernimmt einen neuen Sollwert oft erst beim nächsten Funkkontakt.
   Die Zentrale meldet ihn trotzdem sofort zurück, „gestellt“ heißt dann „an die Zentrale übergeben“.
 - Bei einem Rollladen, der sich erst am Ziel meldet und keinen Fahrstatus hat, weiß das Modul nach

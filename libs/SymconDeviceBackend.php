@@ -76,20 +76,30 @@ final class SymconDeviceBackend implements DeviceBackend
     /** @var null|callable(int, ?array): void schreibt oder löscht den Fahrtmerker */
     private $storeTravel;
 
+    /** @var null|callable(): array liest die pausierten Mediaplayer (Variable => ms) */
+    private $readPaused;
+
+    /** @var null|callable(list<int>, int): void merkt pausierte Mediaplayer mit der Uhrzeit in ms */
+    private $storePaused;
+
     /**
      * @param callable(string): string $translator
      * @param int $instanceId Instanz, an die ein Aktionsskript seinen Fehlschlag meldet (0 = keine)
      * @param null|callable(string): ?string $readFailure liest den gemeldeten Fehlertext zu einer Auftragsnummer
      * @param null|callable(int): ?array $readTravel liest den Fahrtmerker (null = ohne Merker)
      * @param null|callable(int, ?array): void $storeTravel schreibt den Fahrtmerker
+     * @param null|callable(): array $readPaused liest die pausierten Mediaplayer
+     * @param null|callable(list<int>, int): void $storePaused merkt pausierte Mediaplayer
      */
-    public function __construct(callable $translator, int $instanceId = 0, ?callable $readFailure = null, ?callable $readTravel = null, ?callable $storeTravel = null)
+    public function __construct(callable $translator, int $instanceId = 0, ?callable $readFailure = null, ?callable $readTravel = null, ?callable $storeTravel = null, ?callable $readPaused = null, ?callable $storePaused = null)
     {
         $this->translator = $translator;
         $this->instanceId = $instanceId;
         $this->readFailure = $readFailure;
         $this->readTravel = $readTravel;
         $this->storeTravel = $storeTravel;
+        $this->readPaused = $readPaused;
+        $this->storePaused = $storePaused;
     }
 
     public function read(int $variableId): ?array
@@ -326,6 +336,18 @@ final class SymconDeviceBackend implements DeviceBackend
     public function rememberedTravel(int $levelVariable): ?array
     {
         return $this->readTravel === null ? null : ($this->readTravel)($levelVariable);
+    }
+
+    public function rememberPaused(array $playbackVariables): void
+    {
+        if ($this->storePaused !== null) {
+            ($this->storePaused)($playbackVariables, $this->now());
+        }
+    }
+
+    public function rememberedPaused(): array
+    {
+        return $this->readPaused === null ? [] : ($this->readPaused)();
     }
 
     public function rememberTravel(int $levelVariable, ?array $travel): void

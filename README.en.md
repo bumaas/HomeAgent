@@ -8,7 +8,7 @@ still open?", say "Turn off the lights in the living room" or close a blind half
 unambiguous answer. It only sees and switches the devices you release.
 
 > **Status:** early preview. Querying, switching, setting brightness, colour temperature, colour, position and heating setpoint,
-> stopping blinds, consumption and power, the history of measured values starting scenes and media playback work. The device list can be proposed from
+> stopping blinds, consumption and power, the history of measured values starting scenes as well as playback and volume of media players work. The device list can be proposed from
 > an Alexa instance. So far the module has been tried on three systems.
 
 ## When do I need this?
@@ -257,6 +257,9 @@ when querying and adds a command or a percent value:
 | `stop` | stops blinds and windows that are moving and ends playback of a media player |
 | `play`, `pause` | resumes or pauses playback of a media player |
 | `next`, `previous` | skips to the next or previous track of a media player |
+| `volume` | sets the volume of a media player in percent |
+| `volume_change` | makes a media player louder or quieter by that many percentage points, 10 without a number |
+| `mute` | mutes a media player (`true`) or unmutes it (`false`) |
 | `percent` | sets the brightness of a light or how far a blind or window is open |
 | `temperature` | sets the setpoint of a thermostat in °C |
 | `color_temperature` | sets the colour temperature of a light in Kelvin, for example 2700 for warm white |
@@ -279,6 +282,13 @@ as soon as title or playback state change. A player that is already paused gets 
 "already paused". Some players report the new title only after a few seconds; then the answer says "sent,
 but the device has not confirmed yet". The module reads which values the playback variable understands
 from its profile; with an unknown profile it leaves the player alone and says so.
+
+`play` without any room, floor or name resumes the media players that were paused through the tool in the
+last hour. So "music off" and later "go on" work without repeating the room. Without such a player the
+tool asks for a room as usual.
+
+The module calculates the volume in percent of the range given by the presentation or the profile of the
+variable. For the Sonos module it runs from 0 to 100, for the HomeAssistant module from 0 to 1.
 
 The module checks a temperature against the range of the setpoint, which it reads from the presentation
 or the profile of the variable. Outside of it nothing is sent, and the answer names the range. Odd values
@@ -365,7 +375,7 @@ echo HAGT_RunScene($InstanceID, '', 'Filmabend');
 ## Limits
 
 - Colour as text and the operating mode of thermostats (off, heat, auto) are not supported yet.
-- Volume, mute and on/off of a media player cannot be set yet.
+- Switching a media player on and off is not supported yet.
 - A battery-powered thermostat often takes a new setpoint only at its next radio contact. The central
   unit still confirms it right away, so "set" then means "handed over to the central unit".
 - For a blind that reports only on arrival and has no moving state, the module does not know after

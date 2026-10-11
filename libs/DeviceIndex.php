@@ -197,6 +197,9 @@ final class DeviceIndex
     /** So lange wartet ein schaltendes Werkzeug höchstens auf die Rückmeldung der Geräte. */
     private const CONFIRM_TIMEOUT_MS = 2000;
 
+    /** So lange setzt „play“ ohne Raum die per Werkzeug pausierten Mediaplayer fort (wie Home Assistant). */
+    public const PAUSE_MEMORY_MS = 3600000;
+
     /** Längster Zustandstext je Antwortzeile, damit ein von außen gefüllter Text die Antwort nicht aufbläht. */
     private const VALUE_TEXT_LENGTH = 200;
     private const CONFIRM_STEP_MS = 50;
@@ -815,6 +818,22 @@ final class DeviceIndex
         $temperature = $arguments['temperature'] ?? null;
         $kelvin = $arguments['color_temperature'] ?? null;
         $color = $arguments['color'] ?? null;
+        $volume = $arguments['volume'] ?? null;
+        $volumeChange = $arguments['volume_change'] ?? null;
+        $mute = $arguments['mute'] ?? null;
+        if ($volume !== null && ((!is_int($volume) && !is_float($volume)) || $volume < 0 || $volume > 100)) {
+            return $this->fail($this->t('Parameter "volume" must be a number from 0 to 100.'));
+        }
+        if ($volumeChange !== null && ((!is_int($volumeChange) && !is_float($volumeChange)) || $volumeChange < -100 || $volumeChange > 100 || round((float)$volumeChange) == 0)) {
+            return $this->fail($this->t('Parameter "volume_change" must be a number from -100 to 100 other than 0.'));
+        }
+        if ($mute !== null && !is_bool($mute)) {
+            return $this->fail($this->t('Parameter "mute" must be true or false.'));
+        }
+        $sound = array_filter([$volume, $volumeChange, $mute], static fn (mixed $v): bool => $v !== null);
+        if ($sound !== [] && (count($sound) > 1 || $command !== '' || $percent !== null || $temperature !== null || $kelvin !== null || $color !== null)) {
+            return $this->fail($this->t('Nothing was changed. Give volume, volume_change or mute alone, without another field.'));
+        }
         if ($color !== null) {
             $key = DeviceIndex::normalize((string)$color);
             $key = self::COLOR_WORDS[$key] ?? $key;
@@ -844,7 +863,7 @@ final class DeviceIndex
         if ($percent !== null && ((!is_int($percent) && !is_float($percent)) || $percent < 0 || $percent > 100)) {
             return $this->fail($this->t('Parameter "percent" must be a number from 0 to 100.'));
         }
-        if ($command === '' && $percent === null && $temperature === null && $kelvin === null && $color === null) {
+        if ($command === '' && $percent === null && $temperature === null && $kelvin === null && $color === null && $sound === []) {
             return $this->fail(sprintf($this->t('Nothing was changed: give a command (%s), a percent value or a temperature.'), implode(', ', self::COMMANDS)));
         }
         // Nur „on“ verträgt einen Wert, und dann einen über 0: „an und 0 %“ wäre zugleich aus.
@@ -852,7 +871,10 @@ final class DeviceIndex
             return $this->fail(sprintf($this->t('Nothing was changed: command "%s" and percent %s contradict each other. Give only one of them.'), $command, self::formatNumber((float)$percent)));
         }
 
-        $selection = $this->selectControllable($arguments);
+        // „Weiter“ ohne Raum wie HassMediaUnpause: die Mediaplayer, die in der letzten Stunde per
+        // Werkzeug pausiert wurden. Ohne Merker bleibt es bei der Absage ohne Auswahl.
+        $selection = $command === 'play' ? $this->recentlyPaused($arguments) : null;
+        $selection ??= $this->selectControllable($arguments);
         if (isset($selection['error'])) {
             return $this->fail($selection['error']);
         }
@@ -861,7 +883,7 @@ final class DeviceIndex
         $type = trim((string)($arguments['type'] ?? ''));
 
         // Was verlangt ist, heißt wie das Feld des Werkzeugs; so kann der Assistent es korrigieren.
-        $ability = $color !== null ? 'color' : ($kelvin !== null ? 'color_temperature' : ($temperature !== null ? 'temperature' : ($percent !== null ? 'percent' : $command)));
+        $ability = $mute !== null ? 'mute' : ($volumeChange !== null ? 'volume_change' : ($volume !== null ? 'volume' : ($color !== null ? 'color' : ($kelvin !== null ? 'color_temperature' : ($temperature !== null ? 'temperature' : ($percent !== null ? 'percent' : $command))))));
         $understand = array_filter($selection['entries'], static fn (array $e): bool => in_array($ability, self::abilitiesOf($e), true));
         $skipped = count($selection['entries']) - count($understand) + ($selection['windowsWithoutDrive'] ?? 0);
         if ($understand === []) {
@@ -903,6 +925,15 @@ final class DeviceIndex
         }
         if ($percent !== null) {
             return $this->levelAnswer($this->runLevel($understand, (float)$percent), (float)$percent, $filter, $closing);
+        }
+        if ($mute !== null) {
+            return $this->switchAnswer($this->runMute($understand, $mute), $this->t($mute ? 'muted' : 'unmuted'), $filter, $closing);
+        }
+        if ($volume !== null || $volumeChange !== null) {
+            $word = $volume !== null
+                ? sprintf($this->t('at volume %s'), self::formatNumber(round((float)$volume)) . ' %')
+                : $this->t($volumeChange > 0 ? 'louder' : 'quieter');
+            return $this->switchAnswer($this->runVolume($understand, $volume, $volumeChange), $word, $filter, $closing);
         }
         if ($command === 'stop') {
             // Rollläden halten an, Mediaplayer beenden die Wiedergabe; beides in einer Antwort.
@@ -1006,7 +1037,11 @@ final class DeviceIndex
         }
         // Ein Mediaplayer versteht die Wiedergabebefehle; welche das Gerät kennt, sagt erst sein Profil.
         if ($type === 'media') {
-            return isset($roles['playback']) ? ['stop', 'play', 'pause', 'next', 'previous'] : [];
+            return array_merge(
+                isset($roles['playback']) ? ['stop', 'play', 'pause', 'next', 'previous'] : [],
+                isset($roles['volume']) ? ['volume', 'volume_change'] : [],
+                isset($roles['mute']) ? ['mute'] : []
+            );
         }
         if (!in_array($type, self::CONTROLLABLE, true)) {
             return [];
@@ -1038,7 +1073,7 @@ final class DeviceIndex
         foreach ($rows as $row) {
             $found = array_merge($found, self::abilitiesOf($row));
         }
-        return array_values(array_intersect(array_merge(self::COMMANDS, ['percent', 'temperature', 'color_temperature', 'color']), $found));
+        return array_values(array_intersect(array_merge(self::COMMANDS, ['percent', 'temperature', 'color_temperature', 'color', 'volume', 'volume_change', 'mute']), $found));
     }
 
     /**
@@ -2183,6 +2218,12 @@ final class DeviceIndex
             $jobs[$index] = $job;
         }
 
+        if ($command === 'pause') {
+            $sent = array_column(array_filter($jobs, static fn (array $job): bool => $job['note'] === null), 'variable');
+            if ($sent !== []) {
+                $this->backend->rememberPaused($sent);
+            }
+        }
         $reached = fn (array $job): bool => in_array($command, ['next', 'previous'], true)
             ? $snapshot($job['entry']) !== $job['before']
             : $this->playbackPhase($job['entry']) === $command;
@@ -2225,6 +2266,150 @@ final class DeviceIndex
      *
      * @return int gewartete Millisekunden
      */
+    /**
+     * Auswahl für „play“ ohne Raum, Etage und Name (Typ höchstens media): die Mediaplayer, die in der
+     * letzten Stunde per Werkzeug pausiert wurden. null = keine solche Anfrage oder kein Merker.
+     *
+     * @return null|array{entries: list<array<string, mixed>>, filter: string}
+     */
+    private function recentlyPaused(array $arguments): ?array
+    {
+        foreach (['room', 'floor', 'name'] as $key) {
+            if (trim((string)($arguments[$key] ?? '')) !== '') {
+                return null;
+            }
+        }
+        if (!in_array(trim((string)($arguments['type'] ?? '')), ['', 'media'], true)) {
+            return null;
+        }
+        $since = $this->backend->now() - self::PAUSE_MEMORY_MS;
+        $paused = array_keys(array_filter($this->backend->rememberedPaused(), static fn (int $at): bool => $at >= $since));
+        $entries = array_values(array_filter($this->entries, fn (array $e): bool => $e['Type'] === 'media' && $this->isControllable($e) && in_array($e['roles']['playback'] ?? 0, $paused, true)));
+        return $entries === [] ? null : ['entries' => $entries, 'filter' => $this->t('paused in the last hour')];
+    }
+
+    /**
+     * Lautstärke von Mediaplayern in Prozent ihres Bereichs (Sonos-Modul 0 bis 100, HomeAssistant-
+     * Modul 0 bis 1), absolut oder um Punkte geändert und an den Enden gekappt. Bestätigt, wenn die
+     * Variable den Zielwert zeigt; gemessen am nuc nach 0,06 s (Sonos-Modul) bzw. 0,4 s (HA).
+     *
+     * @return array{lines: array<int, string>, total: int, reached: int, pending: int, failed: int}
+     */
+    private function runVolume(array $entries, int|float|null $absolute, int|float|null $change): array
+    {
+        $jobs = [];
+        foreach ($entries as $index => $entry) {
+            $variable = $entry['roles']['volume'];
+            $job = ['entry' => $entry, 'variable' => $variable, 'note' => null, 'done' => false, 'target' => 0.0, 'tolerance' => 0.0];
+            $current = $this->backend->read($variable);
+            $range = $this->backend->range($variable);
+            if ($current === null) {
+                $job['note'] = sprintf($this->t('not available (variable %d is missing)'), $variable);
+            } elseif ($range === null || $range['max'] <= $range['min'] || (!is_int($current['value']) && !is_float($current['value']))) {
+                $job['note'] = $this->t('cannot be set (unknown volume range)');
+            } elseif (!$this->backend->hasAction($variable)) {
+                $job['note'] = $this->t('cannot be set (the volume has no action)');
+            } else {
+                $span = $range['max'] - $range['min'];
+                $now = round(((float)$current['value'] - $range['min']) / $span * 100.0);
+                $percent = $absolute !== null ? round((float)$absolute) : max(0.0, min(100.0, $now + round((float)$change)));
+                $raw = $range['min'] + $percent / 100.0 * $span;
+                $job['target'] = is_int($current['value']) ? (int)round($raw) : round($raw, 4);
+                $job['tolerance'] = $span / 200.0;
+                if ($percent == $now) {
+                    $job['note'] = sprintf($this->t('already set to %s'), sprintf($this->t('volume %s'), self::formatNumber($percent) . ' %'));
+                    $job['done'] = true;
+                } else {
+                    $error = $this->backend->request($variable, $job['target']);
+                    if ($error !== null) {
+                        $job['note'] = sprintf($this->t('failed: %s'), $error);
+                    }
+                }
+            }
+            $jobs[$index] = $job;
+        }
+        $reached = function (array $job): bool {
+            $value = $this->backend->read($job['variable'])['value'] ?? null;
+            return (is_int($value) || is_float($value)) && abs((float)$value - (float)$job['target']) < $job['tolerance'];
+        };
+        return $this->confirmJobs($jobs, $reached);
+    }
+
+    /**
+     * Stumm ein oder aus. Die Stummvariable ist ein Wahrheitswert (Sonos-Modul „Mute“, HomeAssistant-
+     * Modul „Stumm“); gemessen am nuc nach 0,03 s bzw. 0,5 s bestätigt.
+     *
+     * @return array{lines: array<int, string>, total: int, reached: int, pending: int, failed: int}
+     */
+    private function runMute(array $entries, bool $mute): array
+    {
+        $jobs = [];
+        foreach ($entries as $index => $entry) {
+            $variable = $entry['roles']['mute'];
+            $job = ['entry' => $entry, 'variable' => $variable, 'note' => null, 'done' => false];
+            $current = $this->backend->read($variable);
+            if ($current === null) {
+                $job['note'] = sprintf($this->t('not available (variable %d is missing)'), $variable);
+            } elseif (!is_bool($current['value'])) {
+                $job['note'] = $this->t('cannot be set (mute is not a switch)');
+            } elseif (!$this->backend->hasAction($variable)) {
+                $job['note'] = $this->t('cannot be set (the mute switch has no action)');
+            } elseif ($current['value'] === $mute) {
+                $job['note'] = sprintf($this->t('already %s'), $this->t($mute ? 'muted' : 'not muted'));
+                $job['done'] = true;
+            } else {
+                $error = $this->backend->request($variable, $mute);
+                if ($error !== null) {
+                    $job['note'] = sprintf($this->t('failed: %s'), $error);
+                }
+            }
+            $jobs[$index] = $job;
+        }
+        return $this->confirmJobs($jobs, fn (array $job): bool => ($this->backend->read($job['variable'])['value'] ?? null) === $mute);
+    }
+
+    /**
+     * Wartet gemeinsam auf alle ausgelösten Aufträge und baut die Zeilen: bestätigt mit dem neuen
+     * Zustand, sonst „noch nicht bestätigt“ oder der gemeldete Fehlschlag.
+     *
+     * @param array<int, array<string, mixed>> $jobs je Gerät entry, variable, note (null = gesendet), done
+     * @return array{lines: array<int, string>, total: int, reached: int, pending: int, failed: int}
+     */
+    private function confirmJobs(array $jobs, callable $reached): array
+    {
+        $this->waitUntil(function () use ($jobs, $reached): bool {
+            foreach ($jobs as $job) {
+                if ($job['note'] === null && !$reached($job) && $this->backend->failure($job['variable']) === null) {
+                    return false;
+                }
+            }
+            return true;
+        });
+        $result = ['lines' => [], 'total' => count($jobs), 'reached' => 0, 'pending' => 0, 'failed' => 0];
+        foreach ($jobs as $index => $job) {
+            if ($job['note'] === null) {
+                $confirmed = $reached($job);
+                $error = $confirmed ? null : $this->backend->failure($job['variable']);
+                if ($error !== null) {
+                    $job['note'] = sprintf($this->t('failed: %s'), $error);
+                    $result['failed']++;
+                } else {
+                    $text = $this->stateOf($job['entry'])['text'];
+                    $job['done'] = $confirmed;
+                    $job['note'] = $confirmed ? $text : sprintf($this->t('sent, but the device has not confirmed yet (currently %s)'), $text);
+                    $result['pending'] += $confirmed ? 0 : 1;
+                }
+            } elseif (!$job['done']) {
+                $result['failed']++;
+            }
+            if ($job['done']) {
+                $result['reached']++;
+            }
+            $result['lines'][$index] = $this->line($job['entry'], $job['note']);
+        }
+        return $result;
+    }
+
     private function waitUntil(callable $done, int $budgetMs = self::CONFIRM_TIMEOUT_MS): int
     {
         for ($waited = 0; $waited < $budgetMs && !$done(); $waited += self::CONFIRM_STEP_MS) {

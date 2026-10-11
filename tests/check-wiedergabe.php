@@ -49,9 +49,9 @@ $spielen['45169']['wert'] = 'playing';
 
 pruefe(array_slice(DeviceIndex::COMMANDS, -4) === ['play', 'pause', 'next', 'previous'], 'neue Befehle hinten in der Liste: ' . json_encode(DeviceIndex::COMMANDS));
 pruefe(in_array('media', DeviceIndex::CONTROLLABLE, true), 'ein Mediaplayer ist steuerbar');
-pruefe(DeviceIndex::abilitiesOf($liste[0]) === ['stop', 'play', 'pause', 'next', 'previous'], 'mit Wiedergabe: ' . json_encode(DeviceIndex::abilitiesOf($liste[0])));
+pruefe(DeviceIndex::abilitiesOf($liste[0]) === ['stop', 'play', 'pause', 'next', 'previous', 'volume', 'volume_change', 'mute'], 'mit Wiedergabe: ' . json_encode(DeviceIndex::abilitiesOf($liste[0])));
 pruefe(DeviceIndex::abilitiesOf(['ReadOnly' => true] + $liste[0]) === [], 'nur abfragen versteht nichts');
-pruefe(DeviceIndex::offeredAbilities($liste) === ['stop', 'play', 'pause', 'next', 'previous'], 'das Schema bietet die Befehle an: ' . json_encode(DeviceIndex::offeredAbilities($liste)));
+pruefe(DeviceIndex::offeredAbilities($liste) === ['stop', 'play', 'pause', 'next', 'previous', 'volume', 'volume_change', 'mute'], 'das Schema bietet die Befehle an: ' . json_encode(DeviceIndex::offeredAbilities($liste)));
 
 /* --- Statustext des HomeAssistant-Moduls ---------------------------------------------------------- */
 

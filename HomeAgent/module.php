@@ -29,6 +29,9 @@ class HomeAgent extends IPSModuleStrict
     /** So lange bleibt ein gemeldeter Fehlschlag abholbar; die Werkzeuge warten höchstens 2 Sekunden. */
     private const FAILURE_KEEP_SECONDS = 60;
 
+    /** So viele pausierte Mediaplayer hält der Buffer „Paused“, jeden höchstens DeviceIndex::PAUSE_MEMORY_MS. */
+    private const PAUSED_MAX_ENTRIES = 50;
+
     /** So lange und so viele Fahrtmerker hält der Buffer „Travels“ (wie DeviceIndex: zwei Minuten). */
     private const TRAVEL_KEEP_MS = 120000;
     private const TRAVEL_MAX_ENTRIES = 50;
@@ -782,6 +785,9 @@ class HomeAgent extends IPSModuleStrict
             $hasColor = in_array('color', $offered, true);
             $hasBlinds = in_array('open', $offered, true);
             $hasStop = in_array('stop', $offered, true);
+            $hasVolume = in_array('volume', $offered, true);
+            $hasVolumeChange = in_array('volume_change', $offered, true);
+            $hasMute = in_array('mute', $offered, true);
             $hasTiltWindows = array_any($devices, static fn (array $row): bool => ($row['Type'] ?? '') === 'window' && ($row['Tilt'] ?? false) === true && DeviceIndex::abilitiesOf($row) !== []);
             $types = array_values(array_intersect(array_keys(DeviceIndex::TYPES), array_column(array_filter($devices, static fn (array $row): bool => DeviceIndex::abilitiesOf($row) !== []), 'Type')));
             $properties = [
@@ -813,14 +819,24 @@ class HomeAgent extends IPSModuleStrict
             if ($hasColor) {
                 $properties['color'] = ['type' => 'string', 'enum' => array_keys(DeviceIndex::COLORS), 'description' => 'Colour of a light. Switches the light on.'];
             }
+            if ($hasVolume) {
+                $properties['volume'] = ['type' => 'number', 'minimum' => 0, 'maximum' => 100, 'description' => 'Volume of a media player in percent.'];
+            }
+            if ($hasVolumeChange) {
+                $properties['volume_change'] = ['type' => 'number', 'minimum' => -100, 'maximum' => 100, 'description' => 'Changes the volume of a media player by this many percentage points; louder or quieter without a number means 10 or -10.'];
+            }
+            if ($hasMute) {
+                $properties['mute'] = ['type' => 'boolean', 'description' => 'true mutes a media player, false unmutes it.'];
+            }
             // Was der Assistent angeben kann, in der Reihenfolge des Schemas.
-            $fields = array_values(array_filter([$commands !== [] ? 'a command' : '', $hasPercent ? 'percent' : '', $hasTemperature ? 'temperature' : '', $hasColorTemperature ? 'color_temperature' : '', $hasColor ? 'color' : '']));
+            $fields = array_values(array_filter([$commands !== [] ? 'a command' : '', $hasPercent ? 'percent' : '', $hasTemperature ? 'temperature' : '', $hasColorTemperature ? 'color_temperature' : '', $hasColor ? 'color' : '', $hasVolume ? 'volume' : '', $hasVolumeChange ? 'volume_change' : '', $hasMute ? 'mute' : '']));
             $give = count($fields) > 1 ? implode(', ', array_slice($fields, 0, -1)) . ' or ' . array_last($fields) : $fields[0];
             $tools[] = [
                 'name'        => 'set_state',
                 'title'       => 'Switch or set',
                 'description' => 'Switches or sets released devices: give ' . $give . '. '
                     . 'Give at least one of ' . ($floors === [] ? 'room, type and name' : 'room, floor, type and name') . '. A name must match exactly one device, otherwise nothing is changed and the answer lists the candidates; for groups use room and type. '
+                    . (in_array('play', $offered, true) ? 'command=play alone resumes the media players paused in the last hour. ' : '')
                     . 'Devices of a group that do not understand the command are left out. '
                     . 'The answer waits up to 2 seconds for the devices to confirm: first line the count, then one line per device: room | name | type | result. '
                     . ($hasBlinds ? 'Blinds are slow: "moving" or "command sent" is a normal answer, not a failure. ' : '')
@@ -828,6 +844,7 @@ class HomeAgent extends IPSModuleStrict
                     . ($hasTiltWindows ? 'Tilt windows open by tilting: "tilt the window" means command=open. ' : '')
                     . (in_array('on', $commands, true) ? 'Example: "Lights off in the living room" → room=Wohnzimmer, type=light, command=off.' : 'Example:')
                     . (in_array('play', $offered, true) ? ' "Pause the music in the conservatory" → room=Wintergarten, type=media, command=pause.' : '')
+                    . ($hasVolumeChange ? ' "Louder in the bathroom" → room=Bad, type=media, volume_change=10.' : '')
                     . ($hasPercent ? ' "Dim the ceiling light to a third" → name=Deckenlicht, percent=33.' : '')
                     . ($hasTemperature ? ' "Set the heating in the guest room to 21 degrees" → room=Gast, temperature=21.' : ''),
                 'inputSchema' => [
@@ -835,7 +852,8 @@ class HomeAgent extends IPSModuleStrict
                     'properties'           => $properties,
                     'additionalProperties' => false,
                 ],
-                'annotations' => ['readOnlyHint' => false, 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false],
+                // Zweimal „lauter“ ist lauter als einmal.
+                'annotations' => ['readOnlyHint' => false, 'destructiveHint' => false, 'idempotentHint' => !$hasVolumeChange, 'openWorldHint' => false],
             ];
         }
 
@@ -1052,8 +1070,39 @@ class HomeAgent extends IPSModuleStrict
             $this->InstanceID,
             fn (string $key): ?string => $this->readFailure($key),
             fn (int $variable): ?array => $this->readTravel($variable),
-            fn (int $variable, ?array $travel) => $this->storeTravel($variable, $travel)
+            fn (int $variable, ?array $travel) => $this->storeTravel($variable, $travel),
+            fn (): array => $this->readPaused(),
+            fn (array $variables, int $at) => $this->storePaused($variables, $at)
         );
+    }
+
+    /**
+     * Mediaplayer, die per Werkzeug pausiert wurden: Wiedergabevariable => Zeitpunkt in ms. „play“
+     * ohne Raum setzt sie fort, solange der Merker jünger als eine Stunde ist.
+     *
+     * @return array<int, int>
+     */
+    private function readPaused(): array
+    {
+        $paused = json_decode((string)$this->GetBuffer('Paused'), true);
+        $result = [];
+        foreach (is_array($paused) ? $paused : [] as $variable => $at) {
+            if (is_int($at)) {
+                $result[(int)$variable] = $at;
+            }
+        }
+        return $result;
+    }
+
+    /** Merkt pausierte Mediaplayer; ältere als eine Stunde fallen heraus, höchstens 50 bleiben. */
+    private function storePaused(array $variables, int $at): void
+    {
+        $paused = array_filter($this->readPaused(), static fn (int $time): bool => $time >= $at - DeviceIndex::PAUSE_MEMORY_MS);
+        foreach ($variables as $variable) {
+            unset($paused[(int)$variable]);
+            $paused[(int)$variable] = $at;
+        }
+        $this->SetBuffer('Paused', (string)json_encode(array_slice($paused, -self::PAUSED_MAX_ENTRIES, null, true)));
     }
 
     /**

@@ -121,8 +121,15 @@ Weitere Regeln, die nicht offensichtlich sind:
   wenn die Phase stimmt, Weiter/Zurück, wenn sich Wiedergabewert, Titel oder Interpret ändern. Das
   Sonos-Modul meldet „Weiter“ teils nach 0,2 s (Status -1), teils erst nach 4,5 s mit dem neuen Titel;
   über das HomeAssistant-Modul kam „paused“ in 3 s nie. Dann bleibt es bei „noch nicht bestätigt“, die
-  Wartezeit bleibt 2 s. `stop` teilt sich in Rollläden (`runStop`) und Mediaplayer. Noch offen:
-  `volume`, `volume_change`, `mute`, Ein/Aus; das Sonos-Modul hat an `Volume` teils keine Aktion.
+  Wartezeit bleibt 2 s. `stop` teilt sich in Rollläden (`runStop`) und Mediaplayer.
+  `volume` (Prozent), `volume_change` (Punkte, gekappt bei 0 und 100) und `mute` stehen je allein
+  (`runVolume`, `runMute`, gemeinsames Warten in `confirmJobs`). Die Lautstärke zählt in Prozent des
+  Bereichs: Sonos-Modul `~Volume` 0 bis 100 (Ganzzahl), HomeAssistant-Modul Kommazahl 0 bis 1 aus der
+  Darstellung (ein Befehl 25 wird dort 1 = 100 %, gemessen). Gesendet wird auf ganze Prozent gerundet.
+  Mit `volume_change` ist `set_state` nicht mehr idempotent (`idempotentHint`). `play` ohne Raum,
+  Etage und Name (Typ höchstens `media`) setzt fort, was in der letzten Stunde per Werkzeug pausiert
+  wurde (`recentlyPaused`, Merker über `DeviceBackend::rememberPaused`, im Modul Buffer `Paused`).
+  Noch offen: Ein/Aus; das Sonos-Modul hat an `Volume` teils keine Aktion (dann „nicht stellbar“).
 - **Ein neues Feld** von `set_state` kostet: eine Fähigkeit in `ROLES`/`TYPE_ROLES`, einen Eintrag in
   `abilitiesOf()`, einen Zweig in `setState()`, eine Eigenschaft im Schema und ein Dialogfeld.
 

@@ -331,7 +331,21 @@
             "already stopped": "war schon angehalten",
             "cannot be controlled (unknown playback profile %s)": "nicht steuerbar (unbekanntes Wiedergabeprofil %s)",
             "cannot be controlled (playback has no action)": "nicht steuerbar (die Wiedergabe hat keine Aktion)",
-            "does not support \"%s\"": "kann nicht „%s“"
+            "does not support \"%s\"": "kann nicht „%s“",
+            "at volume %s": "bei Lautstärke %s",
+            "louder": "lauter",
+            "quieter": "leiser",
+            "unmuted": "nicht mehr stumm",
+            "not muted": "nicht stumm",
+            "paused in the last hour": "in der letzten Stunde pausiert",
+            "cannot be set (unknown volume range)": "nicht stellbar (Bereich der Lautstärke unbekannt)",
+            "cannot be set (the volume has no action)": "nicht stellbar (die Lautstärke hat keine Aktion)",
+            "cannot be set (the mute switch has no action)": "nicht stellbar (Stumm hat keine Aktion)",
+            "cannot be set (mute is not a switch)": "nicht stellbar (Stumm ist kein Schalter)",
+            "Parameter \"volume\" must be a number from 0 to 100.": "Der Parameter „volume“ muss eine Zahl von 0 bis 100 sein.",
+            "Parameter \"volume_change\" must be a number from -100 to 100 other than 0.": "Der Parameter „volume_change“ muss eine Zahl von -100 bis 100 außer 0 sein.",
+            "Parameter \"mute\" must be true or false.": "Der Parameter „mute“ muss true oder false sein.",
+            "Nothing was changed. Give volume, volume_change or mute alone, without another field.": "Nichts geändert. Geben Sie volume, volume_change oder mute allein an, ohne ein weiteres Feld."
         }
     }
 }

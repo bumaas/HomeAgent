@@ -49,6 +49,9 @@ final class FakeBackend implements DeviceBackend
     /** @var array<int, array<string, mixed>> Fahrtmerker je Positionsvariable */
     private array $travels = [];
 
+    /** @var array<int, int> pausierte Wiedergabevariable => Zeitpunkt in ms */
+    private array $paused = [];
+
     /** @var array<int, array<string, mixed>> */
     private array $scripts = [];
 
@@ -165,6 +168,18 @@ final class FakeBackend implements DeviceBackend
     public function rememberedTravel(int $levelVariable): ?array
     {
         return $this->travels[$levelVariable] ?? null;
+    }
+
+    public function rememberPaused(array $playbackVariables): void
+    {
+        foreach ($playbackVariables as $variable) {
+            $this->paused[$variable] = $this->slept;
+        }
+    }
+
+    public function rememberedPaused(): array
+    {
+        return $this->paused;
     }
 
     public function rememberTravel(int $levelVariable, ?array $travel): void

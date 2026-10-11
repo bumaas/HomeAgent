@@ -1304,4 +1304,26 @@ pruefe(($schema['command']['enum'] ?? null) === ['stop', 'play', 'pause', 'next'
 pruefe(str_contains($schema['command']['description'] ?? '', 'play/pause/next/previous control a media player') && str_contains($schema['command']['description'] ?? '', 'Stop ends playback'), 'die Beschreibung erklärt die Befehle: ' . ($schema['command']['description'] ?? ''));
 pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', '"Pause the music in the conservatory" → room=Wintergarten, type=media, command=pause.'), 'mit Beispielsatz: ' . ($werkzeuge['set_state']['description'] ?? ''));
 
+pruefe(($werkzeuge['set_state']['annotations']['idempotentHint'] ?? null) === true && !isset($schema['volume']), 'ohne Lautstärke bleibt set_state idempotent');
+
+/* --- Lautstärke und Stumm im Werkzeugschema (build 62) ------------------------------------------- */
+
+$lautstaerke = variable(VARIABLETYPE_INTEGER, 20);
+IPS_SetVariableCustomAction($lautstaerke, $antriebAktion);
+$stumm = variable(VARIABLETYPE_BOOLEAN, false);
+IPS_SetVariableCustomAction($stumm, $antriebAktion);
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Wintergarten', 'Name' => 'Sonos', 'Aliases' => '', 'Type' => 'media', 'PlaybackVariableID' => $wiedergabe, 'VolumeVariableID' => $lautstaerke, 'MuteVariableID' => $stumm, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+$schema = $werkzeuge['set_state']['inputSchema']['properties'] ?? [];
+pruefe(($schema['volume']['type'] ?? null) === 'number' && ($schema['volume']['minimum'] ?? null) === 0 && ($schema['volume']['maximum'] ?? null) === 100, 'volume in Prozent: ' . json_encode($schema['volume'] ?? null));
+pruefe(($schema['volume_change']['type'] ?? null) === 'number' && ($schema['volume_change']['minimum'] ?? null) === -100 && ($schema['volume_change']['maximum'] ?? null) === 100 && str_contains($schema['volume_change']['description'] ?? '', '10'), 'volume_change in Punkten, lauter ohne Zahl ist 10: ' . json_encode($schema['volume_change'] ?? null));
+pruefe(($schema['mute']['type'] ?? null) === 'boolean', 'mute als Wahrheitswert: ' . json_encode($schema['mute'] ?? null));
+pruefe(($werkzeuge['set_state']['annotations']['idempotentHint'] ?? null) === false, 'volume_change ist nicht idempotent: ' . json_encode($werkzeuge['set_state']['annotations'] ?? null));
+pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', '"Louder in the bathroom" → room=Bad, type=media, volume_change=10.'), 'Beispiel für lauter: ' . ($werkzeuge['set_state']['description'] ?? ''));
+pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', 'command=play alone resumes the media players paused in the last hour.'), 'play allein ist erklärt: ' . ($werkzeuge['set_state']['description'] ?? ''));
+pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', 'give a command, volume, volume_change or mute.'), 'die Felder stehen in der Aufzählung: ' . ($werkzeuge['set_state']['description'] ?? ''));
+
 ende('Modul');
