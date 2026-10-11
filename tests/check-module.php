@@ -524,7 +524,7 @@ pruefe(($geraete['form'] ?? null) === "return json_decode(HAGT_UIDeviceForm(\$id
 $oben = $formular['elements'];
 $bereiche = array_values(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel'));
 $inhalt = array_map(static fn (array $b): array => array_values(array_filter(array_column($b['items'], 'name'))), $bereiche);
-pruefe(count($bereiche) === 5 && $inhalt[0] === ['Endpoint', 'Accesses'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['Devices'] && $inhalt[3] === ['Scenes'] && in_array('GridImportVariableID', array_column(flach($bereiche[4]['items']), 'name'), true), 'fünf Bereiche in dieser Reihenfolge: ' . json_encode($inhalt));
+pruefe(count($bereiche) === 5 && $inhalt[0] === ['Endpoint', 'Accesses', 'OAuthEnabled', 'OAuthAddress', 'OAuthClients'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['Devices'] && $inhalt[3] === ['Scenes'] && in_array('GridImportVariableID', array_column(flach($bereiche[4]['items']), 'name'), true), 'fünf Bereiche in dieser Reihenfolge: ' . json_encode($inhalt));
 pruefe(array_values(array_filter(array_column(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') !== 'ExpansionPanel'), 'name'))) === [], 'oben steht außer den Bereichen nur Erklärtext, kein Feld: ' . json_encode(array_column($oben, 'name')));
 // Burkhard, 10.10.2026: einheitlich zugeklappt, und jeder Bereich merkt sich seinen Zustand
 $zustand = static fn (): array => array_map(static fn (array $b): bool => ($b['expanded'] ?? false) === true, array_values(array_filter(json_decode($m->GetConfigurationForm(), true)['elements'], static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel')));
@@ -2040,6 +2040,74 @@ try {
     IPS_ApplyChanges($iid);
 } catch (Throwable) {
 }
+HomeAgentHarness::$connect = '';
+
+/* --- OAuth im Formular und im Selbsttest (build 79) ---------------------------------------------- */
+
+HomeAgentHarness::$connect = '';
+IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', $token, 'Halle', true)]));
+IPS_SetProperty($iid, 'OAuthEnabled', true);
+IPS_ApplyChanges($iid);
+pruefe(str_contains($m->RunSelfTest(), 'Note: sign-in with OAuth is on, but Symcon Connect is not active, so no assistant can sign in'), 'Selbsttest: Schalter an ohne Connect: ' . $m->RunSelfTest());
+
+HomeAgentHarness::$connect = 'https://example.ipmagic.de';
+$basis = 'https://example.ipmagic.de/hook/homeagent/' . $iid;
+try {
+    (new ReflectionMethod($m, 'WriteAttributeString'))->invoke($m, 'OAuthGrants', '{}');
+} catch (Throwable) {
+}
+$tokens = $koppeln();
+$zugriff = (string)($tokens['access_token'] ?? '');
+pruefe(str_contains($m->RunSelfTest(), 'Sign-in with OAuth: 1 assistant(s) paired'), 'Selbsttest nennt die gekoppelten Assistenten: ' . $m->RunSelfTest());
+
+$formular = json_decode($m->GetConfigurationForm(), true);
+$alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
+$element = static function (string $name) use (&$alle): ?array {
+    foreach ($alle as $e) {
+        if (($e['name'] ?? '') === $name) {
+            return $e;
+        }
+    }
+    return null;
+};
+$mitAufruf = static function (string $aufruf) use (&$alle): ?array {
+    foreach ($alle as $e) {
+        if (str_contains((string)($e['onClick'] ?? ''), $aufruf)) {
+            return $e;
+        }
+    }
+    return null;
+};
+pruefe(($element('OAuthEnabled')['type'] ?? '') === 'CheckBox', 'Formular: Schalter „Anmeldung per OAuth“');
+pruefe(str_contains((string)($element('OAuthAddress')['caption'] ?? ''), $basis), 'Formular: Adresse für die Claude-App mit Connect: ' . ($element('OAuthAddress')['caption'] ?? '-'));
+pruefe($mitAufruf("HAGT_CreatePairingCode(\$id, \$Accesses['Name'])") !== null, 'Formular: Knopf Kopplungscode für den ausgewählten Zugang');
+$liste = $element('OAuthClients');
+$zeile = $liste['values'][0] ?? [];
+pruefe(($liste['type'] ?? '') === 'List' && ($liste['loadValuesFromConfiguration'] ?? true) === false && count($liste['values'] ?? []) === 1, 'Formular: Liste der gekoppelten Assistenten mit einer Zeile: ' . json_encode($liste['values'] ?? null));
+pruefe(($zeile['Client'] ?? '') === 'Claude (claude.ai)' && ($zeile['Access'] ?? '') === 'Claude-App' && ($zeile['Family'] ?? '') !== '', 'Zeile nennt Client mit Host und Zugang: ' . json_encode($zeile));
+pruefe(preg_match('/^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$/', (string)($zeile['Paired'] ?? '')) === 1 && preg_match('/^\d{2}\.\d{2}\.\d{4}$/', (string)($zeile['Expires'] ?? '')) === 1, 'Zeile mit Datum der Kopplung und Ablauf: ' . json_encode($zeile));
+$widerrufen = $mitAufruf("HAGT_UIRevokeClient(\$id, \$OAuthClients['Family'])");
+pruefe($widerrufen !== null && ($widerrufen['confirm'] ?? '') !== '', 'Formular: Knopf Widerrufen mit Rückfrage');
+pruefe(!str_contains((string)json_encode($formular), $zugriff ?: 'kein Token'), 'kein Token im Formular');
+
+// Widerrufen trennt sofort
+pruefe($mcp('Bearer ' . $zugriff, 'tools/list')['status'] === 200, 'vor dem Widerruf gilt das Zugriffstoken');
+$m->formUpdates = [];
+try {
+    $m->UIRevokeClient((string)($zeile['Family'] ?? ''));
+} catch (Throwable $e) {
+    pruefe(false, 'UIRevokeClient fehlt: ' . $e->getMessage());
+}
+pruefe($mcp('Bearer ' . $zugriff, 'tools/list')['status'] === 401, 'nach dem Widerruf gilt das Zugriffstoken sofort nicht mehr');
+$aktualisiert = array_values(array_filter($m->formUpdates, static fn (array $u): bool => $u[0] === 'OAuthClients' && $u[1] === 'values'));
+pruefe($aktualisiert !== [] && json_decode((string)end($aktualisiert)[2], true) === [], 'die Liste im offenen Formular wird leer: ' . json_encode($m->formUpdates));
+pruefe(str_contains($m->RunSelfTest(), 'Sign-in with OAuth: 0 assistant(s) paired'), 'Selbsttest nach dem Widerruf: ' . $m->RunSelfTest());
+
+IPS_SetProperty($iid, 'OAuthEnabled', false);
+IPS_ApplyChanges($iid);
+$formular = json_decode($m->GetConfigurationForm(), true);
+$alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
+pruefe(($element('OAuthAddress')['visible'] ?? true) === false, 'Schalter aus: keine OAuth-Adresse im Formular');
 HomeAgentHarness::$connect = '';
 
 ende('Modul');

@@ -355,6 +355,7 @@ final class OAuthServer
         $families[$id] = [
             'id'        => $id,
             'client_id' => $grant['client_id'],
+            'client_name' => (string)($grant['client_name'] ?? ''),
             'access'    => $grant['access'],
             'scope'     => $grant['scope'],
             'resource'  => $grant['resource'],

@@ -9,7 +9,7 @@ unambiguous answer. It only sees and switches the devices you release.
 
 > **Status:** early preview. Querying, switching, setting brightness, colour temperature, colour, position and heating setpoint,
 > stopping blinds, consumption and power, the history of measured values starting scenes as well as playback and volume of media players work. The device list can be proposed from
-> an Alexa instance. So far the module has been tried on three systems.
+> an Alexa instance. The Claude app can sign in with OAuth. So far the module has been tried on three systems.
 
 ## When do I need this?
 
@@ -28,7 +28,8 @@ unambiguous answer. It only sees and switches the devices you release.
   assistant. The module gives it the devices and the tools to query and switch them.
 - **A suitable client.** Any client can connect that speaks MCP over plain HTTP requests and sends a
   fixed token in the `Authorization` header. Claude Code, the MCP integration of Home
-  Assistant and the Claude app have been tried; the last two get the token in the address. Claude Desktop (through
+  Assistant and the Claude app have been tried. Home Assistant gets the token in the address, the Claude app
+  signs in with [OAuth](#sign-in-with-oauth). Claude Desktop (through
   `mcp-remote`) and Open WebUI offer this as well according to their documentation. Clients that
   cannot connect are listed under [Limits](#limits).
 
@@ -56,7 +57,7 @@ unambiguous answer. It only sees and switches the devices you release.
    | Client | Setup |
    |---|---|
    | Claude Code | `claude mcp add --transport http symcon-homeagent http://<address>:3777/hook/homeagent/<InstanceID> --header "Authorization: Bearer <token>"` |
-   | Claude app, also on the phone | Tick **Token also in the address** for the access. In the app, add a custom connector with the address `https://<Connect address>/hook/homeagent/<InstanceID>/<token>` under "Customize" → "Connectors" and choose "No sign-in" as authentication. The app reaches your system from the internet; the Connect address is shown in the Connect Control instance. |
+   | Claude app, also on the phone | Tick **Sign-in with OAuth** and add the connector as described under [Sign-in with OAuth](#sign-in-with-oauth). Without OAuth it also works with **Token also in the address**: then use the address `https://<Connect address>/hook/homeagent/<InstanceID>/<token>` and choose "No sign-in" as authentication. The app reaches your system from the internet; the Connect address is shown in the Connect Control instance. |
    | Home Assistant | Tick **Token also in the address** for the access. Add the integration **Model Context Protocol** with `http://<address>:3777/hook/homeagent/<InstanceID>/<token>` and select it for the conversation agent under "Control Home Assistant". Turn off "Prefer handling commands locally" in the voice pipeline, otherwise Home Assistant switches sentences it understands itself through its own devices. |
    | other clients | MCP over plain HTTP requests with `Authorization: Bearer <token>`; if the client cannot send a header, the token in the address. |
 
@@ -108,6 +109,27 @@ an instance see the same release list.
 | Token also in the address | For clients that cannot send a login. The token is then appended to the address. |
 
 Without an access that has a token, the instance shows status 104 and rejects all requests.
+
+## Sign-in with OAuth
+
+The Claude app can sign in instead of carrying the token in the address. Symcon Connect has to be
+active, because the app reaches your system from the internet.
+
+1. Under **Endpoint and accesses**, tick **Sign-in with OAuth** and apply. The address for the
+   connector is then shown below.
+2. In the Claude app, add a custom connector with this address under "Customize" → "Connectors". Keep
+   the preselection: sign in when connecting, and "Use Claude's published identity" as OAuth client.
+3. In the list of accesses, select the access the assistant should use and click **Create pairing code
+   for the selected access**. The code has six digits and is valid for ten minutes.
+4. Click "Connect" in the app. A page of your system opens. Enter the code there and click **Allow**.
+
+The assistant gets the rights and the default room of this access. The page names it together with the
+address it comes from. If it shows anything other than claude.ai, click **Deny**.
+
+The paired assistants are listed below. **Revoke selected assistant** disconnects one at once. If an
+access gets a new token, all assistants paired through it are disconnected. A pairing that has not been
+used for 90 days expires. The self-test shows the number of paired assistants and reports when the box
+is ticked but Connect is not running.
 
 ## Rooms and floors
 
@@ -399,11 +421,12 @@ echo HAGT_RunScene($InstanceID, '', 'Filmabend');
 - Slats whose variable carries the "blind" presentation with rotation only get a percentage without
   "open" or "closed".
 - The endpoint speaks MCP over plain HTTP requests and offers no event stream. Clients that require
-  an event stream (SSE) or OAuth cannot connect directly. The Claude app works with the token in
-  the address; this is not tried for ChatGPT.
-- The tokens are the only lock. Through Symcon Connect the endpoint is reachable from the internet,
-  so use generated tokens. Rejected logins appear in the message log (the first one of a minute and
-  then their number). After 20 rejected logins within one minute the endpoint is blocked for
+  an event stream (SSE) cannot connect directly. With OAuth only clients with a Client ID Metadata
+  Document can sign in; the Claude app has been tried. Neither way has been tried for ChatGPT.
+- Tokens and pairing codes are the only lock. Through Symcon Connect the endpoint is reachable from
+  the internet, so use generated tokens. Rejected logins appear in the message log (the first one of a
+  minute and then their number); wrong pairing codes count as well. After 20 rejected logins within one
+  minute the endpoint is blocked for
   60 seconds for everyone, including assistants with the right token.
 - With the token in the address it can end up in logs, histories and settings files of the client.
   Set the tick only for accesses whose client cannot send the login in the header.

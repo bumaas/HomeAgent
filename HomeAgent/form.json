@@ -74,6 +74,46 @@
               }
             }
           ]
+        },
+        {
+          "type": "CheckBox",
+          "name": "OAuthEnabled",
+          "caption": "Sign-in with OAuth (Claude app, needs Symcon Connect)"
+        },
+        {
+          "type": "Label",
+          "name": "OAuthAddress",
+          "caption": "",
+          "visible": false
+        },
+        {
+          "type": "Button",
+          "caption": "Create pairing code for the selected access",
+          "onClick": "echo HAGT_CreatePairingCode($id, $Accesses['Name']);"
+        },
+        {
+          "type": "List",
+          "name": "OAuthClients",
+          "caption": "Assistants paired via OAuth",
+          "rowCount": 3,
+          "add": false,
+          "delete": false,
+          "loadValuesFromConfiguration": false,
+          "columns": [
+            { "caption": "Assistant", "name": "Client", "width": "auto" },
+            { "caption": "Access", "name": "Access", "width": "160px" },
+            { "caption": "Paired", "name": "Paired", "width": "140px" },
+            { "caption": "Last renewed", "name": "Refreshed", "width": "140px" },
+            { "caption": "Valid until", "name": "Expires", "width": "110px" },
+            { "caption": "Family", "name": "Family", "visible": false }
+          ],
+          "values": []
+        },
+        {
+          "type": "Button",
+          "caption": "Revoke selected assistant",
+          "confirm": "Revoke the selected assistant? It has to be paired again with a new pairing code.",
+          "onClick": "HAGT_UIRevokeClient($id, $OAuthClients['Family']);"
         }
       ]
     },

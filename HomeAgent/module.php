@@ -378,6 +378,11 @@ class HomeAgent extends IPSModuleStrict
                 $lines[] = sprintf($this->Translate('Note: access "%s" also accepts its token as the last part of the address, for clients that cannot send a login'), $access['Name']);
             }
         }
+        if ($this->oauthBase() !== '') {
+            $lines[] = sprintf($this->Translate('Sign-in with OAuth: %d assistant(s) paired'), count($this->oauthClientRows()));
+        } elseif ($this->oauthEnabled()) {
+            $lines[] = $this->Translate('Note: sign-in with OAuth is on, but Symcon Connect is not active, so no assistant can sign in');
+        }
         $lines[] = sprintf($this->Translate('%d released device(s), %d scene(s), endpoint %s'), $count, $sceneCount, $this->GetEndpoint());
         return implode("\n", array_merge([$ok ? 'OK' : 'ERROR'], $lines));
     }
@@ -394,6 +399,14 @@ class HomeAgent extends IPSModuleStrict
         $adjust = function (array &$element) use (&$adjust, $failedRows): void {
             if (($element['name'] ?? '') === 'Endpoint') {
                 $element['caption'] = $this->Translate('Endpoint') . ': http://<address>:3777' . $this->GetEndpoint();
+            }
+            if (($element['name'] ?? '') === 'OAuthAddress') {
+                $base = $this->oauthBase();
+                $element['caption'] = sprintf($this->Translate('Address for assistants that sign in with OAuth: %s'), $base);
+                $element['visible'] = $base !== '';
+            }
+            if (($element['name'] ?? '') === 'OAuthClients') {
+                $element['values'] = $this->oauthClientRows();
             }
 
             if (($element['name'] ?? '') === 'Devices') {
@@ -802,8 +815,9 @@ class HomeAgent extends IPSModuleStrict
             // normalen Ablauf; sonst sperrte sich der Endpunkt nach einem Neustart selbst.
             $authorization = trim((string)($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
             $expired = $oauthBase !== '' && OAuthServer::isExpiredToken($this->storedJson('OAuthTokens'), $authorization, time());
-            $this->SendDebug('Hook', 'rejected: ' . ($expired ? 'OAuth token expired' : ($authorization === '' && $pathToken === '' ? 'no authorization' : 'authorization wrong')), 0);
-            if (($authorization !== '' || $pathToken !== '') && !$expired) {
+            $attempted = $authorization !== '' || $pathToken !== '';
+            $this->SendDebug('Hook', 'rejected: ' . ($expired ? 'OAuth token expired' : ($attempted ? 'authorization wrong' : 'no authorization')), 0);
+            if ($attempted && !$expired) {
                 $this->recordSignInFailure((string)($_SERVER['REMOTE_ADDR'] ?? '?'));
             }
         } else {
@@ -835,6 +849,44 @@ class HomeAgent extends IPSModuleStrict
             return sprintf($this->Translate('Pairing code for the access "%s": %s, valid until %s'), $access['Name'], $code, date('H:i', $now + OAuthServer::PAIRING_SECONDS));
         }
         return sprintf($this->Translate('There is no usable access named "%s"'), $AccessName);
+    }
+
+    /** Widerruft eine OAuth-Kopplung: Zugriffs- und Erneuerungstoken des Clients gelten sofort nicht mehr. */
+    public function UIRevokeClient(string $Family): void
+    {
+        $this->changeStored('OAuthGrants', static function (array $families) use ($Family): array {
+            unset($families[$Family]);
+            return $families;
+        }, true);
+        $this->SendDebug('OAuth', 'pairing revoked', 0);
+        $this->UpdateFormField('OAuthClients', 'values', (string)json_encode($this->oauthClientRows()));
+    }
+
+    /**
+     * Zeilen der Liste „Gekoppelte Assistenten“: Client mit Host der client_id (den Namen wählt der
+     * Client selbst), Zugang, gekoppelt, zuletzt erneuert, gültig bis. Keine Tokens.
+     *
+     * @return list<array{Client: string, Access: string, Paired: string, Refreshed: string, Expires: string, Family: string}>
+     */
+    private function oauthClientRows(): array
+    {
+        $rows = [];
+        foreach ($this->storedJson('OAuthGrants', true) as $family) {
+            if (!is_array($family) || ($family['expires'] ?? 0) <= time()) {
+                continue;
+            }
+            $host = (string)parse_url((string)$family['client_id'], PHP_URL_HOST);
+            $name = trim((string)($family['client_name'] ?? ''));
+            $rows[] = [
+                'Client'    => $name === '' ? $host : $name . ' (' . $host . ')',
+                'Access'    => $this->accessNameFor((string)$family['access']) ?? $this->Translate('(access removed or token changed)'),
+                'Paired'    => date('d.m.Y H:i', (int)$family['created']),
+                'Refreshed' => date('d.m.Y H:i', (int)$family['expires'] - OAuthServer::REFRESH_SECONDS),
+                'Expires'   => date('d.m.Y', (int)$family['expires']),
+                'Family'    => (string)$family['id'],
+            ];
+        }
+        return $rows;
     }
 
     /**
@@ -898,6 +950,7 @@ class HomeAgent extends IPSModuleStrict
         $code = OAuthServer::newToken();
         $grant = [
             'client_id'      => $client['client_id'],
+            'client_name'    => $client['client_name'],
             'redirect_uri'   => $params['redirect_uri'],
             'code_challenge' => $params['code_challenge'],
             'scope'          => (string)($params['scope'] ?? ''),
@@ -1166,16 +1219,21 @@ class HomeAgent extends IPSModuleStrict
     /** Öffentliche Adresse des Endpunkts für OAuth; '' = OAuth aus (Schalter aus oder ohne Connect). */
     private function oauthBase(): string
     {
-        try {
-            $enabled = @$this->ReadPropertyBoolean('OAuthEnabled');
-        } catch (Throwable) {
-            $enabled = false; // vor dem Neuladen der Bibliothek gibt es die Property noch nicht
-        }
-        if ($enabled !== true) {
+        if (!$this->oauthEnabled()) {
             return '';
         }
         $connect = rtrim($this->connectUrl(), '/');
         return $connect === '' ? '' : $connect . $this->GetEndpoint();
+    }
+
+    /** Schalter „Anmeldung per OAuth“; vor dem Neuladen der Bibliothek gibt es die Property noch nicht. */
+    private function oauthEnabled(): bool
+    {
+        try {
+            return @$this->ReadPropertyBoolean('OAuthEnabled') === true;
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     /** Adresse der Anlage über Symcon Connect, '' ohne aktive Connect-Instanz. */

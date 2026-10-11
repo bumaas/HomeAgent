@@ -10,7 +10,7 @@ die Geräte, die Sie freigeben.
 
 > **Stand:** frühe Vorschau. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Farbe, Position und
 > Heizungs-Sollwert, das Anhalten von Rollläden, Verbrauch und Leistung, der Verlauf von Messwerten
-> das Starten von Szenen sowie Wiedergabe und Lautstärke von Mediaplayern gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen. Erprobt ist das Modul bisher
+> das Starten von Szenen sowie Wiedergabe und Lautstärke von Mediaplayern gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen. Die Claude-App meldet sich auf Wunsch per OAuth an. Erprobt ist das Modul bisher
 > auf drei Anlagen.
 
 ## Wann brauche ich das?
@@ -31,8 +31,8 @@ die Geräte, die Sie freigeben.
   Assistent mit. Das Modul liefert ihm die Geräte und die Werkzeuge, um sie abzufragen und zu schalten.
 - **Einen passenden Client.** Verbinden kann sich jeder Client, der MCP über einfache HTTP-Anfragen
   spricht und ein festes Token im Header `Authorization` mitschickt. Erprobt sind Claude Code, die
-  MCP-Integration von Home Assistant und die Claude-App; die beiden letzten bekommen das Token in der
-  Adresse. Claude Desktop (über
+  MCP-Integration von Home Assistant und die Claude-App. Home Assistant bekommt das Token in der
+  Adresse, die Claude-App meldet sich per [OAuth](#anmeldung-per-oauth) an. Claude Desktop (über
   `mcp-remote`) und Open WebUI bieten das nach ihrer Dokumentation ebenfalls. Welche
   Clients nicht gehen, steht unter [Grenzen](#grenzen).
 
@@ -60,7 +60,7 @@ die Geräte, die Sie freigeben.
    | Client | Einrichtung |
    |---|---|
    | Claude Code | `claude mcp add --transport http symcon-homeagent http://<Adresse>:3777/hook/homeagent/<InstanzID> --header "Authorization: Bearer <Token>"` |
-   | Claude-App, auch auf dem Handy | Beim Zugang den Haken **Token auch in der Adresse** setzen. In der App unter „Anpassen“ → „Connectoren“ einen benutzerdefinierten Connector mit der Adresse `https://<Connect-Adresse>/hook/homeagent/<InstanzID>/<Token>` anlegen und als Anmeldung „No sign-in“ wählen. Die App erreicht die Anlage aus dem Internet, die Connect-Adresse steht in der Instanz Connect Control. |
+   | Claude-App, auch auf dem Handy | Den Haken **Anmeldung per OAuth** setzen und den Connector so anlegen, wie es unter [Anmeldung per OAuth](#anmeldung-per-oauth) steht. Ohne OAuth geht es auch mit dem Haken **Token auch in der Adresse**: dann als Adresse `https://<Connect-Adresse>/hook/homeagent/<InstanzID>/<Token>` und als Anmeldung „Keine Anmeldung“. Die App erreicht die Anlage aus dem Internet, die Connect-Adresse steht in der Instanz Connect Control. |
    | Home Assistant | Beim Zugang den Haken **Token auch in der Adresse** setzen. Die Integration **Model Context Protocol** mit `http://<Adresse>:3777/hook/homeagent/<InstanzID>/<Token>` hinzufügen und beim Gesprächsagenten unter „Home Assistant steuern“ auswählen. In der Sprach-Pipeline „Befehle lokal bevorzugen“ ausschalten, sonst schaltet Home Assistant Sätze, die es selbst versteht, über seine eigenen Geräte. |
    | andere Clients | MCP über einfache HTTP-Anfragen mit `Authorization: Bearer <Token>`; kann der Client keinen Header schicken, das Token in der Adresse. |
 
@@ -115,6 +115,29 @@ Zugänge einer Instanz sehen dieselbe Freigabeliste.
 | Token auch in der Adresse | Für Clients, die keine Anmeldung mitschicken können. Das Token hängt dann an der Adresse. |
 
 Ohne Zugang mit Token zeigt die Instanz den Status 104 und weist alle Anfragen ab.
+
+## Anmeldung per OAuth
+
+Die Claude-App kann sich anmelden, statt das Token in der Adresse zu tragen. Symcon Connect muss dafür
+aktiv sein, denn die App erreicht die Anlage aus dem Internet.
+
+1. Im Bereich **Endpunkt und Zugänge** den Haken **Anmeldung per OAuth** setzen und übernehmen.
+   Darunter steht dann die Adresse für den Connector.
+2. In der Claude-App unter „Anpassen“ → „Connectoren“ einen benutzerdefinierten Connector mit dieser
+   Adresse anlegen. Die Vorauswahl „Jetzt anmelden“ und „Claudes veröffentlichte Identität verwenden“
+   bleibt stehen.
+3. In der Zugangsliste den Zugang auswählen, den der Assistent nutzen soll, und auf **Kopplungscode für
+   den ausgewählten Zugang erzeugen** klicken. Der Code hat sechs Ziffern und gilt zehn Minuten.
+4. In der App auf „Verbinden“ klicken. Es öffnet sich eine Seite der Anlage. Dort den Code eingeben
+   und auf **Erlauben** klicken.
+
+Der Assistent bekommt die Rechte und den Standardraum dieses Zugangs. Die Seite nennt ihn mit der
+Adresse, von der er stammt. Steht dort etwas anderes als claude.ai, klicken Sie auf **Ablehnen**.
+
+Die gekoppelten Assistenten stehen in der Liste darunter. **Ausgewählten Assistenten widerrufen** trennt
+einen sofort. Bekommt ein Zugang ein neues Token, sind alle Assistenten getrennt, die über ihn gekoppelt
+sind. Eine Kopplung, die 90 Tage lang nicht benutzt wurde, verfällt. Der Selbsttest nennt die Zahl der
+gekoppelten Assistenten und meldet, wenn der Haken gesetzt ist, Connect aber nicht läuft.
 
 ## Räume und Etagen
 
@@ -418,11 +441,13 @@ echo HAGT_RunScene($InstanzID, '', 'Filmabend');
 - Lamellen, deren Variable die Darstellung „Rollladen“ mit Rotation trägt, bekommen nur eine
   Prozentzahl ohne „offen“ oder „geschlossen“.
 - Der Endpunkt spricht MCP über einfache HTTP-Anfragen und bietet keinen Datenstrom an. Clients, die
-  zwingend einen Datenstrom (SSE) oder OAuth verlangen, können sich nicht direkt verbinden. Die
-  Claude-App geht mit dem Token in der Adresse; für ChatGPT ist das nicht erprobt.
-- Die Tokens sind das einzige Schloss. Über Symcon Connect ist der Endpunkt aus dem Internet
-  erreichbar; verwenden Sie deshalb erzeugte Tokens. Abgewiesene Anmeldungen stehen im Meldungsprotokoll
-  (die erste einer Minute und danach ihre Anzahl). Nach 20 abgewiesenen Anmeldungen in einer Minute
+  zwingend einen Datenstrom (SSE) verlangen, können sich nicht direkt verbinden. Per OAuth melden sich
+  nur Clients mit einem Client ID Metadata Document an, erprobt ist die Claude-App. Für ChatGPT ist
+  beides nicht erprobt.
+- Tokens und Kopplungscodes sind das einzige Schloss. Über Symcon Connect ist der Endpunkt aus dem
+  Internet erreichbar; verwenden Sie deshalb erzeugte Tokens. Abgewiesene Anmeldungen stehen im
+  Meldungsprotokoll (die erste einer Minute und danach ihre Anzahl), falsche Kopplungscodes zählen mit.
+  Nach 20 abgewiesenen Anmeldungen in einer Minute
   ist der Endpunkt 60 Sekunden lang für alle gesperrt, auch für Assistenten mit richtigem Token.
 - Steht das Token in der Adresse, kann es in Logs, Verläufen und Einstellungsdateien des Clients
   landen. Setzen Sie den Haken nur bei Zugängen, deren Client die Anmeldung nicht im Header

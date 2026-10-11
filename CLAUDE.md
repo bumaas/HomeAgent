@@ -224,6 +224,10 @@ Weitere Regeln, die nicht offensichtlich sind:
   „Ausgewählte freigeben“ speichert direkt. Ein Knopf in `popup.buttons` zeigt jede Ausgabe rot im
   Popup, außer sie beginnt mit `MESSAGE:`.
 - Fehlerhafte Zeilen sind rot (`rowColor`), die Meldungen stehen oben im Formular.
+- OAuth im Bereich „Endpunkt und Zugänge“: Schalter `OAuthEnabled`, Label `OAuthAddress` (nur mit
+  Connect sichtbar), Knopf Kopplungscode über `$Accesses['Name']` (ausgewählte Zeile, laut Doku der
+  Liste), Liste `OAuthClients` mit `loadValuesFromConfiguration: false`, gefüllt aus `OAuthGrants`
+  (`oauthClientRows`, ohne Tokens), Widerrufen über `$OAuthClients['Family']` mit Rückfrage.
 
 ## Entwickeln und Testen
 
