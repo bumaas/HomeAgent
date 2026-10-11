@@ -182,6 +182,11 @@ class HomeAgent extends IPSModuleStrict
      */
     public function RunSelfTest(): string
     {
+        return $this->checkedOnce(fn (): string => $this->selfTest());
+    }
+
+    private function selfTest(): string
+    {
         $lines = [];
         $ok = true;
         if (!$this->hasAccessWithToken()) {
@@ -679,6 +684,19 @@ class HomeAgent extends IPSModuleStrict
 
     protected function ProcessHookData(): void
     {
+        $this->checkedOnce(function (): void {
+            $this->handleHook();
+        });
+    }
+
+    /** Körper der Anfrage; erst nach der Anmeldung gelesen. */
+    protected function requestBody(): string
+    {
+        return (string)file_get_contents('php://input');
+    }
+
+    private function handleHook(): void
+    {
         $ready = $this->GetStatus() === IS_ACTIVE;
         // Nicht bereit ist kein Anmeldefehler: Bei 401 sucht ein Client wie HA nach OAuth, und der
         // Anwender nach einem falschen Token. Einzelheiten stehen im Log, nicht in der Antwort.
@@ -705,7 +723,7 @@ class HomeAgent extends IPSModuleStrict
         $response = McpProtocol::handleHttp(
             $_SERVER['REQUEST_METHOD'] ?? 'GET',
             $access !== null,
-            static fn (): string => (string)file_get_contents('php://input'),
+            fn (): string => $this->requestBody(),
             fn (): array => $this->tools($access),
             fn (string $name, array $arguments): array => $this->callTool($name, $arguments, $access),
             $this->serverInfo($access)
@@ -1366,6 +1384,27 @@ class HomeAgent extends IPSModuleStrict
 
     /** @return list<string> Klartext je fehlerhaftem Eintrag */
     /** @return list<string> Klartext je Fehler der Listen, die Zeile über ihren Namen benannt */
+    /** Ergebnis der Prüfung für die laufende Anfrage; null = jeder Aufruf prüft selbst. */
+    private ?array $problems = null;
+
+    /**
+     * Führt $work mit einmal geprüften Listen aus. Eine Anfrage fragt die Prüfung rund zehnmal ab
+     * (Zugänge, Werkzeugliste, Aufruf); bei 152 Geräten kostete das am nuc über 4 s. Danach wird
+     * wieder bei jedem Aufruf geprüft, eine gelöschte Variable sperrt ihr Gerät also sofort.
+     */
+    private function checkedOnce(callable $work): mixed
+    {
+        if ($this->problems !== null) {
+            return $work();
+        }
+        $this->problems = $this->findProblems();
+        try {
+            return $work();
+        } finally {
+            $this->problems = null;
+        }
+    }
+
     private function validateDeviceList(): array
     {
         return array_column($this->validateLists(), 'text');
@@ -1379,16 +1418,27 @@ class HomeAgent extends IPSModuleStrict
      */
     private function validateLists(): array
     {
+        return $this->problems ?? $this->findProblems();
+    }
+
+    /**
+     * Die Prüfung selbst. Beschriftungen entstehen erst für eine fehlerhafte Zeile; jede Übersetzung
+     * kostet, und eine fehlerfreie Liste braucht keine.
+     *
+     * @return list<array{list: string, index: int, text: string}>
+     */
+    private function findProblems(): array
+    {
         $list = $this->deviceList();
         $rooms = $this->roomIndex();
         $errors = [];
-        $add = function (string $listName, int $index, string $row, string $problem) use (&$errors): void {
-            $errors[] = ['list' => $listName, 'index' => $index, 'text' => $row . ': ' . $problem];
+        $add = function (string $listName, int $index, Closure $row, string $problem) use (&$errors): void {
+            $errors[] = ['list' => $listName, 'index' => $index, 'text' => $row() . ': ' . $problem];
         };
 
         $tokens = [];
         foreach ($this->accessList() as $index => $access) {
-            $row = $this->rowLabel('Access', $access['Name']);
+            $row = fn (): string => $this->rowLabel('Access', $access['Name']);
             if ($access['Name'] === '') {
                 $add('Accesses', $index, $row, $this->Translate('name is missing'));
             }
@@ -1410,7 +1460,7 @@ class HomeAgent extends IPSModuleStrict
 
         $seen = [];
         foreach ($this->listProperty('Rooms') as $index => $room) {
-            $row = $this->rowLabel('Room', trim((string)($room['Name'] ?? '')));
+            $row = fn (): string => $this->rowLabel('Room', trim((string)($room['Name'] ?? '')));
             $key = DeviceIndex::normalize((string)($room['Name'] ?? ''));
             if ($key === '') {
                 $add('Rooms', $index, $row, $this->Translate('name is missing'));
@@ -1421,7 +1471,7 @@ class HomeAgent extends IPSModuleStrict
         }
 
         foreach ($list as $index => $entry) {
-            $row = $this->rowLabel('Device', trim((string)($entry['Name'] ?? '')), trim((string)($entry['Room'] ?? '')));
+            $row = fn (): string => $this->rowLabel('Device', trim((string)($entry['Name'] ?? '')), trim((string)($entry['Room'] ?? '')));
             if (trim((string)($entry['Name'] ?? '')) === '') {
                 $add('Devices', $index, $row, $this->Translate('name is missing'));
             }
@@ -1431,15 +1481,15 @@ class HomeAgent extends IPSModuleStrict
                 continue;
             }
             // Geprüft werden nur die Fähigkeiten des Typs; was nach einem Typwechsel sonst noch in der Zeile steht, zählt nicht.
-            $captions = $this->roleCaptions($type);
+            $caption = fn (string $role): string => $this->roleCaptions($type)[$role];
             $roles = DeviceIndex::rolesOf($entry);
             $required = DeviceIndex::TYPE_ROLES[$type]['required'];
             if (array_intersect($required, array_keys($roles)) === []) {
-                $add('Devices', $index, $row, sprintf($this->Translate('no variable selected for %s'), implode(' / ', array_map(static fn (string $role): string => $captions[$role], $required))));
+                $add('Devices', $index, $row, sprintf($this->Translate('no variable selected for %s'), implode(' / ', array_map($caption, $required))));
             }
             foreach ($roles as $role => $variableId) {
                 if (!IPS_VariableExists($variableId)) {
-                    $add('Devices', $index, $row, sprintf($this->Translate('variable for %s does not exist'), $captions[$role]));
+                    $add('Devices', $index, $row, sprintf($this->Translate('variable for %s does not exist'), $caption($role)));
                 }
             }
         }
@@ -1454,7 +1504,7 @@ class HomeAgent extends IPSModuleStrict
             }
         }
         foreach ($this->sceneList() as $index => $entry) {
-            $row = $this->rowLabel('Scene', trim((string)($entry['Name'] ?? '')));
+            $row = fn (): string => $this->rowLabel('Scene', trim((string)($entry['Name'] ?? '')));
             if (trim((string)($entry['Name'] ?? '')) === '') {
                 $add('Scenes', $index, $row, $this->Translate('name is missing'));
             }

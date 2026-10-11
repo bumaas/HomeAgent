@@ -46,7 +46,10 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   ein Fehler der Zeile. Nach 20 abgewiesenen Anmeldungen in einer Minute ist der Hook 60 s zu.
 - **Ein fehlerhafter Eintrag sperrt nur sich selbst**: Zugang (`usableAccesses()`), Gerät
   (`usableDevices()`), Szene (`usableScenes()`), Energiebilanz als Ganzes (`usableBalance()`). Geprüft wird
-  bei jedem Aufruf, eine gelöschte Variable sperrt ihr Gerät also sofort, ohne Übernehmen. Warnung im Log,
+  bei jedem Aufruf, eine gelöschte Variable sperrt ihr Gerät also sofort, ohne Übernehmen. Eine Anfrage
+  prüft nur einmal (`checkedOnce` in Hook und Selbsttest), und Beschriftungen entstehen nur für fehlerhafte
+  Zeilen: vorher übersetzte jede der rund zehn Prüfungen je Anfrage über 20 Texte je Gerät, `get_state`
+  brauchte am nuc (152 Geräte) 4,5 bis 6,2 s, danach rund 45 ms (build 72). Warnung im Log,
   Überschrift im Formular „Fehlerhafte Einträge sind gesperrt“. Status 104 ohne Zugang mit Token, 201 bei
   Fehlern in der Raumliste oder ohne fehlerfreien Zugang (`endpointClosed()`); beides antwortet mit 503,
   nicht 401 (ein Client wie HA beginnt bei 401 die OAuth-Suche). Anlass: Im Blindtest vom 11.10.2026 zeigte

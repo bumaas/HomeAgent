@@ -39,6 +39,23 @@ final class HomeAgentHarness extends HomeAgent
         return true;
     }
 
+    /** Zählt die Übersetzungen; jede kostet unter Symcon Zeit, ein Maß für die Arbeit je Anfrage. */
+    public static int $translations = 0;
+
+    public function Translate(string $Text): string
+    {
+        self::$translations++;
+        return parent::Translate($Text);
+    }
+
+    /** Körper der nächsten Hook-Anfrage; php://input ist in der CLI leer. */
+    public static string $body = '';
+
+    protected function requestBody(): string
+    {
+        return self::$body;
+    }
+
     /** Das Backend, mit dem die Werkzeuge arbeiten (Fahrtmerker im Buffer „Travels“). */
     public function testBackend(): SymconDeviceBackend
     {
@@ -1520,5 +1537,55 @@ pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Luftentfeuchter m
 $test = $m->RunSelfTest();
 pruefe(str_contains($test, 'Note: Leistung Entfeuchter is used by Keller Entfeuchter and Keller Luftentfeuchter, consumption and power count it only once'), 'der Selbsttest nennt die doppelt genutzte Leistung: ' . $test);
 pruefe(isset($de['Note: %s is used by %s and %s, consumption and power count it only once']), 'deutsche Übersetzung des Hinweises');
+
+/* --- Laufzeit: Listen einmal je Anfrage prüfen, Texte nur für Fehler (build 72) ------------------ */
+
+// Anlass 11.10.2026: get_state am nuc (152 Geräte) brauchte 4,5 bis 6,2 s statt 0,02 bis 0,4 s. Seit
+// build 71 prüft jeder Aufruf die Listen, und das rund zehnmal je Anfrage; jede Prüfung übersetzte
+// je Gerät über 20 Beschriftungen, auch für fehlerfreie Zeilen. Gezählt werden die Übersetzungen.
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
+$viele = [];
+for ($i = 1; $i <= 40; $i++) {
+    $viele[] = ['Room' => 'Halle', 'Name' => 'Leuchte ' . $i, 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $licht, 'Invert' => false];
+}
+IPS_SetProperty($iid, 'Scenes', '[]');
+IPS_SetProperty($iid, 'Rooms', '[]');
+IPS_SetProperty($iid, 'Devices', json_encode($viele));
+IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Lang', $token)]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Ausgangslage Laufzeit: 40 Leuchten, aktiv: ' . IPS_GetInstance($iid)['InstanceStatus']);
+
+$werkzeugAufruf = static function (array $argumente) use ($hook, $m, $iid, $token): string {
+    $_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $iid, 'HTTP_AUTHORIZATION' => 'Bearer ' . $token, 'REMOTE_ADDR' => '192.0.2.1'];
+    HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/call', 'params' => ['name' => 'get_state', 'arguments' => $argumente]]);
+    ob_start();
+    try {
+        $hook->invoke($m);
+    } finally {
+        $ausgabe = (string)ob_get_clean();
+        HomeAgentHarness::$body = '';
+    }
+    return $ausgabe;
+};
+HomeAgentHarness::$translations = 0;
+$a = $werkzeugAufruf(['room' => 'Halle']);
+$anzahl = HomeAgentHarness::$translations;
+pruefe(str_contains($a, '40 of 40 checked devices active') || str_contains($a, '40 device'), 'get_state über den Hook liefert alle 40 Leuchten: ' . substr($a, 0, 200));
+pruefe($anzahl < 200, 'ein Werkzeugaufruf mit 40 fehlerfreien Geräten übersetzt höchstens 200 Texte, nicht ' . $anzahl);
+
+HomeAgentHarness::$translations = 0;
+$m->RunSelfTest();
+pruefe(HomeAgentHarness::$translations < 200, 'der Selbsttest mit 40 fehlerfreien Geräten übersetzt höchstens 200 Texte, nicht ' . HomeAgentHarness::$translations);
+
+// Fehlerhafte Zeilen nennen weiter Gerät, Raum und Fähigkeit
+$geloescht = variable(VARIABLETYPE_BOOLEAN, false);
+IPS_DeleteVariable($geloescht);
+$viele[] = ['Room' => 'Halle', 'Name' => 'Weg', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $geloescht, 'Invert' => false];
+IPS_SetProperty($iid, 'Devices', json_encode($viele));
+IPS_ApplyChanges($iid);
+$test = $m->RunSelfTest();
+pruefe(str_contains($test, 'Device "Weg" (Halle): variable for Switching state does not exist'), 'der Fehlertext nennt weiter Gerät, Raum und Fähigkeit: ' . $test);
+$a = $werkzeugAufruf(['room' => 'Halle']);
+pruefe(str_contains($a, '40 of 40 checked devices active') || str_contains($a, '40 device'), 'das fehlerhafte Gerät bleibt gesperrt, die übrigen 40 antworten: ' . substr($a, 0, 200));
 
 ende('Modul');
