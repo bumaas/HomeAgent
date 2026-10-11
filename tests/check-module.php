@@ -51,9 +51,13 @@ final class HomeAgentHarness extends HomeAgent
     /** Körper der nächsten Hook-Anfrage; php://input ist in der CLI leer. */
     public static string $body = '';
 
-    protected function requestBody(): string
+    /** @var int höchstens so viele Bytes liest das Modul; 0 = ohne Grenze */
+    public static int $bodyLimit = 0;
+
+    protected function requestBody(int $limit = 0): string
     {
-        return self::$body;
+        self::$bodyLimit = $limit;
+        return $limit > 0 ? substr(self::$body, 0, $limit) : self::$body;
     }
 
     /** @var array<string, string> Client-Dokumente (CIMD) nach Adresse; ohne Netz im Test. */
@@ -71,8 +75,11 @@ final class HomeAgentHarness extends HomeAgent
     /** Connect-Adresse der Anlage; der Kernel-Stub kennt CC_GetConnectURL nicht. */
     public static string $connect = '';
 
+    public static int $connectCalls = 0;
+
     protected function connectUrl(): string
     {
+        self::$connectCalls++;
         return self::$connect;
     }
 
@@ -1690,7 +1697,7 @@ foreach (['/oauth/register'] as $pfad) {
     $a = $oauthAnfrage('POST', $pfad);
     pruefe($a['status'] === 503 && str_contains($a['body'], 'temporarily_unavailable'), 'noch nicht gebaut: ' . $pfad . ' antwortet 503 temporarily_unavailable: ' . $a['status'] . ' ' . $a['body']);
 }
-pruefe($stand !== '' && $fehlversuche() === $stand, 'nur das POST ohne Anmeldung zählt als Fehlversuch, keine der OAuth-Adressen: ' . $fehlversuche());
+pruefe($stand === '' && $fehlversuche() === '', 'weder das POST ohne Anmeldung noch die OAuth-Adressen zählen als Fehlversuch (Review R7): ' . $fehlversuche());
 
 // Feste Tokens gelten weiter, im Header und in der Adresse
 pruefe(str_contains($oauthAnfrage('POST', '', 'Bearer ' . $token)['body'], 'Parse error'), 'Schalter an: Token im Header kommt durch');
@@ -1962,6 +1969,71 @@ IPS_ApplyChanges($iid);
 IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', 'neues-token-0123456789abcdef', 'Halle', true)]));
 IPS_ApplyChanges($iid);
 pruefe($mcp('Bearer ' . $zugriff, 'tools/list')['status'] === 401, 'neues Token am Zugang: das Zugriffstoken gilt sofort nicht mehr');
+
+try {
+    IPS_SetProperty($iid, 'OAuthEnabled', false);
+    IPS_ApplyChanges($iid);
+} catch (Throwable) {
+}
+HomeAgentHarness::$connect = '';
+
+/* --- Befunde aus /code-review vom 11.10.2026 (build 78) ------------------------------------------ */
+
+HomeAgentHarness::$connect = 'https://example.ipmagic.de';
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
+IPS_SetProperty($iid, 'Rooms', json_encode([['Name' => 'Halle', 'Aliases' => '', 'Floor' => '']]));
+IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', $token, 'Halle', true)]));
+IPS_SetProperty($iid, 'OAuthEnabled', true);
+IPS_ApplyChanges($iid);
+pruefe($status() === IS_ACTIVE, 'Ausgangslage Review: aktiv, nicht ' . $status());
+
+// R9: Ein Aufruf mit festem Token braucht die Connect-Adresse nicht
+HomeAgentHarness::$connectCalls = 0;
+$a = $mcp('Bearer ' . $token, 'tools/list');
+pruefe($a['status'] === 200 && HomeAgentHarness::$connectCalls === 0, 'festes Token: keine Abfrage der Connect-Adresse, nicht ' . HomeAgentHarness::$connectCalls);
+
+// R7: Was zum normalen Ablauf gehört, zählt nicht als Fehlversuch
+$mcp('', 'tools/list');
+pruefe($fehlversuche() === '', 'eine Anfrage ohne Anmeldung (Beginn der OAuth-Suche) zählt nicht');
+$tokens = $koppeln();
+$zugriff = (string)($tokens['access_token'] ?? '');
+$alt = (string)(new ReflectionMethod($m, 'GetBuffer'))->invoke($m, 'OAuthTokens');
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'OAuthTokens', json_encode(array_map(static fn (array $e): array => ['expires' => time() - 1] + $e, (array)json_decode($alt, true))));
+$a = $mcp('Bearer ' . $zugriff, 'tools/list');
+pruefe($a['status'] === 401 && $fehlversuche() === '', 'ein abgelaufenes Zugriffstoken zählt nicht: ' . $fehlversuche());
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'OAuthTokens', $alt);
+$mcp('Bearer erfundenes-token-0123456789abcdef', 'tools/list');
+pruefe($fehlversuche() !== '', 'ein unbekanntes Token zählt weiter');
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
+
+// R1: Erneuern, während der Zugang nicht benutzbar ist, kostet die Kopplung nicht
+$erneuern = (string)($tokens['refresh_token'] ?? '');
+// Ein Tippfehler im Standardraum sperrt den Zugang; ein zweiter hält den Endpunkt offen
+IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', $token, 'Hallle', true), $zugang('Andere', 'andere-token-0123456789abcdef')]));
+IPS_ApplyChanges($iid);
+$a = $tokenAnfrage(['grant_type' => 'refresh_token', 'refresh_token' => $erneuern, 'client_id' => $claudeId]);
+pruefe($a['status'] === 400 && ($a['json']['error'] ?? '') === 'invalid_grant', 'Zugang gesperrt: Erneuern scheitert: ' . $a['status']);
+IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', $token, 'Halle', true)]));
+IPS_ApplyChanges($iid);
+$a = $tokenAnfrage(['grant_type' => 'refresh_token', 'refresh_token' => $erneuern, 'client_id' => $claudeId]);
+pruefe($a['status'] === 200 && isset($a['json']['access_token']), 'Zugang wieder benutzbar: dasselbe Erneuerungstoken gilt noch: ' . $a['status'] . ' ' . ($a['json']['error'] ?? ''));
+
+// R2: Ist die Sperre belegt, gibt es keine Tokens, die nie gespeichert wurden
+$code = $neuerCode();
+IPS_SemaphoreEnter('HAGT_OAuthGrants_' . $iid, 0);
+$a = $tokenAnfrage(['code' => $code] + $einloesen);
+IPS_SemaphoreLeave('HAGT_OAuthGrants_' . $iid);
+pruefe($a['status'] === 503 && ($a['json']['error'] ?? '') === 'temporarily_unavailable' && !isset($a['json']['access_token']), 'Sperre belegt: 503 statt ungespeicherter Tokens: ' . $a['status'] . ' ' . $a['body']);
+IPS_SemaphoreEnter('HAGT_OAuthPairings_' . $iid, 0);
+$text = $kopplung('Claude-App');
+IPS_SemaphoreLeave('HAGT_OAuthPairings_' . $iid);
+pruefe(preg_match('/\b\d{6}\b/', $text) !== 1, 'Sperre belegt: kein Kopplungscode, der nie gespeichert wurde: ' . $text);
+
+// R6: Der Körper der OAuth-Endpunkte ist begrenzt
+$a = $tokenAnfrage(['grant_type' => 'refresh_token', 'refresh_token' => str_repeat('x', 20000), 'client_id' => $claudeId]);
+pruefe($a['status'] === 413 && HomeAgentHarness::$bodyLimit > 0 && HomeAgentHarness::$bodyLimit <= 16384, 'Token-Endpunkt: übergroßer Körper 413, gelesen mit Grenze ' . HomeAgentHarness::$bodyLimit . ': ' . $a['status']);
+$a = $autorisieren('POST', $abfrage, ['pairing_code' => str_repeat('1', 20000), 'decision' => 'allow']);
+pruefe($a['status'] === 413 && HomeAgentHarness::$bodyLimit > 0 && HomeAgentHarness::$bodyLimit <= 16384, 'Autorisierung: übergroßer Körper 413: ' . $a['status']);
 
 try {
     IPS_SetProperty($iid, 'OAuthEnabled', false);

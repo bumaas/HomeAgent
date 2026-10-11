@@ -89,6 +89,15 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   benutzbar und mit demselben Token. Der Client bekommt Werkzeuge, Rechte und Standardraum dieses
   Zugangs. Jede Kopplung hat eine Familie, auch ohne `offline_access`, damit sie sich widerrufen lässt.
   Kam ein Token mit und gilt nicht, sagt der 401 zusätzlich `error="invalid_token"` (RFC 6750).
+  Aus dem Code-Review vom 11.10.2026 (build 78): Als Fehlversuch zählt nur ein Token, das nicht gilt
+  (auch in der Adresse), ein falscher Kopplungscode und ein ungültiger Code bzw. ein ungültiges
+  Erneuerungstoken; eine Anfrage ohne Anmeldung und ein bekanntes, abgelaufenes Zugriffstoken gehören zum
+  normalen Ablauf. Erneuert wird nur für einen benutzbaren Zugang, sonst bleibt die Familie unverändert.
+  Speicher ändert nur `changeStored` unter einer Sperre; ohne Sperre gibt es 503 statt Tokens, die nie
+  gespeichert wurden. Körper an `oauth/authorize` und `oauth/token` höchstens 8 KB (413). Das CIMD wird
+  nur von global erreichbaren Adressen geholt (`FILTER_FLAG_GLOBAL_RANGE`, also nicht aus 100.64.0.0/10).
+  Die Einwilligungsseite nennt in der Überschrift den Host der `client_id`, den Namen wählt der Client
+  selbst. Bei mehr als 50 Kopplungen fallen die am längsten nicht erneuerten heraus.
   Ende zu Ende mit der Claude-App erprobt am 11.10.2026 (Connector mit „Jetzt anmelden“ und CIMD,
   Kopplungscode, danach `get_state`); die Token-Anfrage steht als Mitschnitt in der Fixture.
 

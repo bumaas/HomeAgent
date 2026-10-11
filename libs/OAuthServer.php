@@ -72,6 +72,19 @@ final class OAuthServer
     }
 
     /**
+     * Ist das Bearer-Token ein bekanntes, aber abgelaufenes Zugriffstoken? Dann erneuert der Client,
+     * das ist kein Fehlversuch.
+     */
+    public static function isExpiredToken(array $tokens, string $authorization, int $now): bool
+    {
+        if (preg_match('/^\s*Bearer[ \t]+(\S+)\s*$/i', $authorization, $parts) !== 1) {
+            return false;
+        }
+        $entry = $tokens[hash('sha256', $parts[1])] ?? null;
+        return is_array($entry) && $entry['expires'] <= $now;
+    }
+
+    /**
      * Prüft ein Bearer-Token als OAuth-Zugriffstoken: bekannt, nicht abgelaufen, und seine Kopplung
      * besteht noch. Ob der Zugang noch benutzbar ist, prüft der Aufrufer.
      *
@@ -152,10 +165,19 @@ final class OAuthServer
         return true;
     }
 
-    /** Liegt die IP-Adresse außerhalb privater und reservierter Bereiche? */
+    /**
+     * Ist die IP-Adresse global erreichbar? Ausgeschlossen sind private und reservierte Bereiche und
+     * alle, die RFC 6890 nicht global nennt, etwa 100.64.0.0/10 (CGNAT, Tailscale).
+     */
     public static function publicAddress(string $ip): bool
     {
-        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
+        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE | FILTER_FLAG_GLOBAL_RANGE) !== false;
+    }
+
+    /** Textparameter einer Anfrage, '' wenn er fehlt oder kein Text ist. */
+    private static function param(array $params, string $key): string
+    {
+        return is_string($params[$key] ?? null) ? $params[$key] : '';
     }
 
     /**
@@ -219,7 +241,7 @@ final class OAuthServer
     public static function checkAuthorize(array $params, string $base, ?array $client): array
     {
         $base = rtrim($base, '/');
-        $text = static fn (string $key): string => is_string($params[$key] ?? null) ? $params[$key] : '';
+        $text = static fn (string $key): string => self::param($params, $key);
         if ($client === null || $client['client_id'] !== $text('client_id')) {
             return ['status' => 'page', 'error' => 'client'];
         }
@@ -301,7 +323,7 @@ final class OAuthServer
      */
     public static function redeemCode(array $codes, array $params, string $base, int $now): array
     {
-        $text = static fn (string $key): string => is_string($params[$key] ?? null) ? $params[$key] : '';
+        $text = static fn (string $key): string => self::param($params, $key);
         if ($text('code') === '' || $text('code_verifier') === '' || $text('client_id') === '' || $text('redirect_uri') === '') {
             return ['codes' => $codes, 'grant' => null, 'error' => 'invalid_request'];
         }
@@ -350,9 +372,10 @@ final class OAuthServer
      *
      * @return array{families: array, family: ?array, error: ?string}
      */
-    public static function refresh(array $families, array $params, string $newRefreshToken, string $base, int $now): array
+    public static function refresh(array $families, array $params, string $newRefreshToken, string $base, int $now, ?array $usableAccesses = null): array
     {
-        $text = static fn (string $key): string => is_string($params[$key] ?? null) ? $params[$key] : '';
+        $unchanged = $families;
+        $text = static fn (string $key): string => self::param($params, $key);
         if ($text('refresh_token') === '' || $text('client_id') === '') {
             return ['families' => $families, 'family' => null, 'error' => 'invalid_request'];
         }
@@ -376,9 +399,16 @@ final class OAuthServer
             if (array_diff($requested, explode(' ', $family['scope'])) !== []) {
                 return ['families' => $families, 'family' => null, 'error' => 'invalid_scope'];
             }
+            // Ist der Zugang gerade nicht benutzbar, bleibt alles, wie es ist: Sonst hielte der
+            // Client nach der Absage ein Token, das als verbraucht gilt, und verlöre die Kopplung.
+            if ($usableAccesses !== null && !in_array($family['access'], $usableAccesses, true)) {
+                return ['families' => $unchanged, 'family' => null, 'error' => 'invalid_grant'];
+            }
             $family['used'] = array_slice(array_merge($family['used'], [$hash]), -self::MAX_USED_REFRESH);
             $family['refresh'] = hash('sha256', $newRefreshToken);
             $family['expires'] = $now + self::REFRESH_SECONDS;
+            // ans Ende: Bei zu vielen Kopplungen fallen die am längsten unbenutzten heraus
+            unset($families[$id]);
             $families[$id] = $family;
             return ['families' => $families, 'family' => $family, 'error' => null];
         }
@@ -445,7 +475,7 @@ final class OAuthServer
             . 'button{font-size:1rem;padding:.5rem 1.2rem;margin:1rem .5rem 0 0}'
             . '@media (prefers-color-scheme:dark){body{color:#eee;background:#121212}.help{color:#aaa}.error{color:#ff8a80}}'
             . '</style></head><body>'
-            . '<h1>' . $e(sprintf($texts['title'], $client['client_name'])) . '</h1>'
+            . '<h1>' . $e(sprintf($texts['title'], $client['client_name'] . ' (' . parse_url($client['client_id'], PHP_URL_HOST) . ')')) . '</h1>'
             . '<p>' . $e($texts['intro']) . '</p>'
             . '<p>' . str_replace($e('%s'), '<span class="host">' . $e($host) . '</span>', $e($texts['returnTo'])) . '</p>'
             . $error

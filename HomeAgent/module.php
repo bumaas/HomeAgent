@@ -74,6 +74,9 @@ class HomeAgent extends IPSModuleStrict
     private const CLIENT_DOCUMENT_KEEP_SECONDS = 3600;
     private const CLIENT_DOCUMENT_MAX_ENTRIES = 10;
 
+    /** Höchstgröße eines Körpers an oauth/authorize und oauth/token; beide sind ohne Anmeldung erreichbar. */
+    private const OAUTH_BODY_MAX = 8192;
+
     public function Create(): void
     {
         parent::Create();
@@ -713,10 +716,20 @@ class HomeAgent extends IPSModuleStrict
         });
     }
 
-    /** Körper der Anfrage; erst nach der Anmeldung gelesen. */
-    protected function requestBody(): string
+    /** Körper der Anfrage, höchstens $limit Bytes (0 = ganz); erst nach der Anmeldung gelesen. */
+    protected function requestBody(int $limit = 0): string
     {
-        return (string)file_get_contents('php://input');
+        return (string)($limit > 0 ? file_get_contents('php://input', false, null, 0, $limit) : file_get_contents('php://input'));
+    }
+
+    /**
+     * Körper einer Anfrage an einen OAuth-Endpunkt. Diese Endpunkte sind ohne Anmeldung erreichbar,
+     * deshalb höchstens OAUTH_BODY_MAX Bytes; null = länger.
+     */
+    private function oauthBody(): ?string
+    {
+        $body = $this->requestBody(self::OAUTH_BODY_MAX + 1);
+        return strlen($body) > self::OAUTH_BODY_MAX ? null : $body;
     }
 
     private function handleHook(): void
@@ -739,9 +752,9 @@ class HomeAgent extends IPSModuleStrict
         }
         // OAuth: Die reservierten Unterpfade beantwortet das Modul selbst. Sie sind nie ein Token in
         // der Adresse und zählen nie als Fehlversuch; ohne Schalter oder ohne Connect gibt es sie nicht.
-        $oauthBase = $this->oauthBase();
         $route = OAuthServer::route($_SERVER['REQUEST_URI'] ?? '', $this->GetEndpoint());
         if ($route !== null) {
+            $oauthBase = $this->oauthBase();
             $response = match (true) {
                 $oauthBase === ''            => OAuthServer::error(404, 'invalid_request', 'Sign-in with OAuth is not enabled for this endpoint'),
                 $route === 'oauth/authorize' => $this->authorize($oauthBase),
@@ -761,8 +774,10 @@ class HomeAgent extends IPSModuleStrict
         $index = McpProtocol::findAccess($_SERVER['HTTP_AUTHORIZATION'] ?? '', $pathToken, $accesses);
         $access = $index === null ? null : $accesses[$index];
         // Sonst ein OAuth-Zugriffstoken: Es gilt für den gekoppelten Zugang, solange dieser
-        // benutzbar ist und dasselbe Token trägt (nur im Header, nie in der Adresse).
+        // benutzbar ist und dasselbe Token trägt (nur im Header, nie in der Adresse). Die
+        // Connect-Adresse wird nur dann ermittelt, ein festes Token braucht sie nicht.
         $viaOAuth = false;
+        $oauthBase = $access === null ? $this->oauthBase() : '';
         if ($access === null && $oauthBase !== '') {
             $access = $this->oauthAccess((string)($_SERVER['HTTP_AUTHORIZATION'] ?? ''), $accesses);
             $viaOAuth = $access !== null;
@@ -782,8 +797,15 @@ class HomeAgent extends IPSModuleStrict
             $response['headers']['WWW-Authenticate'] = OAuthServer::challenge($oauthBase, trim((string)($_SERVER['HTTP_AUTHORIZATION'] ?? '')) !== '');
         }
         if ($access === null) {
-            $this->SendDebug('Hook', 'rejected: authorization missing or wrong', 0);
-            $this->recordSignInFailure((string)($_SERVER['REMOTE_ADDR'] ?? '?'));
+            // Gezählt wird nur, was nach Raten aussieht: ein Token, das nicht gilt. Eine Anfrage
+            // ohne Anmeldung (Beginn der OAuth-Suche) und ein abgelaufenes OAuth-Token gehören zum
+            // normalen Ablauf; sonst sperrte sich der Endpunkt nach einem Neustart selbst.
+            $authorization = trim((string)($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
+            $expired = $oauthBase !== '' && OAuthServer::isExpiredToken($this->storedJson('OAuthTokens'), $authorization, time());
+            $this->SendDebug('Hook', 'rejected: ' . ($expired ? 'OAuth token expired' : ($authorization === '' && $pathToken === '' ? 'no authorization' : 'authorization wrong')), 0);
+            if (($authorization !== '' || $pathToken !== '') && !$expired) {
+                $this->recordSignInFailure((string)($_SERVER['REMOTE_ADDR'] ?? '?'));
+            }
         } else {
             $this->SendDebug('Request', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . implode(', ', $response['methods'] ?? []) . ' → HTTP ' . $response['status'] . ' (' . ($_SERVER['REMOTE_ADDR'] ?? '?') . ', access ' . $access['Name'] . ($viaOAuth ? ', OAuth' : '') . ')', 0);
         }
@@ -806,7 +828,9 @@ class HomeAgent extends IPSModuleStrict
             }
             $code = sprintf('%06d', random_int(0, 999999));
             $now = time();
-            $this->changeBuffer('OAuthPairings', static fn (array $pairings): array => OAuthServer::createPairing($pairings, hash('sha256', $access['Token']), $code, $now));
+            if (!$this->changeStored('OAuthPairings', static fn (array $pairings): array => OAuthServer::createPairing($pairings, hash('sha256', $access['Token']), $code, $now))) {
+                return $this->Translate('The instance is busy, please try again');
+            }
             $this->SendDebug('OAuth', 'pairing code created for access ' . $access['Name'], 0);
             return sprintf($this->Translate('Pairing code for the access "%s": %s, valid until %s'), $access['Name'], $code, date('H:i', $now + OAuthServer::PAIRING_SECONDS));
         }
@@ -824,7 +848,11 @@ class HomeAgent extends IPSModuleStrict
     {
         $post = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
         if ($post) {
-            parse_str($this->requestBody(), $params);
+            $body = $this->oauthBody();
+            if ($body === null) {
+                return $this->htmlPage(413, $this->Translate('The request is too large.'));
+            }
+            parse_str($body, $params);
         } else {
             $params = $_GET;
         }
@@ -852,11 +880,14 @@ class HomeAgent extends IPSModuleStrict
 
         $now = time();
         $access = null;
-        $this->changeBuffer('OAuthPairings', static function (array $pairings) use ($params, $now, &$access): array {
+        $stored = $this->changeStored('OAuthPairings', static function (array $pairings) use ($params, $now, &$access): array {
             $used = OAuthServer::usePairing($pairings, (string)($params['pairing_code'] ?? ''), $now);
             $access = $used['access'];
             return $used['pairings'];
         });
+        if (!$stored) {
+            return $this->htmlPage(503, $this->Translate('The instance is busy, please try again'));
+        }
         $accessName = $access === null ? null : $this->accessNameFor($access);
         if ($accessName === null) {
             $this->SendDebug('OAuth', 'authorize: wrong or expired pairing code', 0);
@@ -873,7 +904,9 @@ class HomeAgent extends IPSModuleStrict
             'resource'       => $base,
             'access'         => (string)$access,
         ];
-        $this->changeBuffer('OAuthCodes', static fn (array $codes): array => OAuthServer::issueCode($codes, $code, $grant, $now));
+        if (!$this->changeStored('OAuthCodes', static fn (array $codes): array => OAuthServer::issueCode($codes, $code, $grant, $now))) {
+            return $this->htmlPage(503, $this->Translate('The instance is busy, please try again'));
+        }
         $this->SendDebug('OAuth', 'authorization code issued for ' . $client['client_name'] . ', access ' . $accessName, 0);
         return $this->redirectTo($back(['code' => $code]));
     }
@@ -891,18 +924,22 @@ class HomeAgent extends IPSModuleStrict
             $response['headers']['Allow'] = 'POST';
             return $response;
         }
-        parse_str($this->requestBody(), $params);
+        $body = $this->oauthBody();
+        if ($body === null) {
+            return OAuthServer::error(413, 'invalid_request', 'The request is too large');
+        }
+        parse_str($body, $params);
         $params = array_filter($params, 'is_string');
         $now = time();
         $grantType = (string)($params['grant_type'] ?? '');
         if ($grantType === 'authorization_code') {
             $redeemed = null;
-            $this->changeBuffer('OAuthCodes', static function (array $codes) use ($params, $base, $now, &$redeemed): array {
+            $stored = $this->changeStored('OAuthCodes', static function (array $codes) use ($params, $base, $now, &$redeemed): array {
                 $redeemed = OAuthServer::redeemCode($codes, $params, $base, $now);
                 return $redeemed['codes'];
             });
-            if ($redeemed === null || $redeemed['error'] !== null) {
-                return $this->tokenError($redeemed['error'] ?? 'temporarily_unavailable', $grantType);
+            if (!$stored || $redeemed === null || $redeemed['error'] !== null) {
+                return $this->tokenError($stored ? ($redeemed['error'] ?? 'temporarily_unavailable') : 'temporarily_unavailable', $grantType);
             }
             $grant = $redeemed['grant'];
             $accessName = $this->accessNameFor($grant['access']);
@@ -913,7 +950,9 @@ class HomeAgent extends IPSModuleStrict
             // Jede Kopplung bekommt eine Familie, auch ohne offline_access: Über sie gilt ein
             // Zugriffstoken und lässt sich widerrufen. Das Erneuerungstoken geht dann nicht hinaus.
             $refreshToken = OAuthServer::newToken();
-            $this->changeGrants(static fn (array $families): array => OAuthServer::startFamily($families, $family, $grant, $refreshToken, $now));
+            if (!$this->changeStored('OAuthGrants', static fn (array $families): array => OAuthServer::startFamily($families, $family, $grant, $refreshToken, $now), true)) {
+                return $this->tokenError('temporarily_unavailable', $grantType);
+            }
             if (!in_array('offline_access', explode(' ', $grant['scope']), true)) {
                 $refreshToken = null;
             }
@@ -922,12 +961,15 @@ class HomeAgent extends IPSModuleStrict
         if ($grantType === 'refresh_token') {
             $refreshToken = OAuthServer::newToken();
             $refreshed = null;
-            $this->changeGrants(static function (array $families) use ($params, $refreshToken, $base, $now, &$refreshed): array {
-                $refreshed = OAuthServer::refresh($families, $params, $refreshToken, $base, $now);
+            // Rotiert wird nur für einen benutzbaren Zugang; sonst ginge die Kopplung bei einem
+            // vorübergehenden Fehler in der Liste verloren.
+            $usable = array_map(static fn (array $access): string => hash('sha256', $access['Token']), array_values($this->usableAccesses()));
+            $stored = $this->changeStored('OAuthGrants', static function (array $families) use ($params, $refreshToken, $base, $now, $usable, &$refreshed): array {
+                $refreshed = OAuthServer::refresh($families, $params, $refreshToken, $base, $now, $usable);
                 return $refreshed['families'];
-            });
-            if ($refreshed === null || $refreshed['error'] !== null) {
-                return $this->tokenError($refreshed['error'] ?? 'temporarily_unavailable', $grantType);
+            }, true);
+            if (!$stored || $refreshed === null || $refreshed['error'] !== null) {
+                return $this->tokenError($stored ? ($refreshed['error'] ?? 'temporarily_unavailable') : 'temporarily_unavailable', $grantType);
             }
             $family = $refreshed['family'];
             $accessName = $this->accessNameFor($family['access']);
@@ -943,7 +985,9 @@ class HomeAgent extends IPSModuleStrict
     private function issueTokens(array $binding, ?string $refreshToken, string $accessName, int $now): array
     {
         $accessToken = OAuthServer::newToken();
-        $this->changeBuffer('OAuthTokens', static fn (array $tokens): array => OAuthServer::issueAccessToken($tokens, $accessToken, $binding, $now));
+        if (!$this->changeStored('OAuthTokens', static fn (array $tokens): array => OAuthServer::issueAccessToken($tokens, $accessToken, $binding, $now))) {
+            return $this->tokenError('temporarily_unavailable', '');
+        }
         $this->SendDebug('OAuth', 'tokens issued for ' . $binding['client_id'] . ', access ' . $accessName, 0);
         return OAuthServer::tokenResponse($accessToken, $refreshToken, $binding['scope']);
     }
@@ -960,7 +1004,8 @@ class HomeAgent extends IPSModuleStrict
         if ($error === 'invalid_grant') {
             $this->recordSignInFailure((string)($_SERVER['REMOTE_ADDR'] ?? '?'));
         }
-        return OAuthServer::error(400, $error, match ($error) {
+        return OAuthServer::error($error === 'temporarily_unavailable' ? 503 : 400, $error, match ($error) {
+            'temporarily_unavailable' => 'The instance is busy, please try again',
             'invalid_grant'          => 'The code or refresh token is invalid, expired or was issued to another client',
             'unsupported_grant_type' => 'Only authorization_code and refresh_token are supported',
             'invalid_target'         => 'The resource is not this endpoint',
@@ -977,9 +1022,7 @@ class HomeAgent extends IPSModuleStrict
      */
     private function oauthAccess(string $authorization, array $accesses): ?array
     {
-        $tokens = json_decode($this->GetBuffer('OAuthTokens'), true);
-        $families = json_decode($this->ReadAttributeString('OAuthGrants'), true);
-        $entry = OAuthServer::accessFor(is_array($tokens) ? $tokens : [], is_array($families) ? $families : [], $authorization, time());
+        $entry = OAuthServer::accessFor($this->storedJson('OAuthTokens'), $this->storedJson('OAuthGrants', true), $authorization, time());
         if ($entry === null) {
             return null;
         }
@@ -1000,21 +1043,6 @@ class HomeAgent extends IPSModuleStrict
             }
         }
         return null;
-    }
-
-    /** Liest, ändert und schreibt die gekoppelten Clients (Attribut OAuthGrants) unter einer Sperre. */
-    private function changeGrants(callable $change): void
-    {
-        $lock = 'HAGT_OAuthGrants_' . $this->InstanceID;
-        if (!IPS_SemaphoreEnter($lock, 1000)) {
-            return;
-        }
-        try {
-            $value = json_decode($this->ReadAttributeString('OAuthGrants'), true);
-            $this->WriteAttributeString('OAuthGrants', (string)json_encode((object)$change(is_array($value) ? $value : [])));
-        } finally {
-            IPS_SemaphoreLeave($lock);
-        }
     }
 
     /**
@@ -1102,25 +1130,48 @@ class HomeAgent extends IPSModuleStrict
         return ['status' => 302, 'headers' => ['Location' => $location, 'Cache-Control' => 'no-store', 'Referrer-Policy' => 'no-referrer'], 'body' => ''];
     }
 
-    /** Liest, ändert und schreibt einen JSON-Buffer unter einer Sperre (gleichzeitige Anfragen). */
-    private function changeBuffer(string $name, callable $change): void
+    /**
+     * Liest, ändert und schreibt einen JSON-Speicher unter einer Sperre (gleichzeitige Anfragen):
+     * einen Buffer, mit $attribute das gleichnamige Attribut. false = Sperre nicht bekommen, nichts
+     * geändert; der Aufrufer darf dann nichts ausgeben, was gespeichert sein müsste.
+     */
+    private function changeStored(string $name, callable $change, bool $attribute = false): bool
     {
         $lock = 'HAGT_' . $name . '_' . $this->InstanceID;
         if (!IPS_SemaphoreEnter($lock, 1000)) {
-            return;
+            $this->SendDebug('OAuth', 'store ' . $name . ' busy', 0);
+            return false;
         }
         try {
-            $value = json_decode($this->GetBuffer($name), true);
-            $this->SetBuffer($name, (string)json_encode($change(is_array($value) ? $value : [])));
+            $value = $this->storedJson($name, $attribute);
+            $json = (string)json_encode((object)$change($value));
+            if ($attribute) {
+                $this->WriteAttributeString($name, $json);
+            } else {
+                $this->SetBuffer($name, $json);
+            }
+            return true;
         } finally {
             IPS_SemaphoreLeave($lock);
         }
     }
 
+    /** Inhalt eines JSON-Buffers (mit $attribute: des Attributs), [] wenn leer oder ungültig. */
+    private function storedJson(string $name, bool $attribute = false): array
+    {
+        $value = json_decode($attribute ? $this->ReadAttributeString($name) : $this->GetBuffer($name), true);
+        return is_array($value) ? $value : [];
+    }
+
     /** Öffentliche Adresse des Endpunkts für OAuth; '' = OAuth aus (Schalter aus oder ohne Connect). */
     private function oauthBase(): string
     {
-        if (!$this->ReadPropertyBoolean('OAuthEnabled')) {
+        try {
+            $enabled = @$this->ReadPropertyBoolean('OAuthEnabled');
+        } catch (Throwable) {
+            $enabled = false; // vor dem Neuladen der Bibliothek gibt es die Property noch nicht
+        }
+        if ($enabled !== true) {
             return '';
         }
         $connect = rtrim($this->connectUrl(), '/');

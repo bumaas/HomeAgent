@@ -278,4 +278,43 @@ if ($hat('accessFor')) {
     pruefe(OAuthServer::accessFor($tokens, $familien, 'Bearer ACCESS-2', $t + 10) === null && OAuthServer::accessFor($tokens, $familien, '', $t + 10) === null && OAuthServer::accessFor($tokens, $familien, 'Basic ACCESS-1', $t + 10) === null, 'unbekanntes Token, keins oder anderes Schema: null');
 }
 
+/* --- Befunde aus /code-review vom 11.10.2026 ----------------------------------------------------- */
+
+// R5: nur global erreichbare Adressen (Tailscale/CGNAT 100.64.0.0/10 liegt am nuc im eigenen Netz)
+foreach (['100.100.1.1', '100.97.187.41', '192.0.0.1', '198.18.0.1', '169.254.1.1', 'fd00::1'] as $ip) {
+    pruefe(!OAuthServer::publicAddress($ip), 'keine öffentliche Adresse: ' . $ip);
+}
+pruefe(OAuthServer::publicAddress('160.79.106.181') && OAuthServer::publicAddress('2606:4700::6810:1'), 'öffentliche Adressen bleiben erlaubt');
+pruefe(!OAuthServer::clientIdAllowed('https://100.64.0.1/client'), 'CGNAT-Adresse als client_id abgewiesen');
+
+// R4: Die Überschrift nennt den Host der client_id, den Namen wählt der Client selbst
+$falscherClaude = OAuthServer::clientFromDocument('https://evil.example/cimd', '{"client_id":"https://evil.example/cimd","client_name":"Claude","redirect_uris":["https://evil.example/cb"]}');
+$seite = OAuthServer::consentPage($texte, $falscherClaude, ['redirect_uri' => 'https://evil.example/cb'] + $anfrage, $endpunkt . '/oauth/authorize');
+pruefe(preg_match('#<h1>[^<]*evil\.example[^<]*</h1>#', $seite) === 1, 'ein Client, der sich „Claude“ nennt, steht mit seinem Host in der Überschrift: ' . (preg_match('#<h1>.*?</h1>#', $seite, $h) === 1 ? $h[0] : '-'));
+$seite = OAuthServer::consentPage($texte, $client, $anfrage, $endpunkt . '/oauth/authorize');
+pruefe(preg_match('#<h1>Connect Claude \(claude\.ai\)</h1>#', $seite) === 1, 'echter Client: Name und Host in der Überschrift: ' . (preg_match('#<h1>.*?</h1>#', $seite, $h) === 1 ? $h[0] : '-'));
+
+// R1: Erneuern rotiert nicht, wenn der Zugang gerade nicht benutzbar ist
+$f1 = OAuthServer::startFamily([], 'fam-1', $r['grant'], 'REFRESH-1', $t);
+$ohneZugang = OAuthServer::refresh($f1, ['grant_type' => 'refresh_token', 'refresh_token' => 'REFRESH-1', 'client_id' => $claudeId], 'REFRESH-2', $endpunkt, $t + 10, ['zugang-b']);
+pruefe($ohneZugang['error'] === 'invalid_grant' && $ohneZugang['families'] === $f1, 'Zugang nicht benutzbar: invalid_grant ohne Rotation');
+$spaeter = OAuthServer::refresh($ohneZugang['families'], ['grant_type' => 'refresh_token', 'refresh_token' => 'REFRESH-1', 'client_id' => $claudeId], 'REFRESH-2', $endpunkt, $t + 20, ['zugang-a', 'zugang-b']);
+pruefe($spaeter['error'] === null, 'ist der Zugang wieder da, gilt dasselbe Erneuerungstoken noch');
+
+// R8: Bei vielen Kopplungen fallen zuerst die am längsten unbenutzten heraus
+$viele = [];
+for ($i = 0; $i < 50; $i++) {
+    $viele = OAuthServer::startFamily($viele, 'f' . $i, $r['grant'], 'R' . $i, $t + $i);
+}
+$benutzt = OAuthServer::refresh($viele, ['grant_type' => 'refresh_token', 'refresh_token' => 'R0', 'client_id' => $claudeId], 'R0b', $endpunkt, $t + 100);
+$viele = OAuthServer::startFamily($benutzt['families'], 'neu', $r['grant'], 'RN', $t + 101);
+pruefe(isset($viele['f0']) && !isset($viele['f1']) && isset($viele['neu']) && count($viele) === 50, 'die zuletzt erneuerte älteste Kopplung bleibt, die unbenutzte nächste fällt heraus: ' . implode(',', array_slice(array_keys($viele), 0, 3)));
+
+// R7: ein abgelaufenes, aber bekanntes Zugriffstoken ist kein Fehlversuch
+pruefe($hat('isExpiredToken'), 'OAuthServer::isExpiredToken gibt es');
+if ($hat('isExpiredToken')) {
+    $tok = OAuthServer::issueAccessToken([], 'ACCESS-1', ['family' => 'fam-1', 'access' => 'zugang-a', 'client_id' => $claudeId, 'scope' => 'mcp'], $t);
+    pruefe(OAuthServer::isExpiredToken($tok, 'Bearer ACCESS-1', $t + 3600) && !OAuthServer::isExpiredToken($tok, 'Bearer ACCESS-1', $t + 10) && !OAuthServer::isExpiredToken($tok, 'Bearer ANDERES', $t + 3600), 'abgelaufen erkannt, gültige und unbekannte nicht');
+}
+
 ende('OAuth');
