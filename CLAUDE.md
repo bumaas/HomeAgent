@@ -69,6 +69,15 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   Adresse und zählen nie als Fehlversuch. Über Connect kommt jede Anfrage von 127.0.0.1, der Absender
   steht nur in `X-Forwarded-For`. Die Anmeldeseite (`oauth/authorize`) kann zweimal kommen, der Service
   Worker der Kachel-Visu auf demselben Host ruft sie nach; ein GET darf nichts verbrauchen.
+  Clients melden sich über ihr Client ID Metadata Document (CIMD, `client_id` ist eine HTTPS-Adresse):
+  Das Modul holt es selbst (`fetchClientDocument`, nur öffentliche Adressen, verbunden wird mit der
+  geprüften IP, 5 KB, 5 s, keine Weiterleitung) und hält es eine Stunde im Buffer `OAuthClients`.
+  Gekoppelt wird mit einem Kopplungscode je Zugang (`HAGT_CreatePairingCode`, 6 Ziffern, 10 min,
+  einmal, nach 5 Fehleingaben verfallen, jede zählt auch im `SignInGuard`); der Client erbt den Zugang,
+  gemerkt als SHA-256 seines Tokens. Wer das Token eines Zugangs ändert, trennt damit dessen
+  OAuth-Clients. Kopplungs- und Autorisierungscodes liegen nur als Hash in den Buffern
+  `OAuthPairings` und `OAuthCodes`. Fehler vor geprüfter Rücksprungadresse ergeben eine Fehlerseite
+  (keine offene Weiterleitung), danach eine Weiterleitung mit `error`, `state` und `iss`.
 
 ## Werkzeuge
 

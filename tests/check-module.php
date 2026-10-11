@@ -56,6 +56,18 @@ final class HomeAgentHarness extends HomeAgent
         return self::$body;
     }
 
+    /** @var array<string, string> Client-Dokumente (CIMD) nach Adresse; ohne Netz im Test. */
+    public static array $documents = [];
+
+    /** @var list<string> abgerufene Client-Dokumente */
+    public static array $fetched = [];
+
+    protected function fetchClientDocument(string $url): ?string
+    {
+        self::$fetched[] = $url;
+        return self::$documents[$url] ?? null;
+    }
+
     /** Connect-Adresse der Anlage; der Kernel-Stub kennt CC_GetConnectURL nicht. */
     public static string $connect = '';
 
@@ -1670,8 +1682,10 @@ $as = json_decode($a['body'], true);
 pruefe($a['status'] === 200 && ($as['issuer'] ?? null) === $basis && ($as['authorization_endpoint'] ?? null) === $basis . '/oauth/authorize', 'Autorisierungsserver-Metadaten unter dem Hook: ' . $a['body']);
 $a = $oauthAnfrage('GET', '/.well-known/oauth-protected-resource?x=1');
 pruefe($a['status'] === 200, 'ein Query-String stört die Metadaten nicht');
-foreach (['/oauth/authorize?response_type=code', '/oauth/token', '/oauth/register'] as $pfad) {
-    $a = $oauthAnfrage($pfad === '/oauth/authorize?response_type=code' ? 'GET' : 'POST', $pfad);
+$a = $oauthAnfrage('GET', '/oauth/authorize?response_type=code');
+pruefe($a['status'] === 400 && !isset($a['headers']['Location']), 'authorize ohne Client (seit Teil 2): Fehlerseite ohne Weiterleitung: ' . $a['status']);
+foreach (['/oauth/token', '/oauth/register'] as $pfad) {
+    $a = $oauthAnfrage('POST', $pfad);
     pruefe($a['status'] === 503 && str_contains($a['body'], 'temporarily_unavailable'), 'noch nicht gebaut: ' . $pfad . ' antwortet 503 temporarily_unavailable: ' . $a['status'] . ' ' . $a['body']);
 }
 pruefe($stand !== '' && $fehlversuche() === $stand, 'nur das POST ohne Anmeldung zählt als Fehlversuch, keine der OAuth-Adressen: ' . $fehlversuche());
@@ -1686,6 +1700,104 @@ try {
     IPS_ApplyChanges($iid);
 } catch (Throwable) {
     // ohne die Property (roter Lauf) gibt es nichts zurückzusetzen
+}
+HomeAgentHarness::$connect = '';
+
+/* --- OAuth Teil 2: Kopplungscode, Einwilligung, Autorisierungscode (build 74) -------------------- */
+
+$claudeId = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
+$callback = 'https://claude.ai/api/mcp/auth_callback';
+HomeAgentHarness::$documents = [$claudeId => (string)file_get_contents(__DIR__ . '/fixtures/oauth_claude_cimd_2026-10-11.json')];
+HomeAgentHarness::$fetched = [];
+HomeAgentHarness::$connect = 'https://example.ipmagic.de';
+$basis = 'https://example.ipmagic.de/hook/homeagent/' . $iid;
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
+IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', $token, 'Halle', true), $zugang('Andere', 'andere-token-0123456789abcdef')]));
+try {
+    IPS_SetProperty($iid, 'OAuthEnabled', true);
+} catch (Throwable) {
+    pruefe(false, 'die Property OAuthEnabled fehlt');
+}
+IPS_ApplyChanges($iid);
+pruefe($status() === IS_ACTIVE, 'Ausgangslage OAuth Teil 2: aktiv, nicht ' . $status());
+
+// Kopplungscode je Zugang; Anfrage wie im Mitschnitt, code_challenge aus RFC 7636 Anhang B
+$kopplung = static function (string $name) use ($m): string {
+    try {
+        return $m->CreatePairingCode($name);
+    } catch (Throwable) {
+        return '';
+    }
+};
+$text = $kopplung('Claude-App');
+$code = preg_match('/\b(\d{6})\b/', $text, $treffer) === 1 ? $treffer[1] : '';
+pruefe($code !== '' && str_contains($text, 'Claude-App'), 'CreatePairingCode nennt Zugang und sechsstelligen Code: ' . $text);
+pruefe(preg_match('/\b\d{6}\b/', $kopplung('Gibt es nicht')) !== 1, 'für einen unbekannten Zugang gibt es keinen Code: ' . $kopplung('Gibt es nicht'));
+pruefe(!str_contains($logText(), $code ?: 'kein Code'), 'der Kopplungscode steht nicht im Log');
+
+$abfrage = [
+    'response_type' => 'code', 'client_id' => $claudeId, 'redirect_uri' => $callback,
+    'code_challenge' => 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM', 'code_challenge_method' => 'S256',
+    'state' => str_repeat('s', 43), 'scope' => 'mcp offline_access', 'resource' => $basis, 'prompt' => 'consent',
+];
+$autorisieren = static function (string $methode, array $abfrage, array $formular = []) use ($hook, $m, $iid): array {
+    $_SERVER = ['REQUEST_METHOD' => $methode, 'REQUEST_URI' => '/hook/homeagent/' . $iid . '/oauth/authorize' . ($methode === 'GET' ? '?' . http_build_query($abfrage) : ''), 'REMOTE_ADDR' => '127.0.0.1', 'HTTP_X_FORWARDED_FOR' => '79.250.0.1'];
+    $_GET = $methode === 'GET' ? $abfrage : [];
+    HomeAgentHarness::$body = $methode === 'POST' ? http_build_query($abfrage + $formular) : '';
+    $m->response = null;
+    ob_start();
+    try {
+        $hook->invoke($m);
+    } finally {
+        ob_end_clean();
+        HomeAgentHarness::$body = '';
+        $_GET = [];
+    }
+    return $m->response ?? ['status' => 0, 'headers' => [], 'body' => ''];
+};
+
+// GET zeigt die Einwilligung und verbraucht nichts (der Service Worker ruft die Seite ein zweites Mal)
+$a = $autorisieren('GET', $abfrage);
+pruefe($a['status'] === 200 && str_starts_with($a['headers']['Content-Type'] ?? '', 'text/html'), 'GET authorize: Einwilligungsseite als HTML: ' . $a['status'] . ' ' . substr($a['body'], 0, 120));
+pruefe(str_contains($a['body'], 'Claude') && str_contains($a['body'], 'claude.ai') && str_contains($a['body'], 'action="' . $basis . '/oauth/authorize"'), 'die Seite nennt Client und Host der Rücksprungadresse');
+pruefe(($a['headers']['X-Frame-Options'] ?? '') === 'DENY' && str_contains($a['headers']['Content-Security-Policy'] ?? '', "frame-ancestors 'none'"), 'die Seite lässt sich nicht einbetten');
+pruefe(HomeAgentHarness::$fetched === [$claudeId], 'das Client-Dokument wurde von seiner Adresse geholt: ' . json_encode(HomeAgentHarness::$fetched));
+$a = $autorisieren('GET', $abfrage);
+pruefe($a['status'] === 200 && count(HomeAgentHarness::$fetched) === 1, 'zweites GET: wieder die Seite, das Dokument kommt aus dem Zwischenspeicher');
+pruefe($fehlversuche() === '', 'ein GET zählt nicht als Fehlversuch');
+
+// Fehler vor der Prüfung der Rücksprungadresse: Fehlerseite, keine Weiterleitung
+$a = $autorisieren('GET', ['redirect_uri' => 'https://evil.example/cb'] + $abfrage);
+pruefe($a['status'] === 400 && !isset($a['headers']['Location']), 'fremde Rücksprungadresse: 400 ohne Weiterleitung');
+$a = $autorisieren('GET', ['client_id' => 'https://unbekannt.example/client'] + $abfrage);
+pruefe($a['status'] === 400 && !isset($a['headers']['Location']), 'Client-Dokument nicht lesbar: 400 ohne Weiterleitung');
+$a = $autorisieren('GET', ['client_id' => 'https://192.168.178.86/client'] + $abfrage);
+pruefe($a['status'] === 400 && !in_array('https://192.168.178.86/client', HomeAgentHarness::$fetched, true), 'eine Adresse im eigenen Netz wird gar nicht erst abgerufen');
+$a = $autorisieren('GET', ['code_challenge_method' => 'plain'] + $abfrage);
+pruefe($a['status'] === 302 && str_starts_with($a['headers']['Location'] ?? '', $callback . '?error=invalid_request'), 'Fehler nach geprüfter Rücksprungadresse gehen zurück an den Client: ' . ($a['headers']['Location'] ?? '-'));
+
+// POST: falscher Code, Ablehnen, richtiger Code
+$a = $autorisieren('POST', $abfrage, ['pairing_code' => $code === '000000' ? '000001' : '000000', 'decision' => 'allow']);
+pruefe($a['status'] === 200 && !isset($a['headers']['Location']) && str_contains($a['body'], 'pairing_code'), 'falscher Kopplungscode: Seite wieder mit Hinweis: ' . $a['status']);
+pruefe($fehlversuche() !== '', 'ein falscher Kopplungscode zählt als Fehlversuch');
+$a = $autorisieren('POST', $abfrage, ['pairing_code' => '', 'decision' => 'deny']);
+pruefe($a['status'] === 302 && ($a['headers']['Location'] ?? '') === $callback . '?error=access_denied&state=' . str_repeat('s', 43) . '&iss=' . rawurlencode($basis), 'Ablehnen: access_denied mit state und iss: ' . ($a['headers']['Location'] ?? '-'));
+$a = $autorisieren('POST', $abfrage, ['pairing_code' => $code, 'decision' => 'allow']);
+$ziel = (string)($a['headers']['Location'] ?? '');
+parse_str((string)parse_url($ziel, PHP_URL_QUERY), $antwort);
+pruefe($a['status'] === 302 && str_starts_with($ziel, $callback . '?code=') && ($antwort['state'] ?? '') === str_repeat('s', 43) && ($antwort['iss'] ?? '') === $basis, 'richtiger Code: Weiterleitung mit code, state und iss: ' . $ziel);
+$autCode = (string)($antwort['code'] ?? '');
+pruefe(strlen($autCode) >= 43, 'der Autorisierungscode hat mindestens 256 Bit: ' . strlen($autCode));
+$puffer = (string)(new ReflectionMethod($m, 'GetBuffer'))->invoke($m, 'OAuthCodes');
+pruefe($puffer !== '' && !str_contains($puffer, $autCode) && !str_contains($puffer, $code), 'Codes nur als Hash im Buffer');
+pruefe(!str_contains($logText(), $autCode) && !str_contains($logText(), $code), 'kein Code im Log');
+$a = $autorisieren('POST', $abfrage, ['pairing_code' => $code, 'decision' => 'allow']);
+pruefe($a['status'] === 200 && !isset($a['headers']['Location']), 'derselbe Kopplungscode gilt nur einmal');
+
+try {
+    IPS_SetProperty($iid, 'OAuthEnabled', false);
+    IPS_ApplyChanges($iid);
+} catch (Throwable) {
 }
 HomeAgentHarness::$connect = '';
 

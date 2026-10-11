@@ -55,8 +55,24 @@ class HomeAgent extends IPSModuleStrict
 
     private const LABEL_COLOR_ERROR = 0xC00000;
 
+    /** Kopfzeilen der Anmeldeseiten: nicht einbetten, nichts nachladen, nichts zwischenspeichern. */
+    private const HTML_HEADERS = [
+        'Content-Type'            => 'text/html; charset=utf-8',
+        'Cache-Control'           => 'no-store',
+        'X-Content-Type-Options'  => 'nosniff',
+        'X-Frame-Options'         => 'DENY',
+        'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
+        'Referrer-Policy'         => 'no-referrer',
+    ];
+
     /** Connect Control; seine Adresse ist die öffentliche Basis für OAuth. */
     private const CONNECT_MODULE_ID = '{9486D575-BE8C-4ED8-B5B5-20930E26DE6F}';
+
+    /** Client-Dokumente (CIMD): Größe, Zeitlimit, Zwischenspeicher. */
+    private const CLIENT_DOCUMENT_MAX_BYTES = 5120;
+    private const CLIENT_DOCUMENT_TIMEOUT = 5;
+    private const CLIENT_DOCUMENT_KEEP_SECONDS = 3600;
+    private const CLIENT_DOCUMENT_MAX_ENTRIES = 10;
 
     public function Create(): void
     {
@@ -724,10 +740,12 @@ class HomeAgent extends IPSModuleStrict
         $oauthBase = $this->oauthBase();
         $route = OAuthServer::route($_SERVER['REQUEST_URI'] ?? '', $this->GetEndpoint());
         if ($route !== null) {
-            $response = $oauthBase === ''
-                ? OAuthServer::error(404, 'invalid_request', 'Sign-in with OAuth is not enabled for this endpoint')
-                : (OAuthServer::metadata($_SERVER['REQUEST_METHOD'] ?? 'GET', $route, $oauthBase)
-                    ?? OAuthServer::error(503, 'temporarily_unavailable', 'Sign-in is not available yet'));
+            $response = match (true) {
+                $oauthBase === ''            => OAuthServer::error(404, 'invalid_request', 'Sign-in with OAuth is not enabled for this endpoint'),
+                $route === 'oauth/authorize' => $this->authorize($oauthBase),
+                default                      => OAuthServer::metadata($_SERVER['REQUEST_METHOD'] ?? 'GET', $route, $oauthBase)
+                    ?? OAuthServer::error(503, 'temporarily_unavailable', 'Sign-in is not available yet'),
+            };
             $this->SendDebug('OAuth', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . $route . ' → HTTP ' . $response['status'], 0);
             $this->send($response);
             return;
@@ -759,6 +777,199 @@ class HomeAgent extends IPSModuleStrict
             $this->SendDebug('Request', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . implode(', ', $response['methods'] ?? []) . ' → HTTP ' . $response['status'] . ' (' . ($_SERVER['REMOTE_ADDR'] ?? '?') . ', access ' . $access['Name'] . ')', 0);
         }
         $this->send($response);
+    }
+
+    /**
+     * Kopplungscode für die Anmeldung per OAuth: sechs Ziffern, zehn Minuten gültig, einmal
+     * verwendbar. Der Assistent, der ihn auf der Anmeldeseite eingibt, erbt Rechte und
+     * Standardraum dieses Zugangs.
+     */
+    public function CreatePairingCode(string $AccessName): string
+    {
+        if ($this->oauthBase() === '') {
+            return $this->Translate('Sign-in with OAuth is off: switch it on and make sure Symcon Connect is active');
+        }
+        foreach ($this->usableAccesses() as $access) {
+            if ($access['Name'] !== trim($AccessName)) {
+                continue;
+            }
+            $code = sprintf('%06d', random_int(0, 999999));
+            $now = time();
+            $this->changeBuffer('OAuthPairings', static fn (array $pairings): array => OAuthServer::createPairing($pairings, hash('sha256', $access['Token']), $code, $now));
+            $this->SendDebug('OAuth', 'pairing code created for access ' . $access['Name'], 0);
+            return sprintf($this->Translate('Pairing code for the access "%s": %s, valid until %s'), $access['Name'], $code, date('H:i', $now + OAuthServer::PAIRING_SECONDS));
+        }
+        return sprintf($this->Translate('There is no usable access named "%s"'), $AccessName);
+    }
+
+    /**
+     * Autorisierungsendpunkt. GET zeigt die Einwilligungsseite und verbraucht nichts (der Service
+     * Worker der Visualisierung ruft sie ein zweites Mal ab), erst das POST mit dem Kopplungscode
+     * stellt einen Autorisierungscode aus.
+     *
+     * @return array{status: int, headers: array<string, string>, body: string}
+     */
+    private function authorize(string $base): array
+    {
+        $post = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+        if ($post) {
+            parse_str($this->requestBody(), $params);
+        } else {
+            $params = $_GET;
+        }
+        $params = array_filter($params, 'is_string');
+        $client = $this->clientDocument((string)($params['client_id'] ?? ''));
+        $check = OAuthServer::checkAuthorize($params, $base, $client);
+        if ($check['status'] === 'page') {
+            $this->SendDebug('OAuth', 'authorize rejected: ' . $check['error'], 0);
+            return $this->htmlPage(400, $check['error'] === 'client'
+                ? $this->Translate('The assistant could not be identified, its client document is not readable.')
+                : $this->Translate('The return address of the assistant is not allowed.'));
+        }
+        if ($check['status'] === 'redirect') {
+            $this->SendDebug('OAuth', 'authorize rejected: ' . $check['error'], 0);
+            return $this->redirectTo($check['location']);
+        }
+        $back = static fn (array $query): string => OAuthServer::redirect($params['redirect_uri'], array_filter($query + ['state' => $params['state'] ?? '', 'iss' => $base], static fn (string $v): bool => $v !== ''));
+        if (!$post) {
+            return $this->consentPage($client, $params, $base, '');
+        }
+        if (($params['decision'] ?? '') !== 'allow') {
+            $this->SendDebug('OAuth', 'authorize denied by the user for ' . $client['client_name'], 0);
+            return $this->redirectTo($back(['error' => 'access_denied']));
+        }
+
+        $now = time();
+        $access = null;
+        $this->changeBuffer('OAuthPairings', static function (array $pairings) use ($params, $now, &$access): array {
+            $used = OAuthServer::usePairing($pairings, (string)($params['pairing_code'] ?? ''), $now);
+            $access = $used['access'];
+            return $used['pairings'];
+        });
+        $accessName = null;
+        foreach ($this->usableAccesses() as $candidate) {
+            if ($access !== null && hash_equals($access, hash('sha256', $candidate['Token']))) {
+                $accessName = $candidate['Name'];
+            }
+        }
+        if ($accessName === null) {
+            $this->SendDebug('OAuth', 'authorize: wrong or expired pairing code', 0);
+            $this->recordSignInFailure((string)($_SERVER['REMOTE_ADDR'] ?? '?'));
+            return $this->consentPage($client, $params, $base, $this->Translate('The pairing code is wrong or has expired.'));
+        }
+
+        $code = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+        $grant = [
+            'client_id'      => $client['client_id'],
+            'redirect_uri'   => $params['redirect_uri'],
+            'code_challenge' => $params['code_challenge'],
+            'scope'          => (string)($params['scope'] ?? ''),
+            'resource'       => $base,
+            'access'         => (string)$access,
+        ];
+        $this->changeBuffer('OAuthCodes', static fn (array $codes): array => OAuthServer::issueCode($codes, $code, $grant, $now));
+        $this->SendDebug('OAuth', 'authorization code issued for ' . $client['client_name'] . ', access ' . $accessName, 0);
+        return $this->redirectTo($back(['code' => $code]));
+    }
+
+    /**
+     * Client-Dokument (CIMD) einer client_id, geprüft; null, wenn es nicht abrufbar oder ungültig
+     * ist. Gültige Dokumente hält der Buffer eine Stunde.
+     *
+     * @return ?array{client_id: string, client_name: string, redirect_uris: list<string>}
+     */
+    private function clientDocument(string $clientId): ?array
+    {
+        if (!OAuthServer::clientIdAllowed($clientId)) {
+            return null;
+        }
+        $now = time();
+        $cache = json_decode($this->GetBuffer('OAuthClients'), true);
+        $cache = is_array($cache) ? array_filter($cache, static fn (mixed $e): bool => is_array($e) && ($e['fetched'] ?? 0) > $now - self::CLIENT_DOCUMENT_KEEP_SECONDS) : [];
+        if (isset($cache[$clientId]['client'])) {
+            return $cache[$clientId]['client'];
+        }
+        $json = $this->fetchClientDocument($clientId);
+        $client = $json === null ? null : OAuthServer::clientFromDocument($clientId, $json);
+        if ($client === null) {
+            $this->SendDebug('OAuth', 'client document not usable: ' . $clientId, 0);
+            return null;
+        }
+        $cache[$clientId] = ['client' => $client, 'fetched' => $now];
+        $this->SetBuffer('OAuthClients', (string)json_encode(array_slice($cache, -self::CLIENT_DOCUMENT_MAX_ENTRIES, null, true)));
+        return $client;
+    }
+
+    /**
+     * Holt ein Client-Dokument: nur HTTPS, keine Weiterleitung, Zeitlimit und Größengrenze, und die
+     * aufgelöste Adresse muss öffentlich sein. Verbunden wird mit genau dieser Adresse.
+     */
+    protected function fetchClientDocument(string $url): ?string
+    {
+        $host = (string)parse_url($url, PHP_URL_HOST);
+        $port = (int)(parse_url($url, PHP_URL_PORT) ?? 443);
+        $addresses = gethostbynamel($host);
+        if ($addresses === false || $addresses === [] || array_any($addresses, static fn (string $ip): bool => !OAuthServer::publicAddress($ip))) {
+            return null;
+        }
+        $curl = curl_init($url);
+        curl_setopt_array($curl, [
+            CURLOPT_RETURNTRANSFER   => true,
+            CURLOPT_FOLLOWLOCATION   => false,
+            CURLOPT_CONNECTTIMEOUT   => self::CLIENT_DOCUMENT_TIMEOUT,
+            CURLOPT_TIMEOUT          => self::CLIENT_DOCUMENT_TIMEOUT,
+            CURLOPT_RESOLVE          => [$host . ':' . $port . ':' . $addresses[0]],
+            CURLOPT_HTTPHEADER       => ['Accept: application/json'],
+            CURLOPT_NOPROGRESS       => false,
+            CURLOPT_XFERINFOFUNCTION => static fn (mixed $handle, int $total, int $received): int => $received > self::CLIENT_DOCUMENT_MAX_BYTES ? 1 : 0,
+        ]);
+        $body = curl_exec($curl);
+        $status = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+        return is_string($body) && $status === 200 && strlen($body) <= self::CLIENT_DOCUMENT_MAX_BYTES ? $body : null;
+    }
+
+    /** @return array{status: int, headers: array<string, string>, body: string} */
+    private function consentPage(array $client, array $params, string $base, string $error): array
+    {
+        $texts = [
+            'title'     => $this->Translate('Connect %s with Home Agent'),
+            'intro'     => $this->Translate('The assistant gets the rights and the default room of the access whose pairing code you enter.'),
+            'returnTo'  => $this->Translate('Afterwards you return to %s.'),
+            'codeLabel' => $this->Translate('Pairing code'),
+            'help'      => $this->Translate('Create the pairing code in the Home Agent instance for the access this assistant should use. It is valid for 10 minutes.'),
+            'allow'     => $this->Translate('Allow'),
+            'deny'      => $this->Translate('Deny'),
+            'error'     => $error,
+        ];
+        return ['status' => 200, 'headers' => self::HTML_HEADERS, 'body' => OAuthServer::consentPage($texts, $client, $params, $base . '/oauth/authorize')];
+    }
+
+    /** @return array{status: int, headers: array<string, string>, body: string} */
+    private function htmlPage(int $status, string $text): array
+    {
+        $e = static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        return ['status' => $status, 'headers' => self::HTML_HEADERS, 'body' => '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Home Agent</title></head><body style="font-family:system-ui,sans-serif;max-width:28rem;margin:2rem auto;padding:0 1rem"><h1 style="font-size:1.3rem">' . $e($this->Translate('Sign-in failed')) . '</h1><p>' . $e($text) . '</p></body></html>'];
+    }
+
+    /** @return array{status: int, headers: array<string, string>, body: string} */
+    private function redirectTo(string $location): array
+    {
+        return ['status' => 302, 'headers' => ['Location' => $location, 'Cache-Control' => 'no-store', 'Referrer-Policy' => 'no-referrer'], 'body' => ''];
+    }
+
+    /** Liest, ändert und schreibt einen JSON-Buffer unter einer Sperre (gleichzeitige Anfragen). */
+    private function changeBuffer(string $name, callable $change): void
+    {
+        $lock = 'HAGT_' . $name . '_' . $this->InstanceID;
+        if (!IPS_SemaphoreEnter($lock, 1000)) {
+            return;
+        }
+        try {
+            $value = json_decode($this->GetBuffer($name), true);
+            $this->SetBuffer($name, (string)json_encode($change(is_array($value) ? $value : [])));
+        } finally {
+            IPS_SemaphoreLeave($lock);
+        }
     }
 
     /** Öffentliche Adresse des Endpunkts für OAuth; '' = OAuth aus (Schalter aus oder ohne Connect). */
