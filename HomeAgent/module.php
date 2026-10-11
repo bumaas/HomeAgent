@@ -272,6 +272,7 @@ class HomeAgent extends IPSModuleStrict
                 'presentation' => $this->Translate('from the blind presentation'),
                 'rotation'     => $this->Translate('from the blind presentation, rotation'),
                 'reversed'     => sprintf($this->Translate('from the profile name %s'), $range['profile']),
+                'module'       => sprintf($this->Translate('from the module %s'), $range['module'] ?? ''),
                 default        => $this->Translate('default: the smallest value is open'),
             };
             if ($inverted) {

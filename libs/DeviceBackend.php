@@ -35,9 +35,10 @@ interface DeviceBackend
      * Wertebereich der Variable und, für Rollläden, welcher Rohwert „offen“ und welcher
      * „geschlossen“ bedeutet. „source“ sagt, woher die Richtung stammt: „presentation“ (Darstellung
      * Rollladen), „rotation“ (dieselbe für Lamellen), „reversed“ (Profil mit „.Reversed“ im Namen,
-     * dann steht der Name in „profile“) oder „default“ (kleinster Wert offen). null = unbekannt.
+     * dann steht der Name in „profile“), „module“ (das Modul des Geräts zählt den größten Wert als
+     * offen, sein Name steht in „module“) oder „default“ (kleinster Wert offen). null = unbekannt.
      *
-     * @return null|array{min: float, max: float, open: float, closed: float, source: string, profile: string}
+     * @return null|array{min: float, max: float, open: float, closed: float, source: string, profile: string, module?: string}
      */
     public function range(int $variableId): ?array;
 

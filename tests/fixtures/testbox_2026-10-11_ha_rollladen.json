@@ -1,0 +1,73 @@
+{
+    "quelle": "Testbox 11.10.2026, Kategorie Spiegel nuc, Home Assistant Bridge 1.5 build 166, Variable cover_status je Rollladen",
+    "modul": {
+        "ModuleID": "{72D6A284-1870-4E11-92D8-0402C8233C29}",
+        "ModuleName": "Home Assistant Device",
+        "ModuleType": 3
+    },
+    "rolllaeden": [
+        {
+            "instanz": "Bad.Licht.Rolladen",
+            "ident": "cover_status",
+            "typ": 2,
+            "wert": 100,
+            "darstellung": {
+                "CUSTOM_GRADIENT": "[]",
+                "DECIMAL_SEPARATOR": "Client",
+                "DIGITS": 1,
+                "GRADIENT_TYPE": 0,
+                "ICON": "",
+                "INTERVALS": "[]",
+                "INTERVALS_ACTIVE": false,
+                "MAX": 100,
+                "MIN": 0,
+                "PERCENTAGE": false,
+                "PREFIX": "",
+                "PRESENTATION": "{6B9CAEEC-5958-C223-30F7-BD36569FC57A}",
+                "STEP_SIZE": 1,
+                "SUFFIX": " %",
+                "THOUSANDS_SEPARATOR": "",
+                "USAGE_TYPE": 5
+            }
+        },
+        {
+            "instanz": "Wohnzimmmer.Fenster.Verschluss_SP",
+            "ident": "cover_status",
+            "typ": 2,
+            "wert": 0,
+            "darstellung": {
+                "CUSTOM_GRADIENT": "[]",
+                "DECIMAL_SEPARATOR": "Client",
+                "DIGITS": 1,
+                "GRADIENT_TYPE": 0,
+                "ICON": "",
+                "INTERVALS": "[]",
+                "INTERVALS_ACTIVE": false,
+                "MAX": 100,
+                "MIN": 0,
+                "PERCENTAGE": false,
+                "PREFIX": "",
+                "PRESENTATION": "{6B9CAEEC-5958-C223-30F7-BD36569FC57A}",
+                "STEP_SIZE": 1,
+                "SUFFIX": " %",
+                "THOUSANDS_SEPARATOR": "",
+                "USAGE_TYPE": 5
+            }
+        },
+        {
+            "instanz": "Gast.Licht.Rolladen",
+            "ident": "cover_status",
+            "typ": 2,
+            "wert": 60,
+            "darstellung": {
+                "CLOSE_INSIDE_VALUE": 0,
+                "MAX_ROTATION_INSIDE": -55,
+                "MAX_ROTATION_OUTSIDE": 55,
+                "OPEN_OUTSIDE_VALUE": 100,
+                "PRESENTATION": "{6075FC22-69AF-B110-3749-C24138883082}",
+                "SUN_POSITION": 1,
+                "USAGE_TYPE": 0
+            }
+        }
+    ]
+}

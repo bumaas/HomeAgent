@@ -327,7 +327,8 @@ the answer says what the device can do.
 
 You do not need to know how a blind counts internally. Some devices report 0 for open, others 0 for
 closed. The module reads it from the "blind" presentation of the variable or from its profile (a
-profile name containing ".Reversed" counts the other way round). The button **Run self-test** shows for
+profile name containing ".Reversed" counts the other way round). Blinds from the HomeAssistant module
+count 100 as open, like Home Assistant. The button **Run self-test** shows for
 every blind what was detected, for example "Blind Küche Rollladen: open at 1, closed at 0". If that
 is wrong, tick "Reverse direction" for the device.
 
@@ -404,6 +405,8 @@ echo HAGT_RunScene($InstanceID, '', 'Filmabend');
   60 seconds for everyone, including assistants with the right token.
 - With the token in the address it can end up in logs, histories and settings files of the client.
   Set the tick only for accesses whose client cannot send the login in the header.
+- The tokens are part of the instance configuration. Whoever may read objects of the system, for
+  example an assistant using the built-in MCP server of Symcon, reads them as well.
 - The script functions know neither default room nor floor. They exist for state, switching, setting
   and scenes, not for stop, setpoint, colour temperature, colour, consumption, power and history.
 

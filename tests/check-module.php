@@ -152,6 +152,34 @@ IPS_SetVariableCustomProfile($rolloHm, 'Rollladen.Reversed');
 $r = $anlage->range($rolloHm);
 pruefe($richtung($r) === ['open' => 1.0, 'closed' => 0.0, 'source' => 'reversed'] && ($r['profile'] ?? '') === 'Rollladen.Reversed', 'Profil mit .Reversed (wie Homematic LEVEL): größter Wert offen: ' . json_encode($r));
 pruefe($anlage->range($licht) === null && $anlage->range(59999) === null, 'ohne Bereich und ohne Variable: unbekannt');
+
+// Rollläden aus dem HomeAssistant-Modul: Die Position (Ident cover_status) ist dort ein Schieberegler 0 bis 100 %
+// ohne Rollladen-Darstellung, und Home Assistant zählt 100 als offen (Blindtest 11.10.2026, Mitschnitt Testbox).
+$haMitschnitt = json_decode((string)file_get_contents(__DIR__ . '/fixtures/testbox_2026-10-11_ha_rollladen.json'), true);
+final class HaDeviceAttrappe extends IPSModule
+{
+}
+$haGeraet = static function (array $modul): int {
+    $id = IPS\ObjectManager::registerObject(1 /* Instance */);
+    IPS\InstanceManager::createInstance($id, $modul + ['Class' => HaDeviceAttrappe::class]);
+    return $id;
+};
+$haVariable = static function (array $mitschnitt, int $geraet, string $ident): int {
+    $id = variable($mitschnitt['typ'], (float)$mitschnitt['wert']);
+    IPS_SetParent($id, $geraet);
+    IPS_SetIdent($id, $ident);
+    IPS_SetVariableCustomPresentation($id, $mitschnitt['darstellung']);
+    return $id;
+};
+$haRollo = $haVariable($haMitschnitt['rolllaeden'][0], $haGeraet($haMitschnitt['modul']), 'cover_status');
+$r = $anlage->range($haRollo);
+pruefe($richtung($r) === ['open' => 100.0, 'closed' => 0.0, 'source' => 'module'] && $bereich($r) === ['min' => 0.0, 'max' => 100.0] && ($r['module'] ?? '') === 'Home Assistant', 'HomeAssistant-Modul, Position als Schieberegler: 100 ist offen: ' . json_encode($r));
+$haDarstellung = $haVariable($haMitschnitt['rolllaeden'][2], $haGeraet($haMitschnitt['modul']), 'cover_status');
+pruefe(($anlage->range($haDarstellung)['source'] ?? null) === 'presentation', 'HomeAssistant-Modul mit Darstellung Rollladen: die Darstellung entscheidet: ' . json_encode($anlage->range($haDarstellung)));
+$haHelligkeit = $haVariable($haMitschnitt['rolllaeden'][0], $haGeraet($haMitschnitt['modul']), 'light_brightness');
+pruefe(($anlage->range($haHelligkeit)['source'] ?? null) === 'default', 'HomeAssistant-Modul, keine Rollladen-Position: Standard bleibt: ' . json_encode($anlage->range($haHelligkeit)));
+$fremd = $haVariable($haMitschnitt['rolllaeden'][0], $haGeraet(['ModuleID' => '{00000000-0000-0000-0000-000000000001}', 'ModuleName' => 'Anderes', 'ModuleType' => 3]), 'cover_status');
+pruefe(($anlage->range($fremd)['source'] ?? null) === 'default', 'anderes Modul mit demselben Ident: Standard bleibt: ' . json_encode($anlage->range($fremd)));
 pruefe($anlage->hasAction($licht) === false && $anlage->read(59999) === null, 'keine Aktion, fehlende Variable');
 
 // Profil mit leerem Suffix: Symcon hängt ein Leerzeichen an, die Antwort soll es nicht tragen
@@ -391,6 +419,27 @@ pruefe(str_contains($m->RunSelfTest(), 'Note: Küche Rollo has no action') && st
 $knoepfe = array_column(json_decode($m->GetConfigurationForm(), true)['actions'], 'onClick', 'caption');
 pruefe(($knoepfe['Run self-test'] ?? '') === 'echo HAGT_RunSelfTest($id);', 'Formular hat den Knopf für den Selbsttest: ' . json_encode($knoepfe));
 
+// Hinweis für Skripte und KI-Assistenten: Was im Blindtest vom 11.10.2026 fehlte (Backlog B52), steht drin,
+// englisch im Formular und deutsch in der Übersetzung.
+$hinweis = '';
+foreach (flach(json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/form.json'), true)['elements']) as $element) {
+    if (str_starts_with((string)($element['caption'] ?? ''), 'Hint for scripts and AI assistants')) {
+        $hinweis = (string)$element['caption'];
+    }
+}
+$hinweisDe = (string)(json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/locale.json'), true)['translations']['de'][$hinweis] ?? '');
+foreach ([
+    'Home Assistant (MCP integration) and the Claude app (custom connector without sign-in) only work with InPath.'                                  => 'Home Assistant (MCP-Integration) und die Claude-App (benutzerdefinierter Connector ohne Anmeldung) gehen nur mit InPath.',
+    'The Claude app connects from the internet, its address is the Connect address from the instance Connect Control'                               => 'Die Claude-App verbindet sich aus dem Internet, ihre Adresse ist die Connect-Adresse aus der Instanz Connect Control',
+    'A token needs at least 24 characters, for example bin2hex(random_bytes(20)); HAGT_UIGenerateToken only fills the edit dialog.'                  => 'Ein Token braucht mindestens 24 Zeichen, etwa bin2hex(random_bytes(20)); HAGT_UIGenerateToken füllt nur den Bearbeitungsdialog.',
+    'Room names are the words the user speaks (Küche, Bad oben), without technical additions.'                                                      => 'Raumnamen sind die Wörter, die der Anwender spricht (Küche, Bad oben), ohne technische Zusätze.',
+    'The fields of each type (volume, mode, fan and others) are named by HAGT_UIDeviceForm(int $InstanceID, string $Type).'                           => 'Die Felder je Typ (Lautstärke, Modus, Lüfter und andere) nennt HAGT_UIDeviceForm(int $InstanceID, string $Type).',
+    'For every blind HAGT_RunSelfTest shows which value counts as open; if open and closed are swapped, set Invert.'                                 => 'Für jeden Rollladen zeigt HAGT_RunSelfTest, welcher Wert als offen gilt; sind offen und geschlossen vertauscht, Invert setzen.',
+] as $en => $de) {
+    pruefe(str_contains($hinweis, $en), 'Hinweistext nennt: ' . $en);
+    pruefe(str_contains($hinweisDe, $de), 'Hinweistext deutsch nennt: ' . $de);
+}
+
 // Der Selbsttest nennt je Rollladen die Richtung und woher sie stammt
 pruefe(str_contains($m->RunSelfTest(), 'Blind Küche Rollo: open at 0, closed at 100 (default: the smallest value is open)'), 'Selbsttest nennt die Richtung des Rollladens: ' . $m->RunSelfTest());
 pruefe(str_contains($m->QueryState('', 'blind', '', false), 'Küche | Rollo | blind | open'), 'QueryState rechnet die Position selbst: ' . $m->QueryState('', 'blind', '', false));
@@ -398,9 +447,11 @@ IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rolloHm, 'Invert' => false],
     ['Room' => 'Bad', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rolloDarstellung, 'Invert' => true],
     ['Room' => 'Flur', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $licht, 'Invert' => false],
+    ['Room' => 'Wohnzimmer', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $haRollo, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
 $test = $m->RunSelfTest();
+pruefe(str_contains($test, 'Blind Wohnzimmer Rollo: open at 100, closed at 0 (from the module Home Assistant)'), 'Richtung aus dem Modul des Geräts: ' . $test);
 pruefe(str_contains($test, 'Blind Küche Rollo: open at 1, closed at 0 (from the profile name Rollladen.Reversed)'), 'Richtung aus dem Profilnamen: ' . $test);
 pruefe(str_contains($test, 'Blind Bad Rollo: open at 0, closed at 100 (from the blind presentation, reversed by the checkbox)'), 'Richtung aus der Darstellung, vom Haken umgekehrt: ' . $test);
 pruefe(str_contains($test, 'Note: blind Flur Rollo has no known value range, the assistant cannot set it'), 'Rollladen ohne Bereich wird benannt: ' . $test);

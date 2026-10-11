@@ -343,7 +343,8 @@ ausgelassen wurden. Nennt der Assistent ein einzelnes Gerät mit einem Befehl, d
 
 Wie ein Rollladen intern zählt, müssen Sie nicht wissen. Manche Geräte melden 0 für offen, andere 0
 für geschlossen. Das Modul liest es aus der Darstellung „Rollladen“ der Variable oder aus ihrem
-Profil (ein Profilname mit „.Reversed“ zählt umgekehrt). Der Knopf **Selbsttest ausführen** zeigt für jeden
+Profil (ein Profilname mit „.Reversed“ zählt umgekehrt). Rollläden aus dem HomeAssistant-Modul zählen wie
+Home Assistant 100 als offen. Der Knopf **Selbsttest ausführen** zeigt für jeden
 Rollladen, was erkannt wurde, zum Beispiel „Rollladen Küche Rollladen: offen bei 1, geschlossen bei 0“.
 Stimmt das nicht, setzen Sie beim Gerät den Haken „Richtung umkehren“.
 
@@ -424,6 +425,8 @@ echo HAGT_RunScene($InstanzID, '', 'Filmabend');
 - Steht das Token in der Adresse, kann es in Logs, Verläufen und Einstellungsdateien des Clients
   landen. Setzen Sie den Haken nur bei Zugängen, deren Client die Anmeldung nicht im Header
   mitschicken kann.
+- Die Tokens stehen in der Konfiguration der Instanz. Wer Objekte der Anlage lesen darf, etwa ein
+  Assistent über den eingebauten MCP-Server von Symcon, liest sie mit.
 - Die Skriptfunktionen kennen weder Standardraum noch Etage. Es gibt sie für Zustand, Schalten,
   Stellen und Szenen, für Stopp, Sollwert, Farbtemperatur, Farbe, Verbrauch, Leistung und Verlauf nicht.
 

@@ -76,7 +76,13 @@ Weitere Regeln, die nicht offensichtlich sind:
   Rollläden gelten als „fährt“, sobald Position, Fahrstatus oder ein Lebenszeichen (Aktualisierung nach
   dem Befehl) es zeigen; das Ziel einer Fahrt merkt sich der Buffer `Travels`.
 - **Richtung eines Rollladens** aus der Darstellung „Rollladen“, sonst aus einem Profil mit `.Reversed`,
-  sonst ist der kleinste Wert offen; der Haken „Richtung umkehren“ dreht es um.
+  sonst aus dem Modul des Geräts (`SymconDeviceBackend::OPEN_AT_MAX_MODULES`: HomeAssistant-Modul, Ident
+  `cover_…`, 100 offen), sonst ist der kleinste Wert offen; der Haken „Richtung umkehren“ dreht es um.
+  Anlass: Im Blindtest vom 11.10.2026 fuhren HA-Rollläden (Schieberegler 0 bis 100 %) falsch herum.
+- **Hinweistext für Skripte und KI-Assistenten** (Label im Formular): Ein Agent hat damit allein über den
+  MCP-Server von Symcon eine Instanz eingerichtet (Blindtest 11.10.2026). Was er dort nicht fand (Clients
+  mit Token in der Adresse, Connect-Adresse, Token erzeugen, Raumnamen, Felder je Typ, Richtung prüfen),
+  steht seitdem drin; neue Felder und Typen gehören auch dorthin.
 - **Prozent beim Licht rechnet das Modul selbst**; der Anzeigetext von Symcon schneidet ab.
 - **Sollwert:** Bereich und Schrittweite aus Darstellung oder Profil, Sonderwerte mit Text am Rand
   („On“) zählen nicht dazu. Batteriegeräte melden den neuen Sollwert oft schon über die Zentrale,

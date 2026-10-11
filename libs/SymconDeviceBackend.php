@@ -47,6 +47,16 @@ final class SymconDeviceBackend implements DeviceBackend
         '{4EBD07B1-2962-4531-AC5F-7944789A9CE5}' => ['KLF200', 'KLF200_ShutterMoveStop(%d)'],
     ];
 
+    /**
+     * Module, deren Rollladenposition ohne Darstellung Rollladen den größten Wert als offen zählt:
+     * Modul-GUID => Name und Anfang des Idents der Positionsvariable. Home Assistant zählt die Position
+     * eines Covers 0 = zu, 100 = offen; das HomeAssistant-Modul legt sie als Schieberegler 0 bis 100 %
+     * an (Ident `cover_status`, Testbox 11.10.2026).
+     */
+    private const OPEN_AT_MAX_MODULES = [
+        '{72D6A284-1870-4E11-92D8-0402C8233C29}' => ['Home Assistant', 'cover_'],
+    ];
+
     /** Einträge einer Stoppvariable, die „anhalten“ bedeuten (Groß- und Kleinschreibung egal). */
     private const STOP_CAPTIONS = ['stop', 'stopp'];
 
@@ -248,6 +258,20 @@ final class SymconDeviceBackend implements DeviceBackend
         return $module === null ? null : [$module[0], sprintf($module[1], $instance)];
     }
 
+    /** Name des Moduls, wenn die Variable eine Rollladenposition aus OPEN_AT_MAX_MODULES ist; sonst null. */
+    private static function openAtMaxModule(int $variableId): ?string
+    {
+        $instance = IPS_GetParent($variableId);
+        if ($instance <= 0 || !IPS_InstanceExists($instance)) {
+            return null;
+        }
+        $module = self::OPEN_AT_MAX_MODULES[IPS_GetInstance($instance)['ModuleInfo']['ModuleID']] ?? null;
+        if ($module === null || !str_starts_with(IPS_GetObject($variableId)['ObjectIdent'], $module[1])) {
+            return null;
+        }
+        return $module[0];
+    }
+
     public function failure(int $variableId): ?string
     {
         $key = $this->started[$variableId] ?? null;
@@ -280,7 +304,12 @@ final class SymconDeviceBackend implements DeviceBackend
             return self::travel((float)$presentation['OPEN_OUTSIDE_VALUE'], (float)$presentation['CLOSE_INSIDE_VALUE'], $rotation ? 'rotation' : 'presentation');
         }
         if (isset($presentation['MIN'], $presentation['MAX'])) {
-            return self::validRange((float)$presentation['MIN'], (float)$presentation['MAX']);
+            $range = self::validRange((float)$presentation['MIN'], (float)$presentation['MAX']);
+            $module = self::openAtMaxModule($variableId);
+            if ($range !== null && $module !== null) {
+                return self::travel($range['max'], $range['min'], 'module') + ['module' => $module];
+            }
+            return $range;
         }
         // Legacy-Darstellung: der Bereich steht im Profil. Trägt der Profilname „.Reversed“, zählt
         // Symcon ihn als 100 % bis 0 % (Doku „Legacy-Icons“); bei Homematic ist LEVEL 0 geschlossen.
