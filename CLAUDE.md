@@ -84,7 +84,11 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   ab der letzten Erneuerung; ein schon verbrauchtes widerruft die ganze Familie (Kopplung eines Clients
   mit einem Zugang, Attribut `OAuthGrants`, überlebt einen Neustart). Zugriffstokens liegen nur im
   Buffer `OAuthTokens`; nach einem Neustart erneuert der Client. Ein ungültiger Code oder ein ungültiges
-  Erneuerungstoken zählt im `SignInGuard`.
+  Erneuerungstoken zählt im `SignInGuard`. Am Hook gilt ein Bearer-Token, das kein festes Token ist, als
+  OAuth-Zugriffstoken (`oauthAccess`, nur im Header): nicht abgelaufen, Familie vorhanden, der Zugang
+  benutzbar und mit demselben Token. Der Client bekommt Werkzeuge, Rechte und Standardraum dieses
+  Zugangs. Jede Kopplung hat eine Familie, auch ohne `offline_access`, damit sie sich widerrufen lässt.
+  Kam ein Token mit und gilt nicht, sagt der 401 zusätzlich `error="invalid_token"` (RFC 6750).
 
 ## Werkzeuge
 

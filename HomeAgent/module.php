@@ -760,6 +760,13 @@ class HomeAgent extends IPSModuleStrict
         $pathToken = McpProtocol::tokenFromPath($_SERVER['REQUEST_URI'] ?? '', $this->GetEndpoint());
         $index = McpProtocol::findAccess($_SERVER['HTTP_AUTHORIZATION'] ?? '', $pathToken, $accesses);
         $access = $index === null ? null : $accesses[$index];
+        // Sonst ein OAuth-Zugriffstoken: Es gilt für den gekoppelten Zugang, solange dieser
+        // benutzbar ist und dasselbe Token trägt (nur im Header, nie in der Adresse).
+        $viaOAuth = false;
+        if ($access === null && $oauthBase !== '') {
+            $access = $this->oauthAccess((string)($_SERVER['HTTP_AUTHORIZATION'] ?? ''), $accesses);
+            $viaOAuth = $access !== null;
+        }
         $response = McpProtocol::handleHttp(
             $_SERVER['REQUEST_METHOD'] ?? 'GET',
             $access !== null,
@@ -770,14 +777,15 @@ class HomeAgent extends IPSModuleStrict
         );
 
         // Mit OAuth nennt der 401 die Metadaten; daran erkennt ein Client, dass er sich anmelden kann.
+        // Kam ein Token mit, erneuert der Client zuerst (error="invalid_token").
         if ($access === null && $oauthBase !== '' && $response['status'] === 401) {
-            $response['headers']['WWW-Authenticate'] = OAuthServer::challenge($oauthBase);
+            $response['headers']['WWW-Authenticate'] = OAuthServer::challenge($oauthBase, trim((string)($_SERVER['HTTP_AUTHORIZATION'] ?? '')) !== '');
         }
         if ($access === null) {
             $this->SendDebug('Hook', 'rejected: authorization missing or wrong', 0);
             $this->recordSignInFailure((string)($_SERVER['REMOTE_ADDR'] ?? '?'));
         } else {
-            $this->SendDebug('Request', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . implode(', ', $response['methods'] ?? []) . ' → HTTP ' . $response['status'] . ' (' . ($_SERVER['REMOTE_ADDR'] ?? '?') . ', access ' . $access['Name'] . ')', 0);
+            $this->SendDebug('Request', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . implode(', ', $response['methods'] ?? []) . ' → HTTP ' . $response['status'] . ' (' . ($_SERVER['REMOTE_ADDR'] ?? '?') . ', access ' . $access['Name'] . ($viaOAuth ? ', OAuth' : '') . ')', 0);
         }
         $this->send($response);
     }
@@ -902,9 +910,12 @@ class HomeAgent extends IPSModuleStrict
                 return $this->tokenError('invalid_grant', $grantType);
             }
             $family = bin2hex(random_bytes(8));
-            $refreshToken = in_array('offline_access', explode(' ', $grant['scope']), true) ? OAuthServer::newToken() : null;
-            if ($refreshToken !== null) {
-                $this->changeGrants(static fn (array $families): array => OAuthServer::startFamily($families, $family, $grant, $refreshToken, $now));
+            // Jede Kopplung bekommt eine Familie, auch ohne offline_access: Über sie gilt ein
+            // Zugriffstoken und lässt sich widerrufen. Das Erneuerungstoken geht dann nicht hinaus.
+            $refreshToken = OAuthServer::newToken();
+            $this->changeGrants(static fn (array $families): array => OAuthServer::startFamily($families, $family, $grant, $refreshToken, $now));
+            if (!in_array('offline_access', explode(' ', $grant['scope']), true)) {
+                $refreshToken = null;
             }
             return $this->issueTokens(['family' => $family, 'access' => $grant['access'], 'client_id' => $grant['client_id'], 'scope' => $grant['scope']], $refreshToken, $accessName, $now);
         }
@@ -956,6 +967,28 @@ class HomeAgent extends IPSModuleStrict
             'invalid_scope'          => 'The scope exceeds the granted scope',
             default                  => 'A required parameter is missing',
         });
+    }
+
+    /**
+     * Zugang zu einem OAuth-Zugriffstoken aus dem Authorization-Header; null, wenn das Token
+     * unbekannt, abgelaufen oder widerrufen ist oder der Zugang nicht mehr passt.
+     *
+     * @param array<int, array{Name: string, Token: string, DefaultRoom: string, ReadOnly: bool, InPath: bool}> $accesses benutzbare Zugänge
+     */
+    private function oauthAccess(string $authorization, array $accesses): ?array
+    {
+        $tokens = json_decode($this->GetBuffer('OAuthTokens'), true);
+        $families = json_decode($this->ReadAttributeString('OAuthGrants'), true);
+        $entry = OAuthServer::accessFor(is_array($tokens) ? $tokens : [], is_array($families) ? $families : [], $authorization, time());
+        if ($entry === null) {
+            return null;
+        }
+        foreach ($accesses as $access) {
+            if (hash_equals($entry['access'], hash('sha256', $access['Token']))) {
+                return $access;
+            }
+        }
+        return null;
     }
 
     /** Name des benutzbaren Zugangs, dessen Token diesen Hash hat; null = keiner (gelöscht oder Token geändert). */

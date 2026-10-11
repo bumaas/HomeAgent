@@ -1886,4 +1886,88 @@ try {
 }
 HomeAgentHarness::$connect = '';
 
+/* --- OAuth Teil 4: Anmeldung mit dem Zugriffstoken (build 76) ------------------------------------- */
+
+HomeAgentHarness::$connect = 'https://example.ipmagic.de';
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
+IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', $token, 'Halle', true), $zugang('Andere', 'andere-token-0123456789abcdef')]));
+try {
+    IPS_SetProperty($iid, 'OAuthEnabled', true);
+} catch (Throwable) {
+}
+IPS_ApplyChanges($iid);
+$mcp = static function (string $auth, string $methode, array $params = []) use ($hook, $m, $iid): array {
+    $_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $iid, 'REMOTE_ADDR' => '127.0.0.1', 'HTTP_X_FORWARDED_FOR' => '160.79.106.181'];
+    if ($auth !== '') {
+        $_SERVER['HTTP_AUTHORIZATION'] = $auth;
+    }
+    HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 1, 'method' => $methode, 'params' => (object)$params]);
+    $m->response = null;
+    ob_start();
+    try {
+        $hook->invoke($m);
+    } finally {
+        ob_end_clean();
+        HomeAgentHarness::$body = '';
+    }
+    $antwort = $m->response ?? ['status' => 0, 'headers' => [], 'body' => ''];
+    return $antwort + ['json' => json_decode($antwort['body'], true) ?? []];
+};
+$koppeln = static function (string $scope = 'mcp offline_access') use ($neuerCode, $tokenAnfrage, $einloesen): array {
+    $code = $neuerCode();
+    return $tokenAnfrage(['code' => $code] + $einloesen)['json'];
+};
+$tokens = $koppeln();
+$zugriff = (string)($tokens['access_token'] ?? '');
+pruefe($zugriff !== '', 'Ausgangslage: Zugriffstoken über Kopplung, Code und Token-Endpunkt');
+
+// Der OAuth-Client bekommt genau die Werkzeuge und Antworten des gekoppelten Zugangs
+$perOAuth = $mcp('Bearer ' . $zugriff, 'tools/list');
+$perToken = $mcp('Bearer ' . $token, 'tools/list');
+pruefe($perOAuth['status'] === 200 && ($perOAuth['json']['result'] ?? null) === ($perToken['json']['result'] ?? false), 'tools/list mit dem Zugriffstoken gleicht dem des Zugangs (nur abfragen, Standardraum): ' . $perOAuth['status'] . ' ' . substr($perOAuth['body'], 0, 120));
+$init = $mcp('Bearer ' . $zugriff, 'initialize', ['protocolVersion' => '2025-11-25', 'capabilities' => (object)[], 'clientInfo' => ['name' => 'claude-ai', 'version' => '0.1.0']]);
+pruefe(str_contains((string)($init['json']['result']['instructions'] ?? ''), 'only read'), 'die Anleitung sagt dem Assistenten, dass der Zugang nur abfragen kann: ' . substr((string)($init['json']['result']['instructions'] ?? ''), 0, 160));
+$aufruf = $mcp('Bearer ' . $zugriff, 'tools/call', ['name' => 'get_state', 'arguments' => (object)[]]);
+pruefe(str_contains((string)($aufruf['json']['result']['content'][0]['text'] ?? ''), 'room=Halle'), 'ohne Raum gilt der Standardraum des Zugangs: ' . substr((string)($aufruf['json']['result']['content'][0]['text'] ?? ''), 0, 120));
+pruefe(!str_contains($logText(), $zugriff), 'das Zugriffstoken steht nicht im Log');
+
+// Ungültig, abgelaufen, widerrufen, Zugang geändert: 401 mit invalid_token und Metadaten
+$basis = 'https://example.ipmagic.de/hook/homeagent/' . $iid;
+$erwartet = 'Bearer resource_metadata="' . $basis . '/.well-known/oauth-protected-resource", scope="mcp", error="invalid_token"';
+$a = $mcp('Bearer erfundenes-zugriffstoken-0123456789', 'tools/list');
+pruefe($a['status'] === 401 && ($a['headers']['WWW-Authenticate'] ?? '') === $erwartet, 'unbekanntes Token: 401 mit invalid_token: ' . json_encode($a['headers']['WWW-Authenticate'] ?? null));
+$a = $mcp('', 'tools/list');
+pruefe($a['status'] === 401 && !str_contains($a['headers']['WWW-Authenticate'] ?? '', 'invalid_token'), 'ohne Anmeldung: 401 ohne invalid_token');
+$puffer = (new ReflectionMethod($m, 'GetBuffer'));
+$alt = (string)$puffer->invoke($m, 'OAuthTokens');
+$abgelaufen = array_map(static fn (array $e): array => ['expires' => time() - 1] + $e, (array)json_decode($alt, true));
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'OAuthTokens', json_encode($abgelaufen));
+$a = $mcp('Bearer ' . $zugriff, 'tools/list');
+pruefe($a['status'] === 401 && ($a['headers']['WWW-Authenticate'] ?? '') === $erwartet, 'abgelaufenes Zugriffstoken: 401, Claude erneuert dann');
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'OAuthTokens', $alt);
+pruefe($mcp('Bearer ' . $zugriff, 'tools/list')['status'] === 200, 'Gegenprobe: mit gültigem Ablauf wieder 200');
+try {
+    (new ReflectionMethod($m, 'WriteAttributeString'))->invoke($m, 'OAuthGrants', '{}');
+} catch (Throwable) {
+}
+pruefe($mcp('Bearer ' . $zugriff, 'tools/list')['status'] === 401, 'widerrufene Kopplung: das Zugriffstoken gilt sofort nicht mehr');
+
+$zugriff = (string)($koppeln()['access_token'] ?? '');
+pruefe($mcp('Bearer ' . $zugriff, 'tools/list')['status'] === 200, 'neue Kopplung gilt');
+IPS_SetProperty($iid, 'OAuthEnabled', false);
+IPS_ApplyChanges($iid);
+pruefe($mcp('Bearer ' . $zugriff, 'tools/list')['status'] === 401, 'Schalter aus: OAuth-Tokens gelten nicht');
+IPS_SetProperty($iid, 'OAuthEnabled', true);
+IPS_ApplyChanges($iid);
+IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', 'neues-token-0123456789abcdef', 'Halle', true)]));
+IPS_ApplyChanges($iid);
+pruefe($mcp('Bearer ' . $zugriff, 'tools/list')['status'] === 401, 'neues Token am Zugang: das Zugriffstoken gilt sofort nicht mehr');
+
+try {
+    IPS_SetProperty($iid, 'OAuthEnabled', false);
+    IPS_ApplyChanges($iid);
+} catch (Throwable) {
+}
+HomeAgentHarness::$connect = '';
+
 ende('Modul');

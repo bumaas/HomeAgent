@@ -61,10 +61,32 @@ final class OAuthServer
         return in_array($rest, self::ROUTES, true) ? $rest : null;
     }
 
-    /** Wert für WWW-Authenticate im 401: Damit beginnt ein Client die Anmeldung. */
-    public static function challenge(string $base): string
+    /**
+     * Wert für WWW-Authenticate im 401: Damit beginnt ein Client die Anmeldung. Mit $invalidToken
+     * (ein Token kam mit, gilt aber nicht) erneuert der Client zuerst (RFC 6750, Abschnitt 3.1).
+     */
+    public static function challenge(string $base, bool $invalidToken = false): string
     {
-        return 'Bearer resource_metadata="' . rtrim($base, '/') . '/.well-known/oauth-protected-resource", scope="' . self::SCOPE . '"';
+        return 'Bearer resource_metadata="' . rtrim($base, '/') . '/.well-known/oauth-protected-resource", scope="' . self::SCOPE . '"'
+            . ($invalidToken ? ', error="invalid_token"' : '');
+    }
+
+    /**
+     * Prüft ein Bearer-Token als OAuth-Zugriffstoken: bekannt, nicht abgelaufen, und seine Kopplung
+     * besteht noch. Ob der Zugang noch benutzbar ist, prüft der Aufrufer.
+     *
+     * @return ?array{family: string, access: string, client_id: string, scope: string, expires: int}
+     */
+    public static function accessFor(array $tokens, array $families, string $authorization, int $now): ?array
+    {
+        if (preg_match('/^\s*Bearer[ \t]+(\S+)\s*$/i', $authorization, $parts) !== 1) {
+            return null;
+        }
+        $entry = $tokens[hash('sha256', $parts[1])] ?? null;
+        if (!is_array($entry) || $entry['expires'] <= $now || !isset($families[$entry['family']])) {
+            return null;
+        }
+        return $entry;
     }
 
     /**

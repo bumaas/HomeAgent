@@ -252,4 +252,20 @@ pruefe($a['status'] === 200 && ($a['headers']['Cache-Control'] ?? '') === 'no-st
 $k = json_decode(OAuthServer::tokenResponse('ACCESS-1', null, 'mcp')['body'], true);
 pruefe(!array_key_exists('refresh_token', $k), 'ohne offline_access kein Erneuerungstoken');
 
+/* --- Teil 4: Zugriffstoken am Endpunkt ----------------------------------------------------------- */
+
+pruefe($hat('accessFor'), 'OAuthServer::accessFor gibt es');
+$kopf = OAuthServer::challenge($endpunkt, true);
+pruefe($kopf === 'Bearer resource_metadata="' . $endpunkt . '/.well-known/oauth-protected-resource", scope="mcp", error="invalid_token"', 'ungültiges Token: WWW-Authenticate mit error="invalid_token": ' . $kopf);
+if ($hat('accessFor')) {
+    $familien = OAuthServer::startFamily([], 'fam-1', $r['grant'], 'REFRESH-1', $t);
+    $tokens = OAuthServer::issueAccessToken([], 'ACCESS-1', ['family' => 'fam-1', 'access' => 'zugang-a', 'client_id' => $claudeId, 'scope' => 'mcp offline_access'], $t);
+    $gefunden = OAuthServer::accessFor($tokens, $familien, 'Bearer ACCESS-1', $t + 10);
+    pruefe(($gefunden['access'] ?? '') === 'zugang-a' && ($gefunden['family'] ?? '') === 'fam-1', 'gültiges Zugriffstoken ergibt Zugang und Familie: ' . json_encode($gefunden));
+    pruefe(OAuthServer::accessFor($tokens, $familien, 'bearer   ACCESS-1 ', $t + 10) !== null, 'Schema ohne Rücksicht auf Groß- und Kleinschreibung, Leerzeichen egal');
+    pruefe(OAuthServer::accessFor($tokens, $familien, 'Bearer ACCESS-1', $t + 3600) === null, 'nach einer Stunde abgelaufen');
+    pruefe(OAuthServer::accessFor($tokens, [], 'Bearer ACCESS-1', $t + 10) === null, 'widerrufene Familie: Token gilt sofort nicht mehr');
+    pruefe(OAuthServer::accessFor($tokens, $familien, 'Bearer ACCESS-2', $t + 10) === null && OAuthServer::accessFor($tokens, $familien, '', $t + 10) === null && OAuthServer::accessFor($tokens, $familien, 'Basic ACCESS-1', $t + 10) === null, 'unbekanntes Token, keins oder anderes Schema: null');
+}
+
 ende('OAuth');
