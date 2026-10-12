@@ -237,7 +237,7 @@ Weitere Regeln, die nicht offensichtlich sind:
   (`connectionOf`: per OAuth angemeldet mit dem Namen aus `clientLabel`, Claude-App und Claude Code wie die Unterbereiche, sonst Name und Host, Adresse mit Token oder Token im Header; nur diese Spalte kommt in
   `values`, die Tokens nicht). Token und `InPath` sind unsichtbare Spalten mit `save: true`, bearbeitet im eigenen
   `form` der Liste (Doku List, Beispiel 1). Das Token steht dort nur als unsichtbares Feld: Ein Zugang ohne Token
-  bekommt in `ApplyChanges` eines (64 Hex-Zeichen, danach Property setzen und erneut übernehmen). **Neues Token**
+  bekommt in `ApplyChanges` eines (64 Hex-Zeichen, danach Property setzen und über einen einmaligen Timer erneut übernehmen: ein `IPS_ApplyChanges` auf sich selbst lehnt die Rust-Edition als re-entranten Aufruf ab, die Instanz blieb auf 104, Blindtest 12.10.2026). **Neues Token**
   (`UIGenerateToken`, mit Rückfrage) leert das Feld nur. Sichtbar wird ein Token erst auf Knopfdruck, und nur wo es
   gebraucht wird: **Token anzeigen** (`UIShowToken`, Auswahl `TokenAccess`) für Clients mit Header, **Adresse
   anzeigen** für Home Assistant; bei OAuth nie. Anlass (Burkhard 12.10.2026, build 81 bis 83): Im Kennwortfeld sah

@@ -2244,6 +2244,61 @@ pruefe(IPS_SemaphoreEnter('HAGT_Paused_' . $iid, 0), 'die Sperre ist danach wied
 IPS_SemaphoreLeave('HAGT_Paused_' . $iid);
 (new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'Paused', '');
 
+/* --- Token beim Übernehmen per Skript (Blindtest 12.10.2026) ------------------------------------ */
+
+// Echt (Testbox 9.1 Rust, 12.10.2026, per Skript und direkt per JSON-RPC): Ruft ApplyChanges sich selbst über
+// IPS_ApplyChanges auf, lehnt der Kernel das ab („Instanz #… ist durch eine selbst gestartete Operation belegt
+// (re-entranter Aufruf abgelehnt)“), das äußere IPS_ApplyChanges liefert false, die Instanz bleibt auf 104.
+// Angenommen: Ein einmaliger Timer läuft im Kernel erst nach dem laufenden ApplyChanges; die Probe stellt ihn
+// deshalb zurück und führt ihn danach aus.
+class HomeAgentRustProbe extends HomeAgent
+{
+    public static int $tiefe = 0;
+    public static int $abgelehnt = 0;
+    public static array $timer = [];
+
+    protected function RegisterHook(string $HookPath): bool
+    {
+        return true; // der Stub hat hier nur einen leeren Rumpf
+    }
+
+    public function ApplyChanges(): void
+    {
+        if (self::$tiefe > 0) {
+            self::$abgelehnt++;
+            return;
+        }
+        self::$tiefe++;
+        try {
+            parent::ApplyChanges();
+        } finally {
+            self::$tiefe--;
+        }
+    }
+
+    protected function RegisterOnceTimer(string $Ident, string $ScriptText): bool
+    {
+        self::$timer[$Ident] = [$ScriptText, $this->InstanceID];
+        return true;
+    }
+}
+$probeModul = ['ModuleID' => HomeAgentHarness::MODULE_ID, 'ModuleName' => 'HomeAgent', 'ModuleType' => 3, 'Class' => HomeAgentRustProbe::class];
+$probe = IPS\ObjectManager::registerObject(1);
+IPS\InstanceManager::createInstance($probe, $probeModul);
+IPS_SetProperty($probe, 'Accesses', json_encode([['Name' => 'A', 'Token' => '', 'DefaultRoom' => '', 'ReadOnly' => true, 'InPath' => false]]));
+HomeAgentRustProbe::$abgelehnt = 0;
+IPS_ApplyChanges($probe);
+pruefe(HomeAgentRustProbe::$abgelehnt === 0, 'ApplyChanges ruft sich nicht selbst auf (Rust lehnt das ab): ' . HomeAgentRustProbe::$abgelehnt . ' abgelehnte Aufrufe');
+foreach (HomeAgentRustProbe::$timer as [$skript, $ziel]) {
+    IPS_RunScriptTextEx($skript, ['TARGET' => $ziel]);
+}
+HomeAgentRustProbe::$timer = [];
+$probeZugang = json_decode(IPS_GetProperty($probe, 'Accesses'), true);
+pruefe(preg_match('/^[0-9a-f]{64}$/', (string)($probeZugang[0]['Token'] ?? '')) === 1, 'der Zugang hat danach ein Token (64 Hex-Zeichen)');
+pruefe(IPS_GetInstance($probe)['InstanceStatus'] === IS_ACTIVE, 'die Instanz ist danach aktiv, ohne zweites Übernehmen: ' . IPS_GetInstance($probe)['InstanceStatus']);
+pruefe(HomeAgentRustProbe::$abgelehnt === 0, 'auch der nachgeholte Aufruf wird nicht abgelehnt: ' . HomeAgentRustProbe::$abgelehnt);
+IPS_DeleteInstance($probe);
+
 /* --- Gliederung mit Unterbereichen und kleine Punkte (build 84) ---------------------------------- */
 
 HomeAgentHarness::$connect = 'https://example.ipmagic.de';

@@ -119,9 +119,11 @@ class HomeAgent extends IPSModuleStrict
             }
         }
         unset($row);
+        // Übernommen wird über einen einmaligen Timer: Ein IPS_ApplyChanges auf sich selbst lehnt die
+        // Rust-Edition als re-entranten Aufruf ab, die Instanz blieb dann auf 104 (Blindtest 12.10.2026).
         if ($filled) {
             IPS_SetProperty($this->InstanceID, 'Accesses', (string)json_encode($accesses));
-            IPS_ApplyChanges($this->InstanceID);
+            $this->RegisterOnceTimer('ApplyTokens', 'IPS_ApplyChanges(' . $this->InstanceID . ');');
             return;
         }
 
