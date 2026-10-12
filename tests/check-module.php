@@ -2178,7 +2178,8 @@ IPS_SetProperty($iid, 'Accesses', json_encode(array_merge($fuenf, array_map(stat
 IPS_ApplyChanges($iid);
 $formular = json_decode($m->GetConfigurationForm(), true);
 $alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
-pruefe(($element('Accesses')['rowCount'] ?? 0) === 8, 'bei elf Zugängen höchstens acht Zeilen: ' . json_encode($element('Accesses')['rowCount'] ?? null));
+// Burkhard 12.10.2026: ab mehr als fünf Einträgen ein Scrollbalken
+pruefe(($element('Accesses')['rowCount'] ?? 0) === 5, 'bei elf Zugängen fünf Zeilen, der Rest mit Scrollbalken: ' . json_encode($element('Accesses')['rowCount'] ?? null));
 IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude Code', 'cc-token-0123456789abcdefgh')]));
 IPS_ApplyChanges($iid);
 try {

@@ -452,8 +452,8 @@ class HomeAgent extends IPSModuleStrict
                 // Nur die Spalte Verbindung; die Konsole ergänzt die gespeicherten Zeilen der Reihe nach,
                 // die Tokens kommen also nicht in die Werte.
                 $element['values'] = array_map(fn (array $access): array => ['Connection' => $this->connectionOf($access)], $this->accessList());
-                // So hoch wie die Liste, ohne Scrollbalken bis acht Zugänge
-                $element['rowCount'] = max(3, min(8, count($this->accessList())));
+                // So hoch wie die Liste, ab mehr als fünf Zugängen mit Scrollbalken (Burkhard 12.10.2026)
+                $element['rowCount'] = max(3, min(5, count($this->accessList())));
             }
 
             if (($element['name'] ?? '') === 'Devices') {

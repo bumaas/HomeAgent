@@ -226,7 +226,8 @@ Weitere Regeln, die nicht offensichtlich sind:
   Popup, außer sie beginnt mit `MESSAGE:`.
 - Fehlerhafte Zeilen sind rot (`rowColor`), die Meldungen stehen oben im Formular.
 - **Bereich „Endpunkt und Zugänge“ für Einsteiger** (build 80, Burkhard 12.10.2026: „für einsteiger wirkt es
-  kompliziert“): Die Zugangsliste zeigt Name, Nur abfragen, Standardraum und die Textspalte `Connection`
+  kompliziert“): Die Zugangsliste (3 bis 5 Zeilen hoch, darüber mit Scrollbalken) zeigt Name, Nur abfragen, Standardraum und die
+  Textspalte `Connection`
   (`connectionOf`: per OAuth angemeldet mit Host, Adresse mit Token oder Token im Header; nur diese Spalte kommt in
   `values`, die Tokens nicht). Token und `InPath` sind unsichtbare Spalten mit `save: true`, bearbeitet im eigenen
   `form` der Liste (Doku List, Beispiel 1). Das Token steht dort nur als unsichtbares Feld: Ein Zugang ohne Token
