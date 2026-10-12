@@ -92,6 +92,15 @@ pruefe(str_contains($r['text'], 'Testlampe') && (($r['structuredContent']['cards
 $r = rufe(static fn () => $idx->controlDevice(['device' => $schluessel, 'percent' => 50]));
 pruefe(!$r['isError'] && ($r['structuredContent']['cards'][0]['controls']['percent'] ?? null) === 50, 'Helligkeit per Schieberegler auf 50 %: ' . json_encode($r['structuredContent']['cards'][0]['controls'] ?? null) . ' / ' . $r['text']);
 
+// Die Karte zeigt die Antwort nur, wenn etwas nicht geklappt hat (Burkhard 12.10.2026: nach dem Schalten stand dort
+// „1 von 1 Geräten sind jetzt aus (name=Blumenfenster). Wohnzimmer | Blumenfenster | light | aus“). Dafür sagt
+// control_device, ob es ein Problem gab, mit derselben Art wie „Was nicht geklappt hat“.
+pruefe(array_key_exists('problem', $r['structuredContent'] ?? []) && $r['structuredContent']['problem'] === null, 'geklappt: kein Problem, die Karte zeigt nur den neuen Zustand: ' . json_encode($r['structuredContent']['problem'] ?? 'fehlt'));
+[$idx, $b] = anlage($fx);
+$karten = rufe(static fn () => $idx->cards(['room' => 'Testraum'], false));
+$r = rufe(static fn () => $idx->controlDevice(['device' => karte($karten, 'Lampe ohne Aktion')['key'] ?? '', 'command' => 'on']));
+pruefe(is_string($r['structuredContent']['problem'] ?? null), 'Lampe ohne Aktion: die Karte bekommt die Art des Problems und zeigt die Antwort: ' . json_encode($r['structuredContent']['problem'] ?? null) . ' / ' . $r['text']);
+
 [$idx, $b] = anlage($fx);
 $karten = rufe(static fn () => $idx->cards(['room' => 'Testraum'], false));
 $r = rufe(static fn () => $idx->controlDevice(['device' => karte($karten, 'Rollladen')['key'] ?? '', 'command' => 'close']));

@@ -452,7 +452,7 @@ one hour of an hourly chart.
 With "Show me the lights in the living room" the Claude app shows the devices as cards: the state and, depending on
 the device, a switch, a slider for brightness or opening, buttons for open, stop and close, the setpoint with plus
 and minus, and playback. A tap on a card switches at once, without a detour through the language model, and the
-card then shows what the device reported back. The assistant learns in the further conversation what was operated
+card then shows the state the device reported back; a message only appears when something did not work. The assistant learns in the further conversation what was operated
 on the cards. With a **Query only** access the cards only show the state. Operating mode and fan speed do not work
 on the cards yet.
 

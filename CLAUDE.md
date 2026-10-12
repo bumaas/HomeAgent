@@ -153,7 +153,7 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   `CARDS_MAX`. Seite `ui://homeagent/devices` (`HomeAgent/devices.html`). Bedient wird über `control_device`
   (`_meta.ui.visibility: ["app"]`, der Host zeigt es dem Modell nicht; nur ohne „Nur abfragen“): Kartenschlüssel
   (`cardKey`, alle Variablen des Geräts, weil Thermostat und Raumfühler eine teilen) und Befehl, intern `setState` mit
-  `onlyKey` in `find()`, also dieselbe Rückmeldung; zurück kommt die neue Karte. Die Seite meldet die letzten fünf
+  `onlyKey` in `find()`, also dieselbe Rückmeldung; zurück kommt die neue Karte und `problem` wie in „Was nicht geklappt hat“; die Karte zeigt die Antwort nur bei einem Problem, sonst den neuen Zustand (Burkhard 12.10.2026). Die Seite meldet die letzten fünf
   Bedienungen über `ui/update-model-context` (jede Meldung ersetzt die vorige). Am nuc 12.10.2026: Karte in 69 ms,
   `control_device` 68 ms. Auswahl (Modus, Lüfterstufe) fehlt auf den Karten noch.
   Mit Karten verweist die Beschreibung von `get_state` fürs Zeigen („show me …“) auf `show_devices` (`$hasCards`): Die

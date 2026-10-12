@@ -131,7 +131,12 @@
     request("tools/call", { name: "control_device", arguments: call }).then(function (result) {
       var text = ((result && result.content) || []).map(function (c) { return c.text || ""; }).join("\n");
       var fresh = result && result.structuredContent && result.structuredContent.cards && result.structuredContent.cards[0];
-      replies[card.key] = { text: text, error: !!(result && result.isError) };
+      // Die Antwort nur bei einem Problem (nicht bestätigt, Fehler, nicht verstanden); sonst zeigt die Karte den neuen Zustand
+      if (result && (result.isError || (result.structuredContent && result.structuredContent.problem))) {
+        replies[card.key] = { text: text, error: !!result.isError };
+      } else {
+        delete replies[card.key];
+      }
       if (fresh) { replace(fresh); } else { draw(); }
       done.push(card.room + " · " + card.name + ": " + text.split("\n")[0]);
       done = done.slice(-5);

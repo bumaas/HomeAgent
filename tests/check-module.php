@@ -2729,6 +2729,7 @@ pruefe(str_contains($schalten['get_state']['description'] ?? '', 'use show_devic
 pruefe(str_contains($schalten['show_devices']['description'] ?? '', '"show me'), 'show_devices nennt „show me“: ' . ($schalten['show_devices']['description'] ?? ''));
 $karten = oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/devices'), $p, HomeAgent::class)());
 pruefe(is_string($karten) && str_contains($karten, 'ui/initialize') && str_contains($karten, '"control_device"') && str_contains($karten, 'ui/update-model-context'), 'die Seite der Karten bedient über control_device und sagt dem Modell, was geschah');
+pruefe(is_string($karten) && str_contains($karten, 'structuredContent.problem'), 'die Karte zeigt die Antwort nur bei einem Problem');
 pruefe(strlen((string)$karten) < 30000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$karten), 'die Seite der Karten lädt nichts nach: ' . strlen((string)$karten) . ' Bytes');
 pruefe(strlen((string)$seite) < 20000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$seite), 'die Seite lädt nichts nach (CSP der Apps) und bleibt klein: ' . strlen((string)$seite) . ' Bytes');
 

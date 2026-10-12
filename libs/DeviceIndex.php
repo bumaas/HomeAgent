@@ -3369,7 +3369,9 @@ final class DeviceIndex
         } finally {
             $this->onlyKey = null;
         }
-        return $result + ['structuredContent' => ['kind' => 'cards', 'cards' => [$this->cardOf($entry, false)]]];
+        // „problem“ wie in „Was nicht geklappt hat“: Nur dann zeigt die Karte die Antwort, sonst reicht der neue Zustand
+        // (Burkhard 12.10.2026: nach dem Schalten stand die ganze Antwort von set_state auf der Karte).
+        return $result + ['structuredContent' => ['kind' => 'cards', 'problem' => $this->problem, 'cards' => [$this->cardOf($entry, false)]]];
     }
 
     /** Schlüssel einer Karte aus allen Variablen des Geräts; ein Thermostat und sein Raumfühler teilen sich eine. */
