@@ -124,6 +124,10 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   Apps erlaubt nichts Fremdes; Handshake `ui/initialize`, Werte über `ui/notifications/tool-result`). `DeviceIndex::chart()`
   gibt dem Modell nur Kopfzeile und Minimum/Maximum, die Werte stehen in `structuredContent`. Resources gibt es nur, wenn
   der Aufrufer `$readResource` übergibt.
+- **Vorlagen (Prompts, B63):** `libs/PromptCatalog.php` baut „Haus verlassen“, „Gute Nacht“ (Fenster, Türen, Licht,
+  Mediaplayer, je nach Freigabeliste, `active_only=true`) und „Energiebericht“ (nur mit Bilanz oder Zähler); ein
+  Nur-Lese-Zugang bekommt keine Frage nach dem Schalten. `prompts/list` und `prompts/get` gibt es nur, wenn der
+  Aufrufer `$prompts` übergibt (`promptsFor`), sonst -32601.
 
 ## Werkzeuge
 

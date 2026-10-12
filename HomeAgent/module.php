@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../libs/McpProtocol.php';
 require_once __DIR__ . '/../libs/OAuthServer.php';
 require_once __DIR__ . '/../libs/DeviceIndex.php';
+require_once __DIR__ . '/../libs/PromptCatalog.php';
 require_once __DIR__ . '/../libs/RoomIndex.php';
 require_once __DIR__ . '/../libs/SceneIndex.php';
 require_once __DIR__ . '/../libs/AlexaImport.php';
@@ -893,6 +894,27 @@ class HomeAgent extends IPSModuleStrict
         return in_array($given, $own, true);
     }
 
+    /**
+     * Vorlagen (Prompts) für einen Zugang nach der Freigabeliste: „Haus verlassen“, „Gute Nacht“, „Energiebericht“
+     * (Backlog B63). Ein Nur-Lese-Zugang bekommt keine Frage nach dem Schalten.
+     */
+    private function promptCatalog(?array $access): PromptCatalog
+    {
+        $devices = $this->usableDevices();
+        $energy = $this->usableBalance($this->balance()) !== [] || array_any($devices, static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['energy']));
+        return new PromptCatalog(array_values(array_unique(array_column($devices, 'Type'))), $energy, ($access['ReadOnly'] ?? false) === true, fn (string $text): string => $this->Translate($text));
+    }
+
+    /** Vorlagen für die Protokollschicht: mit null die Liste, mit einem Namen die Vorlage; null = es gibt keine. */
+    private function promptsFor(?array $access): ?callable
+    {
+        $catalog = $this->promptCatalog($access);
+        if ($catalog->list() === []) {
+            return null;
+        }
+        return static fn (?string $name): ?array => $name === null ? $catalog->list() : $catalog->get($name);
+    }
+
     /** Seite einer MCP App (ui://), null = gibt es nicht. Bisher nur das Diagramm von show_chart. */
     private function readResource(string $uri): ?string
     {
@@ -1045,7 +1067,8 @@ class HomeAgent extends IPSModuleStrict
             fn (string $name, array $arguments): array => $this->callTool($name, $arguments, $access),
             $this->serverInfo($access),
             self::mcpHeaders($_SERVER),
-            fn (string $uri): ?string => $this->readResource($uri)
+            fn (string $uri): ?string => $this->readResource($uri),
+            $this->promptsFor($access)
         );
 
         // Mit OAuth nennt der 401 die Metadaten; daran erkennt ein Client, dass er sich anmelden kann.

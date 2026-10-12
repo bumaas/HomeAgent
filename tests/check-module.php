@@ -2673,4 +2673,20 @@ pruefe(is_string($seite) && str_starts_with(ltrim($seite), '<!DOCTYPE html>') &&
 pruefe(oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/anderes'), $p, HomeAgent::class)()) === null, 'andere Ressourcen gibt es nicht');
 pruefe(strlen((string)$seite) < 20000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$seite), 'die Seite lädt nichts nach (CSP der Apps) und bleibt klein: ' . strlen((string)$seite) . ' Bytes');
 
+/* --- Vorlagen am Modul (Prompts, Backlog B63) ---------------------------------------------------- */
+
+// Nur das Licht ist freigegeben (siehe oben), der Zugang darf nur abfragen.
+$katalogP = oderNull(static fn () => \Closure::bind(fn () => $this->promptCatalog($zugangP), $p, HomeAgent::class)());
+pruefe($katalogP instanceof PromptCatalog && array_column($katalogP->list(), 'name') === ['leave_home', 'good_night'], 'Vorlagen nach Freigabeliste, ohne Zähler kein Energiebericht: ' . json_encode($katalogP instanceof PromptCatalog ? array_column($katalogP->list(), 'name') : null));
+$nacht = $katalogP instanceof PromptCatalog ? (string)($katalogP->get('good_night')['messages'][0]['content']['text'] ?? '') : '';
+pruefe(str_contains($nacht, 'type=light') && !str_contains($nacht, 'ask whether'), 'Nur-Lese-Zugang: keine Frage nach dem Schalten: ' . $nacht);
+$_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $pid, 'REMOTE_ADDR' => '192.0.2.5', 'HTTP_AUTHORIZATION' => 'Bearer ' . $pToken];
+HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 1, 'method' => 'prompts/list']);
+$p->response = null;
+ob_start();
+$pHook->invoke($p);
+ob_end_clean();
+HomeAgentHarness::$body = '';
+pruefe(str_contains((string)($p->response['body'] ?? ''), '"leave_home"'), 'prompts/list über den Hook: ' . ($p->response['body'] ?? ''));
+
 ende('Modul');

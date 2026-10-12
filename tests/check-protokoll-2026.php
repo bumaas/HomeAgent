@@ -35,7 +35,11 @@ function sende(array|string $koerper, array $kopf, bool $angemeldet = true): arr
     $seite = static fn (string $uri): ?string => $uri === 'ui://homeagent/chart' ? '<!DOCTYPE html><html><body>Diagramm</body></html>' : null;
     try {
         $anzahl = (new ReflectionMethod(McpProtocol::class, 'handleHttp'))->getNumberOfParameters();
+        $vorlagen = static fn (?string $name): ?array => $name === null
+            ? [['name' => 'leave_home', 'title' => 'Leaving home', 'description' => 'Checks what is still open or on.']]
+            : ($name === 'leave_home' ? ['description' => 'Checks what is still open or on.', 'messages' => [['role' => 'user', 'content' => ['type' => 'text', 'text' => 'I am leaving the house.']]]] : null);
         $antwort = match (true) {
+            $anzahl > 8 => McpProtocol::handleHttp(...array_merge($parameter, [$kopf, $seite, $vorlagen])),
             $anzahl > 7 => McpProtocol::handleHttp(...array_merge($parameter, [$kopf, $seite])),
             $anzahl > 6 => McpProtocol::handleHttp(...array_merge($parameter, [$kopf])),
             default     => McpProtocol::handleHttp(...$parameter),
@@ -161,5 +165,25 @@ $strukturiert = ['kind' => 'history', 'series' => []];
 $a = sende($aufruf, $kopf);
 pruefe(($a['json']['result']['structuredContent'] ?? null) === ['kind' => 'history', 'series' => []] && ($a['json']['result']['content'][0]['text'] ?? null) === '1 device(s) found.', 'structuredContent geht mit, der Text für das Modell auch: ' . $a['body']);
 $strukturiert = null;
+
+/* --- Vorlagen (Prompts, Backlog B63) ------------------------------------------------------------ */
+
+$a = sende($discover['koerper'], $discover['header']);
+pruefe(isset($a['json']['result']['capabilities']['prompts']), 'server/discover nennt Prompts: ' . json_encode($a['json']['result']['capabilities'] ?? null));
+$a = sende(['jsonrpc' => '2.0', 'id' => 9, 'method' => 'prompts/list', 'params' => ['_meta' => $meta]], ['mcp-protocol-version' => '2026-07-28', 'mcp-method' => 'prompts/list']);
+$r = $a['json']['result'] ?? [];
+pruefe($a['status'] === 200 && ($r['prompts'][0]['name'] ?? null) === 'leave_home' && ($r['resultType'] ?? null) === 'complete' && ($r['ttlMs'] ?? null) === 300000 && ($r['cacheScope'] ?? null) === 'private', 'prompts/list mit resultType und Zwischenspeichern: ' . $a['body']);
+$holen = ['jsonrpc' => '2.0', 'id' => 10, 'method' => 'prompts/get', 'params' => ['name' => 'leave_home', '_meta' => $meta]];
+$a = sende($holen, ['mcp-protocol-version' => '2026-07-28', 'mcp-method' => 'prompts/get', 'mcp-name' => 'leave_home']);
+$r = $a['json']['result'] ?? [];
+pruefe($a['status'] === 200 && ($r['messages'][0]['content']['text'] ?? null) === 'I am leaving the house.' && ($r['resultType'] ?? null) === 'complete', 'prompts/get liefert die Nachricht: ' . $a['body']);
+$unbekannt = $holen;
+$unbekannt['params']['name'] = 'gibt_es_nicht';
+$a = sende($unbekannt, ['mcp-protocol-version' => '2026-07-28', 'mcp-method' => 'prompts/get', 'mcp-name' => 'gibt_es_nicht']);
+pruefe(($a['json']['error']['code'] ?? null) === -32602, 'unbekannte Vorlage: -32602: ' . $a['body']);
+$a = sende(['jsonrpc' => '2.0', 'id' => 11, 'method' => 'prompts/list'], []);
+pruefe(($a['json']['result']['prompts'][0]['title'] ?? null) === 'Leaving home' && !isset($a['json']['result']['ttlMs']), 'prompts/list auch für ältere Clients: ' . $a['body']);
+$a = sende(['jsonrpc' => '2.0', 'id' => 12, 'method' => 'initialize', 'params' => ['protocolVersion' => '2025-06-18']], []);
+pruefe(isset($a['json']['result']['capabilities']['prompts']), 'initialize nennt Prompts');
 
 ende('Protokoll 2026-07-28');

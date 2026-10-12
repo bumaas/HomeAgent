@@ -48,9 +48,11 @@ final class McpProtocol
      * @param array{name: string, title: string, version: string, instructions: string} $info
      * @param array<string, string> $headers Kopfzeilen der Anfrage, Namen klein (mcp-protocol-version, mcp-method, mcp-name)
      * @param null|callable(string): ?string $readResource HTML einer ui://-Ressource (MCP Apps), null = unbekannt
+     * @param null|callable(?string): ?array $prompts Vorlagen: mit null die Liste, mit einem Namen Beschreibung und
+     *                                                Nachrichten, null = gibt es nicht
      * @return array{status: int, headers: array<string, string>, body: string, methods?: list<string>} methods = aufgerufene JSON-RPC-Methoden, fürs Debug
      */
-    public static function handleHttp(string $method, bool $authorized, string|Closure $body, callable $listTools, callable $callTool, array $info, array $headers = [], ?callable $readResource = null): array
+    public static function handleHttp(string $method, bool $authorized, string|Closure $body, callable $listTools, callable $callTool, array $info, array $headers = [], ?callable $readResource = null, ?callable $prompts = null): array
     {
         if (!$authorized) {
             return self::response(401, ['WWW-Authenticate' => 'Bearer'], ['error' => 'Missing or invalid bearer token']);
@@ -72,7 +74,7 @@ final class McpProtocol
 
         // Protokoll 2026-07-28: erkennbar an der Version in _meta (bei einem Stapel an irgendeiner Nachricht)
         if (self::isModern($message)) {
-            return $withClient(self::handleModern($message, $headers, $listTools, $callTool, $info, $readResource));
+            return $withClient(self::handleModern($message, $headers, $listTools, $callTool, $info, $readResource, $prompts));
         }
 
         // Stapel gibt es nur in der Protokollversion 2025-03-26. Jeder Werkzeugaufruf kann bis zu
@@ -90,7 +92,7 @@ final class McpProtocol
                 $replies[] = self::error($single['id'], -32600, 'Invalid Request: only one tools/call per HTTP request');
                 continue;
             }
-            $reply = self::handleMessage($single, $listTools, $callTool, $info, ['read' => $readResource]);
+            $reply = self::handleMessage($single, $listTools, $callTool, $info, ['read' => $readResource, 'prompts' => $prompts]);
             if ($reply !== null) {
                 $replies[] = $reply;
             }
@@ -195,6 +197,7 @@ final class McpProtocol
     {
         $apps = ($context['ui'] ?? false) === true;
         $read = $context['read'] ?? null;
+        $prompts = $context['prompts'] ?? null;
         if (!is_array($message) || ($message['jsonrpc'] ?? null) !== '2.0' || !is_string($message['method'] ?? null)) {
             return self::error(is_array($message) ? ($message['id'] ?? null) : null, -32600, 'Invalid Request');
         }
@@ -209,7 +212,7 @@ final class McpProtocol
                 $requested = $params['protocolVersion'] ?? '';
                 return self::result($id, [
                     'protocolVersion' => in_array($requested, self::VERSIONS, true) ? $requested : self::VERSIONS[0],
-                    'capabilities'    => ['tools' => ['listChanged' => false]] + ($read === null ? [] : ['resources' => ['listChanged' => false]]),
+                    'capabilities'    => self::capabilities($read !== null, $prompts !== null),
                     'serverInfo'      => ['name' => $info['name'], 'title' => $info['title'], 'version' => $info['version']],
                     'instructions'    => $info['instructions'],
                 ]);
@@ -217,7 +220,19 @@ final class McpProtocol
                 return self::result($id, new stdClass());
             case 'server/discover':
                 // Pflicht für Server nach 2026-07-28; auch ohne _meta beantwortet, wie ein Client es zur Probe schickt
-                return self::result($id, self::discoverResult($info, $read !== null));
+                return self::result($id, self::discoverResult($info, $read !== null, $prompts !== null));
+            case 'prompts/list':
+            case 'prompts/get':
+                if ($prompts === null) {
+                    return self::error($id, -32601, 'Method not found: ' . $message['method']);
+                }
+                if ($message['method'] === 'prompts/list') {
+                    return self::result($id, ['prompts' => $prompts(null) ?? []]);
+                }
+                $prompt = is_string($params['name'] ?? null) ? $prompts($params['name']) : null;
+                return $prompt === null
+                    ? self::error($id, -32602, 'Unknown prompt: ' . (is_string($params['name'] ?? null) ? $params['name'] : '?'))
+                    : self::result($id, $prompt);
             case 'tools/list':
                 return self::result($id, ['tools' => $listTools($apps)]);
             case 'resources/list':
@@ -281,7 +296,7 @@ final class McpProtocol
      * @param array<string, string> $headers
      * @return array{status: int, headers: array<string, string>, body: string, methods: list<string>}
      */
-    private static function handleModern(array $message, array $headers, callable $listTools, callable $callTool, array $info, ?callable $readResource = null): array
+    private static function handleModern(array $message, array $headers, callable $listTools, callable $callTool, array $info, ?callable $readResource = null, ?callable $prompts = null): array
     {
         if (array_is_list($message)) {
             return self::response(400, [], self::error(null, -32600, 'Invalid Request: protocol version 2026-07-28 takes one message per request')) + ['methods' => ['(batch)']];
@@ -315,10 +330,20 @@ final class McpProtocol
             return ['status' => 202, 'headers' => ['Cache-Control' => 'no-store'], 'body' => '', 'methods' => $methods];
         }
         $serverInfo = [self::META_SERVER => self::serverInfo($info)];
-        $context = ['ui' => self::showsApps($params), 'read' => $readResource];
+        $context = ['ui' => self::showsApps($params), 'read' => $readResource, 'prompts' => $prompts];
         switch ($rpc) {
             case 'server/discover':
-                return self::response(200, [], self::result($id, self::discoverResult($info, $readResource !== null))) + ['methods' => $methods];
+                return self::response(200, [], self::result($id, self::discoverResult($info, $readResource !== null, $prompts !== null))) + ['methods' => $methods];
+            case 'prompts/list':
+            case 'prompts/get':
+                if ($prompts === null) {
+                    return self::response(404, [], self::error($id, -32601, 'Method not found: ' . $rpc)) + ['methods' => $methods];
+                }
+                $reply = self::handleMessage($message, $listTools, $callTool, $info, $context);
+                if (isset($reply['result'])) {
+                    $reply['result'] = ['resultType' => 'complete'] + $reply['result'] + ($rpc === 'prompts/list' ? ['ttlMs' => self::LIST_TTL_MS, 'cacheScope' => 'private'] : []) + ['_meta' => $serverInfo];
+                }
+                return self::response(200, [], $reply) + ['methods' => $methods];
             case 'tools/list':
                 return self::response(200, [], self::result($id, ['resultType' => 'complete', 'tools' => $listTools($context['ui']), 'ttlMs' => self::LIST_TTL_MS, 'cacheScope' => 'private', '_meta' => $serverInfo])) + ['methods' => $methods];
             case 'resources/list':
@@ -370,12 +395,20 @@ final class McpProtocol
         return is_array($mimeTypes) && in_array(self::APP_MIME_TYPE, $mimeTypes, true);
     }
 
-    private static function discoverResult(array $info, bool $resources = false): array
+    /** Fähigkeiten des Servers: Werkzeuge immer, Resources (Seiten der Apps) und Prompts (Vorlagen), wenn es sie gibt. */
+    private static function capabilities(bool $resources, bool $prompts): array
+    {
+        return ['tools' => ['listChanged' => false]]
+            + ($resources ? ['resources' => ['listChanged' => false]] : [])
+            + ($prompts ? ['prompts' => ['listChanged' => false]] : []);
+    }
+
+    private static function discoverResult(array $info, bool $resources = false, bool $prompts = false): array
     {
         return [
             'resultType'        => 'complete',
             'supportedVersions' => array_merge(self::MODERN_VERSIONS, self::VERSIONS),
-            'capabilities'      => ['tools' => ['listChanged' => false]] + ($resources ? ['resources' => ['listChanged' => false]] : []),
+            'capabilities'      => self::capabilities($resources, $prompts),
             '_meta'             => [self::META_SERVER => self::serverInfo($info)],
             'instructions'      => $info['instructions'],
             'ttlMs'             => self::LIST_TTL_MS,

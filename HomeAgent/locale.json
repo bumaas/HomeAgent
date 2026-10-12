@@ -488,7 +488,24 @@
             "maximum": "Maximum",
             "The chart is shown in the chat.": "Das Diagramm steht im Chat.",
             "A chart needs a period or from and to, now has no history.": "Ein Diagramm braucht einen Zeitraum oder from und to, now hat keinen Verlauf.",
-            "None of the matching devices has a history for a chart (%s).": "Keines der passenden Geräte hat einen Verlauf für ein Diagramm (%s)."
+            "None of the matching devices has a history for a chart (%s).": "Keines der passenden Geräte hat einen Verlauf für ein Diagramm (%s).",
+            "Leaving home": "Haus verlassen",
+            "Good night": "Gute Nacht",
+            "Energy report": "Energiebericht",
+            "Checks what is still open or on.": "Prüft, was noch offen oder an ist.",
+            "Checks what is still open or on before going to bed.": "Prüft vor dem Schlafengehen, was noch offen oder an ist.",
+            "Consumption, self-sufficiency and largest consumers of yesterday.": "Verbrauch, Autarkie und größte Verbraucher von gestern.",
+            "I am leaving the house. Check what is still open or on:": "Ich verlasse das Haus. Prüfe, was noch offen oder an ist:",
+            "I am going to bed. Check what is still open or on:": "Ich gehe schlafen. Prüfe, was noch offen oder an ist:",
+            "windows (get_state type=window, active_only=true)": "Fenster (get_state type=window, active_only=true)",
+            "doors (get_state type=door, active_only=true)": "Türen (get_state type=door, active_only=true)",
+            "lights (get_state type=light, active_only=true)": "Licht (get_state type=light, active_only=true)",
+            "media players (get_state type=media, active_only=true)": "Mediaplayer (get_state type=media, active_only=true)",
+            "Name only what is open or on; if everything is closed and off, say so in one sentence.": "Nenne nur, was offen oder an ist; ist alles zu und aus, sag das in einem Satz.",
+            "Do not switch anything without asking me.": "Schalte nichts, ohne mich zu fragen.",
+            "Name only what is open or on.": "Nenne nur, was offen oder an ist.",
+            "Name what is open or on and ask whether you should switch it off or close it.": "Nenne, was offen oder an ist, und frag, ob du es ausschalten oder schließen sollst.",
+            "Give me the energy report of yesterday: house consumption, self-sufficiency and the largest consumers (get_state period=yesterday).": "Gib mir den Energiebericht von gestern: Hausverbrauch, Autarkie und die größten Verbraucher (get_state period=yesterday)."
         }
     }
 }
