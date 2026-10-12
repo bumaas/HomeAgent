@@ -718,7 +718,8 @@ class HomeAgent extends IPSModuleStrict
     {
         $token = bin2hex(random_bytes(32));
         $this->UpdateFormField('Token', 'value', $token);
-        return sprintf($this->Translate('New token, copy it now for the assistant: %s. It only takes effect with OK and Apply.'), $token);
+        // Das Token allein in einer Zeile, ohne Satzzeichen daneben, damit es sich kopieren lässt.
+        return $this->Translate('New token for the assistant:') . "\n\n" . $token . "\n\n" . $this->Translate('It only takes effect with OK and Apply.');
     }
 
     /**

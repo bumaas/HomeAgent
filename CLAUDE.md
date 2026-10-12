@@ -228,7 +228,9 @@ Weitere Regeln, die nicht offensichtlich sind:
   kompliziert“): Die Zugangsliste zeigt Name, Nur abfragen, Standardraum und die Textspalte `Connection`
   (`connectionOf`: per OAuth angemeldet mit Host, Adresse mit Token oder Token im Header; nur diese Spalte kommt in
   `values`, die Tokens nicht). Token und `InPath` sind unsichtbare Spalten mit `save: true`, bearbeitet im eigenen
-  `form` der Liste (Doku List, Beispiel 1), dort auch **Token erzeugen** (`UIGenerateToken` schreibt in `Token`).
+  `form` der Liste (Doku List, Beispiel 1), dort auch **Token erzeugen** (`UIGenerateToken` schreibt in `Token`, fragt vorher und nennt das Token allein in einer
+  Zeile). Im Dialog ist das Token ein Textfeld, kein Kennwortfeld: dort ließ es sich weder sehen noch kopieren
+  (Burkhard 12.10.2026, build 82).
   Darunter je Assistent eine Anleitung mit fetten Labels (verschachtelte ExpansionPanels sind nicht dokumentiert):
   Claude-App mit Connect-Adresse, Auswahl `PairingAccess` direkt am Knopf Kopplungscode, Liste `OAuthClients`
   mit Widerrufen, ohne Connect nur `ClaudeNoConnect`; Home Assistant mit Auswahl `AddressAccess` (nur Zugänge mit

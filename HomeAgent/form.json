@@ -74,7 +74,7 @@
               "type": "RowLayout",
               "items": [
                 {
-                  "type": "PasswordTextBox",
+                  "type": "ValidationTextBox",
                   "name": "Token",
                   "caption": "Token (at least 24 characters)",
                   "validate": "^\\s*\\S.{22,}\\S\\s*$",
