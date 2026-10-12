@@ -1659,6 +1659,9 @@ class HomeAgent extends IPSModuleStrict
         // Gerätekarten nur für Clients mit Apps; get_state verweist dann fürs Zeigen darauf (Claude-App 12.10.2026:
         // „Zeig mir die Lichter im Wohnzimmer“ ergab eine Tabelle über get_state).
         $hasCards = $apps && $this->usableDevices() !== [];
+        // Ebenso fürs Diagramm (Claude-App 12.10.2026: „Hausverbrauch von gestern als Diagramm“ ergab get_state und eine
+        // selbst gezeichnete SVG-Datei).
+        $hasChart = $apps && ($hasHistory || $hasMeters || $this->usableBalance($this->balance()) !== []);
         $consumption = $hasMeters || $hasBalance
             ? 'Energy consumption over this period instead of the state, in kWh; the first line gives the total. '
                 . ($hasBalance
@@ -1687,6 +1690,7 @@ class HomeAgent extends IPSModuleStrict
                 . (array_any($this->usableDevices(), static fn (array $row): bool => ($row['Type'] ?? '') === 'window' && in_array('open', DeviceIndex::abilitiesOf($row), true))
                     ? 'Windows marked "with drive" can be opened and closed with set_state, the others only report their state. ' : '')
                 . 'If nothing matches, the answer lists the known rooms and types. The last line gives the current date and time.'
+                . ($hasChart ? ' When the user asks for a chart, diagram or graph, use show_chart instead.' : '')
                 . ($hasCards ? ' When the user wants to see devices ("show me …") or to switch them by hand, use show_devices instead.' : '')
                 . ($readOnly ? ' ' . self::READ_ONLY_NOTE : ''),
             'inputSchema' => [

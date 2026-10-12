@@ -2676,6 +2676,9 @@ pruefe(($mit['show_chart']['annotations']['readOnlyHint'] ?? null) === true && !
 pruefe(!in_array('now', $mit['show_chart']['inputSchema']['properties']['period']['enum'] ?? ['now'], true), 'period ohne now');
 pruefe(str_contains($mit['show_chart']['inputSchema']['properties']['room']['description'] ?? '', 'several rooms separated by commas'), 'room nimmt mehrere Räume für einen Vergleich: ' . ($mit['show_chart']['inputSchema']['properties']['room']['description'] ?? ''));
 pruefe(!isset($werkzeugNamen(false)['show_chart']), 'ohne Apps kein show_chart');
+// Claude-App 12.10.2026: „Zeig mir den Hausverbrauch von gestern als Diagramm“ ergab get_state und eine selbst gezeichnete
+// SVG-Datei statt show_chart. Mit Apps verweist get_state deshalb für Diagramme auf show_chart, ohne Apps nicht.
+pruefe(str_contains($mit['get_state']['description'] ?? '', 'use show_chart') && !str_contains($werkzeugNamen(false)['get_state']['description'] ?? 'show_chart', 'show_chart'), 'get_state verweist für Diagramme auf show_chart: ' . ($mit['get_state']['description'] ?? ''));
 $nurLicht = json_encode([['Room' => 'Küche', 'Name' => 'Deckenlicht', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $kueche, 'Invert' => false]]);
 IPS_SetProperty($pid, 'Devices', $nurLicht);
 IPS_ApplyChanges($pid);
