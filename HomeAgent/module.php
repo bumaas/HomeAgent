@@ -1936,7 +1936,8 @@ class HomeAgent extends IPSModuleStrict
             return;
         }
         $now = microtime(true);
-        $line = date('Y-m-d H:i:s', (int)$now) . sprintf('.%03d', (int)(($now - floor($now)) * 1000)) . ' | ' . implode(' | ', $fields);
+        // Leere Felder fallen weg (initialize ohne Argumente)
+        $line = date('Y-m-d H:i:s', (int)$now) . sprintf('.%03d', (int)(($now - floor($now)) * 1000)) . ' | ' . implode(' | ', array_filter($fields, static fn (string $field): bool => $field !== ''));
         $line = mb_substr(str_replace(["\r\n", "\n", "\r"], ' ‖ ', $line), 0, self::LOG_LINE_MAX);
         $lock = 'HAGT_Log_' . $this->InstanceID;
         if (!IPS_SemaphoreEnter($lock, 1000)) {

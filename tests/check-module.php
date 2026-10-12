@@ -2482,9 +2482,18 @@ $inhalt = (string)@file_get_contents($logAktuell);
 pruefe(!str_contains($inhalt, $pToken) && !str_contains($inhalt, 'falsch-x'), 'weder das Token aus der Adresse noch ein falsches Token stehen im Protokoll');
 pruefe(str_contains($inhalt, ' | – | sign-in rejected | from 192.0.2.8 | token missing or wrong'), 'abgewiesene Anmeldung mit Absender: ' . $inhalt);
 pruefe(str_contains($inhalt, ' | script | SwitchDevices | room=Badezimmer on=true | '), 'Skriptfunktionen mit „script“: ' . $inhalt);
+// Anfragen ohne Argumente (initialize) ohne leeres Feld (Burkhard 12.10.2026: Kleinigkeit)
+$_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $pid, 'REMOTE_ADDR' => '192.0.2.5', 'HTTP_AUTHORIZATION' => 'Bearer ' . $pToken];
+HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 1, 'method' => 'initialize', 'params' => ['protocolVersion' => '2025-06-18', 'capabilities' => (object)[], 'clientInfo' => ['name' => 'Test', 'version' => '1']]]);
+ob_start();
+$pHook->invoke($p);
+ob_end_clean();
+HomeAgentHarness::$body = '';
+$inhalt = (string)@file_get_contents($logAktuell);
+pruefe(str_contains($inhalt, ' | Claude-App | initialize | HTTP 200') && !str_contains($inhalt, '|  |'), 'ohne Argumente kein leeres Feld: ' . $inhalt);
 
 // Rundlauf nach Zeilen: bei 10 Zeilen wird gewechselt
-for ($i = 0; $i < 8; $i++) {
+for ($i = 0; $i < 7; $i++) {
     $ruf('get_state', ['room' => 'Küche']);
 }
 $alt = file_exists($logAlt) ? file($logAlt, FILE_IGNORE_NEW_LINES) : [];
