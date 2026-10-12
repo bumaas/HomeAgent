@@ -268,8 +268,9 @@ For measured values (temperature, humidity, air quality, other measurements and 
 temperature of a thermostat) the same periods return the **history**: minimum, average and maximum per
 hour, day or month, for example "How warm was it in the guest room over the last 30 days?". The first
 line then reads "History of 1 measured value(s) (room=Gast, type=temperature, from=2026-09-10,
-to=2026-10-09), per day: minimum / average / maximum.", followed by a line per measured value with its
-unit and a line per interval such as "2026-09-28 22.2 / 22.6 / 23.1". Today and yesterday come hourly,
+to=2026-10-09), per day: minimum / average / maximum.", followed by a line per measured value with the
+lowest and highest value of the whole period and when it occurred ("minimum 20.6 °C (2026-09-30), maximum 23.4 °C
+(2026-10-02)") and a line per interval such as "2026-09-28 22.2 / 22.6 / 23.1". Today and yesterday come hourly,
 weeks and months daily, years monthly; with `from` and `to` up to two days hourly, up to 100 days daily,
 beyond that monthly. The history applies when a measured-value type is asked for or when none of the
 matches has a meter; for the whole house it stays with consumption. At most five measured values at a

@@ -160,6 +160,9 @@ Weitere Regeln, die nicht offensichtlich sind:
   gestern stündlich, Wochen und Monate täglich, Jahre monatlich; `from`/`to` bis 2 Tage stündlich, bis
   100 Tage täglich), höchstens `HISTORY_MAX` Messwerte, jede Variable nur einmal (ein Thermostat kann
   den Raumfühler als Ist-Temperatur lesen). Als Zähler aggregierte Variablen haben keinen Verlauf.
+  Die Gerätezeile nennt Minimum und Maximum über den ganzen Zeitraum mit Zeitpunkt (bei Gleichstand der erste), damit
+  das Modell nicht selbst in der Tabelle sucht (Bedienungs-Blindtest 12.10.2026); das Mittel bewusst nicht (Tokens,
+  über ungleich lange Abschnitte nur ungefähr).
 - **Namenssuche** in Stufen: genauer Name oder Alias, dann die Anfrage als Teil des Namens, dann der
   Name in der Anfrage, aber nur an einem Wortanfang („Esstischlampe“ trifft „Esstisch“,
   „Außentemperatur“ trifft „Temperatur“ nicht). Nur die beste Stufe zählt.

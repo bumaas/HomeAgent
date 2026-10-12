@@ -521,9 +521,26 @@ final class DeviceIndex
                 continue;
             }
             $unit = trim($history['unit']);
-            $lines[] = $this->line($entry, $unit === '' ? '-' : $unit);
             if ($history['rows'] === []) {
+                $lines[] = $this->line($entry, $unit === '' ? '-' : $unit);
                 $lines[] = $this->t('no values in this period');
+            } else {
+                // Minimum und Maximum über den ganzen Zeitraum mit Zeitpunkt, damit das Modell nicht selbst in der
+                // Tabelle sucht (Bedienungs-Blindtest 12.10.2026, Leitbild „Das Werkzeug zählt“). Bei gleichen
+                // Werten zählt der erste.
+                $low = $high = $history['rows'][0];
+                foreach ($history['rows'] as $row) {
+                    $low = $row['min'] < $low['min'] ? $row : $low;
+                    $high = $row['max'] > $high['max'] ? $row : $high;
+                }
+                $suffix = $unit === '' ? '' : ' ' . $unit;
+                $lines[] = $this->line($entry, sprintf(
+                    $this->t('minimum %s (%s), maximum %s (%s)'),
+                    self::formatNumber($low['min']) . $suffix,
+                    date($format, $low['time']),
+                    self::formatNumber($high['max']) . $suffix,
+                    date($format, $high['time'])
+                ));
             }
             foreach ($history['rows'] as $row) {
                 $lines[] = date($format, $row['time']) . ' ' . self::formatNumber($row['min']) . ' / ' . self::formatNumber($row['avg']) . ' / ' . self::formatNumber($row['max']);

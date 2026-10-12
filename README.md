@@ -283,7 +283,8 @@ Für Messwerte (Temperatur, Feuchte, Luftqualität, sonstige Messwerte und die I
 Thermostats) liefern dieselben Zeiträume den **Verlauf**: je Stunde, Tag oder Monat Minimum, Mittel und
 Maximum, etwa „Wie warm war es die letzten 30 Tage im Gästezimmer?“. Die erste Zeile lautet dann
 „Verlauf von 1 Messwert(en) (room=Gast, type=temperature, from=2026-09-10, to=2026-10-09), je Tag:
-Minimum / Mittel / Maximum.“, darunter je Messwert eine Zeile mit der Einheit und je Zeitraum eine Zeile
+Minimum / Mittel / Maximum.“, darunter je Messwert eine Zeile mit dem tiefsten und höchsten Wert des ganzen
+Zeitraums samt Zeitpunkt („Minimum 20.6 °C (2026-09-30), Maximum 23.4 °C (2026-10-02)“) und je Zeitraum eine Zeile
 wie „2026-09-28 22.2 / 22.6 / 23.1“. Heute und gestern kommen stündlich, Wochen und Monate täglich,
 Jahre monatlich; bei `from` und `to` bis zu zwei Tage stündlich, bis zu 100 Tage täglich, darüber
 monatlich. Der Verlauf gilt, wenn nach einem Messwert-Typ gefragt wird oder unter den Treffern kein
