@@ -310,7 +310,7 @@ aus und gibt dazu einen Befehl oder einen Prozentwert an:
 | `stop` | hält Rollläden und Fenster an, die gerade fahren, und beendet die Wiedergabe eines Mediaplayers |
 | `play`, `pause` | setzt die Wiedergabe eines Mediaplayers fort oder hält sie an |
 | `next`, `previous` | springt beim Mediaplayer zum nächsten oder vorigen Titel |
-| `volume` | stellt die Lautstärke eines Mediaplayers in Prozent |
+| `volume` | stellt die Lautstärke eines Mediaplayers in Prozent, auch zusammen mit `play`, `pause` oder `stop` („Musik leise an“) |
 | `volume_change` | macht einen Mediaplayer um so viele Prozentpunkte lauter oder leiser, ohne Zahl um 10 |
 | `mute` | schaltet einen Mediaplayer stumm (`true`) oder wieder laut (`false`) |
 | `percent` | stellt die Helligkeit eines Lichts oder die Öffnung eines Rollladens oder Fensters |

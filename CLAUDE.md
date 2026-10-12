@@ -12,13 +12,15 @@ sonst hierher.
 
 ## Leitbild
 
-Das Modul soll für den Anwender konsistenter, schneller und kompakter sein als die Sprachsteuerung von
-Home Assistant, ohne kleineren Umfang. Daraus folgen die Grundsätze:
+Das Modul soll für den Anwender konsistenter, schneller, kompakter und günstiger sein als die
+Sprachsteuerung von Home Assistant, ohne kleineren Umfang. Daraus folgen die Grundsätze:
 - **Das Werkzeug zählt, nicht das Modell.** Die erste Zeile jeder Antwort nennt die Anzahl.
 - **Gemeldet wird nur Belegtes.** Ein angenommener Befehl ist kein Beleg; erst die Variable bestätigt.
 - **Vokabular statt Inventar.** Räume, Typen und Szenen stehen in Beschreibungen, nicht jedes Gerät.
 - **Angeboten wird nur, was es gibt.** Das Schema von `set_state` nennt nur Befehle und Felder, die
   mindestens ein freigegebenes Gerät versteht.
+- **Schnell vor günstig.** Weniger Runden im Sprachmodell gehen vor, danach so wenig Tokens wie möglich in
+  Werkzeugliste und Antworten (Burkhard 12.10.2026).
 
 ## Aufbau
 
@@ -205,7 +207,9 @@ Weitere Regeln, die nicht offensichtlich sind:
   über das HomeAssistant-Modul kam „paused“ in 3 s nie. Dann bleibt es bei „noch nicht bestätigt“, die
   Wartezeit bleibt 2 s. `stop` teilt sich in Rollläden (`runStop`) und Mediaplayer.
   `volume` (Prozent), `volume_change` (Punkte, gekappt bei 0 und 100) und `mute` stehen je allein
-  (`runVolume`, `runMute`, gemeinsames Warten in `confirmJobs`). Die Lautstärke zählt in Prozent des
+  (`runVolume`, `runMute`, gemeinsames Warten in `confirmJobs`). `volume` oder `volume_change` dürfen mit `play`,
+  `pause` oder `stop` kommen (erst Lautstärke, dann Befehl, `combineResults` über den Status je Gerät aus
+  `confirmJobs`); das spart eine Runde (Bedienungs-Blindtest 12.10.2026, Leitbild „schnell vor günstig“). Die Lautstärke zählt in Prozent des
   Bereichs: Sonos-Modul `~Volume` 0 bis 100 (Ganzzahl), HomeAssistant-Modul Kommazahl 0 bis 1 aus der
   Darstellung (ein Befehl 25 wird dort 1 = 100 %, gemessen). Gesendet wird auf ganze Prozent gerundet.
   Gesendet wird im Raster der Variable (`range()['step']`, Darstellung `STEP_SIZE` oder Profil `StepSize`): Das

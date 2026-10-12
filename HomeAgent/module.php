@@ -1709,6 +1709,8 @@ class HomeAgent extends IPSModuleStrict
                     . (in_array('on', $commands, true) ? 'Example: "Lights off in the living room" → room=Wohnzimmer, type=light, command=off.' : 'Example:')
                     . (in_array('play', $offered, true) ? ' "Pause the music in the conservatory" → room=Wintergarten, type=media, command=pause.' : '')
                     . ($hasVolumeChange ? ' "Louder in the bathroom" → room=Bad, type=media, volume_change=10.' : '')
+                    . (in_array('play', $offered, true) && in_array('volume', $offered, true) ? ' "Quiet music in the conservatory" → room=Wintergarten, type=media, command=play, volume=15.' : '')
+                    . (in_array('play', $offered, true) && in_array('volume', $offered, true) ? ' "Quiet music in the conservatory" → room=Wintergarten, type=media, command=play, volume=15.' : '')
                     . ($hasPercent ? ' "Dim the ceiling light to a third" → name=Deckenlicht, percent=33.' : '')
                     . ($hasTemperature ? ' "Set the heating in the guest room to 21 degrees" → room=Gast, temperature=21.' : '')
                     . ($hasHumidity ? ' "Set the dehumidifier in the basement to 50 percent" → room=Keller, type=humidifier, humidity=50.' : '')

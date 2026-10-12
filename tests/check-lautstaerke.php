@@ -94,12 +94,37 @@ foreach ([
     [['volume' => 150], 'Parameter "volume" must be a number from 0 to 100.'],
     [['volume_change' => 0], 'Parameter "volume_change" must be a number from -100 to 100 other than 0.'],
     [['mute' => 'ja'], 'Parameter "mute" must be true or false.'],
-    [['volume' => 30, 'volume_change' => 10], 'Nothing was changed. Give volume, volume_change or mute alone, without another field.'],
-    [['volume' => 30, 'command' => 'play'], 'Nothing was changed. Give volume, volume_change or mute alone, without another field.'],
+    [['volume' => 30, 'volume_change' => 10], 'Nothing was changed. Give volume or volume_change alone or with command play, pause or stop, and mute alone.'],
+    [['volume' => 30, 'command' => 'on'], 'Nothing was changed. Give volume or volume_change alone or with command play, pause or stop, and mute alone.'],
+    [['volume' => 30, 'command' => 'next'], 'Nothing was changed. Give volume or volume_change alone or with command play, pause or stop, and mute alone.'],
+    [['mute' => true, 'command' => 'play'], 'Nothing was changed. Give volume or volume_change alone or with command play, pause or stop, and mute alone.'],
+    [['volume' => 30, 'percent' => 50], 'Nothing was changed. Give volume or volume_change alone or with command play, pause or stop, and mute alone.'],
 ] as [$argumente, $erwartet]) {
     $r = rufe($werte, $wintergarten + $argumente);
     pruefe($r['isError'] && $anlage->requests === [] && $r['text'] === $erwartet, json_encode($argumente) . ': ' . $r['text']);
 }
+
+/* --- Lautstärke zusammen mit Play, Pause oder Stopp -------------------------------------------- */
+
+// Leitbild „schnell vor günstig“ (Burkhard 12.10.2026): Im Bedienungs-Blindtest schickte der Agent pause und
+// volume zusammen, die Absage kostete eine Runde im Sprachmodell. Gesendet wird zuerst die Lautstärke, damit
+// „leise an“ nicht kurz laut beginnt, dann der Befehl.
+$r = rufe($werte, $wintergarten + ['volume' => 15, 'command' => 'play']);
+pruefe(!$r['isError'] && $anlage->requests === [[27915, 15], [27341, 2]], 'erst Lautstärke, dann play: ' . json_encode($anlage->requests) . ' ' . $r['text']);
+pruefe($zeile($r, 0) === '1 of 1 devices are now playing back at volume 15 % (room=Wintergarten, name=Sonos).', 'Kopfzeile nennt beides: ' . $r['text']);
+pruefe(str_starts_with($zeile($r, 1), 'Wintergarten | Sonos | media | playing') && str_contains($zeile($r, 1), '(volume 15 %)'), 'Gerätezeile mit Wiedergabe und Lautstärke: ' . $zeile($r, 1));
+$r = rufe($werte, $wintergarten + ['volume' => 15, 'command' => 'play'], $de);
+pruefe($zeile($r, 0) === '1 von 1 Geräten sind jetzt in Wiedergabe bei Lautstärke 15 % (room=Wintergarten, name=Sonos).', 'deutsch: ' . $r['text']);
+$r = rufe($werte, $wintergarten + ['command' => 'pause', 'volume' => 20]);
+pruefe($anlage->requests === [[27341, 3]] && $zeile($r, 0) === '1 of 1 devices are now paused at volume 20 % (room=Wintergarten, name=Sonos).', 'Lautstärke stimmt schon, nur pause geht hinaus: ' . json_encode($anlage->requests) . ' ' . $r['text']);
+$r = rufe($werte, $wintergarten + ['command' => 'stop', 'volume_change' => -10]);
+pruefe($anlage->requests === [[27915, 10]] && $zeile($r, 0) === '1 of 1 devices are now stopped, quieter (room=Wintergarten, name=Sonos).', 'schon gestoppt, nur leiser: ' . json_encode($anlage->requests) . ' ' . $r['text']);
+$r = rufe($werte, ['room' => 'Wintergarten', 'type' => 'media', 'volume' => 25, 'command' => 'play']);
+pruefe($gesendet(27915) === [25] && $gesendet(31588) === [0.25] && str_starts_with($zeile($r, 0), '2 of 2 devices are now playing back at volume 25 %'), 'zwei Player, beide zuerst leiser: ' . json_encode($anlage->requests) . ' ' . $r['text']);
+$keinLaut = $werte;
+$keinLaut['27915']['aktion'] = false;
+$r = rufe($keinLaut, $wintergarten + ['volume' => 15, 'command' => 'play']);
+pruefe($zeile($r, 0) === '0 of 1 devices are now playing back at volume 15 % (room=Wintergarten, name=Sonos).' && str_contains($zeile($r, 1), 'cannot be set (the volume has no action)'), 'Lautstärke nicht stellbar: der Player zählt nicht als erreicht, die Zeile sagt warum: ' . $r['text']);
 
 /* --- Weiter ohne Raum ----------------------------------------------------------------------------- */
 
@@ -125,7 +150,7 @@ pruefe($r['isError'] && $anlage->requests === [], 'pause allein bleibt eine Absa
 
 /* --- Übersetzungen -------------------------------------------------------------------------------- */
 
-foreach (['at volume %s', 'louder', 'quieter', 'unmuted', 'not muted', 'paused in the last hour', 'cannot be set (unknown volume range)', 'cannot be set (the volume has no action)', 'cannot be set (the mute switch has no action)', 'cannot be set (mute is not a switch)', 'Parameter "volume" must be a number from 0 to 100.', 'Parameter "volume_change" must be a number from -100 to 100 other than 0.', 'Parameter "mute" must be true or false.', 'Nothing was changed. Give volume, volume_change or mute alone, without another field.'] as $text) {
+foreach (['at volume %s', 'louder', 'quieter', 'unmuted', 'not muted', 'paused in the last hour', 'cannot be set (unknown volume range)', 'cannot be set (the volume has no action)', 'cannot be set (the mute switch has no action)', 'cannot be set (mute is not a switch)', 'Parameter "volume" must be a number from 0 to 100.', 'Parameter "volume_change" must be a number from -100 to 100 other than 0.', 'Parameter "mute" must be true or false.', 'Nothing was changed. Give volume or volume_change alone or with command play, pause or stop, and mute alone.', 'playing back', 'paused', 'stopped'] as $text) {
     pruefe(isset($de[$text]), 'deutsche Übersetzung für „' . $text . '“');
 }
 

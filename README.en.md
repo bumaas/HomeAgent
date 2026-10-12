@@ -295,7 +295,7 @@ when querying and adds a command or a percent value:
 | `stop` | stops blinds and windows that are moving and ends playback of a media player |
 | `play`, `pause` | resumes or pauses playback of a media player |
 | `next`, `previous` | skips to the next or previous track of a media player |
-| `volume` | sets the volume of a media player in percent |
+| `volume` | sets the volume of a media player in percent, also together with `play`, `pause` or `stop` ("quiet music on") |
 | `volume_change` | makes a media player louder or quieter by that many percentage points, 10 without a number |
 | `mute` | mutes a media player (`true`) or unmutes it (`false`) |
 | `percent` | sets the brightness of a light or how far a blind or window is open |

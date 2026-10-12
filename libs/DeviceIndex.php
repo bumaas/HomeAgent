@@ -884,8 +884,11 @@ final class DeviceIndex
             return $this->fail($this->t('Parameter "mute" must be true or false.'));
         }
         $sound = array_filter([$volume, $volumeChange, $mute], static fn (mixed $v): bool => $v !== null);
-        if ($sound !== [] && (count($sound) > 1 || $command !== '' || $percent !== null || $temperature !== null || $kelvin !== null || $color !== null)) {
-            return $this->fail($this->t('Nothing was changed. Give volume, volume_change or mute alone, without another field.'));
+        // Lautstärke darf mit play, pause oder stop kommen: spart dem Sprachmodell eine Runde (Leitbild „schnell vor
+        // günstig“, Bedienungs-Blindtest 12.10.2026). Stumm bleibt allein.
+        $withPlayback = $sound !== [] && $mute === null && in_array($command, ['play', 'pause', 'stop'], true);
+        if ($sound !== [] && (count($sound) > 1 || ($command !== '' && !$withPlayback) || $percent !== null || $temperature !== null || $kelvin !== null || $color !== null)) {
+            return $this->fail($this->t('Nothing was changed. Give volume or volume_change alone or with command play, pause or stop, and mute alone.'));
         }
         // Auswahl per Name: Betriebsart und Lüfterstufe, ein Weg für beide (runOption).
         $mode = $arguments['mode'] ?? null;
@@ -956,7 +959,7 @@ final class DeviceIndex
 
         // Was verlangt ist, heißt wie das Feld des Werkzeugs; so kann der Assistent es korrigieren.
         $ability = $mode !== null ? 'mode' : ($fanSpeed !== null ? 'fan_speed' : ($mute !== null ? 'mute' : ($volumeChange !== null ? 'volume_change' : ($volume !== null ? 'volume' : ($color !== null ? 'color' : ($kelvin !== null ? 'color_temperature' : ($humidity !== null ? 'humidity' : ($temperature !== null ? 'temperature' : ($percent !== null ? 'percent' : $command)))))))));
-        $understand = array_filter($selection['entries'], static fn (array $e): bool => in_array($ability, self::abilitiesOf($e), true));
+        $understand = array_filter($selection['entries'], static fn (array $e): bool => in_array($ability, self::abilitiesOf($e), true) && (!$withPlayback || in_array($command, self::abilitiesOf($e), true)));
         $skipped = count($selection['entries']) - count($understand) + ($selection['windowsWithoutDrive'] ?? 0);
         if ($understand === []) {
             $this->problem = 'not_understood';
@@ -1014,6 +1017,14 @@ final class DeviceIndex
         }
         if ($mute !== null) {
             return $this->switchAnswer($this->runMute($understand, $mute), $this->t($mute ? 'muted' : 'unmuted'), $filter, $closing);
+        }
+        if ($withPlayback) {
+            // Erst die Lautstärke, damit „leise an“ nicht kurz laut beginnt, dann der Befehl.
+            $result = self::combineResults($this->runVolume($understand, $volume, $volumeChange), $this->runPlayback($understand, $command));
+            $word = $this->t(['play' => 'playing back', 'pause' => 'paused', 'stop' => 'stopped'][$command]) . ($volume !== null
+                ? ' ' . sprintf($this->t('at volume %s'), self::formatNumber(round((float)$volume)) . ' %')
+                : ', ' . $this->t($volumeChange > 0 ? 'louder' : 'quieter'));
+            return $this->switchAnswer($result, $word, $filter, $closing);
         }
         if ($volume !== null || $volumeChange !== null) {
             $word = $volume !== null
@@ -1844,6 +1855,27 @@ final class DeviceIndex
      * @param array{lines: array<int, string>, total: int, reached: int, pending: int, failed: int} $second
      * @return array{lines: array<int, string>, total: int, reached: int, pending: int, failed: int}
      */
+    /**
+     * Zwei Schritte an denselben Geräten (Lautstärke, dann Wiedergabe): Ein Gerät ist erreicht, wenn beide
+     * Schritte es sind. Die Zeile kommt vom zweiten Schritt, außer der erste hat nicht geklappt.
+     *
+     * @return array{lines: array<int, string>, status: array<int, string>, total: int, reached: int, pending: int, failed: int}
+     */
+    private static function combineResults(array $first, array $second): array
+    {
+        $rank = ['reached' => 0, 'pending' => 1, 'failed' => 2];
+        $result = ['lines' => [], 'status' => [], 'total' => $second['total'], 'reached' => 0, 'pending' => 0, 'failed' => 0];
+        foreach ($second['lines'] as $index => $line) {
+            $a = $first['status'][$index] ?? 'reached';
+            $b = $second['status'][$index] ?? 'reached';
+            $status = $rank[$a] >= $rank[$b] ? $a : $b;
+            $result['lines'][$index] = $a !== 'reached' ? ($first['lines'][$index] ?? $line) : $line;
+            $result['status'][$index] = $status;
+            $result[$status]++;
+        }
+        return $result;
+    }
+
     private static function mergeResults(?array $first, array $second): array
     {
         if ($first === null) {
@@ -2416,26 +2448,25 @@ final class DeviceIndex
             return true;
         });
 
-        $result = ['lines' => [], 'total' => count($jobs), 'reached' => 0, 'pending' => 0, 'failed' => 0];
+        $result = ['lines' => [], 'status' => [], 'total' => count($jobs), 'reached' => 0, 'pending' => 0, 'failed' => 0];
         foreach ($jobs as $index => $job) {
             if ($job['note'] === null) {
                 $confirmed = $reached($job);
                 $error = $confirmed ? null : $this->backend->failure($job['variable']);
                 if ($error !== null) {
                     $job['note'] = sprintf($this->t('failed: %s'), $error);
-                    $result['failed']++;
+                    $status = 'failed';
                 } else {
                     $text = $this->stateOf($job['entry'])['text'];
                     $job['done'] = $confirmed;
                     $job['note'] = $confirmed ? $text : sprintf($this->t('sent, but the device has not confirmed yet (currently %s)'), $text);
-                    $result['pending'] += $confirmed ? 0 : 1;
+                    $status = $confirmed ? 'reached' : 'pending';
                 }
-            } elseif (!$job['done']) {
-                $result['failed']++;
+            } else {
+                $status = $job['done'] ? 'reached' : 'failed';
             }
-            if ($job['done']) {
-                $result['reached']++;
-            }
+            $result[$status]++;
+            $result['status'][$index] = $status;
             $result['lines'][$index] = $this->line($job['entry'], $job['note']);
         }
         return $result;
@@ -2631,26 +2662,25 @@ final class DeviceIndex
             }
             return true;
         });
-        $result = ['lines' => [], 'total' => count($jobs), 'reached' => 0, 'pending' => 0, 'failed' => 0];
+        $result = ['lines' => [], 'status' => [], 'total' => count($jobs), 'reached' => 0, 'pending' => 0, 'failed' => 0];
         foreach ($jobs as $index => $job) {
             if ($job['note'] === null) {
                 $confirmed = $reached($job);
                 $error = $confirmed ? null : $this->backend->failure($job['variable']);
                 if ($error !== null) {
                     $job['note'] = sprintf($this->t('failed: %s'), $error);
-                    $result['failed']++;
+                    $status = 'failed';
                 } else {
                     $text = $this->stateOf($job['entry'])['text'];
                     $job['done'] = $confirmed;
                     $job['note'] = $confirmed ? $text : sprintf($this->t('sent, but the device has not confirmed yet (currently %s)'), $text);
-                    $result['pending'] += $confirmed ? 0 : 1;
+                    $status = $confirmed ? 'reached' : 'pending';
                 }
-            } elseif (!$job['done']) {
-                $result['failed']++;
+            } else {
+                $status = $job['done'] ? 'reached' : 'failed';
             }
-            if ($job['done']) {
-                $result['reached']++;
-            }
+            $result[$status]++;
+            $result['status'][$index] = $status;
             $result['lines'][$index] = $this->line($job['entry'], $job['note']);
         }
         return $result;

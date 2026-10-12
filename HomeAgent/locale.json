@@ -367,7 +367,7 @@
             "Parameter \"volume\" must be a number from 0 to 100.": "Der Parameter „volume“ muss eine Zahl von 0 bis 100 sein.",
             "Parameter \"volume_change\" must be a number from -100 to 100 other than 0.": "Der Parameter „volume_change“ muss eine Zahl von -100 bis 100 außer 0 sein.",
             "Parameter \"mute\" must be true or false.": "Der Parameter „mute“ muss true oder false sein.",
-            "Nothing was changed. Give volume, volume_change or mute alone, without another field.": "Nichts geändert. Geben Sie volume, volume_change oder mute allein an, ohne ein weiteres Feld.",
+            "Nothing was changed. Give volume or volume_change alone or with command play, pause or stop, and mute alone.": "Nichts geändert. Geben Sie volume oder volume_change allein oder mit command play, pause oder stop an, mute allein.",
             "Pairing code for the access \"%s\": %s, valid until %s": "Kopplungscode für den Zugang „%s“: %s, gültig bis %s",
             "There is no usable access named \"%s\"": "Es gibt keinen benutzbaren Zugang „%s“",
             "The assistant could not be identified, its client document is not readable.": "Der Assistent ließ sich nicht erkennen, sein Client-Dokument ist nicht lesbar.",

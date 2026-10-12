@@ -1615,6 +1615,20 @@ pruefe(str_ends_with($schema['mode']['description'] ?? '', 'Known modes: Setzen,
 pruefe(str_ends_with($schema['fan_speed']['description'] ?? '', 'Known fan speeds: Niedrig, Medium, Hoch.'), 'die Beschreibung nennt die Lüfterstufen: ' . ($schema['fan_speed']['description'] ?? ''));
 pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', 'give humidity, mode or fan_speed.') && str_contains($werkzeuge['set_state']['description'] ?? '', '"Set the dehumidifier fan to high" → type=humidifier, fan_speed=high.'), 'Aufzählung und Beispiel: ' . ($werkzeuge['set_state']['description'] ?? ''));
 
+/* --- Lautstärke mit Befehl im Beispiel (Leitbild „schnell vor günstig“, 12.10.2026) ---------------- */
+
+$lautMedia = variable(VARIABLETYPE_INTEGER, 20);
+$wiedergabeMedia = variable(VARIABLETYPE_INTEGER, 1);
+IPS_SetVariableCustomAction($wiedergabeMedia, $antriebAktion);
+IPS_SetVariableCustomAction($lautMedia, $antriebAktion);
+IPS_SetVariableCustomPresentation($lautMedia, ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'MIN' => 0, 'MAX' => 100]);
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Wintergarten', 'Name' => 'Sonos', 'Aliases' => '', 'Type' => 'media', 'VolumeVariableID' => $lautMedia, 'PlaybackVariableID' => $wiedergabeMedia, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
+$werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', '"Quiet music in the conservatory" → room=Wintergarten, type=media, command=play, volume=15.'), 'Beispiel mit Lautstärke und Befehl in einem Aufruf: ' . ($werkzeuge['set_state']['description'] ?? ''));
+
 /* --- Datum und Uhrzeit als Schlusszeile von get_state (Backlog B14) ------------------------------- */
 
 $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
