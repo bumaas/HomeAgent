@@ -884,7 +884,7 @@ pruefe(str_contains($werkzeuge['get_state']['description'] ?? '', '"How much did
 // Freie Zeiträume (09.10.2026): from und to neben period, mit dem heutigen Datum für das Modell
 $von = $werkzeuge['get_state']['inputSchema']['properties']['from'] ?? [];
 $bis = $werkzeuge['get_state']['inputSchema']['properties']['to'] ?? [];
-pruefe(($von['type'] ?? '') === 'string' && str_contains($von['description'] ?? '', 'Instead of period: first day, YYYY-MM-DD. Today is ' . date('Y-m-d') . '.'), 'from mit Format und heutigem Datum: ' . json_encode($von));
+pruefe(($von['type'] ?? '') === 'string' && str_contains($von['description'] ?? '', 'Instead of period: first day, YYYY-MM-DD, or a start hour, YYYY-MM-DD HH:MM. Today is ' . date('Y-m-d') . '.'), 'from mit Format und heutigem Datum: ' . json_encode($von));
 pruefe(($bis['type'] ?? '') === 'string' && str_contains($bis['description'] ?? '', 'Last day, inclusive; without it only the day given in from.'), 'to: ' . json_encode($bis));
 pruefe(str_contains($werkzeuge['get_state']['description'] ?? '', '"How much did the washing machine use in January?" → name=washing machine, from=' . date('Y') . '-01-01, to=' . date('Y') . '-01-31.'), 'Beispiel für einen Monat: ' . ($werkzeuge['get_state']['description'] ?? ''));
 $text = $m->QueryState('Keller', '', 'Entfeuchter', false);
@@ -956,6 +956,8 @@ pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'mit Netzbezug akt
 $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
 $periode = $werkzeuge['get_state']['inputSchema']['properties']['period'] ?? [];
 pruefe(isset($periode['enum']), 'period gibt es auch nur mit der Bilanz: ' . json_encode($periode));
+$von = $werkzeuge['get_state']['inputSchema']['properties']['from']['description'] ?? '';
+pruefe(str_contains($von, 'YYYY-MM-DD HH:MM') && str_contains($werkzeuge['get_state']['inputSchema']['properties']['to']['description'] ?? '', 'HH:MM'), 'from und to nennen die Uhrzeit (Burkhard 12.10.2026: stundengenau): ' . $von);
 pruefe(str_contains($periode['description'] ?? '', 'For the whole house (no room, type or name) the first line gives the house consumption from grid, solar and battery.') && !str_contains($periode['description'] ?? '', 'not the whole house'), 'period nennt den Hausverbrauch: ' . ($periode['description'] ?? ''));
 pruefe(!str_contains($m->RunSelfTest(), 'energy balance'), 'archivierter Netzbezug: kein Hinweis: ' . $m->RunSelfTest());
 // Hausverbrauch als Stapeldiagramm (Burkhard 12.10.2026): show_chart gibt es mit Bilanz auch ohne Messwert

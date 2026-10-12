@@ -183,11 +183,15 @@ Weitere Regeln, die nicht offensichtlich sind:
 - **Verlauf statt Verbrauch** (`DeviceIndex::history`), wenn nach einem Typ aus `HISTORY_TYPES` gefragt
   wird oder kein Treffer einen Zähler hat, nie fürs ganze Haus. Stufe aus dem Zeitraum (heute und
   gestern stündlich, Wochen und Monate täglich, Jahre monatlich; `from`/`to` bis 2 Tage stündlich, bis
-  100 Tage täglich), höchstens `HISTORY_MAX` Messwerte, jede Variable nur einmal (ein Thermostat kann
+  100 Tage täglich; mit Uhrzeit immer stündlich), höchstens `HISTORY_MAX` Messwerte, jede Variable nur einmal (ein Thermostat kann
   den Raumfühler als Ist-Temperatur lesen). Als Zähler aggregierte Variablen haben keinen Verlauf.
   Die Gerätezeile nennt Minimum und Maximum über den ganzen Zeitraum mit Zeitpunkt (bei Gleichstand der erste), damit
   das Modell nicht selbst in der Tabelle sucht (Bedienungs-Blindtest 12.10.2026); das Mittel bewusst nicht (Tokens,
   über ungleich lange Abschnitte nur ungefähr).
+- **Uhrzeit in `from`/`to`** (`parseMoment`, Burkhard 12.10.2026: „nicht stundengenau“): JJJJ-MM-TT HH:MM, auch mit T
+  oder Sekunden. Ganze Stunden aus den Stundenaggregaten (Stufe 0 auch für Zähler): `from` abgerundet, `to` aufgerundet
+  und das Ende (13:00 bis 15:00 sind zwei Stunden), ein `to` ohne Uhrzeit zählt den ganzen Tag, ohne `to` bis jetzt.
+  Höchstens 48 Stunden, sonst würde die Tabelle des Verlaufs zu lang. Die Kopfzeile nennt die gerechneten Stunden.
 - **Namenssuche** in Stufen: genauer Name oder Alias, dann die Anfrage als Teil des Namens, dann der
   Name in der Anfrage, aber nur an einem Wortanfang („Esstischlampe“ trifft „Esstisch“,
   „Außentemperatur“ trifft „Temperatur“ nicht). Nur die beste Stufe zählt.

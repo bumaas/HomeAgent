@@ -236,7 +236,9 @@ With `period`, **get_state** reports consumption instead of the state: `today`, 
 free range works with `from` and `to` (first and last day as YYYY-MM-DD, both included; without `to`
 only that one day), for example "in January" with `from=2026-01-01` and `to=2026-01-31`. Whole years and
 whole months come from the yearly and monthly values of the archive, everything else from the daily
-values. The first line gives
+values. With a time (YYYY-MM-DD HH:MM) it works by the hour, for example "today between 1 and 3 pm" with
+`from=2026-10-12 13:00` and `to=2026-10-12 15:00`; then `to` is the end, without `to` it runs until now. The
+module counts whole hours from the hourly values, at most 48 hours at a time. The first line gives
 the total, for example "88.5 kWh consumed by 3 of 3 metered device(s)", followed by the consumption
 per device. The values come from the aggregates of the archive; the current day, week and so on count
 up to now. If an energy meter is not archived as a counter, its line says "no history archived" and

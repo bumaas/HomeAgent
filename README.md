@@ -247,7 +247,9 @@ Mit `period` fragt **get_state** nach dem Verbrauch statt nach dem Zustand: `tod
 auch ein freier Zeitraum mit `from` und `to` (erster und letzter Tag als JJJJ-MM-TT, beide
 eingeschlossen, ohne `to` nur der eine Tag), etwa „im Januar“ mit `from=2026-01-01` und `to=2026-01-31`.
 Ganze Jahre und ganze Monate kommen aus den Jahres- und Monatswerten des Archivs, alles andere aus den
-Tageswerten. Die erste Zeile
+Tageswerten. Mit Uhrzeit (JJJJ-MM-TT HH:MM) geht es stundengenau, etwa „heute zwischen 13 und 15 Uhr“ mit
+`from=2026-10-12 13:00` und `to=2026-10-12 15:00`; dann ist `to` das Ende, ohne `to` gilt bis jetzt. Gerechnet
+wird mit ganzen Stunden aus den Stundenwerten, höchstens 48 Stunden am Stück. Die erste Zeile
 nennt die Summe, etwa „88.5 kWh verbraucht durch 3 von 3 Gerät(en) mit Zähler“, darunter steht der
 Verbrauch je Gerät. Die Werte kommen aus den Aggregaten des Archivs, der laufende Tag, die laufende
 Woche usw. zählen bis jetzt. Ist ein Zähler nicht als Zähler archiviert, sagt die Zeile „kein Verlauf

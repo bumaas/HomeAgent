@@ -324,8 +324,12 @@ final class DeviceIndex
         $fromText = trim((string)($arguments['from'] ?? ''));
         $toText = trim((string)($arguments['to'] ?? ''));
 
-        // Freier Zeitraum: erster und letzter Tag, beide eingeschlossen; ohne „to“ nur der eine Tag.
+        // Freier Zeitraum: erster und letzter Tag, beide eingeschlossen; ohne „to“ nur der eine Tag. Mit Uhrzeit
+        // (Burkhard 12.10.2026: „nicht stundengenau“) ganze Stunden: „from“ abgerundet, „to“ aufgerundet und das Ende,
+        // ohne „to“ bis jetzt, höchstens 48 Stunden. $range = [Stufe, Beginn, Ende], $rangeLabel für die Kopfzeile.
         $range = null;
+        $rangeLabel = '';
+        $rangeLevel = 1;
         if ($fromText !== '' || $toText !== '') {
             if ($period !== '') {
                 return $this->fail($this->t('Give either period or from and to, not both.'));
@@ -333,15 +337,34 @@ final class DeviceIndex
             if ($fromText === '') {
                 return $this->fail($this->t('Parameter "to" needs "from".'));
             }
-            $first = self::parseDay($fromText);
-            $last = $toText === '' ? $first : self::parseDay($toText);
-            if ($first === null || $last === null) {
+            $first = self::parseMoment($fromText, false);
+            $last = $toText === '' ? null : self::parseMoment($toText, true);
+            if ($first === null || ($toText !== '' && $last === null)) {
                 return $this->fail(sprintf($this->t('Parameter "%s" must be a date like 2026-01-31.'), $first === null ? 'from' : 'to'));
             }
-            if ($last < $first) {
-                return $this->fail($this->t('Parameter "to" must not be before "from".'));
+            $now = $this->backend->timestamp();
+            if (!$first['hourly'] && !($last['hourly'] ?? false)) {
+                $lastDay = $last['time'] ?? $first['time'];
+                if ($lastDay < $first['time']) {
+                    return $this->fail($this->t('Parameter "to" must not be before "from".'));
+                }
+                $range = self::rangeBounds($first['time'], $lastDay, $now);
+                $rangeLabel = ', from=' . date('Y-m-d', $first['time']) . ', to=' . date('Y-m-d', $lastDay);
+                $rangeLevel = $this->chartLevel('', $range[1], $range[2]);
+            } else {
+                $start = $first['time'];
+                // Ein Tag ohne Uhrzeit als Ende zählt ganz mit
+                $end = $last === null ? null : ($last['hourly'] ? $last['time'] : (int)strtotime('+1 day', $last['time']));
+                if ($end !== null && $end <= $start) {
+                    return $this->fail($this->t('Parameter "to" must not be before "from".'));
+                }
+                if (($end ?? $now) - $start > 48 * 3600) {
+                    return $this->fail($this->t('With a time of day the period may be at most 48 hours. Leave out the times for whole days.'));
+                }
+                $range = [0, $start, $end === null || $end > $now ? 0 : $end - 1];
+                $rangeLabel = ', from=' . date('Y-m-d H:i', $start) . ($end === null ? '' : ', to=' . date('Y-m-d H:i', $end));
+                $rangeLevel = 0;
             }
-            $range = [$first, $last];
         }
 
         if ($type !== '' && !array_key_exists($type, self::TYPES)) {
@@ -369,18 +392,14 @@ final class DeviceIndex
             && ($this->chart !== null || in_array($type, self::HISTORY_TYPES, true)
                 || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy'])) && array_any($matches, static fn (array $e): bool => self::isMeasured($e))))) {
             if ($range !== null) {
-                [, $from, $to] = self::rangeBounds($range[0], $range[1], $this->backend->timestamp());
-                $label = $filter . ', from=' . date('Y-m-d', $range[0]) . ', to=' . date('Y-m-d', $range[1]);
-            } else {
-                [, $from, $to] = self::periodBounds($period, $this->backend->timestamp());
-                $label = $filter . ', period=' . $period;
+                [, $from, $to] = $range;
+                return $this->history($matches, $rangeLevel, $from, $to, $filter . $rangeLabel);
             }
-            return $this->history($matches, $this->chartLevel($range === null ? $period : '', $from, $to), $from, $to, $label);
+            [, $from, $to] = self::periodBounds($period, $this->backend->timestamp());
+            return $this->history($matches, $this->chartLevel($period, $from, $to), $from, $to, $filter . ', period=' . $period);
         }
         if ($range !== null) {
-            $label = $filter . ', from=' . date('Y-m-d', $range[0]) . ', to=' . date('Y-m-d', $range[1]);
-            $bounds = self::rangeBounds($range[0], $range[1], $this->backend->timestamp());
-            return $this->consumption($matches, $bounds, $label, $wholeHouse, $this->chartLevel('', $bounds[1], $bounds[2]));
+            return $this->consumption($matches, $range, $filter . $rangeLabel, $wholeHouse, $rangeLevel);
         }
         if ($period !== '') {
             if ($period === self::NOW) {
@@ -918,6 +937,36 @@ final class DeviceIndex
     {
         $day = DateTime::createFromFormat('!Y-m-d', $text);
         return $day === false || $day->format('Y-m-d') !== $text ? null : $day->getTimestamp();
+    }
+
+    /**
+     * Tag oder Tag mit Uhrzeit (JJJJ-MM-TT, JJJJ-MM-TT HH:MM, auch mit T und Sekunden). Mit Uhrzeit auf die ganze Stunde:
+     * ein Beginn abgerundet, ein Ende ($end) aufgerundet; 24:00 ist der nächste Tag. null, wenn es nichts davon ist.
+     *
+     * @return null|array{time: int, hourly: bool}
+     */
+    private static function parseMoment(string $text, bool $end): ?array
+    {
+        if (preg_match('/^(\d{4}-\d\d-\d\d)(?:[ T](\d\d?):(\d\d)(?::\d\d)?)?$/', $text, $m) !== 1) {
+            return null;
+        }
+        $day = self::parseDay($m[1]);
+        if ($day === null) {
+            return null;
+        }
+        if (!isset($m[2])) {
+            return ['time' => $day, 'hourly' => false];
+        }
+        $hour = (int)$m[2];
+        $minute = (int)$m[3];
+        if ($minute > 59 || $hour > 24 || ($hour === 24 && $minute > 0)) {
+            return null;
+        }
+        if ($end && $minute > 0) {
+            $hour++;
+        }
+        // Über mktime, damit die Umstellung auf Sommer- oder Winterzeit stimmt
+        return ['time' => (int)mktime($hour, 0, 0, (int)date('n', $day), (int)date('j', $day), (int)date('Y', $day)), 'hourly' => true];
     }
 
     /**

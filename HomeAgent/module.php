@@ -1658,8 +1658,8 @@ class HomeAgent extends IPSModuleStrict
             . ($hasHistory ? ' For measured values such as temperature or humidity: the history per hour, day or month (minimum / average / maximum).' : ''))]] : [];
         // Freie Zeiträume für Verbrauch und Verlauf; das heutige Datum braucht das Modell für „im Januar“.
         if ($hasMeters || $hasBalance || $hasHistory) {
-            $period['from'] = ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD. Today is ' . date('Y-m-d') . '.'];
-            $period['to'] = ['type' => 'string', 'description' => 'Last day, inclusive; without it only the day given in from.'];
+            $period['from'] = ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD, or a start hour, YYYY-MM-DD HH:MM. Today is ' . date('Y-m-d') . '.'];
+            $period['to'] = ['type' => 'string', 'description' => 'Last day, inclusive; without it only the day given in from. With HH:MM the end hour, exclusive; without it a from with time runs until now. At most 48 hours with times.'];
         }
         $tools = [[
             'name'        => 'get_state',
@@ -1713,8 +1713,8 @@ class HomeAgent extends IPSModuleStrict
                     ]) + [
                         'name'   => ['type' => 'string', 'description' => 'Device name or alias, a partial word is enough.'],
                         'period' => ['type' => 'string', 'enum' => DeviceIndex::PERIODS, 'description' => 'Period of the chart, per hour for today and yesterday, per day for weeks and months, per month for years.'],
-                        'from'   => ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD. Today is ' . date('Y-m-d') . '.'],
-                        'to'     => ['type' => 'string', 'description' => 'Last day, inclusive.'],
+                        'from'   => ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD, or a start hour, YYYY-MM-DD HH:MM. Today is ' . date('Y-m-d') . '.'],
+                        'to'     => ['type' => 'string', 'description' => 'Last day, inclusive, or the end hour, YYYY-MM-DD HH:MM, exclusive.'],
                     ],
                     'additionalProperties' => false,
                 ],

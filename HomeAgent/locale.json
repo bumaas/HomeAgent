@@ -509,7 +509,8 @@
             "band from minimum to maximum": "Band von Minimum bis Maximum",
             "grid": "Netz",
             "solar (used directly)": "PV direkt",
-            "battery": "Batterie"
+            "battery": "Batterie",
+            "With a time of day the period may be at most 48 hours. Leave out the times for whole days.": "Mit Uhrzeit darf der Zeitraum höchstens 48 Stunden lang sein. Für ganze Tage die Uhrzeiten weglassen."
         }
     }
 }
