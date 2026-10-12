@@ -935,7 +935,7 @@ class HomeAgent extends IPSModuleStrict
         }
         // Gesperrt wird vor der Anmeldung: Auch ein richtiges Token kommt dann nicht durch, sonst
         // ginge das Raten weiter und ein Treffer wäre an der Antwort zu erkennen.
-        $blocked = SignInGuard::blockedFor($this->signInState(), time());
+        $blocked = SignInGuard::blockedFor($this->signInState(), time(), SignInGuard::sender($_SERVER));
         if ($blocked > 0) {
             $this->SendDebug('Hook', 'rejected: endpoint blocked for ' . $blocked . ' s after too many rejected sign-ins', 0);
             $this->send(['status' => 429, 'headers' => ['Retry-After' => (string)$blocked] + McpProtocol::BASE_HEADERS, 'body' => (string)json_encode(['error' => 'Too many rejected sign-ins, retry after ' . $blocked . ' s'])]);
@@ -997,9 +997,9 @@ class HomeAgent extends IPSModuleStrict
             $attempted = $authorization !== '' || $pathToken !== '';
             $this->SendDebug('Hook', 'rejected: ' . ($expired ? 'OAuth token expired' : ($attempted ? 'authorization wrong' : 'no authorization')), 0);
             if ($attempted && !$expired) {
-                $this->recordSignInFailure((string)($_SERVER['REMOTE_ADDR'] ?? '?'));
                 // Über Connect kommt jede Anfrage von 127.0.0.1, der Absender steht in X-Forwarded-For.
-                $sender = trim(explode(',', (string)($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''))[0]) ?: (string)($_SERVER['REMOTE_ADDR'] ?? '?');
+                $sender = SignInGuard::sender($_SERVER);
+                $this->recordSignInFailure($sender);
                 $this->rememberProblem(['access' => '–', 'request' => '', 'result' => '', 'kind' => 'sign_in', 'sender' => $sender]);
                 $this->writeLog('–', 'sign-in rejected', 'from ' . $sender, 'token missing or wrong');
             }
@@ -1132,7 +1132,7 @@ class HomeAgent extends IPSModuleStrict
         $accessName = $access === null ? null : $this->accessNameFor($access);
         if ($accessName === null) {
             $this->SendDebug('OAuth', 'authorize: wrong or expired pairing code', 0);
-            $this->recordSignInFailure((string)($_SERVER['REMOTE_ADDR'] ?? '?'));
+            $this->recordSignInFailure(SignInGuard::sender($_SERVER));
             return $this->consentPage($client, $params, $base, $this->Translate('The pairing code is wrong or has expired.'));
         }
 
@@ -1244,7 +1244,7 @@ class HomeAgent extends IPSModuleStrict
     {
         $this->SendDebug('OAuth', 'token rejected (' . ($grantType === '' ? '-' : $grantType) . '): ' . $error, 0);
         if ($error === 'invalid_grant') {
-            $this->recordSignInFailure((string)($_SERVER['REMOTE_ADDR'] ?? '?'));
+            $this->recordSignInFailure(SignInGuard::sender($_SERVER));
         }
         return OAuthServer::error($error === 'temporarily_unavailable' ? 503 : 400, $error, match ($error) {
             'temporarily_unavailable' => 'The instance is busy, please try again',
@@ -2342,16 +2342,17 @@ class HomeAgent extends IPSModuleStrict
             return;
         }
         try {
-            $step = SignInGuard::failure($this->signInState(), time());
+            $step = SignInGuard::failure($this->signInState(), time(), $sender);
             $this->SetBuffer('SignInFailures', (string)json_encode($step['state']));
         } finally {
             IPS_SemaphoreLeave($lock);
         }
         foreach ($step['events'] as $event) {
             $text = match ($event[0]) {
-                'first'   => sprintf($this->Translate('Rejected sign-in at the endpoint (token missing or wrong, from %s).'), $sender),
-                'summary' => sprintf($this->Translate('%d rejected sign-ins at the endpoint in the minute from %s.'), $event[1], date('H:i:s', $event[2])),
-                'blocked' => sprintf($this->Translate('Too many rejected sign-ins, the endpoint is blocked for %d s.'), SignInGuard::BLOCK_SECONDS),
+                'first'       => sprintf($this->Translate('Rejected sign-in at the endpoint (token missing or wrong, from %s).'), $sender),
+                'summary'     => sprintf($this->Translate('%d rejected sign-ins at the endpoint in the minute from %s.'), $event[1], date('H:i:s', $event[2])),
+                'blocked'     => sprintf($this->Translate('Too many rejected sign-ins from %s, this sender is blocked for %d s.'), (string)$event[1], SignInGuard::BLOCK_SECONDS),
+                'blocked_all' => sprintf($this->Translate('Too many rejected sign-ins, the endpoint is blocked for %d s.'), SignInGuard::BLOCK_SECONDS),
             };
             $this->LogMessage($text, KL_WARNING);
         }

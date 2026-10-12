@@ -1403,10 +1403,30 @@ $neu = array_column(array_slice($m->logs(), $vorher), 'Message');
 pruefe(count(array_filter($neu, static fn (string $t): bool => str_contains($t, 'Rejected sign-in'))) === 1, 'von 19 Fehlversuchen einer Minute steht einer im Log: ' . implode(' / ', $neu));
 pruefe(str_contains($anfrage('Bearer ' . $token), 'Parse error'), 'nach 19 Fehlversuchen kommt das richtige Token noch durch');
 $anfrage('Bearer falsch-20');
-pruefe(str_contains($logText(), 'Too many rejected sign-ins, the endpoint is blocked for 60 s'), 'der 20. Fehlversuch sperrt den Endpunkt und steht im Log');
+pruefe(str_contains($logText(), 'Too many rejected sign-ins from 192.0.2.1, this sender is blocked for 60 s'), 'der 20. Fehlversuch sperrt den Absender und steht im Log: ' . $logText());
 $a = $anfrage('Bearer ' . $token);
 pruefe(str_contains($a, 'Too many rejected sign-ins'), 'während der Sperre bekommt auch das richtige Token eine Absage: ' . $a);
 pruefe(!str_contains($logText(), $token) && !str_contains($logText(), 'falsch-'), 'kein Token steht im Log');
+
+// Je Absender (Backlog B60): Über Connect kommt alles von 127.0.0.1, der Absender steht in X-Forwarded-For.
+// 20 falsche Tokens von einem Angreifer sperren nur ihn, der eigene Assistent kommt über Connect weiter durch.
+$ueberConnect = static function (string $auth, string $absender) use ($hook, $m, $iid): string {
+    $_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $iid, 'HTTP_AUTHORIZATION' => $auth, 'REMOTE_ADDR' => '127.0.0.1', 'HTTP_X_FORWARDED_FOR' => $absender];
+    ob_start();
+    try {
+        $hook->invoke($m);
+    } finally {
+        $ausgabe = (string)ob_get_clean();
+    }
+    return $ausgabe;
+};
+for ($i = 1; $i <= 20; $i++) {
+    $ueberConnect('Bearer falsch-' . $i, '203.0.113.9');
+}
+pruefe(str_contains($ueberConnect('Bearer ' . $token, '203.0.113.9'), 'Too many rejected sign-ins'), 'der Angreifer ist gesperrt, auch mit richtigem Token');
+pruefe(str_contains($ueberConnect('Bearer ' . $token, '160.79.106.181'), 'Parse error'), 'der eigene Assistent über Connect kommt durch');
+pruefe(str_contains($ueberConnect('Bearer ' . $token, '10.0.0.1, 160.79.106.181'), 'Parse error'), 'ein vorangestellter falscher Absender hilft dem Angreifer nicht, gezählt wird der letzte Eintrag');
+pruefe(str_contains($logText(), 'Too many rejected sign-ins from 203.0.113.9, this sender is blocked for 60 s'), 'das Log nennt den gesperrten Absender');
 
 /* --- Rest aus Code- und Sicherheitsreview 06.10.2026 ------------------------------------------ */
 

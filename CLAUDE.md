@@ -44,7 +44,9 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   „Nur abfragen“, „Token auch in der Adresse“). Mit `InPath` auch `/hook/homeagent/<InstanzID>/<Token>`
   für Clients ohne Anmeldung (Home Assistant, Claude-App mit „No sign-in“). Ein Header entscheidet allein.
 - **Die Adresse geht nie ins Debug oder Log**, sie kann das Token tragen. Tokens unter 24 Zeichen sind
-  ein Fehler der Zeile. Nach 20 abgewiesenen Anmeldungen in einer Minute ist der Hook 60 s zu.
+  ein Fehler der Zeile. Nach 20 abgewiesenen Anmeldungen in einer Minute ist der Hook für diesen Absender 60 s zu, nach 100 von allen
+  zusammen für alle (`SignInGuard`, je Absender seit build 99, Backlog B60). Über Connect kommt alles von 127.0.0.1;
+  `SignInGuard::sender()` nimmt dann den letzten Eintrag aus `X-Forwarded-For`, nur bei 127.0.0.1 oder ::1.
 - **Ein fehlerhafter Eintrag sperrt nur sich selbst**: Zugang (`usableAccesses()`), Gerät
   (`usableDevices()`), Szene (`usableScenes()`), Energiebilanz als Ganzes (`usableBalance()`). Geprüft wird
   bei jedem Aufruf, eine gelöschte Variable sperrt ihr Gerät also sofort, ohne Übernehmen. Eine Anfrage

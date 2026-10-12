@@ -462,8 +462,9 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
 - Tokens and pairing codes are the only lock. Through Symcon Connect the endpoint is reachable from
   the internet, so use generated tokens. Rejected logins appear in the message log (the first one of a
   minute and then their number); wrong pairing codes count as well. After 20 rejected logins within one
-  minute the endpoint is blocked for
-  60 seconds for everyone, including assistants with the right token.
+  minute the endpoint is blocked for this sender for 60 seconds, even with the right token. Through Symcon
+  Connect the sender on the internet counts, so your own assistants still get through. After 100 rejected
+  logins within one minute, from whoever, the endpoint is blocked for everyone for 60 seconds.
 - With the token in the address it can end up in logs, histories and settings files of the client.
   Set the tick only for accesses whose client cannot send the login in the header.
 - The tokens are part of the instance configuration. Whoever may read objects of the system, for

@@ -486,8 +486,10 @@ sie. Tokens und Kopplungscodes stehen nie darin.
 - Tokens und Kopplungscodes sind das einzige Schloss. Über Symcon Connect ist der Endpunkt aus dem
   Internet erreichbar; verwenden Sie deshalb erzeugte Tokens. Abgewiesene Anmeldungen stehen im
   Meldungsprotokoll (die erste einer Minute und danach ihre Anzahl), falsche Kopplungscodes zählen mit.
-  Nach 20 abgewiesenen Anmeldungen in einer Minute
-  ist der Endpunkt 60 Sekunden lang für alle gesperrt, auch für Assistenten mit richtigem Token.
+  Nach 20 abgewiesenen Anmeldungen in einer Minute ist der Endpunkt für diesen Absender 60 Sekunden lang
+  gesperrt, auch mit richtigem Token. Über Symcon Connect zählt der Absender aus dem Internet, Ihre eigenen
+  Assistenten kommen also weiter durch. Nach 100 abgewiesenen Anmeldungen in einer Minute, gleich von wem,
+  ist der Endpunkt 60 Sekunden lang für alle gesperrt.
 - Steht das Token in der Adresse, kann es in Logs, Verläufen und Einstellungsdateien des Clients
   landen. Setzen Sie den Haken nur bei Zugängen, deren Client die Anmeldung nicht im Header
   mitschicken kann.

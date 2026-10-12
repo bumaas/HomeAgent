@@ -480,7 +480,8 @@
             "The device has not confirmed: check whether it is reachable.": "Das Gerät hat nicht bestätigt: prüfen, ob es erreichbar ist.",
             "The action failed: check the device and the action of its variable.": "Die Aktion ist fehlgeschlagen: das Gerät und die Aktion seiner Variable prüfen.",
             "The assistant sent a request the module does not accept.": "Der Assistent hat eine Anfrage geschickt, die das Modul nicht annimmt.",
-            "Sign-in rejected: check the token or the address in the client.": "Anmeldung abgewiesen: Token oder Adresse im Client prüfen."
+            "Sign-in rejected: check the token or the address in the client.": "Anmeldung abgewiesen: Token oder Adresse im Client prüfen.",
+            "Too many rejected sign-ins from %s, this sender is blocked for %d s.": "Zu viele abgewiesene Anmeldungen von %s, dieser Absender ist für %d s gesperrt."
         }
     }
 }
