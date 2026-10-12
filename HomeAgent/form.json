@@ -124,6 +124,12 @@
               "visible": false
             },
             {
+              "type": "Label",
+              "name": "ClaudeConnectDown",
+              "caption": "Symcon Connect is set up but not connected right now. Please open this form again later.",
+              "visible": false
+            },
+            {
               "type": "RowLayout",
               "name": "PairingRow",
               "items": [

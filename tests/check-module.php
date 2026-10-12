@@ -80,6 +80,14 @@ final class HomeAgentHarness extends HomeAgent
     /** IP der Anlage im Heimnetz, wie sie Sys_GetNetworkInfo am nuc liefert. */
     public static string $lanIp = '192.168.178.86';
 
+    /** Gibt es eine Connect-Instanz, auch wenn sie gerade nicht verbunden ist? */
+    public static bool $connectConfigured = false;
+
+    protected function connectConfigured(): bool
+    {
+        return self::$connectConfigured;
+    }
+
     protected function localAddress(): string
     {
         return self::$lanIp;
@@ -555,7 +563,7 @@ pruefe($zustand() === [false, false, false, false, false], 'nach dem Zuklappen w
 // Unterbereiche in „Endpunkt und Zugänge“: je Assistent ein aufklappbarer Bereich, der sich seinen Zustand merkt
 $unter = array_column(array_values(array_filter($bereiche[0]['items'], static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel')), null, 'name');
 pruefe(array_keys($unter) === ['PanelClaude', 'PanelHA', 'PanelOther'], 'drei Unterbereiche für Claude-App, Home Assistant und andere Assistenten: ' . json_encode(array_keys($unter)));
-pruefe(array_values(array_filter(array_column($unter['PanelClaude']['items'] ?? [], 'name'))) === ['ClaudeStep1', 'ClaudeNoConnect', 'PairingRow', 'ClaudeStep2', 'OAuthClients'], 'Claude-App: Schritte und gekoppelte Assistenten: ' . json_encode(array_column($unter['PanelClaude']['items'] ?? [], 'name')));
+pruefe(array_values(array_filter(array_column($unter['PanelClaude']['items'] ?? [], 'name'))) === ['ClaudeStep1', 'ClaudeNoConnect', 'ClaudeConnectDown', 'PairingRow', 'ClaudeStep2', 'OAuthClients'], 'Claude-App: Schritte und gekoppelte Assistenten: ' . json_encode(array_column($unter['PanelClaude']['items'] ?? [], 'name')));
 pruefe(array_values(array_filter(array_column($unter['PanelHA']['items'] ?? [], 'name'))) === ['HAText', 'AddressRow'], 'Home Assistant: Text und Adresse anzeigen');
 pruefe(array_values(array_filter(array_column($unter['PanelOther']['items'] ?? [], 'name'))) === ['Endpoint', 'OtherText', 'TokenRow'], 'Andere Assistenten: Endpunkt, Text, Token anzeigen');
 pruefe(array_map(static fn (array $b): string => $b['onClick'] ?? '', array_values($unter)) === ["HAGT_UITogglePanel(\$id, 'PanelClaude');", "HAGT_UITogglePanel(\$id, 'PanelHA');", "HAGT_UITogglePanel(\$id, 'PanelOther');"], 'jeder Unterbereich meldet das Auf- und Zuklappen');
@@ -2123,7 +2131,15 @@ HomeAgentHarness::$connect = '';
 $formular = json_decode($m->GetConfigurationForm(), true);
 $alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
 pruefe(($element('ClaudeStep1')['visible'] ?? true) === false && ($element('PairingRow')['visible'] ?? true) === false && ($element('ClaudeStep2')['visible'] ?? true) === false, 'ohne Connect: keine Schritte für die Claude-App');
-pruefe(($element('ClaudeNoConnect')['visible'] ?? false) === true, 'ohne Connect: der Hinweis, dass die Claude-App Connect braucht');
+pruefe(($element('ClaudeNoConnect')['visible'] ?? false) === true && ($element('ClaudeConnectDown')['visible'] ?? true) === false, 'ohne Connect: der Hinweis, dass die Claude-App Connect braucht');
+// Burkhard 12.10.2026: Connect war kurz getrennt (Log 10:10 bis 10:11), das Formular sagte „braucht ein aktives
+// Symcon Connect“. Ist Connect eingerichtet, aber gerade getrennt, sagt es das.
+HomeAgentHarness::$connectConfigured = true;
+$formular = json_decode($m->GetConfigurationForm(), true);
+$alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
+pruefe(($element('ClaudeConnectDown')['visible'] ?? false) === true && ($element('ClaudeNoConnect')['visible'] ?? true) === false, 'Connect eingerichtet, aber getrennt: eigener Hinweis');
+pruefe(str_contains($m->RunSelfTest(), 'Sign-in with OAuth for the Claude app: not available right now, Symcon Connect is set up but not connected'), 'Selbsttest bei getrenntem Connect: ' . $m->RunSelfTest());
+HomeAgentHarness::$connectConfigured = false;
 
 /* --- Einsteigerfreundlicher Bereich „Endpunkt und Zugänge“ (build 80) ----------------------------- */
 

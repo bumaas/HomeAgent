@@ -431,7 +431,9 @@
             "Action": "Aktion",
             "Copy": "Kopieren",
             "Close": "Schließen",
-            "Address with token of the access \"%s\":": "Adresse mit Token des Zugangs „%s“:"
+            "Address with token of the access \"%s\":": "Adresse mit Token des Zugangs „%s“:",
+            "Symcon Connect is set up but not connected right now. Please open this form again later.": "Symcon Connect ist eingerichtet, aber gerade nicht verbunden. Öffnen Sie das Formular später noch einmal.",
+            "Sign-in with OAuth for the Claude app: not available right now, Symcon Connect is set up but not connected": "Anmeldung per OAuth für die Claude-App: gerade nicht möglich, Symcon Connect ist eingerichtet, aber nicht verbunden"
         }
     }
 }

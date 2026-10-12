@@ -396,6 +396,8 @@ class HomeAgent extends IPSModuleStrict
         }
         if ($this->oauthBase() !== '') {
             $lines[] = sprintf($this->Translate('Sign-in with OAuth: %d assistant(s) paired'), count($this->oauthClientRows()));
+        } elseif ($this->connectConfigured()) {
+            $lines[] = $this->Translate('Sign-in with OAuth for the Claude app: not available right now, Symcon Connect is set up but not connected');
         } else {
             $lines[] = $this->Translate('Sign-in with OAuth for the Claude app: not available, Symcon Connect is not active');
         }
@@ -415,7 +417,8 @@ class HomeAgent extends IPSModuleStrict
         $base = $this->oauthBase();
         $usable = $this->usableAccesses();
         $expanded = $this->expandedPanels();
-        $adjust = function (array &$element) use (&$adjust, $failedRows, $base, $usable, $expanded): void {
+        $connectConfigured = $base === '' && $this->connectConfigured();
+        $adjust = function (array &$element) use (&$adjust, $failedRows, $base, $usable, $expanded, $connectConfigured): void {
             // Bereich „Endpunkt und Zugänge“: je Assistent eine Anleitung mit echten Adressen
             // (Burkhard 12.10.2026: „für einsteiger wirkt es kompliziert“).
             $name = (string)($element['name'] ?? '');
@@ -432,8 +435,13 @@ class HomeAgent extends IPSModuleStrict
             if (($element['type'] ?? '') === 'ExpansionPanel' && in_array($name, self::PANELS, true)) {
                 $element['expanded'] = in_array($name, $expanded, true);
             }
+            // Ohne Connect-Instanz der Hinweis, dass die App Connect braucht; ist Connect eingerichtet, aber gerade
+            // getrennt, ein eigener (Burkhard 12.10.2026, Verbindungsabbruch am nuc).
             if ($name === 'ClaudeNoConnect') {
-                $element['visible'] = $base === '';
+                $element['visible'] = $base === '' && !$connectConfigured;
+            }
+            if ($name === 'ClaudeConnectDown') {
+                $element['visible'] = $base === '' && $connectConfigured;
             }
             if (in_array($name, ['PairingAccess', 'AddressAccess', 'TokenAccess'], true)) {
                 $names = array_values(array_map(static fn (array $access): string => $access['Name'], array_filter($usable, static fn (array $access): bool => $name !== 'AddressAccess' || $access['InPath'])));
@@ -1376,6 +1384,12 @@ class HomeAgent extends IPSModuleStrict
             return sprintf($this->Translate('signed in: %s'), implode(', ', array_unique($clients)));
         }
         return $this->Translate($access['InPath'] ? 'address with token' : 'token in the header');
+    }
+
+    /** Gibt es eine Connect-Instanz, auch wenn sie gerade nicht verbunden ist? */
+    protected function connectConfigured(): bool
+    {
+        return IPS_GetInstanceListByModuleID(self::CONNECT_MODULE_ID) !== [];
     }
 
     /** Adresse der Anlage über Symcon Connect, '' ohne aktive Connect-Instanz. */
