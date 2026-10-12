@@ -108,9 +108,49 @@ pruefe(array_column($r['structuredContent']['series'] ?? [], 'name') === ['grid'
 $r = stapel(['period' => 'yesterday'], null, $de);
 pruefe(array_column($r['structuredContent']['series'] ?? [], 'name') === ['Netz', 'PV direkt', 'Batterie', 'Einspeisung'] && ($r['structuredContent']['labels']['per'] ?? null) === 'Stunde', 'deutsch: ' . json_encode(array_column($r['structuredContent']['series'] ?? [], 'name')) . ' ' . json_encode($r['structuredContent']['labels'] ?? null));
 
-/* --- Messwerte bleiben Linien ------------------------------------------------------------------- */
+/* --- Verbrauch je Gerät (Burkhard 12.10.2026, zweiter Schritt) ------------------------------------ */
 
+// Mit Raum oder Name und nur Zählern unter den Treffern: je Gerät ein Stapel, die fünf größten über den Zeitraum zuerst,
+// der Rest als „übrige Geräte“. Keller gestern (Tageswerte im Mitschnitt): Wärmepumpe 9 kWh, Entfeuchter 2,76,
+// Kühltruhe 0,77, Kühlschrank 0,30, Weinkühlschrank 0,16, Trockner und Waschmaschine je 0,0004. Der Luftentfeuchter
+// teilt den Zähler des Entfeuchters und zählt nicht doppelt.
 $r = stapel(['room' => 'Keller', 'period' => 'yesterday']);
-pruefe(($r['structuredContent']['kind'] ?? null) !== 'consumption', 'mit Raum kein Hausstapel: ' . strtok($r['text'], "\n"));
+$daten = $r['structuredContent'] ?? [];
+pruefe(!$r['isError'] && ($daten['kind'] ?? null) === 'consumption' && ($daten['per'] ?? null) === 'hour' && count($daten['times'] ?? []) === 24, 'Keller gestern: Verbrauch je Stunde: ' . json_encode(array_diff_key($daten, ['series' => 0, 'times' => 0])) . ' / ' . strtok($r['text'], "\n"));
+pruefe(array_column($daten['series'] ?? [], 'name') === ['Keller · Wärmepumpe', 'Keller · Entfeuchter', 'Keller · Kühltruhe', 'Keller · Kühlschrank', 'Keller · Weinkühlschrank', 'other devices'], 'fünf größte Geräte, dann die übrigen: ' . json_encode(array_column($daten['series'] ?? [], 'name'), JSON_UNESCAPED_UNICODE));
+pruefe(array_column($daten['series'] ?? [], 'key') === ['device', 'device', 'device', 'device', 'device', 'other'], 'Schlüssel für die Farben: ' . json_encode(array_column($daten['series'] ?? [], 'key')));
+$summe = static fn (array $daten, int $i): float => abs(array_sum(array_map(static fn (array $s): float => (float)array_sum($s['values']), [$daten['series'][$i] ?? ['values' => []]])));
+pruefe(abs($summe($daten, 0) - 9.0) < 0.01 && abs($summe($daten, 1) - 2.7646) < 0.002, 'Wärmepumpe in kWh, Entfeuchter von Wh in kWh: ' . $summe($daten, 0) . ' / ' . $summe($daten, 1));
+pruefe(str_starts_with(strtok($r['text'], "\n"), 'kWh consumed') || str_contains(strtok($r['text'], "\n"), 'kWh consumed by'), 'das Modell bekommt die Summe wie bei get_state: ' . strtok($r['text'], "\n"));
+
+$r = stapel(['name' => 'Waschmaschine', 'period' => 'yesterday']);
+pruefe(!$r['isError'] && array_column($r['structuredContent']['series'] ?? [], 'name') === ['Keller · Waschmaschine'], 'ein Gerät mit Zähler: ein Stapel: ' . json_encode(array_column($r['structuredContent']['series'] ?? [], 'name'), JSON_UNESCAPED_UNICODE) . ' ' . $r['text']);
+
+// Fürs ganze Haus mit type=energy: die größten Geräte, die übrigen und „nicht erfasst“ (Haus aus der Bilanz minus
+// Geräte, je Stunde, nicht unter 0). Zusammen mindestens der Hausverbrauch.
+$r = stapel(['type' => 'energy', 'period' => 'yesterday']);
+$daten = $r['structuredContent'] ?? [];
+pruefe(!$r['isError'] && array_column($daten['series'] ?? [], 'key') === ['device', 'device', 'device', 'device', 'device', 'other', 'unmetered'], 'ganzes Haus je Gerät mit „nicht erfasst“: ' . json_encode(array_column($daten['series'] ?? [], 'key')) . ' / ' . strtok($r['text'], "\n"));
+pruefe(array_slice(array_column($daten['series'] ?? [], 'name'), 0, 3) === ['Keller · Wärmepumpe', 'Keller · Entfeuchter', 'Küche · Spülmaschine'], 'die größten zuerst: ' . json_encode(array_column($daten['series'] ?? [], 'name'), JSON_UNESCAPED_UNICODE));
+$falsch = [];
+foreach ($daten['times'] ?? [] as $i => $t) {
+    $gesamt = array_sum(array_map(static fn (array $s): float => $s['values'][$i], $daten['series']));
+    if ($gesamt + 0.002 < max(0.0, $haus[$t])) {
+        $falsch[] = date('H:i', $t);
+    }
+}
+pruefe(($daten['times'] ?? []) !== [] && $falsch === [], 'je Stunde mindestens der Hausverbrauch: ' . implode(', ', $falsch));
+$r = stapel(['type' => 'energy', 'period' => 'yesterday'], []);
+pruefe(!$r['isError'] && !in_array('unmetered', array_column($r['structuredContent']['series'] ?? [], 'key'), true), 'ohne Bilanz kein „nicht erfasst“');
+
+$r = stapel(['room' => 'Keller, Küche', 'type' => 'energy', 'period' => 'yesterday']);
+pruefe($r['isError'] && !isset($r['structuredContent']), 'Verbrauch nur für einen Raum je Diagramm: ' . $r['text']);
+$r = stapel(['room' => 'Flur', 'type' => 'energy', 'period' => 'yesterday']);
+pruefe($r['isError'] && !isset($r['structuredContent']), 'Zähler ohne Archiv: kein Diagramm: ' . $r['text']);
+
+$r = stapel(['room' => 'Keller', 'period' => 'yesterday'], null, $GLOBALS['de']);
+pruefe((array_slice($r['structuredContent']['series'] ?? [], -1)[0]['name'] ?? null) === 'übrige Geräte', 'deutsch: ' . json_encode((array_slice($r['structuredContent']['series'] ?? [], -1)[0]['name'] ?? null) ?? null, JSON_UNESCAPED_UNICODE));
+$r = stapel(['type' => 'energy', 'period' => 'yesterday'], null, $GLOBALS['de']);
+pruefe((array_slice($r['structuredContent']['series'] ?? [], -1)[0]['name'] ?? null) === 'nicht erfasst', 'deutsch: ' . json_encode((array_slice($r['structuredContent']['series'] ?? [], -1)[0]['name'] ?? null) ?? null, JSON_UNESCAPED_UNICODE));
 
 ende('Verbrauchsdiagramm');

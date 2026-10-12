@@ -444,6 +444,12 @@ Stromverbrauch in diesem Monat als Diagramm“: je Stunde, Tag oder Monat ein Ba
 die Einspeisung darunter. Zusammen ergibt jeder Balken den Hausverbrauch der Bilanz; lädt die Batterie aus dem
 Netz, zählt das als Netz.
 
+Ebenso geht der Verbrauch je Gerät, etwa „Welche Geräte haben im September am meisten verbraucht? Als Diagramm“:
+die fünf größten Geräte mit Zähler übereinander, der Rest als „übrige Geräte“, fürs ganze Haus dazu „nicht
+erfasst“ aus der Energiebilanz. Hat ein Raum neben Zählern auch Messwerte, zeigt das Diagramm zunächst die
+Messwerte; nach dem Verbrauch muss man dann ausdrücklich fragen. Ein Zähler, der nur einmal am Tag weiterzählt,
+steht in einem Stundendiagramm mit dem ganzen Tag in einer Stunde.
+
 Über „+“ → „Konnektoren“ → „Von … hinzufügen“ bietet die Claude-App fertige Vorlagen an: **Haus verlassen** und
 **Gute Nacht** prüfen, was noch offen oder an ist, **Energiebericht** nennt Verbrauch, Autarkie und die größten
 Verbraucher von gestern. Welche es gibt, richtet sich nach der Freigabeliste.

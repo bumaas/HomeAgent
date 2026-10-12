@@ -245,6 +245,12 @@ final class DeviceIndex
     /** Während chart(): hier sammelt history() die Daten fürs Diagramm statt der Tabellenzeilen. */
     private ?array $chart = null;
 
+    /** Während chart() mit type=energy: Verbrauch je Gerät statt Verlauf bzw. Hausstapel. */
+    private bool $chartByDevice = false;
+
+    /** So viele Geräte bekommen im Stapeldiagramm einen eigenen Stapel, der Rest heißt „übrige Geräte“. */
+    private const CHART_DEVICES = 5;
+
     /**
      * @param list<array<string, mixed>> $entries Zeilen der Formularliste „Devices“
      * @param null|RoomIndex $rooms Raumliste mit Aliasen und Etagen
@@ -389,7 +395,9 @@ final class DeviceIndex
         // Ein Zeitraum für Messwerte meint ihren Verlauf (Claude-App, 10.10.2026: „Diagramm der
         // Temperaturen im Gästezimmer der letzten 30 Tage“). Wo Zähler sind und fürs ganze Haus bleibt es beim Verbrauch.
         if (($range !== null || ($period !== '' && $period !== self::NOW)) && !$wholeHouse
-            && ($this->chart !== null || in_array($type, self::HISTORY_TYPES, true)
+            && (($this->chart !== null && !$this->chartByDevice
+                    && (array_any($matches, static fn (array $e): bool => self::isMeasured($e)) || !array_any($matches, static fn (array $e): bool => isset($e['roles']['energy']))))
+                || in_array($type, self::HISTORY_TYPES, true)
                 || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy'])) && array_any($matches, static fn (array $e): bool => self::isMeasured($e))))) {
             if ($range !== null) {
                 [, $from, $to] = $range;
@@ -629,10 +637,13 @@ final class DeviceIndex
                 if ($metered !== []) {
                     $head[] = sprintf($this->t('Of this, %s kWh by %d of %d metered device(s), %s kWh not metered.'), self::formatNumber($total), $withHistory, count($metered), self::formatNumber(max(0.0, $house['total'] - $total)));
                 }
-                if ($this->chart !== null) {
+                if ($this->chart !== null && !$this->chartByDevice) {
                     $this->houseChart($balance, $chartLevel, $from, $to, $head[0], $filter);
                 }
             }
+        }
+        if ($this->chart !== null && ($this->chartByDevice || !$wholeHouse)) {
+            $this->deviceChart($metered, $chartLevel, $from, $to, $head[0], $filter, $balance);
         }
         return ['text' => implode("\n", array_merge($head, $lines)), 'isError' => false];
     }
@@ -664,20 +675,10 @@ final class DeviceIndex
      */
     private function houseChart(array $balance, int $level, int $from, int $to, string $title, string $filter): void
     {
-        $values = [];
-        foreach (array_keys(self::BALANCE_TERMS) as $key) {
-            if (!isset($balance[$key])) {
-                continue;
-            }
-            $series = $this->backend->counterSeries($balance[$key], $level, $from, $to);
-            if ($series === null) {
-                return;
-            }
-            foreach ($series['rows'] as $row) {
-                $values[$row['time']][$key] = (float)self::kilowattHours(['sum' => $row['sum'], 'unit' => $series['unit']]);
-            }
+        $values = $this->balanceParts($balance, $level, $from, $to);
+        if ($values === null) {
+            return;
         }
-        ksort($values);
         $stacks = ['grid' => [], 'solar' => [], 'battery' => [], 'export' => []];
         foreach ($values as $parts) {
             $house = 0.0;
@@ -704,6 +705,102 @@ final class DeviceIndex
         [$per] = self::HISTORY_LEVELS[$level];
         $this->chart = ['kind' => 'consumption', 'title' => $title, 'per' => $per, 'unit' => 'kWh', 'filter' => $filter,
             'times' => array_keys($values), 'series' => $series, 'labels' => ['per' => $this->t($per)]];
+    }
+
+    /**
+     * Teile der Energiebilanz je Stunde, Tag oder Monat in kWh, aufsteigend nach Zeit; null, wenn ein Zähler keinen
+     * Verlauf hat.
+     *
+     * @param array<string, int> $balance
+     * @return null|array<int, array<string, float>>
+     */
+    private function balanceParts(array $balance, int $level, int $from, int $to): ?array
+    {
+        $values = [];
+        foreach (array_keys(self::BALANCE_TERMS) as $key) {
+            if (!isset($balance[$key])) {
+                continue;
+            }
+            $series = $this->backend->counterSeries($balance[$key], $level, $from, $to);
+            if ($series === null) {
+                return null;
+            }
+            foreach ($series['rows'] as $row) {
+                $values[$row['time']][$key] = (float)self::kilowattHours(['sum' => $row['sum'], 'unit' => $series['unit']]);
+            }
+        }
+        ksort($values);
+        return $values;
+    }
+
+    /**
+     * Verbrauch je Gerät als Stapeldiagramm (Burkhard 12.10.2026): die CHART_DEVICES größten Geräte über den Zeitraum mit
+     * eigenem Stapel, der Rest als „übrige Geräte“. Mit Energiebilanz fürs ganze Haus dazu „nicht erfasst“ (Haus minus
+     * Geräte je Zeitraum, nicht unter 0). Geräte ohne archivierten Zähler oder mit einem Zähler für Wasser oder Gas
+     * fehlen im Diagramm, die Textzeilen nennen sie.
+     *
+     * @param list<array<string, mixed>> $metered
+     * @param array<string, int> $balance leer = kein „nicht erfasst“
+     */
+    private function deviceChart(array $metered, int $level, int $from, int $to, string $title, string $filter, array $balance): void
+    {
+        $devices = [];
+        $times = [];
+        foreach ($metered as $entry) {
+            $series = $this->backend->counterSeries($entry['roles']['energy'], $level, $from, $to);
+            if ($series === null || !self::isEnergyUnit($series['unit'])) {
+                continue;
+            }
+            $values = [];
+            foreach ($series['rows'] as $row) {
+                $values[$row['time']] = (float)self::kilowattHours(['sum' => $row['sum'], 'unit' => $series['unit']]);
+                $times[$row['time']] = true;
+            }
+            $devices[] = ['name' => $entry['Room'] . ' · ' . $entry['Name'], 'values' => $values, 'total' => array_sum($values)];
+        }
+        // Die größten zuerst; bei Gleichstand bleibt die Reihenfolge der Liste
+        usort($devices, static fn (array $a, array $b): int => $b['total'] <=> $a['total']);
+        $house = [];
+        if ($balance !== []) {
+            foreach ($this->balanceParts($balance, $level, $from, $to) ?? [] as $time => $parts) {
+                $sum = 0.0;
+                foreach (self::BALANCE_TERMS as $key => [$sign]) {
+                    $sum += $sign * ($parts[$key] ?? 0.0);
+                }
+                $house[$time] = max(0.0, $sum);
+                $times[$time] = true;
+            }
+        }
+        ksort($times);
+        $times = array_keys($times);
+        $column = static fn (array $values): array => array_map(static fn (int $time): float => round($values[$time] ?? 0.0, 3), $times);
+        $series = [];
+        foreach (array_slice($devices, 0, self::CHART_DEVICES) as $device) {
+            $series[] = ['key' => 'device', 'name' => $device['name'], 'values' => $column($device['values'])];
+        }
+        $rest = array_slice($devices, self::CHART_DEVICES);
+        if ($rest !== []) {
+            $other = [];
+            foreach ($rest as $device) {
+                foreach ($device['values'] as $time => $kwh) {
+                    $other[$time] = ($other[$time] ?? 0.0) + $kwh;
+                }
+            }
+            $series[] = ['key' => 'other', 'name' => $this->t('other devices'), 'values' => $column($other)];
+        }
+        if ($devices === []) {
+            return;
+        }
+        if ($house !== []) {
+            $unmetered = [];
+            foreach ($house as $time => $kwh) {
+                $unmetered[$time] = max(0.0, $kwh - array_sum(array_map(static fn (array $device): float => $device['values'][$time] ?? 0.0, $devices)));
+            }
+            $series[] = ['key' => 'unmetered', 'name' => $this->t('not metered'), 'values' => $column($unmetered)];
+        }
+        [$per] = self::HISTORY_LEVELS[$level];
+        $this->chart = ['kind' => 'consumption', 'title' => $title, 'per' => $per, 'unit' => 'kWh', 'filter' => $filter,
+            'times' => $times, 'series' => $series, 'labels' => ['per' => $this->t($per)]];
     }
 
     /**
@@ -3166,6 +3263,15 @@ final class DeviceIndex
         // Tabellen über get_state). Jeder Raum wird wie sonst gesucht; ein unbekannter steht im Text, die anderen werden
         // gezeichnet.
         $rooms = array_values(array_filter(array_map('trim', explode(',', (string)($arguments['room'] ?? ''))), static fn (string $room): bool => $room !== ''));
+        // type=energy gibt es nur hier: Verbrauch je Gerät mit Zähler, gleich welchen Typs (Burkhard 12.10.2026)
+        $byDevice = trim((string)($arguments['type'] ?? '')) === 'energy';
+        if ($byDevice) {
+            unset($arguments['type']);
+        }
+        if ($byDevice && count($rooms) > 1) {
+            return $this->fail($this->t('A consumption chart takes one room at a time.'));
+        }
+        $this->chartByDevice = $byDevice;
         $this->chart = ['series' => []];
         $texts = [];
         $failures = [];
@@ -3181,11 +3287,15 @@ final class DeviceIndex
             $chart = $this->chart;
         } finally {
             $this->chart = null;
+            $this->chartByDevice = false;
         }
         if ($texts === []) {
             return $failures[0];
         }
-        if (count($chart['series'] ?? []) > self::HISTORY_MAX) {
+        if (($chart['kind'] ?? '') === 'consumption' && count($rooms) > 1) {
+            return $this->fail($this->t('A consumption chart takes one room at a time.'));
+        }
+        if (($chart['kind'] ?? '') === 'history' && count($chart['series'] ?? []) > self::HISTORY_MAX) {
             return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s). Give a room or a name, at most %d at a time.'), count($chart['series']), 'room=' . implode(', ', $rooms), self::HISTORY_MAX));
         }
         $result = ['text' => implode("\n", array_merge($texts, array_map(static fn (array $failure): string => (string)strtok($failure['text'], "\n"), $failures))), 'isError' => false];

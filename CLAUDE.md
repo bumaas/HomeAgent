@@ -134,7 +134,12 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   = PV − Einspeisung − Batterie geladen (gekappt auf 0 und den Hausverbrauch), Batterie entladen, der Rest Netz, die
   Einspeisung negativ. Jeder Balken ist der Hausverbrauch der Bilanz; am nuc lud die Batterie am 11.10.2026 um 14 Uhr
   aus dem Netz (Fixture `nuc_2026-10-12_verbrauch.json`, Burkhard 12.10.2026: „verbrauchsdiagramme, also
-  stapeldiagramme“). Stufe wie beim Verlauf (`chartLevel`). Anlass: Die Claude-App holte sich für einen Vergleich zweier Räume zwei Tabellen über `get_state`. Resources gibt es nur, wenn
+  stapeldiagramme“). Stufe wie beim Verlauf (`chartLevel`). Verbrauch je Gerät (`deviceChart`): `type=energy` gibt es nur
+  bei `show_chart` (kein Gerätetyp, `chart()` nimmt es heraus und setzt `chartByDevice`), oder automatisch, wenn die Treffer
+  Zähler und keinen Messwert haben. `CHART_DEVICES` (5) größte Geräte, der Rest „other“, mit Bilanz fürs ganze Haus
+  „unmetered“ (Haus minus Geräte je Zeitraum, nicht unter 0). Nur ein Raum je Verbrauchsdiagramm, `HISTORY_MAX` gilt nur
+  für den Verlauf. Ein Zähler, der nur einmal am Tag weiterzählt (gemessen an einem eBUS-Zähler einer Wärmepumpe), steht
+  im Stundendiagramm mit dem ganzen Tag in einer Stunde; ausgeglichen wird das nicht. Anlass: Die Claude-App holte sich für einen Vergleich zweier Räume zwei Tabellen über `get_state`. Resources gibt es nur, wenn
   der Aufrufer `$readResource` übergibt; `resources/read` und `resources/list` tragen wie `tools/list` `ttlMs` und
   `cacheScope` (Pflicht in 2026-07-28, ohne meldete claude.ai „kann nicht erreicht werden“).
 - **Vorlagen (Prompts, B63):** `libs/PromptCatalog.php` baut „Haus verlassen“, „Gute Nacht“ (Fenster, Türen, Licht,

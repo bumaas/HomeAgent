@@ -427,6 +427,12 @@ our electricity consumption this month as a chart": one bar per hour, day or mon
 directly and battery, with the grid export below. Each bar adds up to the house consumption of the balance; when
 the battery charges from the grid, that counts as grid.
 
+Consumption per device works the same way, for example "Which devices used the most in September? As a chart":
+the five largest devices with a meter stacked, the rest as "other devices", and for the whole house also "not
+metered" from the energy balance. If a room has measured values besides meters, the chart shows the measured
+values first; ask for the consumption explicitly then. A meter that only counts once a day shows the whole day in
+one hour of an hourly chart.
+
 Under "+" → "Connectors" → "Add from …" the Claude app offers ready templates: **Leaving home** and **Good
 night** check what is still open or on, **Energy report** names consumption, self-sufficiency and the largest
 consumers of yesterday. Which ones exist depends on the release list.

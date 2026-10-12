@@ -1693,13 +1693,18 @@ class HomeAgent extends IPSModuleStrict
         // Diagramm als MCP App, nur für Clients, die Apps anmelden, und nur mit einem Gerät, das einen Verlauf haben kann
         // (Leitbild: angeboten wird nur, was es gibt; andere Clients zahlen keine Tokens dafür).
         // Mit der Energiebilanz auch der Hausverbrauch als Stapeldiagramm (Burkhard 12.10.2026).
-        if ($apps && ($hasHistory || $hasBalance)) {
+        if ($apps && ($hasHistory || $hasBalance || $hasMeters)) {
             $historyTypes = array_values(array_unique(array_column(array_filter($this->usableDevices(), static fn (array $row): bool => DeviceIndex::isMeasured($row)), 'Type')));
+            // Verbrauch je Gerät heißt im Diagramm type=energy; als Gerätetyp gibt es das nicht
+            if ($hasMeters) {
+                $historyTypes[] = 'energy';
+            }
             $tools[] = [
                 'name'        => 'show_chart',
                 'title'       => 'Show chart',
                 'description' => ($hasHistory ? 'Shows the history of measured values (temperature, humidity, air quality and others) as a chart in the chat. ' : '')
                     . ($hasBalance ? 'Without room, floor, type or name it shows the house consumption as stacked bars (grid, solar used directly, battery, grid export below). ' : '')
+                    . ($hasMeters ? 'type=energy shows the consumption per device with an energy meter as stacked bars, the largest five first; a room or name with meters and no measured values does the same. ' : '')
                     . 'Use it when the user asks for a chart, diagram, graph or curve; for numbers alone use get_state. Without a period: today. '
                     . 'The answer gives only a summary, the values themselves go to the chart. '
                     . ($hasHistory ? 'Example: "Show me the temperature in the guest room over the last 30 days" → room=Gast, type=temperature, from=' . date('Y-m-d', strtotime('-29 days')) . ', to=' . date('Y-m-d') . '.' : '')
@@ -1709,7 +1714,7 @@ class HomeAgent extends IPSModuleStrict
                     'properties'           => [
                         'room' => ['type' => 'string', 'description' => 'Room as the user calls it, or several rooms separated by commas to compare them in one chart. ' . $roomsText],
                     ] + $floor + ($historyTypes === [] ? [] : [
-                        'type'   => ['type' => 'string', 'enum' => $historyTypes, 'description' => 'Type of measured value. Empty = all measured values that match.'],
+                        'type'   => ['type' => 'string', 'enum' => $historyTypes, 'description' => 'Type of measured value' . ($hasMeters ? ', or energy for the consumption per device' : '') . '. Empty = all measured values that match.'],
                     ]) + [
                         'name'   => ['type' => 'string', 'description' => 'Device name or alias, a partial word is enough.'],
                         'period' => ['type' => 'string', 'enum' => DeviceIndex::PERIODS, 'description' => 'Period of the chart, per hour for today and yesterday, per day for weeks and months, per month for years.'],

@@ -2678,6 +2678,14 @@ $nurLicht = json_encode([['Room' => 'Küche', 'Name' => 'Deckenlicht', 'Aliases'
 IPS_SetProperty($pid, 'Devices', $nurLicht);
 IPS_ApplyChanges($pid);
 pruefe(!isset($werkzeugNamen(true)['show_chart']), 'ohne Gerät mit Verlauf kein show_chart, auch mit Apps');
+// Nur ein Gerät mit Zähler: show_chart mit type=energy für den Verbrauch je Gerät (Burkhard 12.10.2026)
+$lichtZaehler = variable(VARIABLETYPE_FLOAT, 1234.5);
+IPS_SetProperty($pid, 'Devices', json_encode([['Room' => 'Küche', 'Name' => 'Deckenlicht', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $kueche, 'EnergyVariableID' => $lichtZaehler, 'Invert' => false]]));
+IPS_ApplyChanges($pid);
+$nurZaehler = $werkzeugNamen(true);
+pruefe(($nurZaehler['show_chart']['inputSchema']['properties']['type']['enum'] ?? null) === ['energy'] && str_contains($nurZaehler['show_chart']['description'] ?? '', 'type=energy'), 'mit Zähler: show_chart mit type=energy: ' . json_encode($nurZaehler['show_chart'] ?? null, JSON_UNESCAPED_UNICODE));
+IPS_SetProperty($pid, 'Devices', $nurLicht);
+IPS_ApplyChanges($pid);
 $seite = oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/chart'), $p, HomeAgent::class)());
 pruefe(is_string($seite) && str_starts_with(ltrim($seite), '<!DOCTYPE html>') && str_contains($seite, 'ui/initialize') && str_contains($seite, 'ui/notifications/tool-result'), 'die Seite des Diagramms meldet sich beim Client an und nimmt das Ergebnis entgegen');
 pruefe(is_string($seite) && str_contains($seite, 'labels.band') && str_contains($seite, 'type="checkbox"') === false && str_contains($seite, '"checkbox"'), 'die Seite hat einen Schalter für das Band mit der Beschriftung vom Modul');

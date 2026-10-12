@@ -50,7 +50,8 @@
   // in structuredContent und zeichnet je Einheit ein Diagramm: Band von Minimum bis Maximum, Linie für das Mittel.
   var COLORS = ["#2f81f7", "#e5534b", "#3fb950", "#d29922", "#a371f7"];
   // Stapel des Hausverbrauchs (kind "consumption"): Netz, PV direkt, Batterie, Einspeisung unter der Nulllinie
-  var STACK_COLORS = { grid: "#2f81f7", solar: "#d29922", battery: "#3fb950", export: "#a371f7" };
+  // Verbrauch je Gerät: Geräte in den Farben der Linien, die übrigen grau, „nicht erfasst“ hellgrau
+  var STACK_COLORS = { grid: "#2f81f7", solar: "#d29922", battery: "#3fb950", export: "#a371f7", other: "#8c959f", unmetered: "#d0d7de" };
   var nextId = 1;
   var pending = {};
   var lang = (navigator.language || "de").slice(0, 2);
@@ -229,18 +230,20 @@
     var y = function (v) { return T + (y1 - v) / (y1 - y0) * (H - T - B); };
     var slot = (W - L - R) / n, width = Math.max(1, slot * 0.7);
     var unit = data.unit || "";
+    var devices = 0;
+    var colors = data.series.map(function (s) { return STACK_COLORS[s.key] || COLORS[devices++ % COLORS.length]; });
 
     var box = document.createElement("div");
     box.className = "chart";
     var legend = document.createElement("div");
     legend.className = "legend";
-    data.series.forEach(function (s) {
+    data.series.forEach(function (s, j) {
       var item = document.createElement("span");
       var mark = document.createElement("i");
       mark.className = "bar";
-      mark.style.background = STACK_COLORS[s.key] || COLORS[0];
+      mark.style.background = colors[j];
       item.appendChild(mark);
-      item.appendChild(document.createTextNode(s.name + (unit ? " (" + unit + ")" : "")));
+      item.appendChild(document.createTextNode(s.name));
       legend.appendChild(item);
     });
     box.appendChild(legend);
@@ -255,12 +258,12 @@
     times.forEach(function (t, i) {
       var cx = L + (i + 0.5) * slot;
       var up = 0, down = 0, tip = [timeLabel(t, data.per, true)];
-      data.series.forEach(function (s) {
+      data.series.forEach(function (s, j) {
         var value = s.values[i] || 0;
         if (value === 0) { return; }
         var from = value > 0 ? up : down, to = from + value;
         if (value > 0) { up = to; } else { down = to; }
-        svg.appendChild(el("rect", { x: cx - width / 2, y: y(Math.max(from, to)), width: width, height: Math.max(0.5, Math.abs(y(from) - y(to))), fill: STACK_COLORS[s.key] || COLORS[0] }));
+        svg.appendChild(el("rect", { x: cx - width / 2, y: y(Math.max(from, to)), width: width, height: Math.max(0.5, Math.abs(y(from) - y(to))), fill: colors[j] }));
         tip.push(s.name + ": " + number(value) + (unit ? " " + unit : ""));
       });
       var hit = el("rect", { x: cx - slot / 2, y: T, width: slot, height: H - T - B, fill: "transparent" });
