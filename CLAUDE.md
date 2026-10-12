@@ -170,7 +170,8 @@ Weitere Regeln, die nicht offensichtlich sind:
   die Doku beschreibt das Textformat nicht (Doku-Feedback 10.10.2026), und das HomeAssistant-Modul
   schreibt RGB als `{"r":…}`, xy und HS aber als Liste. Die Abfrage nennt die nächstliegende Farbe.
   Ein Licht ohne Schaltzustand gilt als an, solange die Farbe nicht schwarz ist; `off` setzt sie auf 0,
-  und zwar erst nach der bestätigten Stufe (IPS-868 schreibt bei jedem Weißbefehl den alten Farbwert mit;
+  und zwar erst nach der bestätigten Stufe. Als „aus“ gemeldet wird sie erst, wenn auch die Farbe schwarz ist (`status` je
+  Gerät aus `runLevel`), ein nicht ausgelöster Farbbefehl ist ein Fehlschlag (Code-Review 12.10.2026). (IPS-868 schreibt bei jedem Weißbefehl den alten Farbwert mit;
   `FakeBackend` bildet das über `schreibtAltwert` nach).
 - **Luftbe-/entfeuchter** (Typ `humidifier`): `state` (Ein/Aus), `humidity` (Ist-Feuchte), `setpoint`
   (Zielfeuchte, Feld `humidity` von `set_state` über `runSetpoint`, Einheit ohne Angabe %). Gemessen am

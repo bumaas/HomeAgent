@@ -1059,26 +1059,51 @@ final class DeviceIndex
                 $result = self::mergeResults($result, $this->runLevel($withLevel, $on ? 100.0 : 0.0, $word));
             }
             if ($colored !== []) {
-                foreach ($colored as $entry) {
-                    $this->backend->request($entry['roles']['color'], 0);
+                // Ein Farbbefehl, der sich nicht auslösen ließ, ist ein Fehlschlag (Code-Review 12.10.2026).
+                $errors = [];
+                foreach ($colored as $index => $entry) {
+                    $error = $this->backend->request($entry['roles']['color'], 0);
+                    if ($error !== null) {
+                        $errors[$index] = $error;
+                    }
                 }
                 $black = fn (array $e): bool => ($this->backend->read($e['roles']['color'])['value'] ?? null) === 0;
-                $this->waitUntil(function () use ($colored, $black): bool {
-                    foreach ($colored as $entry) {
-                        if (!$black($entry) && $this->backend->failure($entry['roles']['color']) === null) {
+                $this->waitUntil(function () use ($colored, $errors, $black): bool {
+                    foreach ($colored as $index => $entry) {
+                        if (!isset($errors[$index]) && !$black($entry) && $this->backend->failure($entry['roles']['color']) === null) {
                             return false;
                         }
                     }
                     return true;
                 });
+                // Aus ist die Leiste erst, wenn Weißkanal und Farbe bestätigt sind: Eine Zeile „aus“ aus
+                // runLevel gilt nur, solange die Farbe mitzieht, sonst ersetzt sie die Zeile der Farbe
+                // (Code-Review 12.10.2026, vorher meldete „aus“ eine Leiste, die noch farbig leuchtete).
                 $lines = ['lines' => [], 'total' => count($dark), 'reached' => 0, 'pending' => 0, 'failed' => 0];
                 foreach ($colored as $index => $entry) {
-                    $done = $black($entry);
-                    $text = $this->stateOf($entry)['text'];
-                    if (isset($dark[$index])) {
-                        $lines[$done ? 'reached' : 'pending']++;
+                    $levelStatus = $result['status'][$index] ?? null;
+                    if ($levelStatus !== null && $levelStatus !== 'reached') {
+                        continue;
                     }
-                    $lines['lines'][$index] = $this->line($entry, $done ? $text : sprintf($this->t('sent, but the device has not confirmed yet (currently %s)'), $text));
+                    $error = $errors[$index] ?? $this->backend->failure($entry['roles']['color']);
+                    $done = $error === null && $black($entry);
+                    $status = $error !== null ? 'failed' : ($done ? 'reached' : 'pending');
+                    $text = $this->stateOf($entry)['text'];
+                    $line = $this->line($entry, match ($status) {
+                        'failed'  => sprintf($this->t('failed: %s'), $error),
+                        'reached' => $text,
+                        default   => sprintf($this->t('sent, but the device has not confirmed yet (currently %s)'), $text),
+                    });
+                    if ($levelStatus === 'reached') {
+                        $result['reached']--;
+                        $result[$status]++;
+                        $result['status'][$index] = $status;
+                        $result['lines'][$index] = $line;
+                    } else {
+                        $lines[$status]++;
+                        $lines['status'][$index] = $status;
+                        $lines['lines'][$index] = $line;
+                    }
                 }
                 $result = $result === null ? $lines : self::mergeResults($result, $lines);
             }
@@ -1331,15 +1356,19 @@ final class DeviceIndex
                 if ($error !== null) {
                     $job['note'] = sprintf($this->t('failed: %s'), $error);
                     $result['failed']++;
+                    $result['status'][$index] = 'failed';
                 } elseif ($this->levelReached($job) && $switchedOn) {
                     $job['note'] = $job['off'] ? $this->t('off') : ($reachedWord ?? $this->levelText($job['entry'], $now));
                     $result['reached']++;
+                    $result['status'][$index] = 'reached';
                 } elseif ($this->levelReached($job)) {
                     // Die Stufe stimmt, das Einschalten ist aber noch nicht bestätigt.
                     $result['pending']++;
+                    $result['status'][$index] = 'pending';
                     $job['note'] = sprintf($this->t('sent, but the device has not confirmed yet (currently %s)'), $this->backend->read($switching[$index])['formatted'] ?? '?');
                 } else {
                     $result['pending']++;
+                    $result['status'][$index] = 'pending';
                     // Viele Rollläden melden ihre Position erst am Ende der Fahrt (Velux KLF200), andere
                     // unterwegs. Beides ist kein Fehlschlag und bekommt deshalb einen eigenen Text.
                     $text = match (true) {
@@ -1351,6 +1380,7 @@ final class DeviceIndex
                 }
             } else {
                 $result['failed']++;
+                $result['status'][$index] = 'failed';
             }
             $result['lines'][$index] = $this->line($job['entry'], $job['note']);
         }
@@ -1812,6 +1842,7 @@ final class DeviceIndex
         ksort($lines);
         return [
             'lines'   => $lines,
+            'status'  => ($first['status'] ?? []) + ($second['status'] ?? []),
             'total'   => $first['total'] + $second['total'],
             'reached' => $first['reached'] + $second['reached'],
             'pending' => $first['pending'] + $second['pending'],

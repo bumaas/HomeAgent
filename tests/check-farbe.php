@@ -108,6 +108,25 @@ pruefe($zeile($r, 1) === 'Wohnzimmer | Leiste | light | off', 'die Zeile sagt au
 $r = rufe($werte, 'set', ['name' => 'Leiste', 'command' => 'off']);
 pruefe($gesendet(54728) === [], 'ist die Farbe schon schwarz, geht dafür nichts hinaus');
 
+// Code-Review 12.10.2026 (Befund 6): Hat die Leiste Weißkanal und Farbe, meldete „aus“ schon „aus“, sobald der
+// Weißkanal 0 war, auch wenn die Farbe nie schwarz wurde. Angenommener Fall: Die Farbe bestätigt nicht.
+$stur = $hell;
+$stur['54728']['verhalten'] = 'stumm';
+$r = rufe($stur, 'set', ['name' => 'Leiste', 'command' => 'off']);
+pruefe(str_contains($zeile($r, 1), 'has not confirmed yet') && !str_starts_with($zeile($r, 0), '1 of 1'), 'Farbe nicht schwarz: noch nicht bestätigt, nicht „aus“: ' . $r['text']);
+// Befund 2: Ließ sich der Farbbefehl gar nicht auslösen, ging der Fehler verloren. Angenommener Fall, Fehlertext
+// wie in SymconDeviceBackend::runAction.
+$gesperrt = $hell;
+$gesperrt['54728']['verhalten'] = 'nichtAusgeloest';
+$gesperrt['54728']['fehlertext'] = 'IPS_RunScriptTextEx returned false';
+$r = rufe($gesperrt, 'set', ['name' => 'Leiste', 'command' => 'off']);
+pruefe(str_contains($zeile($r, 1), 'failed: IPS_RunScriptTextEx returned false'), 'nicht ausgelöster Farbbefehl: die Zeile sagt fehlgeschlagen: ' . $r['text']);
+$dunkel = $blau;
+$dunkel['54728']['verhalten'] = 'nichtAusgeloest';
+$dunkel['54728']['fehlertext'] = 'IPS_RunScriptTextEx returned false';
+$r = rufe($dunkel, 'set', ['name' => 'Leiste', 'command' => 'off']);
+pruefe(str_contains($zeile($r, 1), 'failed: IPS_RunScriptTextEx returned false'), 'ebenso, wenn der Weißkanal schon 0 war: ' . $r['text']);
+
 /* --- Übersetzung ---------------------------------------------------------------------------------- */
 
 $r = rufe($werte, 'set', ['name' => 'Leiste', 'color' => 'blue'], $de);

@@ -113,6 +113,10 @@ final class FakeBackend implements DeviceBackend
             case 'fehler':
                 $this->failures[$variableId] = (string)$v['fehlertext'];
                 break;
+            case 'nichtAusgeloest':
+                // Die Aktion ließ sich gar nicht auslösen (SymconDeviceBackend: IPS_RunScriptTextEx scheiterte);
+                // dann gibt request() den Fehlertext zurück, und failure() bleibt leer.
+                return (string)$v['fehlertext'];
             case 'traege':
                 $this->pending[] = ['at' => $this->slept + (int)$v['verzoegerungMs'], 'id' => $variableId, 'value' => $value];
                 break;
