@@ -108,6 +108,18 @@ final class McpProtocol
      * Client bei initialize und server/discover: „Name Version (Fähigkeiten)“, bei Rückfragen mit ihren Arten und mit
      * den Erweiterungen; null bei allen anderen Anfragen. Damit zeigt das Protokoll, was ein Client kann (B63).
      */
+    /**
+     * Fingerabdruck einer Werkzeugliste für die Spalte „Werkzeugliste“ im Formular (Burkhard 12.10.2026: hat sich die
+     * Liste beim Speichern geändert?). Datumsangaben zählen nicht, die Beschreibungen nennen das heutige Datum.
+     *
+     * @param list<array<string, mixed>> $tools
+     */
+    public static function toolsFingerprint(array $tools): string
+    {
+        $text = preg_replace('/\d{4}-\d{2}-\d{2}/', 'DATE', (string)json_encode($tools, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        return substr(hash('sha256', (string)$text), 0, 16);
+    }
+
     private static function callerOf(array $message): ?string
     {
         // Nach 2026-07-28 trägt jede Anfrage den Client; das Protokoll nennt ihn auch beim Werkzeugaufruf (Burkhard

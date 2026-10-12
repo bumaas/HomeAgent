@@ -330,6 +330,12 @@ Weitere Regeln, die nicht offensichtlich sind:
   der feste Grundport; weitere Ports kommen nur über eigene WebServer-Instanzen, die bewusst nicht angezeigt werden,
   Burkhard 12.10.2026).
 
+- **Spalte „Werkzeugliste“** (Burkhard 12.10.2026: „Kann man dem Anwender signalisieren, ob sich die Werkzeugliste beim
+  Speichern verändert hat?“): Holt ein Assistent `tools/list`, merkt sich das Modul im Attribut `ToolLists` je Zugang
+  (SHA-256 des Tokens) den Fingerabdruck (`McpProtocol::toolsFingerprint`, ohne Datumsangaben, die Beschreibungen nennen das
+  heutige Datum), ob mit Apps, und die Zeit; geschrieben nur bei Änderung oder nach 10 min. `toolListStatus` vergleicht
+  beim Öffnen des Formulars mit der heutigen Liste. So sieht man auch, ob claude.ai die Liste nach `ttlMs` (5 min) selbst
+  nachholt.
 - **Was nicht geklappt hat und Protokoll** (Burkhard 12.10.2026): `DeviceIndex::problem()` und
   `SceneIndex::problem()` nennen die Art (`unknown_room`, `unknown_name`, `ambiguous`, `not_understood`, `left_out`,
   `not_confirmed`, `failed` …; ein fahrender Rollladen zählt nicht, `underway` in `runLevel`). `logged()` merkt

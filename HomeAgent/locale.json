@@ -516,7 +516,11 @@
             "The devices are shown as cards in the chat.": "Die Geräte stehen als Karten im Chat.",
             "%d more device(s) not shown": "%d weitere Gerät(e) nicht angezeigt",
             "This device is not on the release list any more, show the devices again.": "Dieses Gerät steht nicht mehr in der Freigabeliste, bitte die Geräte neu anzeigen.",
-            "Last used": "Zuletzt benutzt"
+            "Last used": "Zuletzt benutzt",
+            "Tool list": "Werkzeugliste",
+            "not fetched yet": "noch nicht geholt",
+            "current, fetched %s": "aktuell, geholt %s",
+            "outdated, fetched %s": "veraltet, geholt %s"
         }
     }
 }

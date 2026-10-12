@@ -112,6 +112,7 @@ access then need the new one.
 | Default room | The room the assistant is in. "Turn on the light" without a room then means this room, and with equal device names the device there wins. For the whole house the assistant says `room=all`. |
 | Query only | This access may ask but not switch anything. It only sees the query tool, and the assistant is told that the access can only read. |
 | Token also in the address | For clients that cannot send a login. The token is then appended to the address. |
+| Tool list | Whether the assistant knows the current tool list: **current**, **outdated** or **not fetched yet**, with the time of the last fetch. The list changes with an update of the module and with your settings, for example a device of a new type, a new room or a new scene. If it says **outdated**, open a new chat in the Claude app; if that does not help, disconnect the connector and connect it again. |
 
 Without an access that has a token, the instance shows status 104 and rejects all requests.
 

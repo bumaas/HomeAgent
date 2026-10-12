@@ -95,6 +95,18 @@ pruefe(($GLOBALS['aufrufer'] ?? null) === 'claude-code 2.1.296', 'der Werkzeugau
 $a = sende($aufruf, ['mcp-name' => '=?base64?' . base64_encode('get_state') . '?='] + $kopf);
 pruefe($a['status'] === 200 && isset($a['json']['result']), 'Mcp-Name in der Base64-Form wird dekodiert: ' . $a['body']);
 
+/* --- Fingerabdruck der Werkzeugliste (Burkhard 12.10.2026: hat sich die Liste beim Speichern geändert?) --- */
+
+// Das Formular zeigt je Zugang, ob der Assistent die aktuelle Liste geholt hat. Die Beschreibungen tragen das heutige
+// Datum („Today is …“); ohne es auszulassen, wäre jede Liste ab Mitternacht veraltet.
+$heute = [['name' => 'get_state', 'description' => 'Today is 2026-10-12. Example: from=2026-09-13, to=2026-10-12.', 'inputSchema' => ['type' => 'object']]];
+$morgen = [['name' => 'get_state', 'description' => 'Today is 2026-10-13. Example: from=2026-09-14, to=2026-10-13.', 'inputSchema' => ['type' => 'object']]];
+$anders = [['name' => 'get_state', 'description' => 'Today is 2026-10-12. Known rooms: Bad, Küche.', 'inputSchema' => ['type' => 'object']]];
+$fp = static fn (array $liste): ?string => method_exists(McpProtocol::class, 'toolsFingerprint') ? McpProtocol::toolsFingerprint($liste) : null;
+pruefe($fp($heute) !== null && $fp($heute) === $fp($morgen), 'ein neuer Tag ändert den Fingerabdruck nicht');
+pruefe($fp($heute) !== null && $fp($heute) !== $fp($anders), 'eine andere Beschreibung ändert ihn');
+pruefe($fp($heute) !== null && preg_match('/^[0-9a-f]{16}$/', (string)$fp($heute)) === 1, 'kurz, 16 Hex-Zeichen: ' . $fp($heute));
+
 /* --- Prüfung der Kopfzeilen (400, HeaderMismatch -32020) ---------------------------------------- */
 
 foreach ([

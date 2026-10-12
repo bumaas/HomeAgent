@@ -373,7 +373,8 @@ $formular = json_decode($m->GetConfigurationForm(), true);
 $benannt = array_column(array_filter(flach($formular['elements']), static fn (array $e): bool => isset($e['name'])), null, 'name');
 pruefe(isset($benannt['Accesses'], $benannt['Rooms']) && !isset($benannt['Token']) && !isset($benannt['AllowTokenInPath']) && !isset($benannt['EndpointWithToken']), 'Formular: Listen für Zugänge und Räume statt des einen Tokens: ' . implode(', ', array_keys($benannt)));
 $zugangsSpalten = array_column($benannt['Accesses']['columns'] ?? [], null, 'name');
-pruefe(array_keys($zugangsSpalten) === ['Name', 'ReadOnly', 'DefaultRoom', 'Connection', 'Token', 'InPath'], 'Spalten der Zugänge: ' . json_encode(array_keys($zugangsSpalten)));
+pruefe(array_keys($zugangsSpalten) === ['Name', 'ReadOnly', 'DefaultRoom', 'Connection', 'Tools', 'Token', 'InPath'], 'Spalten der Zugänge, mit Werkzeugliste: ' . json_encode(array_keys($zugangsSpalten)));
+pruefe(($zugangsSpalten['Tools']['save'] ?? null) === false, 'die Spalte Werkzeugliste ist nur Anzeige');
 pruefe(($zugangsSpalten['Token']['visible'] ?? true) === false && ($zugangsSpalten['Token']['save'] ?? false) === true && ($zugangsSpalten['InPath']['visible'] ?? true) === false && ($zugangsSpalten['InPath']['save'] ?? false) === true, 'Token und „Token in der Adresse“ sind unsichtbar, werden aber gespeichert');
 pruefe(($zugangsSpalten['Connection']['save'] ?? null) === false && ($zugangsSpalten['Name']['save'] ?? false) === true && ($zugangsSpalten['DefaultRoom']['save'] ?? false) === true, 'die Spalte Verbindung ist nur Anzeige, Name und Standardraum werden gespeichert');
 $zugangsDialog = array_column(flach($benannt['Accesses']['form'] ?? []), null, 'name');
@@ -2615,6 +2616,32 @@ try {
 }
 $inhalt = (string)@file_get_contents($logAktuell);
 pruefe(str_contains($inhalt, ' | Claude-App | get_state | Anthropic/ClaudeAI 1.0.0 | room=Küche | '), 'der Werkzeugaufruf nennt den Client: ' . $inhalt);
+// Werkzeugliste je Zugang (Burkhard 12.10.2026): holt der Assistent die Liste, merkt sich das Modul ihren Fingerabdruck;
+// ändert sich danach die Freigabeliste so, dass sich die Werkzeuge ändern, zeigt die Spalte „veraltet“.
+$listeHolen = static function () use ($pHook, $p, $pid, $pToken): void {
+    $_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $pid, 'REMOTE_ADDR' => '192.0.2.5', 'HTTP_AUTHORIZATION' => 'Bearer ' . $pToken];
+    HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 3, 'method' => 'tools/list']);
+    ob_start();
+    try {
+        $pHook->invoke($p);
+    } finally {
+        ob_end_clean();
+        HomeAgentHarness::$body = '';
+    }
+};
+$werkzeugStand = static fn (): string => (string)(($pElement('Accesses')['values'][0] ?? [])['Tools'] ?? '');
+pruefe($werkzeugStand() === 'not fetched yet', 'noch nicht geholt: ' . $werkzeugStand());
+$listeHolen();
+pruefe(str_starts_with($werkzeugStand(), 'current, fetched '), 'nach tools/list aktuell: ' . $werkzeugStand());
+$geraeteVorher = IPS_GetProperty($pid, 'Devices');
+$rollo = variable(VARIABLETYPE_INTEGER, 0);
+IPS_SetProperty($pid, 'Devices', json_encode(array_merge(json_decode($geraeteVorher, true), [['Room' => 'Küche', 'Name' => 'Rollladen', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'Invert' => false]])));
+IPS_ApplyChanges($pid);
+pruefe(str_starts_with($werkzeugStand(), 'outdated, fetched '), 'ein Rollladen bringt open und close: veraltet: ' . $werkzeugStand());
+$listeHolen();
+pruefe(str_starts_with($werkzeugStand(), 'current, fetched '), 'erneut geholt: wieder aktuell: ' . $werkzeugStand());
+IPS_SetProperty($pid, 'Devices', $geraeteVorher);
+IPS_ApplyChanges($pid);
 $eigenschaft('LogEnabled', false);
 IPS_ApplyChanges($pid);
 

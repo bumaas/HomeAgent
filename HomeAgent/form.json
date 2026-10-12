@@ -50,6 +50,13 @@
               "save": false
             },
             {
+              "caption": "Tool list",
+              "name": "Tools",
+              "width": "220px",
+              "add": "",
+              "save": false
+            },
+            {
               "name": "Token",
               "visible": false,
               "add": "",

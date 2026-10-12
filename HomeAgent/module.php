@@ -128,6 +128,8 @@ class HomeAgent extends IPSModuleStrict
         // Anmeldung per OAuth (Claude-App mit „Sign in“), anfangs aus; feste Tokens gelten weiter.
         // Gekoppelte OAuth-Clients (Familien von Erneuerungstokens, nur Hashes); überlebt einen Neustart.
         $this->RegisterAttributeString('OAuthGrants', '{}');
+        // Je Zugang (SHA-256 des Tokens) der Fingerabdruck der zuletzt geholten Werkzeugliste, für die Spalte „Werkzeugliste“
+        $this->RegisterAttributeString('ToolLists', '{}');
         // Aufgeklappte Bereiche des Formulars, damit sie beim nächsten Öffnen wieder so stehen.
         $this->RegisterAttributeString('ExpandedPanels', '[]');
         // Was nicht geklappt hat, für die Liste im Formular; überlebt einen Neustart.
@@ -514,7 +516,7 @@ class HomeAgent extends IPSModuleStrict
             if ($name === 'Accesses') {
                 // Nur die Spalte Verbindung; die Konsole ergänzt die gespeicherten Zeilen der Reihe nach,
                 // die Tokens kommen also nicht in die Werte.
-                $element['values'] = array_map(fn (array $access): array => ['Connection' => $this->connectionOf($access)], $this->accessList());
+                $element['values'] = array_map(fn (array $access): array => ['Connection' => $this->connectionOf($access), 'Tools' => $this->toolListStatus($access)], $this->accessList());
                 // So hoch wie die Liste, ab mehr als fünf Zugängen mit Scrollbalken (Burkhard 12.10.2026)
                 $element['rowCount'] = max(3, min(5, count($this->accessList())));
             }
@@ -1063,11 +1065,17 @@ class HomeAgent extends IPSModuleStrict
             $access = $this->oauthAccess((string)($_SERVER['HTTP_AUTHORIZATION'] ?? ''), $accesses);
             $viaOAuth = $access !== null;
         }
+        // Die zuletzt ausgelieferte Werkzeugliste dieser Anfrage (mit oder ohne Apps), für die Spalte „Werkzeugliste“
+        $served = null;
         $response = McpProtocol::handleHttp(
             $_SERVER['REQUEST_METHOD'] ?? 'GET',
             $access !== null,
             fn (): string => $this->requestBody(),
-            fn (bool $apps = false): array => $this->tools($access, $apps),
+            function (bool $apps = false) use ($access, &$served): array {
+                $tools = $this->tools($access, $apps);
+                $served = [$apps, $tools];
+                return $tools;
+            },
             fn (string $name, array $arguments, ?string $client = null): array => $this->callTool($name, $arguments, $access, $client),
             $this->serverInfo($access),
             self::mcpHeaders($_SERVER),
@@ -1097,6 +1105,10 @@ class HomeAgent extends IPSModuleStrict
             }
         } else {
             $this->SendDebug('Request', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . implode(', ', $response['methods'] ?? []) . ' → HTTP ' . $response['status'] . ' (' . ($_SERVER['REMOTE_ADDR'] ?? '?') . ', access ' . $access['Name'] . ($viaOAuth ? ', OAuth' : '') . ')', 0);
+            // Holt der Assistent die Werkzeugliste, merkt sich das Modul ihren Fingerabdruck für das Formular
+            if (in_array('tools/list', $response['methods'] ?? [], true) && $served !== null) {
+                $this->rememberToolList($access, $served[0], McpProtocol::toolsFingerprint($served[1]));
+            }
             // Werkzeugaufrufe schreibt logged(); hier nur Anmeldung, Werkzeugliste und Ähnliches
             if (!in_array('tools/call', $response['methods'] ?? [], true)) {
                 $this->writeLog((string)$access['Name'], implode(', ', $response['methods'] ?? []), $viaOAuth ? 'OAuth' : '', (string)($response['client'] ?? ''), 'HTTP ' . $response['status']);
@@ -1577,6 +1589,35 @@ class HomeAgent extends IPSModuleStrict
      *
      * @param array{Name: string, Token: string, DefaultRoom: string, ReadOnly: bool, InPath: bool} $access
      */
+    private function rememberToolList(array $access, bool $apps, string $fingerprint): void
+    {
+        $key = hash('sha256', (string)$access['Token']);
+        $now = time();
+        $known = $this->storedJson('ToolLists', true)[$key] ?? null;
+        // Höchstens alle zehn Minuten schreiben, claude.ai holt die Liste beim Verbinden mehrmals
+        if (is_array($known) && ($known['fingerprint'] ?? '') === $fingerprint && ($known['apps'] ?? null) === $apps && $now - (int)($known['time'] ?? 0) < 600) {
+            return;
+        }
+        $this->changeStored('ToolLists', static function (array $lists) use ($key, $apps, $fingerprint, $now): array {
+            $lists[$key] = ['fingerprint' => $fingerprint, 'apps' => $apps, 'time' => $now];
+            return $lists;
+        }, true);
+    }
+
+    /**
+     * Stand der Werkzeugliste eines Zugangs für die Spalte „Werkzeugliste“: noch nicht geholt, aktuell oder veraltet,
+     * verglichen mit der Liste, die der Assistent heute bekäme (mit oder ohne Apps wie beim letzten Abholen).
+     */
+    private function toolListStatus(array $access): string
+    {
+        $known = $access['Token'] === '' ? null : ($this->storedJson('ToolLists', true)[hash('sha256', $access['Token'])] ?? null);
+        if (!is_array($known)) {
+            return $this->Translate('not fetched yet');
+        }
+        $current = McpProtocol::toolsFingerprint($this->tools($access, (bool)($known['apps'] ?? false))) === ($known['fingerprint'] ?? '');
+        return sprintf($this->Translate($current ? 'current, fetched %s' : 'outdated, fetched %s'), date('d.m. H:i', (int)($known['time'] ?? 0)));
+    }
+
     private function connectionOf(array $access): string
     {
         $clients = [];

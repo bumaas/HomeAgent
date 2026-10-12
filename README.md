@@ -117,6 +117,7 @@ es beim Übernehmen; alle Assistenten dieses Zugangs brauchen dann das neue.
 | Standardraum | Der Raum, in dem der Assistent steht. „Mach das Licht an“ ohne Raum meint dann diesen Raum, und bei gleichen Gerätenamen gewinnt das Gerät dort. Für das ganze Haus sagt der Assistent `room=all`. |
 | Nur abfragen | Dieser Zugang darf fragen, aber nichts schalten. Er sieht nur das Werkzeug zum Abfragen, und der Assistent erfährt, dass der Zugang nur lesen darf. |
 | Token auch in der Adresse | Für Clients, die keine Anmeldung mitschicken können. Das Token hängt dann an der Adresse. |
+| Werkzeugliste | Ob der Assistent die aktuelle Werkzeugliste kennt: **aktuell**, **veraltet** oder **noch nicht geholt**, mit der Uhrzeit des letzten Abholens. Die Liste ändert sich mit einem Update des Moduls und mit Ihren Einstellungen, etwa einem Gerät mit neuem Typ, einem neuen Raum oder einer neuen Szene. Steht dort **veraltet**, öffnen Sie in der Claude-App einen neuen Chat; hilft das nicht, trennen Sie den Connector und verbinden ihn neu. |
 
 Ohne Zugang mit Token zeigt die Instanz den Status 104 und weist alle Anfragen ab.
 
