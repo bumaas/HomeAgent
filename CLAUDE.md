@@ -1,8 +1,8 @@
 # HomeAgent
 
 Ein MCP-Server als Symcon-Modul, über den KI-Assistenten das Haus abfragen und bedienen. Der Assistent
-sieht nur die Geräte der Freigabeliste und wenige, einfache Werkzeuge; die Verwaltung der Anlage bleibt
-beim eingebauten MCP-Server von Symcon. Bis build 33 hieß das Modul „VoiceControl“ (Präfix `VCTL_`), seit
+sieht nur die Geräte der Freigabeliste und wenige, einfache Werkzeuge, nicht die Verwaltung der Anlage.
+Bis build 33 hieß das Modul „VoiceControl“ (Präfix `VCTL_`), seit
 build 34 „Home Agent“ (Präfix `HAGT_`, Hook `/hook/homeagent/<InstanzID>`); die GUIDs sind gleich geblieben.
 
 Diese Datei ist die öffentliche Entwicklerhilfe. Messungen, Instanz-IDs und Adressen der Anlagen des
@@ -145,8 +145,8 @@ Weitere Regeln, die nicht offensichtlich sind:
   sonst aus dem Modul des Geräts (`SymconDeviceBackend::OPEN_AT_MAX_MODULES`: HomeAssistant-Modul, Ident
   `cover_…`, 100 offen), sonst ist der kleinste Wert offen; der Haken „Richtung umkehren“ dreht es um.
   Anlass: Im Blindtest vom 11.10.2026 fuhren HA-Rollläden (Schieberegler 0 bis 100 %) falsch herum.
-- **Hinweistext für Skripte und KI-Assistenten** (Label im Formular): Ein Agent hat damit allein über den
-  MCP-Server von Symcon eine Instanz eingerichtet (Blindtest 11.10.2026). Was er dort nicht fand (Clients
+- **Hinweistext für Skripte und KI-Assistenten** (Label im Formular): Ein Agent hat damit allein, ohne weitere
+  Doku, eine Instanz eingerichtet (Blindtest 11.10.2026). Was er dort nicht fand (Clients
   mit Token in der Adresse, Connect-Adresse, Token erzeugen, Raumnamen, Felder je Typ, Richtung prüfen),
   steht seitdem drin; neue Felder und Typen gehören auch dorthin.
 - **Prozent beim Licht rechnet das Modul selbst**; der Anzeigetext von Symcon schneidet ab.

@@ -17,16 +17,14 @@ die Geräte, die Sie freigeben.
 
 - **Sie möchten Ihr Haus per Sprache fragen, ohne Alexa oder Google.** Das Modul liefert einem
   KI-Assistenten genau die Geräte und Zustände, die er für Alltagsfragen braucht.
-- **Der eingebaute MCP-Server von Symcon ist Ihnen für diesen Zweck zu mächtig.** Er ist für die
-  Verwaltung einer Anlage gebaut und gibt einem Assistenten Zugriff auf alles. Hier sieht der
-  Assistent nur Ihre Freigabeliste.
+- **Ein Assistent soll nicht die ganze Anlage sehen.** Hier sieht er nur Ihre Freigabeliste und wenige,
+  einfache Werkzeuge, nicht die Verwaltung der Anlage.
 - **Ein Assistent verzählt sich oder verwechselt Geräte.** Das Modul zählt selbst und kennt Räume,
   Gerätetypen und Ihre eigenen Bezeichnungen.
 
 ## Was Sie dafür brauchen
 
-- **Symcon ab Version 9.0.** Den eingebauten MCP-Server von Symcon brauchen Sie nicht. Das Modul ist
-  selbst ein MCP-Server und läuft unabhängig davon.
+- **Symcon ab Version 9.0.** Das Modul ist selbst ein MCP-Server und braucht sonst nichts.
 - **Einen Assistenten, der MCP spricht.** Mikrofon, Spracherkennung und Sprachmodell bringt der
   Assistent mit. Das Modul liefert ihm die Geräte und die Werkzeuge, um sie abzufragen und zu schalten.
 - **Einen passenden Client.** Verbinden kann sich jeder Client, der MCP über einfache HTTP-Anfragen
@@ -494,8 +492,8 @@ sie. Tokens und Kopplungscodes stehen nie darin.
 - Steht das Token in der Adresse, kann es in Logs, Verläufen und Einstellungsdateien des Clients
   landen. Setzen Sie den Haken nur bei Zugängen, deren Client die Anmeldung nicht im Header
   mitschicken kann.
-- Die Tokens stehen in der Konfiguration der Instanz. Wer Objekte der Anlage lesen darf, etwa ein
-  Assistent über den eingebauten MCP-Server von Symcon, liest sie mit.
+- Die Tokens stehen in der Konfiguration der Instanz. Wer die Konfiguration der Anlage lesen darf, etwa ein
+  Skript oder ein anderes Modul, liest sie mit.
 - Die Skriptfunktionen kennen weder Standardraum noch Etage. Es gibt sie für Zustand, Schalten,
   Stellen und Szenen, für Stopp, Sollwert, Farbtemperatur, Farbe, Verbrauch, Leistung und Verlauf nicht.
 

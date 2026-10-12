@@ -15,15 +15,14 @@ unambiguous answer. It only sees and switches the devices you release.
 
 - **You want to ask your home by voice, without Alexa or Google.** The module gives an AI assistant
   exactly the devices and states it needs for everyday questions.
-- **Symcon's built-in MCP server is too powerful for this purpose.** It is built to administer a
-  system and gives an assistant access to everything. Here the assistant only sees your release list.
+- **An assistant should not see the whole system.** Here it only sees your release list and a few
+  simple tools, not the administration of the system.
 - **An assistant miscounts or mixes up devices.** The module counts by itself and knows rooms,
   device types and your own names.
 
 ## What you need
 
-- **Symcon version 9.0 or later.** You do not need Symcon's built-in MCP server. The module is an MCP
-  server of its own and runs independently of it.
+- **Symcon version 9.0 or later.** The module is an MCP server of its own and needs nothing else.
 - **An assistant that speaks MCP.** Microphone, speech recognition and language model come with the
   assistant. The module gives it the devices and the tools to query and switch them.
 - **A suitable client.** Any client can connect that speaks MCP over plain HTTP requests and sends a
@@ -468,8 +467,8 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
   logins within one minute, from whoever, the endpoint is blocked for everyone for 60 seconds.
 - With the token in the address it can end up in logs, histories and settings files of the client.
   Set the tick only for accesses whose client cannot send the login in the header.
-- The tokens are part of the instance configuration. Whoever may read objects of the system, for
-  example an assistant using the built-in MCP server of Symcon, reads them as well.
+- The tokens are part of the instance configuration. Whoever may read the configuration of the system,
+  for example a script or another module, reads them as well.
 - The script functions know neither default room nor floor. They exist for state, switching, setting
   and scenes, not for stop, setpoint, colour temperature, colour, consumption, power and history.
 
