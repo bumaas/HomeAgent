@@ -710,10 +710,15 @@ class HomeAgent extends IPSModuleStrict
      * Es wird nicht gespeichert; der Anwender kopiert es in die Spalte Token eines Zugangs und in
      * die Einrichtung des Assistenten.
      */
-    /** Nur für den Bearbeiten-Dialog eines Zugangs: schreibt ein neues Token in das Feld „Token“. */
-    public function UIGenerateToken(): void
+    /**
+     * Nur für den Bearbeiten-Dialog eines Zugangs: schreibt ein neues Token in das Feld „Token“ und nennt es
+     * einmal zum Kopieren, denn das Kennwortfeld zeigt nur Punkte (Burkhard 12.10.2026: „passiert nichts“).
+     */
+    public function UIGenerateToken(): string
     {
-        $this->UpdateFormField('Token', 'value', bin2hex(random_bytes(32)));
+        $token = bin2hex(random_bytes(32));
+        $this->UpdateFormField('Token', 'value', $token);
+        return sprintf($this->Translate('New token, copy it now for the assistant: %s. It only takes effect with OK and Apply.'), $token);
     }
 
     /**

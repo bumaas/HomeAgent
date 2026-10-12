@@ -83,7 +83,8 @@
                 {
                   "type": "Button",
                   "caption": "Create token",
-                  "onClick": "HAGT_UIGenerateToken($id);"
+                  "onClick": "echo HAGT_UIGenerateToken($id);",
+                  "confirm": "A new token disconnects every assistant that uses this access until it gets the new token. Continue?"
                 }
               ]
             },

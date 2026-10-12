@@ -233,8 +233,9 @@ Weitere Regeln, die nicht offensichtlich sind:
   Claude-App mit Connect-Adresse, Auswahl `PairingAccess` direkt am Knopf Kopplungscode, Liste `OAuthClients`
   mit Widerrufen, ohne Connect nur `ClaudeNoConnect`; Home Assistant mit Auswahl `AddressAccess` (nur Zugänge mit
   `InPath`) und **Adresse anzeigen** (`UIShowAddress`, Token erst auf Knopfdruck); andere Assistenten mit dem
-  Endpunkt im Heimnetz (`localEndpoint`: erste private IPv4 aus `Sys_GetNetworkInfo`, Port 3777 als Standard,
-  der Webserver-Port lässt sich nicht abfragen).
+  Endpunkt im Heimnetz (`localEndpoint`: erste private IPv4 aus `Sys_GetNetworkInfo`, Port 3777: laut Doku
+  der feste Grundport; weitere Ports kommen nur über eigene WebServer-Instanzen, die bewusst nicht angezeigt werden,
+  Burkhard 12.10.2026).
 
 ## Entwickeln und Testen
 

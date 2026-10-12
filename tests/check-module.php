@@ -1306,18 +1306,23 @@ $tokenSpalte = array_column(flach($elemente['Accesses']['form'] ?? []), null, 'n
 $muster = '/' . str_replace('/', '\/', (string)($tokenSpalte['validate'] ?? 'x^')) . '/';
 pruefe(preg_match($muster, str_repeat('a1', 32)) === 1 && preg_match($muster, ' ' . str_repeat('b', 24) . ' ') === 1 && preg_match($muster, 'abc123') === 0 && preg_match($muster, '') === 0, 'die Token-Spalte prüft die Mindestlänge schon bei der Eingabe: ' . ($tokenSpalte['validate'] ?? '-'));
 
+$ausgaben = [];
 try {
-    $m->UIGenerateToken();
-    $m->UIGenerateToken();
+    $ausgaben[] = (string)$m->UIGenerateToken();
+    $ausgaben[] = (string)$m->UIGenerateToken();
 } catch (Throwable $e) {
     pruefe(false, 'UIGenerateToken fehlt: ' . $e->getMessage());
 }
 $erzeugt = array_values(array_filter($m->formUpdates, static fn (array $u): bool => $u[0] === 'Token' && $u[1] === 'value'));
 pruefe(count($erzeugt) === 2 && preg_match('/^[0-9a-f]{64}$/', (string)$erzeugt[0][2]) === 1 && $erzeugt[0][2] !== $erzeugt[1][2], 'der Knopf erzeugt jedes Mal ein neues Token aus 64 Hex-Zeichen, direkt ins Feld des Dialogs: ' . count($erzeugt));
+// Burkhard 12.10.2026: „beim button "token erzeugen" passiert nichts“. Das Kennwortfeld zeigt nur Punkte, also
+// nennt der Knopf das neue Token einmal zum Kopieren, und er fragt vorher, weil ein neues Token Assistenten trennt.
+pruefe(count($erzeugt) === 2 && str_contains($ausgaben[0], (string)$erzeugt[0][2]) && str_contains($ausgaben[0], 'only takes effect with OK and Apply'), 'der Knopf zeigt das neue Token zum Kopieren und sagt, wann es gilt: ' . json_encode($ausgaben[0] ?? null));
 $formular = json_decode($m->GetConfigurationForm(), true);
-$dialog = array_column(flach(array_column(array_filter(flach($formular['elements']), static fn ($e) => ($e['name'] ?? '') === 'Accesses'), 'form')[0] ?? []), 'onClick');
-pruefe(in_array('HAGT_UIGenerateToken($id);', $dialog, true), 'der Knopf „Token erzeugen“ steht im Bearbeiten-Dialog: ' . json_encode($dialog));
-pruefe(!in_array('GeneratedToken', array_column(flach($formular['actions']), 'name'), true) && !in_array('HAGT_UIGenerateToken($id);', array_column(flach($formular['actions']), 'onClick'), true), 'unten im Formular gibt es Knopf und Feld nicht mehr');
+$knopf = array_values(array_filter(flach(array_column(array_filter(flach($formular['elements']), static fn ($e) => ($e['name'] ?? '') === 'Accesses'), 'form')[0] ?? []), static fn ($e) => str_contains((string)($e['onClick'] ?? ''), 'HAGT_UIGenerateToken')))[0] ?? [];
+pruefe(($knopf['onClick'] ?? '') === 'echo HAGT_UIGenerateToken($id);', 'der Knopf „Token erzeugen“ steht im Bearbeiten-Dialog und gibt das Token aus: ' . json_encode($knopf));
+pruefe(str_contains((string)($knopf['confirm'] ?? ''), 'disconnects every assistant'), 'der Knopf fragt vorher, weil ein neues Token alle Assistenten des Zugangs trennt: ' . json_encode($knopf['confirm'] ?? null));
+pruefe(!in_array('GeneratedToken', array_column(flach($formular['actions']), 'name'), true) && !in_array('echo HAGT_UIGenerateToken($id);', array_column(flach($formular['actions']), 'onClick'), true), 'unten im Formular gibt es Knopf und Feld nicht mehr');
 
 // Die Bremse selbst, mit vorgegebener Uhrzeit
 if (is_file(dirname(__DIR__) . '/libs/SignInGuard.php')) {
