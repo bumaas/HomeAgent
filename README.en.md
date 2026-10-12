@@ -51,14 +51,14 @@ unambiguous answer. It only sees and switches the devices you release.
    dialog then asks for the matching variables (see [The release list](#the-release-list)).
 5. **Check.** **Run self-test** reports missing actions, the recognised direction of each blind and the
    range of each thermostat. **Show state of all released devices** shows what the assistant sees.
-6. **Connect the assistant.** The address is shown in the section **Endpoint and accesses** as
-   **Endpoint**.
+6. **Connect the assistant.** Below the list of accesses, the section **Endpoint and accesses** says
+   for each kind of assistant what to do, with the addresses of your system.
 
    | Client | Setup |
    |---|---|
    | Claude Code | `claude mcp add --transport http symcon-homeagent http://<address>:3777/hook/homeagent/<InstanceID> --header "Authorization: Bearer <token>"` |
-   | Claude app, also on the phone | Tick **Sign-in with OAuth** and add the connector as described under [Sign-in with OAuth](#sign-in-with-oauth). Without OAuth it also works with **Token also in the address**: then use the address `https://<Connect address>/hook/homeagent/<InstanceID>/<token>` and choose "No sign-in" as authentication. The app reaches your system from the internet; the Connect address is shown in the Connect Control instance. |
-   | Home Assistant | Tick **Token also in the address** for the access. Add the integration **Model Context Protocol** with `http://<address>:3777/hook/homeagent/<InstanceID>/<token>` and select it for the conversation agent under "Control Home Assistant". Turn off "Prefer handling commands locally" in the voice pipeline, otherwise Home Assistant switches sentences it understands itself through its own devices. |
+   | Claude app, also on the phone | With Symcon Connect active, add the connector as described under [Sign-in with OAuth](#sign-in-with-oauth). Without sign-in it also works with **Token also in the address**: then use the address `https://<Connect address>/hook/homeagent/<InstanceID>/<token>` and choose "No sign-in" as authentication. The app reaches your system from the internet; the Connect address is shown in the Connect Control instance. |
+   | Home Assistant | Tick **Token also in the address** for the access. Add the integration **Model Context Protocol** with the address that **Show address** returns for this access (`http://<address>:3777/hook/homeagent/<InstanceID>/<token>`), and select it for the conversation agent under "Control Home Assistant". Turn off "Prefer handling commands locally" in the voice pipeline, otherwise Home Assistant switches sentences it understands itself through its own devices. |
    | other clients | MCP over plain HTTP requests with `Authorization: Bearer <token>`; if the client cannot send a header, the token in the address. |
 
 7. **First questions.** These sentences quickly show whether everything works:
@@ -98,7 +98,9 @@ twice. Locks, televisions, colour lights, scenes and blinds that only know open,
 ## Accesses
 
 Each assistant gets an access of its own. You still maintain the devices only once, all accesses of
-an instance see the same release list.
+an instance see the same release list. The list shows name, query only, default room and, in the column
+**Connection**, how the assistant is connected. Token and "Token also in the address" are in the edit
+dialog of the row; **Create token** there creates a new one.
 
 | Column | Meaning |
 |---|---|
@@ -115,12 +117,12 @@ Without an access that has a token, the instance shows status 104 and rejects al
 The Claude app can sign in instead of carrying the token in the address. Symcon Connect has to be
 active, because the app reaches your system from the internet.
 
-1. Under **Endpoint and accesses**, tick **Sign-in with OAuth** and apply. The address for the
-   connector is then shown below.
+1. Under **Endpoint and accesses**, the address for the connector is shown below **Claude app**.
+   Without an active Connect a note is shown there instead.
 2. In the Claude app, add a custom connector with this address under "Customize" → "Connectors". Keep
    the preselection: sign in when connecting, and "Use Claude's published identity" as OAuth client.
-3. In the list of accesses, select the access the assistant should use and click **Create pairing code
-   for the selected access**. The code has six digits and is valid for ten minutes.
+3. Choose the access the assistant should use and click **Create pairing code**. The code has six
+   digits and is valid for ten minutes.
 4. Click "Connect" in the app. A page of your system opens. Enter the code there and click **Allow**.
 
 The assistant gets the rights and the default room of this access. The page names it together with the
@@ -128,8 +130,8 @@ address it comes from. If it shows anything other than claude.ai, click **Deny**
 
 The paired assistants are listed below. **Revoke selected assistant** disconnects one at once. If an
 access gets a new token, all assistants paired through it are disconnected. A pairing that has not been
-used for 90 days expires. The self-test shows the number of paired assistants and reports when the box
-is ticked but Connect is not running.
+used for 90 days expires. The self-test shows the number of paired assistants; without Connect it says
+that sign-in is not available.
 
 ## Rooms and floors
 

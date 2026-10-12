@@ -60,12 +60,12 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   alten weg. Dann nennt Symcon die Instanz beim Löschen einer Variable.
 - Eingaben sind begrenzt: Körper erst nach der Anmeldung lesen, Stapel höchstens 50 Nachrichten und ein
   `tools/call`, Argumente gegen das `inputSchema` prüfen.
-- **OAuth (im Aufbau, Property `OAuthEnabled`, noch ohne Formularfeld):** Autorisierungsserver und
+- **OAuth (angeboten, sobald Connect aktiv ist; den Schalter `OAuthEnabled` gibt es seit build 80 nicht mehr):** Autorisierungsserver und
   Ressource sind der Endpunkt selbst, der Issuer liegt unter dem Hook. Die Wurzel des Webservers
   (`/.well-known/…`) erreicht ein Modul nicht; Claude findet die Metadaten über
   `<Endpunkt>/.well-known/openid-configuration` (Mitschnitt 11.10.2026, `tests/fixtures/oauth_claude_2026-10-11.json`).
-  Basis ist die Connect-Adresse (`CC_GetConnectURL`), nicht der Host der Anfrage; ohne Schalter oder
-  ohne aktives Connect gibt es die reservierten Pfade nicht (404). Sie gelten nie als Token in der
+  Basis ist die Connect-Adresse (`CC_GetConnectURL`), nicht der Host der Anfrage; ohne aktives
+  Connect gibt es die reservierten Pfade nicht (404). Sie gelten nie als Token in der
   Adresse und zählen nie als Fehlversuch. Über Connect kommt jede Anfrage von 127.0.0.1, der Absender
   steht nur in `X-Forwarded-For`. Die Anmeldeseite (`oauth/authorize`) kann zweimal kommen, der Service
   Worker der Kachel-Visu auf demselben Host ruft sie nach; ein GET darf nichts verbrauchen.
@@ -224,10 +224,17 @@ Weitere Regeln, die nicht offensichtlich sind:
   „Ausgewählte freigeben“ speichert direkt. Ein Knopf in `popup.buttons` zeigt jede Ausgabe rot im
   Popup, außer sie beginnt mit `MESSAGE:`.
 - Fehlerhafte Zeilen sind rot (`rowColor`), die Meldungen stehen oben im Formular.
-- OAuth im Bereich „Endpunkt und Zugänge“: Schalter `OAuthEnabled`, Label `OAuthAddress` (nur mit
-  Connect sichtbar), Knopf Kopplungscode über `$Accesses['Name']` (ausgewählte Zeile, laut Doku der
-  Liste), Liste `OAuthClients` mit `loadValuesFromConfiguration: false`, gefüllt aus `OAuthGrants`
-  (`oauthClientRows`, ohne Tokens), Widerrufen über `$OAuthClients['Family']` mit Rückfrage.
+- **Bereich „Endpunkt und Zugänge“ für Einsteiger** (build 80, Burkhard 12.10.2026: „für einsteiger wirkt es
+  kompliziert“): Die Zugangsliste zeigt Name, Nur abfragen, Standardraum und die Textspalte `Connection`
+  (`connectionOf`: per OAuth angemeldet mit Host, Adresse mit Token oder Token im Header; nur diese Spalte kommt in
+  `values`, die Tokens nicht). Token und `InPath` sind unsichtbare Spalten mit `save: true`, bearbeitet im eigenen
+  `form` der Liste (Doku List, Beispiel 1), dort auch **Token erzeugen** (`UIGenerateToken` schreibt in `Token`).
+  Darunter je Assistent eine Anleitung mit fetten Labels (verschachtelte ExpansionPanels sind nicht dokumentiert):
+  Claude-App mit Connect-Adresse, Auswahl `PairingAccess` direkt am Knopf Kopplungscode, Liste `OAuthClients`
+  mit Widerrufen, ohne Connect nur `ClaudeNoConnect`; Home Assistant mit Auswahl `AddressAccess` (nur Zugänge mit
+  `InPath`) und **Adresse anzeigen** (`UIShowAddress`, Token erst auf Knopfdruck); andere Assistenten mit dem
+  Endpunkt im Heimnetz (`localEndpoint`: erste private IPv4 aus `Sys_GetNetworkInfo`, Port 3777 als Standard,
+  der Webserver-Port lässt sich nicht abfragen).
 
 ## Entwickeln und Testen
 

@@ -77,6 +77,14 @@ final class HomeAgentHarness extends HomeAgent
 
     public static int $connectCalls = 0;
 
+    /** IP der Anlage im Heimnetz, wie sie Sys_GetNetworkInfo am nuc liefert. */
+    public static string $lanIp = '192.168.178.86';
+
+    protected function localAddress(): string
+    {
+        return self::$lanIp;
+    }
+
     protected function connectUrl(): string
     {
         self::$connectCalls++;
@@ -355,7 +363,12 @@ pruefe(str_contains($test, 'Note: access "HA" also accepts its token as the last
 $formular = json_decode($m->GetConfigurationForm(), true);
 $benannt = array_column(array_filter(flach($formular['elements']), static fn (array $e): bool => isset($e['name'])), null, 'name');
 pruefe(isset($benannt['Accesses'], $benannt['Rooms']) && !isset($benannt['Token']) && !isset($benannt['AllowTokenInPath']) && !isset($benannt['EndpointWithToken']), 'Formular: Listen für Zugänge und Räume statt des einen Tokens: ' . implode(', ', array_keys($benannt)));
-pruefe(array_column($benannt['Accesses']['columns'] ?? [], 'name') === ['Name', 'Token', 'DefaultRoom', 'ReadOnly', 'InPath'] && (array_column($benannt['Accesses']['columns'] ?? [], 'edit', 'name')['Token']['type'] ?? '') === 'PasswordTextBox', 'Spalten der Zugänge, das Token als Kennwortfeld');
+$zugangsSpalten = array_column($benannt['Accesses']['columns'] ?? [], null, 'name');
+pruefe(array_keys($zugangsSpalten) === ['Name', 'ReadOnly', 'DefaultRoom', 'Connection', 'Token', 'InPath'], 'Spalten der Zugänge: ' . json_encode(array_keys($zugangsSpalten)));
+pruefe(($zugangsSpalten['Token']['visible'] ?? true) === false && ($zugangsSpalten['Token']['save'] ?? false) === true && ($zugangsSpalten['InPath']['visible'] ?? true) === false && ($zugangsSpalten['InPath']['save'] ?? false) === true, 'Token und „Token in der Adresse“ sind unsichtbar, werden aber gespeichert');
+pruefe(($zugangsSpalten['Connection']['save'] ?? null) === false && ($zugangsSpalten['Name']['save'] ?? false) === true && ($zugangsSpalten['DefaultRoom']['save'] ?? false) === true, 'die Spalte Verbindung ist nur Anzeige, Name und Standardraum werden gespeichert');
+$zugangsDialog = array_column(flach($benannt['Accesses']['form'] ?? []), null, 'name');
+pruefe(($zugangsDialog['Token']['type'] ?? '') === 'PasswordTextBox' && isset($zugangsDialog['Name'], $zugangsDialog['ReadOnly'], $zugangsDialog['DefaultRoom'], $zugangsDialog['InPath']), 'der Bearbeiten-Dialog hat alle Felder, das Token als Kennwortfeld: ' . json_encode(array_keys($zugangsDialog)));
 pruefe(array_column($benannt['Rooms']['columns'] ?? [], 'name') === ['Name', 'Aliases', 'Floor'], 'Spalten der Raumliste');
 pruefe(str_contains($m->GetConfigurationForm(), '\/<Token>') && !str_contains($m->GetConfigurationForm(), 'gast-token-0123456789abcdef'), 'das Formular nennt die Adresse nur mit Platzhalter, kein echtes Token');
 
@@ -524,7 +537,7 @@ pruefe(($geraete['form'] ?? null) === "return json_decode(HAGT_UIDeviceForm(\$id
 $oben = $formular['elements'];
 $bereiche = array_values(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel'));
 $inhalt = array_map(static fn (array $b): array => array_values(array_filter(array_column($b['items'], 'name'))), $bereiche);
-pruefe(count($bereiche) === 5 && $inhalt[0] === ['Endpoint', 'Accesses', 'OAuthEnabled', 'OAuthAddress', 'OAuthClients'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['Devices'] && $inhalt[3] === ['Scenes'] && in_array('GridImportVariableID', array_column(flach($bereiche[4]['items']), 'name'), true), 'fünf Bereiche in dieser Reihenfolge: ' . json_encode($inhalt));
+pruefe(count($bereiche) === 5 && $inhalt[0] === ['Accesses', 'ConnectHeading', 'ClaudeHeading', 'ClaudeStep1', 'ClaudeNoConnect', 'PairingRow', 'ClaudeStep2', 'OAuthClients', 'RevokeClient', 'HAHeading', 'HAText', 'AddressRow', 'OtherHeading', 'Endpoint', 'OtherText'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['Devices'] && $inhalt[3] === ['Scenes'] && in_array('GridImportVariableID', array_column(flach($bereiche[4]['items']), 'name'), true), 'fünf Bereiche in dieser Reihenfolge: ' . json_encode($inhalt));
 pruefe(array_values(array_filter(array_column(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') !== 'ExpansionPanel'), 'name'))) === [], 'oben steht außer den Bereichen nur Erklärtext, kein Feld: ' . json_encode(array_column($oben, 'name')));
 // Burkhard, 10.10.2026: einheitlich zugeklappt, und jeder Bereich merkt sich seinen Zustand
 $zustand = static fn (): array => array_map(static fn (array $b): bool => ($b['expanded'] ?? false) === true, array_values(array_filter(json_decode($m->GetConfigurationForm(), true)['elements'], static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel')));
@@ -1289,7 +1302,7 @@ pruefe(count($fehlerTexte) === 2 && in_array('Access "Kurz": token is shorter th
 pruefe(in_array('Faulty entries are disabled until they are corrected:', $fehlerTexte, true), 'die Überschrift sagt, dass nur die Zugänge gesperrt sind: ' . json_encode($fehlerTexte));
 pruefe(array_column($elemente['Accesses']['values'] ?? [], 'rowColor') === ['#FFC0C0', ''], 'die fehlerhafte Zeile ist rot, die andere nicht: ' . json_encode($elemente['Accesses']['values'] ?? null));
 pruefe(!str_contains(json_encode($formular), 'abc123'), 'das Formular trägt das Token nicht in die Werte');
-$tokenSpalte = array_column($elemente['Accesses']['columns'] ?? [], null, 'name')['Token']['edit'] ?? [];
+$tokenSpalte = array_column(flach($elemente['Accesses']['form'] ?? []), null, 'name')['Token'] ?? [];
 $muster = '/' . str_replace('/', '\/', (string)($tokenSpalte['validate'] ?? 'x^')) . '/';
 pruefe(preg_match($muster, str_repeat('a1', 32)) === 1 && preg_match($muster, ' ' . str_repeat('b', 24) . ' ') === 1 && preg_match($muster, 'abc123') === 0 && preg_match($muster, '') === 0, 'die Token-Spalte prüft die Mindestlänge schon bei der Eingabe: ' . ($tokenSpalte['validate'] ?? '-'));
 
@@ -1299,11 +1312,12 @@ try {
 } catch (Throwable $e) {
     pruefe(false, 'UIGenerateToken fehlt: ' . $e->getMessage());
 }
-$erzeugt = array_values(array_filter($m->formUpdates, static fn (array $u): bool => $u[0] === 'GeneratedToken' && $u[1] === 'value'));
-pruefe(count($erzeugt) === 2 && preg_match('/^[0-9a-f]{64}$/', (string)$erzeugt[0][2]) === 1 && $erzeugt[0][2] !== $erzeugt[1][2], 'der Knopf erzeugt jedes Mal ein neues Token aus 64 Hex-Zeichen: ' . count($erzeugt));
-pruefe(in_array(['GeneratedToken', 'visible', true], $m->formUpdates, true), 'und zeigt das Feld zum Kopieren an');
-$aktionen = array_column(json_decode($m->GetConfigurationForm(), true)['actions'], null, 'name');
-pruefe(($aktionen['GeneratedToken']['visible'] ?? null) === false, 'das Feld ist anfangs unsichtbar');
+$erzeugt = array_values(array_filter($m->formUpdates, static fn (array $u): bool => $u[0] === 'Token' && $u[1] === 'value'));
+pruefe(count($erzeugt) === 2 && preg_match('/^[0-9a-f]{64}$/', (string)$erzeugt[0][2]) === 1 && $erzeugt[0][2] !== $erzeugt[1][2], 'der Knopf erzeugt jedes Mal ein neues Token aus 64 Hex-Zeichen, direkt ins Feld des Dialogs: ' . count($erzeugt));
+$formular = json_decode($m->GetConfigurationForm(), true);
+$dialog = array_column(flach(array_column(array_filter(flach($formular['elements']), static fn ($e) => ($e['name'] ?? '') === 'Accesses'), 'form')[0] ?? []), 'onClick');
+pruefe(in_array('HAGT_UIGenerateToken($id);', $dialog, true), 'der Knopf „Token erzeugen“ steht im Bearbeiten-Dialog: ' . json_encode($dialog));
+pruefe(!in_array('GeneratedToken', array_column(flach($formular['actions']), 'name'), true) && !in_array('HAGT_UIGenerateToken($id);', array_column(flach($formular['actions']), 'onClick'), true), 'unten im Formular gibt es Knopf und Feld nicht mehr');
 
 // Die Bremse selbst, mit vorgegebener Uhrzeit
 if (is_file(dirname(__DIR__) . '/libs/SignInGuard.php')) {
@@ -1646,40 +1660,29 @@ $oauthAnfrage = static function (string $methode, string $pfad, string $auth = '
 $setze('Accesses', [$zugang('Pfad', $token, '', false, true)]);
 pruefe($status() === IS_ACTIVE, 'Ausgangslage OAuth: aktiv, nicht ' . $status());
 
-try {
-    $schalter = IPS_GetProperty($iid, 'OAuthEnabled');
-} catch (Throwable) {
-    $schalter = null;
-}
-pruefe($schalter === false, 'Schalter „Anmeldung per OAuth“ ist anfangs aus: ' . json_encode($schalter));
+pruefe(!array_key_exists('OAuthEnabled', json_decode(IPS_GetConfiguration($iid), true)), 'keinen Schalter mehr: OAuth gibt es, sobald Connect aktiv ist (Burkhard 12.10.2026)');
 
-// Schalter aus: wie bisher, die reservierten Pfade sind aber nie ein Token und zählen nicht als Fehlversuch
+// ohne Connect: wie bisher, die reservierten Pfade sind aber nie ein Token und zählen nicht als Fehlversuch
 $a = $oauthAnfrage('POST', '');
-pruefe($a['status'] === 401 && ($a['headers']['WWW-Authenticate'] ?? '') === 'Bearer', 'Schalter aus: 401 ohne Metadaten: ' . json_encode($a['headers']['WWW-Authenticate'] ?? null));
+pruefe($a['status'] === 401 && ($a['headers']['WWW-Authenticate'] ?? '') === 'Bearer', 'ohne Connect: 401 ohne Metadaten: ' . json_encode($a['headers']['WWW-Authenticate'] ?? null));
 (new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
 $a = $oauthAnfrage('GET', '/.well-known/oauth-protected-resource');
-pruefe($a['status'] === 404 && !str_contains($a['body'], 'resource'), 'Schalter aus: Metadaten gibt es nicht (404): ' . $a['status']);
-pruefe($fehlversuche() === '', 'Schalter aus: die Metadatenabfrage zählt nicht als Fehlversuch: ' . $fehlversuche());
+pruefe($a['status'] === 404 && !str_contains($a['body'], 'resource'), 'ohne Connect: Metadaten gibt es nicht (404): ' . $a['status']);
+pruefe($fehlversuche() === '', 'ohne Connect: die Metadatenabfrage zählt nicht als Fehlversuch: ' . $fehlversuche());
 
-// Schalter an, aber ohne Connect: Claude erreicht die Anlage nicht, also wie aus
-try {
-    IPS_SetProperty($iid, 'OAuthEnabled', true);
-    IPS_ApplyChanges($iid);
-} catch (Throwable $e) {
-    pruefe(false, 'die Property OAuthEnabled fehlt: ' . $e->getMessage());
-}
+// Ohne Connect: Claude erreicht die Anlage nicht
 HomeAgentHarness::$connect = '';
 $a = $oauthAnfrage('GET', '/.well-known/openid-configuration');
-pruefe($a['status'] === 404, 'Schalter an ohne Connect: keine Metadaten: ' . $a['status']);
+pruefe($a['status'] === 404, 'ohne Connect: keine Metadaten: ' . $a['status']);
 $a = $oauthAnfrage('POST', '');
-pruefe(($a['headers']['WWW-Authenticate'] ?? '') === 'Bearer', 'Schalter an ohne Connect: 401 ohne Metadaten');
+pruefe(($a['headers']['WWW-Authenticate'] ?? '') === 'Bearer', 'ohne Connect: 401 ohne Metadaten');
 
-// Schalter an mit Connect: Ablauf wie im Mitschnitt
+// mit Connect: Ablauf wie im Mitschnitt
 HomeAgentHarness::$connect = 'https://example.ipmagic.de/';
 $basis = 'https://example.ipmagic.de/hook/homeagent/' . $iid;
 (new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
 $a = $oauthAnfrage('POST', '');
-pruefe($a['status'] === 401 && ($a['headers']['WWW-Authenticate'] ?? '') === 'Bearer resource_metadata="' . $basis . '/.well-known/oauth-protected-resource", scope="mcp"', 'Schalter an: 401 nennt die Metadaten unter dem Hook: ' . json_encode($a['headers']['WWW-Authenticate'] ?? null));
+pruefe($a['status'] === 401 && ($a['headers']['WWW-Authenticate'] ?? '') === 'Bearer resource_metadata="' . $basis . '/.well-known/oauth-protected-resource", scope="mcp"', 'mit Connect: 401 nennt die Metadaten unter dem Hook: ' . json_encode($a['headers']['WWW-Authenticate'] ?? null));
 $stand = $fehlversuche();
 $a = $oauthAnfrage('GET', '/.well-known/oauth-protected-resource');
 $pr = json_decode($a['body'], true);
@@ -1700,12 +1703,11 @@ foreach (['/oauth/register'] as $pfad) {
 pruefe($stand === '' && $fehlversuche() === '', 'weder das POST ohne Anmeldung noch die OAuth-Adressen zählen als Fehlversuch (Review R7): ' . $fehlversuche());
 
 // Feste Tokens gelten weiter, im Header und in der Adresse
-pruefe(str_contains($oauthAnfrage('POST', '', 'Bearer ' . $token)['body'], 'Parse error'), 'Schalter an: Token im Header kommt durch');
-pruefe(str_contains($oauthAnfrage('POST', '/' . $token)['body'], 'Parse error'), 'Schalter an: Token in der Adresse kommt durch');
+pruefe(str_contains($oauthAnfrage('POST', '', 'Bearer ' . $token)['body'], 'Parse error'), 'mit Connect: Token im Header kommt durch');
+pruefe(str_contains($oauthAnfrage('POST', '/' . $token)['body'], 'Parse error'), 'mit Connect: Token in der Adresse kommt durch');
 $a = $oauthAnfrage('POST', '', 'Bearer falsch-0123456789abcdefghij');
 pruefe($a['status'] === 401 && str_contains($a['headers']['WWW-Authenticate'] ?? '', 'resource_metadata='), 'falsches Token: 401 mit Metadaten, damit Claude die Anmeldung neu startet');
 try {
-    IPS_SetProperty($iid, 'OAuthEnabled', false);
     IPS_ApplyChanges($iid);
 } catch (Throwable) {
     // ohne die Property (roter Lauf) gibt es nichts zurückzusetzen
@@ -1723,7 +1725,6 @@ $basis = 'https://example.ipmagic.de/hook/homeagent/' . $iid;
 (new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
 IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', $token, 'Halle', true), $zugang('Andere', 'andere-token-0123456789abcdef')]));
 try {
-    IPS_SetProperty($iid, 'OAuthEnabled', true);
 } catch (Throwable) {
     pruefe(false, 'die Property OAuthEnabled fehlt');
 }
@@ -1804,7 +1805,6 @@ $a = $autorisieren('POST', $abfrage, ['pairing_code' => $code, 'decision' => 'al
 pruefe($a['status'] === 200 && !isset($a['headers']['Location']), 'derselbe Kopplungscode gilt nur einmal');
 
 try {
-    IPS_SetProperty($iid, 'OAuthEnabled', false);
     IPS_ApplyChanges($iid);
 } catch (Throwable) {
 }
@@ -1817,7 +1817,6 @@ HomeAgentHarness::$connect = 'https://example.ipmagic.de';
 (new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
 IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', $token, 'Halle', true), $zugang('Andere', 'andere-token-0123456789abcdef')]));
 try {
-    IPS_SetProperty($iid, 'OAuthEnabled', true);
 } catch (Throwable) {
 }
 IPS_ApplyChanges($iid);
@@ -1887,7 +1886,6 @@ $a = $tokenAnfrage(['grant_type' => 'refresh_token', 'refresh_token' => 'erfunde
 pruefe($fehlversuche() !== '', 'ungültige Erneuerungen zählen als Fehlversuch');
 
 try {
-    IPS_SetProperty($iid, 'OAuthEnabled', false);
     IPS_ApplyChanges($iid);
 } catch (Throwable) {
 }
@@ -1899,7 +1897,6 @@ HomeAgentHarness::$connect = 'https://example.ipmagic.de';
 (new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
 IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', $token, 'Halle', true), $zugang('Andere', 'andere-token-0123456789abcdef')]));
 try {
-    IPS_SetProperty($iid, 'OAuthEnabled', true);
 } catch (Throwable) {
 }
 IPS_ApplyChanges($iid);
@@ -1961,17 +1958,14 @@ pruefe($mcp('Bearer ' . $zugriff, 'tools/list')['status'] === 401, 'widerrufene 
 
 $zugriff = (string)($koppeln()['access_token'] ?? '');
 pruefe($mcp('Bearer ' . $zugriff, 'tools/list')['status'] === 200, 'neue Kopplung gilt');
-IPS_SetProperty($iid, 'OAuthEnabled', false);
-IPS_ApplyChanges($iid);
-pruefe($mcp('Bearer ' . $zugriff, 'tools/list')['status'] === 401, 'Schalter aus: OAuth-Tokens gelten nicht');
-IPS_SetProperty($iid, 'OAuthEnabled', true);
-IPS_ApplyChanges($iid);
+HomeAgentHarness::$connect = '';
+pruefe($mcp('Bearer ' . $zugriff, 'tools/list')['status'] === 401, 'ohne Connect: OAuth-Tokens gelten nicht');
+HomeAgentHarness::$connect = 'https://example.ipmagic.de';
 IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', 'neues-token-0123456789abcdef', 'Halle', true)]));
 IPS_ApplyChanges($iid);
 pruefe($mcp('Bearer ' . $zugriff, 'tools/list')['status'] === 401, 'neues Token am Zugang: das Zugriffstoken gilt sofort nicht mehr');
 
 try {
-    IPS_SetProperty($iid, 'OAuthEnabled', false);
     IPS_ApplyChanges($iid);
 } catch (Throwable) {
 }
@@ -1983,7 +1977,6 @@ HomeAgentHarness::$connect = 'https://example.ipmagic.de';
 (new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
 IPS_SetProperty($iid, 'Rooms', json_encode([['Name' => 'Halle', 'Aliases' => '', 'Floor' => '']]));
 IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', $token, 'Halle', true)]));
-IPS_SetProperty($iid, 'OAuthEnabled', true);
 IPS_ApplyChanges($iid);
 pruefe($status() === IS_ACTIVE, 'Ausgangslage Review: aktiv, nicht ' . $status());
 
@@ -2036,7 +2029,6 @@ $a = $autorisieren('POST', $abfrage, ['pairing_code' => str_repeat('1', 20000), 
 pruefe($a['status'] === 413 && HomeAgentHarness::$bodyLimit > 0 && HomeAgentHarness::$bodyLimit <= 16384, 'Autorisierung: übergroßer Körper 413: ' . $a['status']);
 
 try {
-    IPS_SetProperty($iid, 'OAuthEnabled', false);
     IPS_ApplyChanges($iid);
 } catch (Throwable) {
 }
@@ -2046,9 +2038,8 @@ HomeAgentHarness::$connect = '';
 
 HomeAgentHarness::$connect = '';
 IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', $token, 'Halle', true)]));
-IPS_SetProperty($iid, 'OAuthEnabled', true);
 IPS_ApplyChanges($iid);
-pruefe(str_contains($m->RunSelfTest(), 'Note: sign-in with OAuth is on, but Symcon Connect is not active, so no assistant can sign in'), 'Selbsttest: Schalter an ohne Connect: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), 'Sign-in with OAuth for the Claude app: not available, Symcon Connect is not active'), 'Selbsttest ohne Connect: ' . $m->RunSelfTest());
 
 HomeAgentHarness::$connect = 'https://example.ipmagic.de';
 $basis = 'https://example.ipmagic.de/hook/homeagent/' . $iid;
@@ -2078,9 +2069,12 @@ $mitAufruf = static function (string $aufruf) use (&$alle): ?array {
     }
     return null;
 };
-pruefe(($element('OAuthEnabled')['type'] ?? '') === 'CheckBox', 'Formular: Schalter „Anmeldung per OAuth“');
-pruefe(str_contains((string)($element('OAuthAddress')['caption'] ?? ''), $basis), 'Formular: Adresse für die Claude-App mit Connect: ' . ($element('OAuthAddress')['caption'] ?? '-'));
-pruefe($mitAufruf("HAGT_CreatePairingCode(\$id, \$Accesses['Name'])") !== null, 'Formular: Knopf Kopplungscode für den ausgewählten Zugang');
+pruefe($element('OAuthEnabled') === null, 'Formular: kein Schalter „Anmeldung per OAuth“ mehr');
+pruefe(str_contains((string)($element('ClaudeStep1')['caption'] ?? ''), $basis) && ($element('ClaudeStep1')['visible'] ?? true) === true && ($element('ClaudeNoConnect')['visible'] ?? true) === false, 'Formular: Schritt 1 nennt die Adresse für die Claude-App: ' . ($element('ClaudeStep1')['caption'] ?? '-'));
+$auswahl = $element('PairingAccess');
+pruefe(($auswahl['type'] ?? '') === 'Select' && array_column($auswahl['options'] ?? [], 'value') === ['Claude-App'] && ($auswahl['value'] ?? '') === 'Claude-App', 'Formular: Auswahl des Zugangs direkt am Knopf, vorbelegt: ' . json_encode($auswahl));
+pruefe($mitAufruf('HAGT_CreatePairingCode($id, $PairingAccess)') !== null, 'Formular: Knopf Kopplungscode für den gewählten Zugang');
+pruefe($mitAufruf("HAGT_CreatePairingCode(\$id, \$Accesses['Name'])") === null, 'kein Knopf mehr, der eine ausgewählte Zeile voraussetzt');
 $liste = $element('OAuthClients');
 $zeile = $liste['values'][0] ?? [];
 pruefe(($liste['type'] ?? '') === 'List' && ($liste['loadValuesFromConfiguration'] ?? true) === false && count($liste['values'] ?? []) === 1, 'Formular: Liste der gekoppelten Assistenten mit einer Zeile: ' . json_encode($liste['values'] ?? null));
@@ -2103,11 +2097,43 @@ $aktualisiert = array_values(array_filter($m->formUpdates, static fn (array $u):
 pruefe($aktualisiert !== [] && json_decode((string)end($aktualisiert)[2], true) === [], 'die Liste im offenen Formular wird leer: ' . json_encode($m->formUpdates));
 pruefe(str_contains($m->RunSelfTest(), 'Sign-in with OAuth: 0 assistant(s) paired'), 'Selbsttest nach dem Widerruf: ' . $m->RunSelfTest());
 
-IPS_SetProperty($iid, 'OAuthEnabled', false);
-IPS_ApplyChanges($iid);
+HomeAgentHarness::$connect = '';
 $formular = json_decode($m->GetConfigurationForm(), true);
 $alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
-pruefe(($element('OAuthAddress')['visible'] ?? true) === false, 'Schalter aus: keine OAuth-Adresse im Formular');
+pruefe(($element('ClaudeStep1')['visible'] ?? true) === false && ($element('PairingRow')['visible'] ?? true) === false && ($element('ClaudeStep2')['visible'] ?? true) === false, 'ohne Connect: keine Schritte für die Claude-App');
+pruefe(($element('ClaudeNoConnect')['visible'] ?? false) === true, 'ohne Connect: der Hinweis, dass die Claude-App Connect braucht');
+
+/* --- Einsteigerfreundlicher Bereich „Endpunkt und Zugänge“ (build 80) ----------------------------- */
+
+// Burkhard 12.10.2026 zum Formular: „für einsteiger wirkt es kompliziert“. Die Zugänge zeigen in Worten,
+// wie sie verbunden sind; darunter steht je Assistent, was zu tun ist, mit echten Adressen.
+HomeAgentHarness::$connect = 'https://example.ipmagic.de';
+IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', $token, 'Halle', true), $zugang('Home Assistant', 'ha-token-0123456789abcdefgh', '', false, true), $zugang('Claude Code', 'cc-token-0123456789abcdefgh')]));
+IPS_ApplyChanges($iid);
+try {
+    (new ReflectionMethod($m, 'WriteAttributeString'))->invoke($m, 'OAuthGrants', '{}');
+} catch (Throwable) {
+}
+$koppeln();
+$formular = json_decode($m->GetConfigurationForm(), true);
+$alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
+$verbindung = array_column($element('Accesses')['values'] ?? [], 'Connection');
+pruefe($verbindung === ['signed in: claude.ai', 'address with token', 'token in the header'], 'Spalte Verbindung je Zugang in Worten: ' . json_encode($verbindung));
+pruefe(!str_contains((string)json_encode($formular), $token) && !str_contains((string)json_encode($formular), 'ha-token-0123456789abcdefgh'), 'kein Token im Formular');
+$endpunkt = (string)($element('Endpoint')['caption'] ?? '');
+pruefe(str_contains($endpunkt, 'http://192.168.178.86:3777/hook/homeagent/' . $iid) && !str_contains($endpunkt, '<address>'), 'Endpunkt im Heimnetz mit der echten IP: ' . $endpunkt);
+$adressAuswahl = $element('AddressAccess');
+pruefe(array_column($adressAuswahl['options'] ?? [], 'value') === ['Home Assistant'], 'Adresse mit Token nur für Zugänge mit „Token in der Adresse“: ' . json_encode($adressAuswahl['options'] ?? null));
+pruefe($mitAufruf('HAGT_UIShowAddress($id, $AddressAccess)') !== null, 'Knopf „Adresse anzeigen“ neben der Auswahl');
+$adresse = oderNull(static fn () => $m->UIShowAddress('Home Assistant'));
+pruefe($adresse === 'http://192.168.178.86:3777/hook/homeagent/' . $iid . '/ha-token-0123456789abcdefgh', 'Adresse mit Token zum Kopieren, erst auf Knopfdruck: ' . json_encode($adresse));
+$adresse = oderNull(static fn () => $m->UIShowAddress('Claude Code'));
+pruefe(is_string($adresse) && !str_contains($adresse, 'cc-token') && str_contains($adresse, 'Token also in the address'), 'ohne „Token in der Adresse“ keine Adresse mit Token, sondern ein Hinweis: ' . json_encode($adresse));
+HomeAgentHarness::$lanIp = '';
+$formular = json_decode($m->GetConfigurationForm(), true);
+$alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
+pruefe(str_contains((string)($element('Endpoint')['caption'] ?? ''), 'http://<address>:3777/hook/homeagent/' . $iid), 'ohne bekannte IP bleibt der Platzhalter: ' . ($element('Endpoint')['caption'] ?? '-'));
+HomeAgentHarness::$lanIp = '192.168.178.86';
 HomeAgentHarness::$connect = '';
 
 ende('Modul');

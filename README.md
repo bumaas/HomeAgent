@@ -55,13 +55,14 @@ die Geräte, die Sie freigeben.
 5. **Prüfen.** **Selbsttest ausführen** meldet fehlende Aktionen, die erkannte Richtung jedes Rollladens
    und den Bereich jedes Thermostats. **Zustand aller freigegebenen Geräte anzeigen** zeigt, was auch der
    Assistent sieht.
-6. **Assistenten verbinden.** Die Adresse steht im Bereich **Endpunkt und Zugänge** als **Endpunkt**.
+6. **Assistenten verbinden.** Unter der Zugangsliste steht im Bereich **Endpunkt und Zugänge** für jede Art von
+   Assistent, was zu tun ist, mit den Adressen Ihrer Anlage.
 
    | Client | Einrichtung |
    |---|---|
    | Claude Code | `claude mcp add --transport http symcon-homeagent http://<Adresse>:3777/hook/homeagent/<InstanzID> --header "Authorization: Bearer <Token>"` |
-   | Claude-App, auch auf dem Handy | Den Haken **Anmeldung per OAuth** setzen und den Connector so anlegen, wie es unter [Anmeldung per OAuth](#anmeldung-per-oauth) steht. Ohne OAuth geht es auch mit dem Haken **Token auch in der Adresse**: dann als Adresse `https://<Connect-Adresse>/hook/homeagent/<InstanzID>/<Token>` und als Anmeldung „Keine Anmeldung“. Die App erreicht die Anlage aus dem Internet, die Connect-Adresse steht in der Instanz Connect Control. |
-   | Home Assistant | Beim Zugang den Haken **Token auch in der Adresse** setzen. Die Integration **Model Context Protocol** mit `http://<Adresse>:3777/hook/homeagent/<InstanzID>/<Token>` hinzufügen und beim Gesprächsagenten unter „Home Assistant steuern“ auswählen. In der Sprach-Pipeline „Befehle lokal bevorzugen“ ausschalten, sonst schaltet Home Assistant Sätze, die es selbst versteht, über seine eigenen Geräte. |
+   | Claude-App, auch auf dem Handy | Mit aktivem Symcon Connect den Connector so anlegen, wie es unter [Anmeldung per OAuth](#anmeldung-per-oauth) steht. Ohne Anmeldung geht es auch mit dem Haken **Token auch in der Adresse**: dann als Adresse `https://<Connect-Adresse>/hook/homeagent/<InstanzID>/<Token>` und als Anmeldung „Keine Anmeldung“. Die App erreicht die Anlage aus dem Internet, die Connect-Adresse steht in der Instanz Connect Control. |
+   | Home Assistant | Beim Zugang den Haken **Token auch in der Adresse** setzen. Die Integration **Model Context Protocol** mit der Adresse hinzufügen, die **Adresse anzeigen** für diesen Zugang liefert (`http://<Adresse>:3777/hook/homeagent/<InstanzID>/<Token>`), und beim Gesprächsagenten unter „Home Assistant steuern“ auswählen. In der Sprach-Pipeline „Befehle lokal bevorzugen“ ausschalten, sonst schaltet Home Assistant Sätze, die es selbst versteht, über seine eigenen Geräte. |
    | andere Clients | MCP über einfache HTTP-Anfragen mit `Authorization: Bearer <Token>`; kann der Client keinen Header schicken, das Token in der Adresse. |
 
 7. **Erste Fragen.** Diese Sätze zeigen schnell, ob alles stimmt:
@@ -104,7 +105,9 @@ die Meldung nach dem Klick zählt sie.
 ## Zugänge
 
 Jeder Assistent bekommt seinen eigenen Zugang. Die Geräte pflegen Sie trotzdem nur einmal, alle
-Zugänge einer Instanz sehen dieselbe Freigabeliste.
+Zugänge einer Instanz sehen dieselbe Freigabeliste. Die Liste zeigt Name, Nur abfragen, Standardraum und in
+der Spalte **Verbindung**, wie der Assistent verbunden ist. Token und „Token auch in der Adresse“ stehen im
+Bearbeiten-Dialog der Zeile; dort erzeugt **Token erzeugen** ein neues.
 
 | Spalte | Bedeutung |
 |---|---|
@@ -121,13 +124,13 @@ Ohne Zugang mit Token zeigt die Instanz den Status 104 und weist alle Anfragen a
 Die Claude-App kann sich anmelden, statt das Token in der Adresse zu tragen. Symcon Connect muss dafür
 aktiv sein, denn die App erreicht die Anlage aus dem Internet.
 
-1. Im Bereich **Endpunkt und Zugänge** den Haken **Anmeldung per OAuth** setzen und übernehmen.
-   Darunter steht dann die Adresse für den Connector.
+1. Im Bereich **Endpunkt und Zugänge** steht unter **Claude-App** die Adresse für den Connector. Ohne
+   aktives Connect steht dort stattdessen ein Hinweis.
 2. In der Claude-App unter „Anpassen“ → „Connectoren“ einen benutzerdefinierten Connector mit dieser
    Adresse anlegen. Die Vorauswahl „Jetzt anmelden“ und „Claudes veröffentlichte Identität verwenden“
    bleibt stehen.
-3. In der Zugangsliste den Zugang auswählen, den der Assistent nutzen soll, und auf **Kopplungscode für
-   den ausgewählten Zugang erzeugen** klicken. Der Code hat sechs Ziffern und gilt zehn Minuten.
+3. Den Zugang wählen, den der Assistent nutzen soll, und auf **Kopplungscode erzeugen** klicken. Der
+   Code hat sechs Ziffern und gilt zehn Minuten.
 4. In der App auf „Verbinden“ klicken. Es öffnet sich eine Seite der Anlage. Dort den Code eingeben
    und auf **Erlauben** klicken.
 
@@ -137,7 +140,7 @@ Adresse, von der er stammt. Steht dort etwas anderes als claude.ai, klicken Sie 
 Die gekoppelten Assistenten stehen in der Liste darunter. **Ausgewählten Assistenten widerrufen** trennt
 einen sofort. Bekommt ein Zugang ein neues Token, sind alle Assistenten getrennt, die über ihn gekoppelt
 sind. Eine Kopplung, die 90 Tage lang nicht benutzt wurde, verfällt. Der Selbsttest nennt die Zahl der
-gekoppelten Assistenten und meldet, wenn der Haken gesetzt ist, Connect aber nicht läuft.
+gekoppelten Assistenten, ohne Connect sagt er, dass die Anmeldung nicht möglich ist.
 
 ## Räume und Etagen
 

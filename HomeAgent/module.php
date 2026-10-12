@@ -86,7 +86,6 @@ class HomeAgent extends IPSModuleStrict
         $this->RegisterPropertyString('Devices', '[]');
         $this->RegisterPropertyString('Scenes', '[]');
         // Anmeldung per OAuth (Claude-App mit „Sign in“), anfangs aus; feste Tokens gelten weiter.
-        $this->RegisterPropertyBoolean('OAuthEnabled', false);
         // Gekoppelte OAuth-Clients (Familien von Erneuerungstokens, nur Hashes); überlebt einen Neustart.
         $this->RegisterAttributeString('OAuthGrants', '{}');
         // Aufgeklappte Bereiche des Formulars, damit sie beim nächsten Öffnen wieder so stehen.
@@ -380,8 +379,8 @@ class HomeAgent extends IPSModuleStrict
         }
         if ($this->oauthBase() !== '') {
             $lines[] = sprintf($this->Translate('Sign-in with OAuth: %d assistant(s) paired'), count($this->oauthClientRows()));
-        } elseif ($this->oauthEnabled()) {
-            $lines[] = $this->Translate('Note: sign-in with OAuth is on, but Symcon Connect is not active, so no assistant can sign in');
+        } else {
+            $lines[] = $this->Translate('Sign-in with OAuth for the Claude app: not available, Symcon Connect is not active');
         }
         $lines[] = sprintf($this->Translate('%d released device(s), %d scene(s), endpoint %s'), $count, $sceneCount, $this->GetEndpoint());
         return implode("\n", array_merge([$ok ? 'OK' : 'ERROR'], $lines));
@@ -396,17 +395,36 @@ class HomeAgent extends IPSModuleStrict
             $failedRows[$problem['list']][$problem['index']] = true;
         }
         // Die Listen stecken in aufklappbaren Bereichen; angepasst wird jedes Element, auch verschachtelt.
-        $adjust = function (array &$element) use (&$adjust, $failedRows): void {
-            if (($element['name'] ?? '') === 'Endpoint') {
-                $element['caption'] = $this->Translate('Endpoint') . ': http://<address>:3777' . $this->GetEndpoint();
+        $base = $this->oauthBase();
+        $usable = $this->usableAccesses();
+        $adjust = function (array &$element) use (&$adjust, $failedRows, $base, $usable): void {
+            // Bereich „Endpunkt und Zugänge“: je Assistent eine Anleitung mit echten Adressen
+            // (Burkhard 12.10.2026: „für einsteiger wirkt es kompliziert“).
+            $name = (string)($element['name'] ?? '');
+            if ($name === 'Endpoint') {
+                $element['caption'] = sprintf($this->Translate('Endpoint in the home network: %s'), $this->localEndpoint());
             }
-            if (($element['name'] ?? '') === 'OAuthAddress') {
-                $base = $this->oauthBase();
-                $element['caption'] = sprintf($this->Translate('Address for assistants that sign in with OAuth: %s'), $base);
+            if ($name === 'ClaudeStep1') {
+                $element['caption'] = sprintf($this->Translate('1. In the Claude app, add a custom connector under Connectors with this address and choose "Sign in now": %s'), $base);
+            }
+            if (in_array($name, ['ClaudeStep1', 'PairingRow', 'ClaudeStep2', 'OAuthClients', 'RevokeClient'], true)) {
                 $element['visible'] = $base !== '';
             }
-            if (($element['name'] ?? '') === 'OAuthClients') {
+            if ($name === 'ClaudeNoConnect') {
+                $element['visible'] = $base === '';
+            }
+            if ($name === 'PairingAccess' || $name === 'AddressAccess') {
+                $names = array_values(array_map(static fn (array $access): string => $access['Name'], array_filter($usable, static fn (array $access): bool => $name === 'PairingAccess' || $access['InPath'])));
+                $element['options'] = array_map(static fn (string $access): array => ['caption' => $access, 'value' => $access], $names);
+                $element['value'] = $names[0] ?? '';
+            }
+            if ($name === 'OAuthClients') {
                 $element['values'] = $this->oauthClientRows();
+            }
+            if ($name === 'Accesses') {
+                // Nur die Spalte Verbindung; die Konsole ergänzt die gespeicherten Zeilen der Reihe nach,
+                // die Tokens kommen also nicht in die Werte.
+                $element['values'] = array_map(fn (array $access): array => ['Connection' => $this->connectionOf($access)], $this->accessList());
             }
 
             if (($element['name'] ?? '') === 'Devices') {
@@ -692,10 +710,28 @@ class HomeAgent extends IPSModuleStrict
      * Es wird nicht gespeichert; der Anwender kopiert es in die Spalte Token eines Zugangs und in
      * die Einrichtung des Assistenten.
      */
+    /** Nur für den Bearbeiten-Dialog eines Zugangs: schreibt ein neues Token in das Feld „Token“. */
     public function UIGenerateToken(): void
     {
-        $this->UpdateFormField('GeneratedToken', 'value', bin2hex(random_bytes(32)));
-        $this->UpdateFormField('GeneratedToken', 'visible', true);
+        $this->UpdateFormField('Token', 'value', bin2hex(random_bytes(32)));
+    }
+
+    /**
+     * Nur für das Formular: die Adresse mit Token eines Zugangs im Heimnetz, zum Eintragen in Home
+     * Assistant. Erst auf Knopfdruck, damit das Token nicht im Formular steht.
+     */
+    public function UIShowAddress(string $AccessName): string
+    {
+        foreach ($this->usableAccesses() as $access) {
+            if ($access['Name'] !== trim($AccessName)) {
+                continue;
+            }
+            if (!$access['InPath']) {
+                return sprintf($this->Translate('The access "%s" does not accept its token in the address. Tick "Token also in the address" for it first.'), $access['Name']);
+            }
+            return $this->localEndpoint() . '/' . $access['Token'];
+        }
+        return sprintf($this->Translate('There is no usable access named "%s"'), $AccessName);
     }
 
     /**
@@ -834,7 +870,7 @@ class HomeAgent extends IPSModuleStrict
     public function CreatePairingCode(string $AccessName): string
     {
         if ($this->oauthBase() === '') {
-            return $this->Translate('Sign-in with OAuth is off: switch it on and make sure Symcon Connect is active');
+            return $this->Translate('Sign-in with OAuth needs an active Symcon Connect');
         }
         foreach ($this->usableAccesses() as $access) {
             if ($access['Name'] !== trim($AccessName)) {
@@ -1216,24 +1252,59 @@ class HomeAgent extends IPSModuleStrict
         return is_array($value) ? $value : [];
     }
 
-    /** Öffentliche Adresse des Endpunkts für OAuth; '' = OAuth aus (Schalter aus oder ohne Connect). */
+    /**
+     * Öffentliche Adresse des Endpunkts für OAuth; '' = ohne aktives Connect, dann gibt es kein OAuth.
+     * Einen eigenen Schalter gibt es seit build 80 nicht mehr (Burkhard 12.10.2026).
+     */
     private function oauthBase(): string
     {
-        if (!$this->oauthEnabled()) {
-            return '';
-        }
         $connect = rtrim($this->connectUrl(), '/');
         return $connect === '' ? '' : $connect . $this->GetEndpoint();
     }
 
-    /** Schalter „Anmeldung per OAuth“; vor dem Neuladen der Bibliothek gibt es die Property noch nicht. */
-    private function oauthEnabled(): bool
+    /** Endpunkt im Heimnetz mit der IP der Anlage; ohne bekannte IP mit Platzhalter. 3777 ist der Standardport. */
+    private function localEndpoint(): string
     {
-        try {
-            return @$this->ReadPropertyBoolean('OAuthEnabled') === true;
-        } catch (Throwable) {
-            return false;
+        $ip = $this->localAddress();
+        return 'http://' . ($ip === '' ? '<address>' : $ip) . ':3777' . $this->GetEndpoint();
+    }
+
+    /** Erste private IPv4-Adresse der Anlage (Sys_GetNetworkInfo), sonst ''. */
+    protected function localAddress(): string
+    {
+        if (!function_exists('Sys_GetNetworkInfo')) {
+            return '';
         }
+        foreach (Sys_GetNetworkInfo() as $adapter) {
+            $ip = (string)($adapter['IP'] ?? '');
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE) === false) {
+                return $ip;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Wie ein Zugang verbunden ist, in Worten für die Spalte „Verbindung“: per OAuth angemeldete
+     * Clients (Host der client_id), sonst Token in der Adresse oder im Header.
+     *
+     * @param array{Name: string, Token: string, DefaultRoom: string, ReadOnly: bool, InPath: bool} $access
+     */
+    private function connectionOf(array $access): string
+    {
+        $hosts = [];
+        if ($access['Token'] !== '') {
+            $hash = hash('sha256', $access['Token']);
+            foreach ($this->storedJson('OAuthGrants', true) as $family) {
+                if (is_array($family) && ($family['access'] ?? '') === $hash && ($family['expires'] ?? 0) > time()) {
+                    $hosts[] = (string)parse_url((string)($family['client_id'] ?? ''), PHP_URL_HOST);
+                }
+            }
+        }
+        if ($hosts !== []) {
+            return sprintf($this->Translate('signed in: %s'), implode(', ', array_unique($hosts)));
+        }
+        return $this->Translate($access['InPath'] ? 'address with token' : 'token in the header');
     }
 
     /** Adresse der Anlage über Symcon Connect, '' ohne aktive Connect-Instanz. */
