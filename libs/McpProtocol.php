@@ -108,6 +108,17 @@ final class McpProtocol
      * Client bei initialize und server/discover: „Name Version (Fähigkeiten)“, bei Rückfragen mit ihren Arten und mit
      * den Erweiterungen; null bei allen anderen Anfragen. Damit zeigt das Protokoll, was ein Client kann (B63).
      */
+    private static function callerOf(array $message): ?string
+    {
+        // Nach 2026-07-28 trägt jede Anfrage den Client; das Protokoll nennt ihn auch beim Werkzeugaufruf (Burkhard
+        // 12.10.2026: ein Chat lief über „claude-code“ statt über die Claude-App, zu sehen nur am server/discover vorher).
+        $info = $message['params']['_meta']['io.modelcontextprotocol/clientInfo'] ?? null;
+        if (!is_array($info) || !is_string($info['name'] ?? null)) {
+            return null;
+        }
+        return mb_substr(trim($info['name'] . ' ' . (is_string($info['version'] ?? null) ? $info['version'] : '')), 0, 100);
+    }
+
     private static function clientLabel(mixed $message): ?string
     {
         if (!is_array($message) || array_is_list($message) || !in_array($message['method'] ?? null, ['initialize', 'server/discover'], true)) {
@@ -268,7 +279,7 @@ final class McpProtocol
                 if ($problem !== null) {
                     return self::error($id, -32602, $problem);
                 }
-                $outcome = $callTool($name, $arguments);
+                $outcome = $callTool($name, $arguments, self::callerOf($message));
                 // structuredContent sieht nur die Seite eines Diagramms, das Modell liest den Text
                 return self::result($id, ['content' => [['type' => 'text', 'text' => $outcome['text']]], 'isError' => $outcome['isError']]
                     + (isset($outcome['structuredContent']) ? ['structuredContent' => $outcome['structuredContent']] : []));

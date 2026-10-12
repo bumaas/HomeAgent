@@ -28,8 +28,9 @@ function sende(array|string $koerper, array $kopf, bool $angemeldet = true): arr
     $parameter = ['POST', $angemeldet, $body, static function (bool $apps = false) use (&$mitApps, $werkzeuge): array {
         $mitApps = $apps;
         return $werkzeuge;
-    }, static function (string $name, array $argumente) use (&$aufrufe, &$strukturiert): array {
+    }, static function (string $name, array $argumente, ?string $client = null) use (&$aufrufe, &$strukturiert): array {
         $aufrufe[] = [$name, $argumente];
+        $GLOBALS['aufrufer'] = $client;
         return ['text' => '1 device(s) found.', 'isError' => false] + ($strukturiert === null ? [] : ['structuredContent' => $strukturiert]);
     }, $info];
     $seite = static fn (string $uri): ?string => $uri === 'ui://homeagent/chart' ? '<!DOCTYPE html><html><body>Diagramm</body></html>' : null;
@@ -88,6 +89,9 @@ $a = sende($aufruf, $kopf);
 $r = $a['json']['result'] ?? [];
 pruefe($a['status'] === 200 && $aufrufe === [['get_state', ['room' => 'Küche']]] && ($r['content'][0]['text'] ?? null) === '1 device(s) found.' && ($r['isError'] ?? null) === false, 'Werkzeugaufruf: ' . $a['body']);
 pruefe(($r['resultType'] ?? null) === 'complete' && !isset($r['ttlMs']), 'resultType, aber kein Zwischenspeichern beim Aufruf');
+// Der Client steht in jeder Anfrage; das Werkzeug bekommt Name und Version fürs Protokoll (Burkhard 12.10.2026: ein Chat
+// lief über „claude-code“ statt über die Claude-App, zu sehen war das nur am server/discover Sekunden vorher).
+pruefe(($GLOBALS['aufrufer'] ?? null) === 'claude-code 2.1.296', 'der Werkzeugaufruf kennt den Client: ' . json_encode($GLOBALS['aufrufer'] ?? null));
 $a = sende($aufruf, ['mcp-name' => '=?base64?' . base64_encode('get_state') . '?='] + $kopf);
 pruefe($a['status'] === 200 && isset($a['json']['result']), 'Mcp-Name in der Base64-Form wird dekodiert: ' . $a['body']);
 

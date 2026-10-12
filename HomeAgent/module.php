@@ -1068,7 +1068,7 @@ class HomeAgent extends IPSModuleStrict
             $access !== null,
             fn (): string => $this->requestBody(),
             fn (bool $apps = false): array => $this->tools($access, $apps),
-            fn (string $name, array $arguments): array => $this->callTool($name, $arguments, $access),
+            fn (string $name, array $arguments, ?string $client = null): array => $this->callTool($name, $arguments, $access, $client),
             $this->serverInfo($access),
             self::mcpHeaders($_SERVER),
             fn (string $uri): ?string => $this->readResource($uri),
@@ -1978,7 +1978,7 @@ class HomeAgent extends IPSModuleStrict
      * @param null|array<string, mixed> $access Zugang, über den der Aufruf kam; null bei den Skriptfunktionen
      * @return array{text: string, isError: bool}
      */
-    private function callTool(string $name, array $arguments, ?array $access = null): array
+    private function callTool(string $name, array $arguments, ?array $access = null, ?string $client = null): array
     {
         $started = hrtime(true);
         $readOnly = ($access['ReadOnly'] ?? false) === true;
@@ -2002,7 +2002,7 @@ class HomeAgent extends IPSModuleStrict
             $name === 'set_state'                  => $index->setState($arguments),
             default                                => $index->runScene($arguments),
         };
-        return $this->logged($name, $arguments, $outcome, $access, $index === null ? 'invalid' : $index->problem(), $started);
+        return $this->logged($name, $arguments, $outcome, $access, $index === null ? 'invalid' : $index->problem(), $started, $client);
     }
 
     /**
@@ -2027,7 +2027,7 @@ class HomeAgent extends IPSModuleStrict
      * @param null|array<string, mixed> $access
      * @return array{text: string, isError: bool}
      */
-    private function logged(string $name, array $arguments, array $outcome, ?array $access = null, ?string $problem = null, ?int $started = null): array
+    private function logged(string $name, array $arguments, array $outcome, ?array $access = null, ?string $problem = null, ?int $started = null, ?string $client = null): array
     {
         $this->SendDebug('Tool', ($access === null ? '' : '[' . $access['Name'] . '] ') . $name . ' ' . json_encode($arguments, JSON_UNESCAPED_UNICODE) . ' → ' . ($outcome['isError'] ? 'ERROR: ' : '') . str_replace("\n", ' ‖ ', $outcome['text']), 0);
         $request = self::compactArguments($arguments);
@@ -2040,7 +2040,7 @@ class HomeAgent extends IPSModuleStrict
                 'kind'    => $problem,
             ]);
         }
-        $this->writeLog($access === null ? 'script' : (string)$access['Name'], $name, $request, ($started === null ? 0 : intdiv(hrtime(true) - $started, 1_000_000)) . ' ms', $outcome['text']);
+        $this->writeLog($access === null ? 'script' : (string)$access['Name'], $name, (string)$client, $request, ($started === null ? 0 : intdiv(hrtime(true) - $started, 1_000_000)) . ' ms', $outcome['text']);
         return $outcome;
     }
 

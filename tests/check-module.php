@@ -2601,6 +2601,20 @@ pruefe($sichtbar && count($werte) === 3 && ($werte[0]['Line'] ?? '') === end($ne
 oderNull(static fn () => $p->UIClearLog());
 pruefe(!file_exists($logAktuell) && !file_exists($logAlt), 'Protokoll leeren löscht beide Dateien');
 pruefe(oderNull(static fn () => $p->UIDownloadLog()) === 'The protocol is empty.', 'leeres Protokoll: Hinweis statt Download');
+// Nach 2026-07-28 trägt jede Anfrage den Client; die Zeile nennt ihn mit Name und Version (Burkhard 12.10.2026)
+$_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $pid, 'REMOTE_ADDR' => '192.0.2.5', 'HTTP_AUTHORIZATION' => 'Bearer ' . $pToken,
+    'HTTP_MCP_PROTOCOL_VERSION' => '2026-07-28', 'HTTP_MCP_METHOD' => 'tools/call', 'HTTP_MCP_NAME' => 'get_state'];
+HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 2, 'method' => 'tools/call', 'params' => ['name' => 'get_state', 'arguments' => ['room' => 'Küche'],
+    '_meta' => ['io.modelcontextprotocol/protocolVersion' => '2026-07-28', 'io.modelcontextprotocol/clientInfo' => ['name' => 'Anthropic/ClaudeAI', 'version' => '1.0.0'], 'io.modelcontextprotocol/clientCapabilities' => (object)[]]]]);
+ob_start();
+try {
+    $pHook->invoke($p);
+} finally {
+    ob_end_clean();
+    HomeAgentHarness::$body = '';
+}
+$inhalt = (string)@file_get_contents($logAktuell);
+pruefe(str_contains($inhalt, ' | Claude-App | get_state | Anthropic/ClaudeAI 1.0.0 | room=Küche | '), 'der Werkzeugaufruf nennt den Client: ' . $inhalt);
 $eigenschaft('LogEnabled', false);
 IPS_ApplyChanges($pid);
 
