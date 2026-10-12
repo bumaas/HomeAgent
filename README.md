@@ -112,13 +112,28 @@ es beim Übernehmen; alle Assistenten dieses Zugangs brauchen dann das neue.
 
 | Spalte | Bedeutung |
 |---|---|
-| Name | Frei wählbar, zum Beispiel „Küche“ oder „Gäste“. Er erscheint im Debug der Instanz. |
+| Name | Frei wählbar, am besten nach dem, der über den Zugang kommt (siehe unten). Er erscheint im Protokoll, unter „Was nicht geklappt hat“ und im Debug der Instanz. |
 | Token | Das Kennwort dieses Zugangs. Ein Zugang ohne Token bekommt beim Übernehmen eines aus 64 Zeichen; ein per Skript gesetztes braucht mindestens 24. |
 | Standardraum | Der Raum, in dem der Assistent steht. „Mach das Licht an“ ohne Raum meint dann diesen Raum, und bei gleichen Gerätenamen gewinnt das Gerät dort. Für das ganze Haus sagt der Assistent `room=all`. |
 | Nur abfragen | Dieser Zugang darf fragen, aber nichts schalten. Er sieht nur das Werkzeug zum Abfragen, und der Assistent erfährt, dass der Zugang nur lesen darf. |
 | Token auch in der Adresse | Für Clients, die keine Anmeldung mitschicken können. Das Token hängt dann an der Adresse. |
 
 Ohne Zugang mit Token zeigt die Instanz den Status 104 und weist alle Anfragen ab.
+
+### Welcher Zugang für wen
+
+Benennen Sie einen Zugang nach dem, der über ihn kommt: „Claude-App“, „Home Assistant“, „Claude Code“. Die Rechte
+gehören nicht in den Namen, die zeigt die Spalte **Nur abfragen**.
+
+Nutzen mehrere Personen die Claude-App, bekommt jede einen eigenen Zugang mit ihrem Namen, etwa „Claude-App Anna“.
+Dann hat jede ihren eigenen Standardraum und ihre eigenen Rechte, und Protokoll und Liste der Kopplungen zeigen, wer
+gefragt hat. Koppeln sich zwei Konten an denselben Zugang, stehen in der Liste zwei gleiche Zeilen, und man sieht nicht
+mehr, welche wem gehört.
+
+Für Home Assistant reicht ein Zugang für das ganze Haus. Alle sprechen mit Home Assistant, und Home Assistant fragt mit
+seinem einen Zugang bei Home Agent nach; wer gesprochen hat, kommt hier nicht an. Einen zweiten Zugang braucht es nur,
+wenn Sie in Home Assistant einen eigenen Sprachassistenten mit anderen Rechten einrichten, etwa „Home Assistant
+Kinderzimmer“ mit **Nur abfragen**. Home Agent bekommt in Home Assistant dafür einen zweiten Eintrag.
 
 Wer per Skript oder mit einem KI-Assistenten einrichtet, bekommt die Adressen eines Zugangs mit
 `HAGT_GetAddresses($InstanzID, 'Claude-App')` (leerer Name für alle Zugänge): im Heimnetz, über Symcon

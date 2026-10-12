@@ -107,13 +107,27 @@ access then need the new one.
 
 | Column | Meaning |
 |---|---|
-| Name | Free text, for example "Kitchen" or "Guests". It appears in the debug of the instance. |
+| Name | Free text, best after whoever comes through the access (see below). It appears in the protocol, under "What did not work" and in the debug of the instance. |
 | Token | The password of this access. An access without a token gets one of 64 characters on apply; one set by script needs at least 24. |
 | Default room | The room the assistant is in. "Turn on the light" without a room then means this room, and with equal device names the device there wins. For the whole house the assistant says `room=all`. |
 | Query only | This access may ask but not switch anything. It only sees the query tool, and the assistant is told that the access can only read. |
 | Token also in the address | For clients that cannot send a login. The token is then appended to the address. |
 
 Without an access that has a token, the instance shows status 104 and rejects all requests.
+
+### Which access for whom
+
+Name an access after whoever comes through it: "Claude-App", "Home Assistant", "Claude Code". The rights do not
+belong in the name, the column **Query only** shows them.
+
+If several people use the Claude app, each gets an access of their own with their name, for example "Claude-App Anna".
+Then each has their own default room and rights, and the protocol and the list of pairings show who asked. If two
+accounts pair with the same access, the list shows two identical rows and you can no longer tell which belongs to whom.
+
+For Home Assistant one access is enough for the whole house. Everybody talks to Home Assistant, and Home Assistant asks
+Home Agent with its one access; who spoke does not arrive here. A second access is only needed if you set up a separate
+voice assistant in Home Assistant with other rights, for example "Home Assistant Kids' room" with **Query only**. Home
+Agent then gets a second entry in Home Assistant.
 
 Whoever sets up by script or with an AI assistant gets the addresses of an access with
 `HAGT_GetAddresses($InstanceID, 'Claude-App')` (empty name for all accesses): in the home network, through
