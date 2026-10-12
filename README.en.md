@@ -420,6 +420,11 @@ last week".
 The tool is called `show_chart` and appears in the connector settings under "Interactive tools", where it can be
 set to "Always allow". Other assistants do not see it.
 
+With the energy balance filled in, the module also draws the house consumption on request, for example "Show me
+our electricity consumption this month as a chart": one bar per hour, day or month made of grid, solar used
+directly and battery, with the grid export below. Each bar adds up to the house consumption of the balance; when
+the battery charges from the grid, that counts as grid.
+
 Under "+" → "Connectors" → "Add from …" the Claude app offers ready templates: **Leaving home** and **Good
 night** check what is still open or on, **Energy report** names consumption, self-sufficiency and the largest
 consumers of yesterday. Which ones exist depends on the release list.

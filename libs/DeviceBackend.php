@@ -113,6 +113,14 @@ interface DeviceBackend
     public function counterSum(int $variableId, int $level, int $from, int $to): ?array;
 
     /**
+     * Wie counterSum, aber je Zeitraum der Stufe (0 Stunde, 1 Tag, 3 Monat) einzeln und aufsteigend, für das
+     * Stapeldiagramm des Verbrauchs. null = nicht archiviert oder nicht als Zähler aggregiert.
+     *
+     * @return null|array{rows: list<array{time: int, sum: float}>, unit: string}
+     */
+    public function counterSeries(int $variableId, int $level, int $from, int $to): ?array;
+
+    /**
      * Verlauf eines Messwerts aus den Aggregaten des Archivs, aufsteigend: je Zeitraum der Stufe
      * (0 Stunde, 1 Tag, 3 Monat) Beginn, Minimum, Mittel und Maximum. $to = 0 heißt bis jetzt.
      * null = nicht archiviert oder als Zähler aggregiert.

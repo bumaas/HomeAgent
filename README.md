@@ -437,6 +437,11 @@ Maximum. Mehrere Räume lassen sich in einem Diagramm vergleichen, etwa „Vergl
 und draußen in der letzten Woche“. Das Werkzeug heißt `show_chart` und erscheint in den Einstellungen des Connectors unter „Interaktive
 Tools“; dort lässt es sich auf „Immer erlauben“ stellen. Andere Assistenten sehen es nicht.
 
+Ist die Energiebilanz eingetragen, zeichnet das Modul auf Wunsch auch den Hausverbrauch, etwa „Zeig mir unseren
+Stromverbrauch in diesem Monat als Diagramm“: je Stunde, Tag oder Monat ein Balken aus Netz, PV direkt und Batterie,
+die Einspeisung darunter. Zusammen ergibt jeder Balken den Hausverbrauch der Bilanz; lädt die Batterie aus dem
+Netz, zählt das als Netz.
+
 Über „+“ → „Konnektoren“ → „Von … hinzufügen“ bietet die Claude-App fertige Vorlagen an: **Haus verlassen** und
 **Gute Nacht** prüfen, was noch offen oder an ist, **Energiebericht** nennt Verbrauch, Autarkie und die größten
 Verbraucher von gestern. Welche es gibt, richtet sich nach der Freigabeliste.

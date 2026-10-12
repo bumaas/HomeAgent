@@ -370,29 +370,24 @@ final class DeviceIndex
                 || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy'])) && array_any($matches, static fn (array $e): bool => self::isMeasured($e))))) {
             if ($range !== null) {
                 [, $from, $to] = self::rangeBounds($range[0], $range[1], $this->backend->timestamp());
-                $span = ($to === 0 ? $this->backend->timestamp() : $to) - $from;
-                $level = $span <= 2 * 86400 ? 0 : ($span <= 100 * 86400 ? 1 : 3);
                 $label = $filter . ', from=' . date('Y-m-d', $range[0]) . ', to=' . date('Y-m-d', $range[1]);
             } else {
                 [, $from, $to] = self::periodBounds($period, $this->backend->timestamp());
-                $level = match ($period) {
-                    'today', 'yesterday' => 0,
-                    'this_year', 'last_year' => 3,
-                    default => 1,
-                };
                 $label = $filter . ', period=' . $period;
             }
-            return $this->history($matches, $level, $from, $to, $label);
+            return $this->history($matches, $this->chartLevel($range === null ? $period : '', $from, $to), $from, $to, $label);
         }
         if ($range !== null) {
             $label = $filter . ', from=' . date('Y-m-d', $range[0]) . ', to=' . date('Y-m-d', $range[1]);
-            return $this->consumption($matches, self::rangeBounds($range[0], $range[1], $this->backend->timestamp()), $label, $wholeHouse);
+            $bounds = self::rangeBounds($range[0], $range[1], $this->backend->timestamp());
+            return $this->consumption($matches, $bounds, $label, $wholeHouse, $this->chartLevel('', $bounds[1], $bounds[2]));
         }
         if ($period !== '') {
             if ($period === self::NOW) {
                 return $this->power($matches, $filter . ', period=' . $period, $wholeHouse);
             }
-            return $this->consumption($matches, self::periodBounds($period, $this->backend->timestamp()), $filter . ', period=' . $period, $wholeHouse);
+            $bounds = self::periodBounds($period, $this->backend->timestamp());
+            return $this->consumption($matches, $bounds, $filter . ', period=' . $period, $wholeHouse, $this->chartLevel($period, $bounds[1], $bounds[2]));
         }
 
         $lines = [];
@@ -567,7 +562,7 @@ final class DeviceIndex
         return ['text' => implode("\n", $lines), 'isError' => false];
     }
 
-    private function consumption(array $matches, array $bounds, string $filter, bool $wholeHouse = false): array
+    private function consumption(array $matches, array $bounds, string $filter, bool $wholeHouse = false, int $chartLevel = 1): array
     {
         $matches = self::firstPerVariable($matches, 'energy');
         $metered = array_values(array_filter($matches, static fn (array $entry): bool => isset($entry['roles']['energy'])));
@@ -615,9 +610,81 @@ final class DeviceIndex
                 if ($metered !== []) {
                     $head[] = sprintf($this->t('Of this, %s kWh by %d of %d metered device(s), %s kWh not metered.'), self::formatNumber($total), $withHistory, count($metered), self::formatNumber(max(0.0, $house['total'] - $total)));
                 }
+                if ($this->chart !== null) {
+                    $this->houseChart($balance, $chartLevel, $from, $to, $head[0], $filter);
+                }
             }
         }
         return ['text' => implode("\n", array_merge($head, $lines)), 'isError' => false];
+    }
+
+    /**
+     * Stufe der Punkte bzw. Balken eines Diagramms: heute und gestern je Stunde, Jahre je Monat, sonst je Tag; ein
+     * freier Zeitraum ($period leer) nach seiner Länge (bis 2 Tage je Stunde, bis 100 Tage je Tag).
+     */
+    private function chartLevel(string $period, int $from, int $to): int
+    {
+        if ($period === '') {
+            $span = ($to === 0 ? $this->backend->timestamp() : $to) - $from;
+            return $span <= 2 * 86400 ? 0 : ($span <= 100 * 86400 ? 1 : 3);
+        }
+        return match ($period) {
+            'today', 'yesterday'     => 0,
+            'this_year', 'last_year' => 3,
+            default                  => 1,
+        };
+    }
+
+    /**
+     * Hausverbrauch als Stapeldiagramm (Burkhard 12.10.2026): je Stunde, Tag oder Monat ein Balken aus Netz, PV direkt
+     * (PV − Einspeisung − Batterie geladen) und Batterie (entladen), die Einspeisung darunter. Die Stapel ergeben
+     * zusammen genau den Hausverbrauch der Bilanz: Lädt die Batterie aus dem Netz, ist PV direkt 0 und der Rest kommt
+     * aus dem Netz (nuc 11.10.2026 14 Uhr). Die Werte gehen nur an die Seite, nicht ans Modell.
+     *
+     * @param array<string, int> $balance
+     */
+    private function houseChart(array $balance, int $level, int $from, int $to, string $title, string $filter): void
+    {
+        $values = [];
+        foreach (array_keys(self::BALANCE_TERMS) as $key) {
+            if (!isset($balance[$key])) {
+                continue;
+            }
+            $series = $this->backend->counterSeries($balance[$key], $level, $from, $to);
+            if ($series === null) {
+                return;
+            }
+            foreach ($series['rows'] as $row) {
+                $values[$row['time']][$key] = (float)self::kilowattHours(['sum' => $row['sum'], 'unit' => $series['unit']]);
+            }
+        }
+        ksort($values);
+        $stacks = ['grid' => [], 'solar' => [], 'battery' => [], 'export' => []];
+        foreach ($values as $parts) {
+            $house = 0.0;
+            foreach (self::BALANCE_TERMS as $key => [$sign]) {
+                $house += $sign * ($parts[$key] ?? 0.0);
+            }
+            $house = max(0.0, $house);
+            $solar = isset($balance['solar']) ? max(0.0, min($house, ($parts['solar'] ?? 0.0) - ($parts['export'] ?? 0.0) - ($parts['charge'] ?? 0.0))) : 0.0;
+            $battery = isset($balance['discharge']) ? max(0.0, min($house - $solar, $parts['discharge'] ?? 0.0)) : 0.0;
+            $export = $parts['export'] ?? 0.0;
+            $stacks['grid'][] = round(max(0.0, $house - $solar - $battery), 3);
+            $stacks['solar'][] = round($solar, 3);
+            $stacks['battery'][] = round($battery, 3);
+            $stacks['export'][] = $export > 0 ? -round($export, 3) : 0.0;
+        }
+        $present = ['grid' => true, 'solar' => isset($balance['solar']), 'battery' => isset($balance['discharge']), 'export' => isset($balance['export'])];
+        $names = ['grid' => 'grid', 'solar' => 'solar (used directly)', 'battery' => 'battery', 'export' => 'grid export'];
+        $series = [];
+        foreach ($stacks as $key => $list) {
+            if ($present[$key]) {
+                $series[] = ['key' => $key, 'name' => $this->t($names[$key]), 'values' => $list];
+            }
+        }
+        [$per] = self::HISTORY_LEVELS[$level];
+        $this->chart = ['kind' => 'consumption', 'title' => $title, 'per' => $per, 'unit' => 'kWh', 'filter' => $filter,
+            'times' => array_keys($values), 'series' => $series, 'labels' => ['per' => $this->t($per)]];
     }
 
     /**

@@ -440,6 +440,23 @@ final class FakeBackend implements DeviceBackend
         return ['sum' => $sum, 'unit' => (string)($v['einheit'] ?? '')];
     }
 
+    public function counterSeries(int $variableId, int $level, int $from, int $to): ?array
+    {
+        $v = $this->variables[$variableId] ?? null;
+        if ($v === null || ($v['archiviert'] ?? false) !== true || ($v['aggregationstyp'] ?? 0) !== 1) {
+            return null;
+        }
+        $to = $to === 0 ? $this->timestamp() : $to;
+        $rows = [];
+        foreach ($v['aggregate'][(string)$level] ?? [] as $a) {
+            if ($a['zeit'] >= $from && $a['zeit'] <= $to) {
+                $rows[] = ['time' => (int)$a['zeit'], 'sum' => (float)$a['summe']];
+            }
+        }
+        usort($rows, static fn (array $x, array $y): int => $x['time'] <=> $y['time']);
+        return ['rows' => $rows, 'unit' => (string)($v['einheit'] ?? '')];
+    }
+
     /** Einheit der Variable laut Mitschnitt; '' = keine. */
     public function unit(int $variableId): string
     {

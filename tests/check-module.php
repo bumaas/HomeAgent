@@ -905,6 +905,9 @@ $summe = oderNull(static fn () => $m->testBackend()->counterSum($zaehler, 1, $ta
 pruefe($summe === ['sum' => 2868.4, 'unit' => 'Wh'], 'counterSum über das Archiv, Einheit aus dem Profil: ' . json_encode($summe));
 $summe = oderNull(static fn () => $m->testBackend()->counterSum($zaehler, 1, $tag, 0));
 pruefe(is_array($summe) && abs($summe['sum'] - 4255.6) < 0.001, 'bis jetzt zählt der laufende Tag mit: ' . json_encode($summe));
+$reihe = oderNull(static fn () => $m->testBackend()->counterSeries($zaehler, 1, $tag, 0));
+pruefe($reihe === ['rows' => [['time' => $tag, 'sum' => 2868.4], ['time' => $tag + 86400, 'sum' => 1387.2]], 'unit' => 'Wh'], 'counterSeries je Zeitraum aufsteigend, für das Stapeldiagramm: ' . json_encode($reihe));
+pruefe(oderNull(static fn () => $m->testBackend()->counterSeries($leistung, 1, $tag, 0)) === null, 'counterSeries ohne Zähler im Archiv: null');
 pruefe(oderNull(static fn () => $m->testBackend()->counterSum($leistung, 1, $tag, 0)) === null, 'nicht archiviert: null');
 AC_SetLoggingStatus($archiv, $leistung, true);
 pruefe(oderNull(static fn () => $m->testBackend()->counterSum($leistung, 1, $tag, 0)) === null, 'archiviert, aber nicht als Zähler: null');
@@ -955,6 +958,10 @@ $periode = $werkzeuge['get_state']['inputSchema']['properties']['period'] ?? [];
 pruefe(isset($periode['enum']), 'period gibt es auch nur mit der Bilanz: ' . json_encode($periode));
 pruefe(str_contains($periode['description'] ?? '', 'For the whole house (no room, type or name) the first line gives the house consumption from grid, solar and battery.') && !str_contains($periode['description'] ?? '', 'not the whole house'), 'period nennt den Hausverbrauch: ' . ($periode['description'] ?? ''));
 pruefe(!str_contains($m->RunSelfTest(), 'energy balance'), 'archivierter Netzbezug: kein Hinweis: ' . $m->RunSelfTest());
+// Hausverbrauch als Stapeldiagramm (Burkhard 12.10.2026): show_chart gibt es mit Bilanz auch ohne Messwert
+$mitApps = array_column(json_decode((string)json_encode(oderNull(static fn () => \Closure::bind(fn () => $this->tools(null, true), $m, HomeAgent::class)()) ?? []), true), null, 'name');
+pruefe(isset($mitApps['show_chart']) && str_contains($mitApps['show_chart']['description'] ?? '', 'stacked bars'), 'mit Bilanz: show_chart nennt den Hausverbrauch als Stapel: ' . ($mitApps['show_chart']['description'] ?? json_encode(array_keys($mitApps))));
+pruefe(!isset($mitApps['show_chart']['inputSchema']['properties']['type']), 'ohne Messwert kein Feld type (leere Liste): ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['type'] ?? null));
 $setzeBilanz(['GridImportVariableID' => $zaehler, 'SolarVariableID' => $leistung]);
 pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: solar production POWER is not archived as a counter, so there is no house consumption'), 'Selbsttest: Bilanzzähler nicht als Zähler archiviert: ' . $m->RunSelfTest());
 $setzeBilanz(['GridImportVariableID' => $zaehler, 'BatteryChargeVariableID' => 59995]);

@@ -431,6 +431,32 @@ final class SymconDeviceBackend implements DeviceBackend
         return ['sum' => $sum, 'unit' => self::unitOf($variableId)];
     }
 
+    public function counterSeries(int $variableId, int $level, int $from, int $to): ?array
+    {
+        $archives = IPS_GetInstanceListByModuleID(self::ARCHIVE_CONTROL);
+        if ($archives === [] || $variableId <= 0 || !IPS_VariableExists($variableId)) {
+            return null;
+        }
+        $archive = $archives[0];
+        try {
+            if (!AC_GetLoggingStatus($archive, $variableId) || AC_GetAggregationType($archive, $variableId) !== self::AGGREGATION_COUNTER) {
+                return null;
+            }
+        } catch (Throwable) {
+            return null;
+        }
+        // Wie bei counterSum ist Avg die Summe der positiven Deltas; das Archiv liefert die neuesten zuerst.
+        try {
+            $rows = array_reverse(AC_GetAggregatedValues($archive, $variableId, $level, $from, $to, 0));
+        } catch (Throwable) {
+            $rows = [];
+        }
+        return [
+            'rows' => array_map(static fn (array $r): array => ['time' => (int)$r['TimeStamp'], 'sum' => (float)$r['Avg']], $rows),
+            'unit' => self::unitOf($variableId),
+        ];
+    }
+
     public function history(int $variableId, int $level, int $from, int $to): ?array
     {
         $archives = IPS_GetInstanceListByModuleID(self::ARCHIVE_CONTROL);

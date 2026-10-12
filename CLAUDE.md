@@ -129,7 +129,12 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   enthalten (Vergleich in einem Diagramm, höchstens `HISTORY_MAX` Reihen insgesamt; ein unbekannter Raum steht im Text, die
   anderen werden gezeichnet). Das Band von Minimum bis Maximum zeigt die Seite nur, wenn jedes Diagramm eine Reihe hat; ein
   Haken darunter schaltet es um, ein Feld im Werkzeug gibt es dafür nicht (Tokens; Burkhard 12.10.2026: „das band ist nicht
-  immer gewollt“). Anlass: Die Claude-App holte sich für einen Vergleich zweier Räume zwei Tabellen über `get_state`. Resources gibt es nur, wenn
+  immer gewollt“). Mit Energiebilanz gibt es `show_chart` auch ohne Messwert: ohne Raum, Etage, Typ und Name kommt der
+  Hausverbrauch als Stapel (`kind: consumption`, `houseChart`, Werte aus `DeviceBackend::counterSeries`): Netz, PV direkt
+  = PV − Einspeisung − Batterie geladen (gekappt auf 0 und den Hausverbrauch), Batterie entladen, der Rest Netz, die
+  Einspeisung negativ. Jeder Balken ist der Hausverbrauch der Bilanz; am nuc lud die Batterie am 11.10.2026 um 14 Uhr
+  aus dem Netz (Fixture `nuc_2026-10-12_verbrauch.json`, Burkhard 12.10.2026: „verbrauchsdiagramme, also
+  stapeldiagramme“). Stufe wie beim Verlauf (`chartLevel`). Anlass: Die Claude-App holte sich für einen Vergleich zweier Räume zwei Tabellen über `get_state`. Resources gibt es nur, wenn
   der Aufrufer `$readResource` übergibt; `resources/read` und `resources/list` tragen wie `tools/list` `ttlMs` und
   `cacheScope` (Pflicht in 2026-07-28, ohne meldete claude.ai „kann nicht erreicht werden“).
 - **Vorlagen (Prompts, B63):** `libs/PromptCatalog.php` baut „Haus verlassen“, „Gute Nacht“ (Fenster, Türen, Licht,
