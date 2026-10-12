@@ -1662,7 +1662,8 @@ class HomeAgent extends IPSModuleStrict
                     if (DeviceIndex::abilitiesOf($row) === []) {
                         continue;
                     }
-                    foreach ($backend->options(DeviceIndex::rolesOf($row)[$role] ?? 0) ?? [] as [, $caption]) {
+                    // Aufbereitete Einträge tragen ihre Variablen unter „roles“ (Bedienungs-Blindtest 12.10.2026)
+                    foreach ($backend->options((int)($row['roles'][$role] ?? 0)) ?? [] as [, $caption]) {
                         $names[$caption] = true;
                     }
                 }

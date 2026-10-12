@@ -183,7 +183,8 @@ Weitere Regeln, die nicht offensichtlich sind:
   1,7 bis 2,3 s. Modus (`mode`) und Lüfterstufe (`fan`) sind **Auswahl per Name** (`runOption`, Felder `mode`
   und `fan_speed`): Treffer auf Beschriftung oder Wert aus `DeviceBackend::options()` (Darstellung `OPTIONS`,
   sonst Profilzuordnungen), Name in der anderen Auswahl ergibt einen Hinweis, die Einträge der freigegebenen
-  Geräte stehen als Vokabular in der Beschreibung (kein `enum`). Die Rollen sind nicht an den Typ gebunden;
+  Geräte stehen als Vokabular in der Beschreibung (kein `enum`; aus `$row['roles']` der aufbereiteten Einträge, bis build 99 blieb
+  die Liste leer, gefunden im Bedienungs-Blindtest 12.10.2026). Die Rollen sind nicht an den Typ gebunden;
   Lüftung, Thermostat-Betriebsart und Radiosender sollen denselben Weg nehmen. Befehle kurz hintereinander
   brauchten am Entfeuchter über 2 s (gemessen 11.10.2026), die Antwort sagt dann „noch nicht bestätigt“.
 - **Lüftung** (Typ `fan`, build 90): `state`, `mode`, `fan`, wahlweise `power`/`energy`; Pflicht Ein/Aus oder

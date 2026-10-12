@@ -1598,6 +1598,9 @@ $modus = variable(VARIABLETYPE_STRING, 'Smart');
 IPS_SetVariableCustomAction($modus, $antriebAktion);
 $luefter = variable(VARIABLETYPE_STRING, 'Low');
 IPS_SetVariableCustomAction($luefter, $antriebAktion);
+// Darstellung wie am nuc gelesen (Luftentfeuchter über das HomeAssistant-Modul, #25833 und #28873, 12.10.2026)
+IPS_SetVariableCustomPresentation($modus, ['PRESENTATION' => VARIABLE_PRESENTATION_ENUMERATION, 'OPTIONS' => '[{"Caption":"Setzen","Color":-1,"IconActive":false,"IconValue":"","Value":"Set"},{"Caption":"Smart","Color":-1,"IconActive":false,"IconValue":"","Value":"Smart"},{"Caption":"Kontinuierlich","Color":-1,"IconActive":false,"IconValue":"","Value":"Continuous"},{"Caption":"Entfeuchten","Color":-1,"IconActive":false,"IconValue":"","Value":"Dry"}]']);
+IPS_SetVariableCustomPresentation($luefter, ['PRESENTATION' => VARIABLE_PRESENTATION_ENUMERATION, 'OPTIONS' => '[{"Caption":"Niedrig","Color":-1,"IconActive":false,"IconValue":"","Value":"Low"},{"Caption":"Medium","Color":-1,"IconActive":false,"IconValue":"","Value":"Medium"},{"Caption":"Hoch","Color":-1,"IconActive":false,"IconValue":"","Value":"High"}]']);
 IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Keller', 'Name' => 'Luftentfeuchter', 'Aliases' => '', 'Type' => 'humidifier', 'SetpointVariableID' => $feuchteSoll, 'ModeVariableID' => $modus, 'FanVariableID' => $luefter, 'Invert' => false],
 ]));
@@ -1606,6 +1609,10 @@ $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () =
 $schema = $werkzeuge['set_state']['inputSchema']['properties'] ?? [];
 pruefe(($schema['mode']['type'] ?? null) === 'string' && !isset($schema['mode']['enum']) && str_starts_with($schema['mode']['description'] ?? '', 'Operating mode by name'), 'mode als Text ohne feste Liste: ' . json_encode($schema['mode'] ?? null));
 pruefe(($schema['fan_speed']['type'] ?? null) === 'string' && str_starts_with($schema['fan_speed']['description'] ?? '', 'Fan speed by name'), 'fan_speed als Text: ' . json_encode($schema['fan_speed'] ?? null));
+// Bedienungs-Blindtest 12.10.2026: Der Agent fand Modi und Lüfterstufen nirgends, das Vokabular fehlte in der
+// Beschreibung (rolesOf() auf schon aufbereitete Einträge, die ihre Variablen unter „roles“ tragen).
+pruefe(str_ends_with($schema['mode']['description'] ?? '', 'Known modes: Setzen, Smart, Kontinuierlich, Entfeuchten.'), 'die Beschreibung nennt die Modi: ' . ($schema['mode']['description'] ?? ''));
+pruefe(str_ends_with($schema['fan_speed']['description'] ?? '', 'Known fan speeds: Niedrig, Medium, Hoch.'), 'die Beschreibung nennt die Lüfterstufen: ' . ($schema['fan_speed']['description'] ?? ''));
 pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', 'give humidity, mode or fan_speed.') && str_contains($werkzeuge['set_state']['description'] ?? '', '"Set the dehumidifier fan to high" → type=humidifier, fan_speed=high.'), 'Aufzählung und Beispiel: ' . ($werkzeuge['set_state']['description'] ?? ''));
 
 /* --- Datum und Uhrzeit als Schlusszeile von get_state (Backlog B14) ------------------------------- */
