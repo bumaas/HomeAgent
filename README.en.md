@@ -413,7 +413,8 @@ echo HAGT_SetLevel($InstanceID, '', '', 'Deckenpanel', 30);
 
 Asking the Claude app for a chart, for example "Show me the temperature in the guest room over the last 30 days
 as a chart", makes the module draw the history right in the chat: one chart per unit, a band from minimum to
-maximum and a line for the average. The values only go to the chart, the language model gets minimum and maximum.
+maximum and a line for the average. With several lines in one chart the band starts hidden, a checkbox below the
+chart shows and hides it. The values only go to the chart, the language model gets minimum and maximum.
 Several rooms can be compared in one chart, for example "Compare the temperature in the guest room and outside
 last week".
 The tool is called `show_chart` and appears in the connector settings under "Interactive tools", where it can be

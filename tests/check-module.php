@@ -2671,6 +2671,7 @@ IPS_ApplyChanges($pid);
 pruefe(!isset($werkzeugNamen(true)['show_chart']), 'ohne Gerät mit Verlauf kein show_chart, auch mit Apps');
 $seite = oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/chart'), $p, HomeAgent::class)());
 pruefe(is_string($seite) && str_starts_with(ltrim($seite), '<!DOCTYPE html>') && str_contains($seite, 'ui/initialize') && str_contains($seite, 'ui/notifications/tool-result'), 'die Seite des Diagramms meldet sich beim Client an und nimmt das Ergebnis entgegen');
+pruefe(is_string($seite) && str_contains($seite, 'labels.band') && str_contains($seite, 'type="checkbox"') === false && str_contains($seite, '"checkbox"'), 'die Seite hat einen Schalter für das Band mit der Beschriftung vom Modul');
 pruefe(oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/anderes'), $p, HomeAgent::class)()) === null, 'andere Ressourcen gibt es nicht');
 pruefe(strlen((string)$seite) < 20000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$seite), 'die Seite lädt nichts nach (CSP der Apps) und bleibt klein: ' . strlen((string)$seite) . ' Bytes');
 

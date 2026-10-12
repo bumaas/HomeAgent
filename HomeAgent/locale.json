@@ -505,7 +505,8 @@
             "Do not switch anything without asking me.": "Schalte nichts, ohne mich zu fragen.",
             "Name only what is open or on.": "Nenne nur, was offen oder an ist.",
             "Name what is open or on and ask whether you should switch it off or close it.": "Nenne, was offen oder an ist, und frag, ob du es ausschalten oder schließen sollst.",
-            "Give me the energy report of yesterday: house consumption, self-sufficiency and the largest consumers (get_state period=yesterday).": "Gib mir den Energiebericht von gestern: Hausverbrauch, Autarkie und die größten Verbraucher (get_state period=yesterday)."
+            "Give me the energy report of yesterday: house consumption, self-sufficiency and the largest consumers (get_state period=yesterday).": "Gib mir den Energiebericht von gestern: Hausverbrauch, Autarkie und die größten Verbraucher (get_state period=yesterday).",
+            "band from minimum to maximum": "Band von Minimum bis Maximum"
         }
     }
 }

@@ -519,7 +519,7 @@ final class DeviceIndex
         $lines = [sprintf($this->t('History of %d measured value(s) (%s), per %s: minimum / average / maximum.'), count($measured), $filter, $this->t($per))];
         if ($this->chart !== null) {
             $this->chart += ['kind' => 'history', 'title' => $lines[0], 'per' => $per, 'filter' => $filter,
-                'labels' => ['minimum' => $this->t('minimum'), 'average' => $this->t('average'), 'maximum' => $this->t('maximum'), 'per' => $this->t($per)]];
+                'labels' => ['minimum' => $this->t('minimum'), 'average' => $this->t('average'), 'maximum' => $this->t('maximum'), 'per' => $this->t($per), 'band' => $this->t('band from minimum to maximum')]];
         }
         foreach ($measured as $entry) {
             $history = $this->backend->history($entry['roles']['state'], $level, $from, $to);

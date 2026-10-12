@@ -46,6 +46,7 @@ usort($tage, static fn (array $x, array $y): int => $x[0] <=> $y[0]); // die Fix
 pruefe(count($reihe['points'] ?? []) === 7 && ($reihe['points'][0] ?? null) === [$tage[0][0], (float)$tage[0][1], (float)$tage[0][2], (float)$tage[0][3]], 'sieben Tage, je [Zeit, Minimum, Mittel, Maximum] wie im Archiv: ' . json_encode($reihe['points'][0] ?? null));
 pruefe(($daten['labels']['minimum'] ?? null) === 'minimum' && ($daten['labels']['maximum'] ?? null) === 'maximum' && ($daten['labels']['average'] ?? null) === 'average', 'Beschriftungen für die Seite: ' . json_encode($daten['labels'] ?? null));
 pruefe(($daten['title'] ?? null) === $zeilen[0], 'Titel ist die Kopfzeile');
+pruefe(($daten['labels']['band'] ?? null) === 'band from minimum to maximum', 'Beschriftung für den Schalter des Bands (Burkhard 12.10.2026: das Band ist nicht immer gewollt): ' . json_encode($daten['labels'] ?? null));
 
 $r = diagramm(['room' => 'Gast', 'type' => 'temperature', 'period' => 'last_week'], $de);
 pruefe(($r['structuredContent']['labels']['minimum'] ?? null) === 'Minimum' && str_ends_with($r['text'], 'Das Diagramm steht im Chat.'), 'deutsch: ' . json_encode($r['structuredContent']['labels'] ?? null) . ' / ' . $r['text']);

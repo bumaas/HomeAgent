@@ -35,6 +35,8 @@
   svg { display: block; width: 100%; height: auto; overflow: visible; }
   svg text { fill: var(--muted); font-size: 11px; }
   .empty { color: var(--muted); padding: 12px 6px; }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin: 2px 0 0 6px; color: var(--muted); font-size: 12px; }
+  .controls label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -49,6 +51,10 @@
   var nextId = 1;
   var pending = {};
   var lang = (navigator.language || "de").slice(0, 2);
+  // Band von Minimum bis Maximum: null = automatisch (bei einer Reihe je Diagramm an, bei mehreren aus, sonst
+  // überlagern sie sich), true/false = vom Schalter gewählt (Burkhard 12.10.2026: „das Band ist nicht immer gewollt“).
+  var bandChoice = null;
+  var lastData = null;
 
   function send(message) { window.parent.postMessage(message, "*"); }
   function request(method, params) {
@@ -142,7 +148,7 @@
     return (factor <= 1 ? 1 : factor <= 2 ? 2 : factor <= 5 ? 5 : 10) * power;
   }
 
-  function drawGroup(container, unit, series, data, colorOffset) {
+  function drawGroup(container, unit, series, data, colorOffset, showBand) {
     var W = 640, H = 240, L = 44, R = 10, T = 8, B = 26;
     var times = [], low = Infinity, high = -Infinity;
     series.forEach(function (s) {
@@ -187,7 +193,9 @@
       var color = COLORS[(i + colorOffset) % COLORS.length];
       var top = s.points.map(function (p) { return x(p[0]) + "," + y(p[3]); });
       var bottom = s.points.slice().reverse().map(function (p) { return x(p[0]) + "," + y(p[1]); });
-      svg.appendChild(el("polygon", { points: top.concat(bottom).join(" "), fill: color, "fill-opacity": 0.15, stroke: "none" }));
+      if (showBand) {
+        svg.appendChild(el("polygon", { points: top.concat(bottom).join(" "), fill: color, "fill-opacity": 0.15, stroke: "none" }));
+      }
       svg.appendChild(el("polyline", { points: s.points.map(function (p) { return x(p[0]) + "," + y(p[2]); }).join(" "), fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round" }));
       s.points.forEach(function (p) {
         var dot = el("circle", { cx: x(p[0]), cy: y(p[2]), r: 6, fill: "transparent" });
@@ -200,6 +208,7 @@
   }
 
   function render(data) {
+    lastData = data;
     var root = document.getElementById("root");
     root.textContent = "";
     if (!data || !data.series || !data.series.length) {
@@ -215,16 +224,27 @@
       if (!groups[s.unit]) { groups[s.unit] = []; order.push(s.unit); }
       groups[s.unit].push(s);
     });
+    var showBand = bandChoice !== null ? bandChoice : order.every(function (unit) { return groups[unit].length === 1; });
     var offset = 0;
     order.forEach(function (unit) {
-      drawGroup(root, unit, groups[unit], data, offset);
+      drawGroup(root, unit, groups[unit], data, offset, showBand);
       offset += groups[unit].length;
     });
     var labels = data.labels || {};
-    var note = document.createElement("p");
-    note.className = "note";
-    note.textContent = (labels.per ? labels.per + ": " : "") + [labels.minimum, labels.average, labels.maximum].filter(Boolean).join(" / ");
-    root.appendChild(note);
+    var controls = document.createElement("div");
+    controls.className = "controls";
+    var note = document.createElement("span");
+    note.textContent = (labels.per ? labels.per + ": " : "") + (showBand ? [labels.minimum, labels.average, labels.maximum] : [labels.average]).filter(Boolean).join(" / ");
+    controls.appendChild(note);
+    var toggle = document.createElement("label");
+    var box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = showBand;
+    box.addEventListener("change", function () { bandChoice = box.checked; render(lastData); });
+    toggle.appendChild(box);
+    toggle.appendChild(document.createTextNode(labels.band || "min - max"));
+    controls.appendChild(toggle);
+    root.appendChild(controls);
     reportSize();
   }
 
