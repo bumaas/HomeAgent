@@ -389,7 +389,6 @@
             "Assistant": "Assistent",
             "Access": "Zugang",
             "Paired": "Gekoppelt",
-            "Last renewed": "Zuletzt erneuert",
             "Valid until": "Gültig bis",
             "Family": "Familie",
             "Revoke the selected assistant? It has to be paired again with a new pairing code.": "Den ausgewählten Assistenten widerrufen? Er muss danach mit einem neuen Kopplungscode wieder gekoppelt werden.",
@@ -516,7 +515,8 @@
             "A consumption chart takes one room at a time.": "Ein Verbrauchsdiagramm zeigt nur einen Raum auf einmal.",
             "The devices are shown as cards in the chat.": "Die Geräte stehen als Karten im Chat.",
             "%d more device(s) not shown": "%d weitere Gerät(e) nicht angezeigt",
-            "This device is not on the release list any more, show the devices again.": "Dieses Gerät steht nicht mehr in der Freigabeliste, bitte die Geräte neu anzeigen."
+            "This device is not on the release list any more, show the devices again.": "Dieses Gerät steht nicht mehr in der Freigabeliste, bitte die Geräte neu anzeigen.",
+            "Last used": "Zuletzt benutzt"
         }
     }
 }

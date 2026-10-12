@@ -102,7 +102,12 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   gespeichert wurden. Körper an `oauth/authorize` und `oauth/token` höchstens 8 KB (413). Das CIMD wird
   nur von global erreichbaren Adressen geholt (`FILTER_FLAG_GLOBAL_RANGE`, also nicht aus 100.64.0.0/10).
   Die Einwilligungsseite nennt in der Überschrift den Host der `client_id`, den Namen wählt der Client
-  selbst. Bei mehr als 50 Kopplungen fallen die am längsten nicht erneuerten heraus.
+  selbst. Bei mehr als 50 Kopplungen fallen die am längsten nicht erneuerten heraus. **Zuletzt benutzt** (`lastUse` je
+  Familie, `OAuthServer::markUsed` in `oauthAccess`, höchstens alle `USE_STEP` = 600 s ins Attribut, sonst schriebe jede
+  Anfrage; ohne gemerkten Wert gilt Kopplung bzw. letzte Erneuerung): claude.ai legt bei jedem neuen Hinzufügen des
+  Connectors eine neue Kopplung an und lässt die alte stehen (nuc 12.10.2026: drei Zeilen „Claude-App“). Die Liste
+  steht nach letzter Nutzung, neueste zuerst. Ein automatisches Ersetzen gleicher Clients am selben Zugang (Idee a)
+  ist zurückgestellt: zwei Claude-Konten an einem Zugang würden sich gegenseitig abmelden.
   Ende zu Ende mit der Claude-App erprobt am 11.10.2026 (Connector mit „Jetzt anmelden“ und CIMD,
   Kopplungscode, danach `get_state`); die Token-Anfrage steht als Mitschnitt in der Fixture.
 

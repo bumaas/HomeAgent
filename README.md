@@ -145,7 +145,9 @@ Adresse, von der er stammt. Steht dort etwas anderes als claude.ai, klicken Sie 
 
 Die gekoppelten Assistenten stehen in der Liste darunter. **widerrufen** in seiner Zeile trennt
 einen sofort. Bekommt ein Zugang ein neues Token, sind alle Assistenten getrennt, die über ihn gekoppelt
-sind. Eine Kopplung, die 90 Tage lang nicht benutzt wurde, verfällt. Der Selbsttest nennt die Zahl der
+sind. Eine Kopplung, die 90 Tage lang nicht benutzt wurde, verfällt. Die Claude-App legt bei jedem neuen
+Hinzufügen des Connectors eine neue Kopplung an und lässt die alte stehen; die Spalte **Zuletzt benutzt** zeigt,
+welche noch in Gebrauch ist, die zuletzt benutzte steht oben. Der Selbsttest nennt die Zahl der
 gekoppelten Assistenten, ohne Connect sagt er, dass die Anmeldung nicht möglich ist.
 
 ## Räume und Etagen

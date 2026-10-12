@@ -138,7 +138,9 @@ address it comes from. If it shows anything other than claude.ai, click **Deny**
 
 The paired assistants are listed below. **revoke** in its row disconnects one at once. If an
 access gets a new token, all assistants paired through it are disconnected. A pairing that has not been
-used for 90 days expires. The self-test shows the number of paired assistants; without Connect it says
+used for 90 days expires. The Claude app creates a new pairing each time the connector is added again and
+leaves the old one; the column **Last used** shows which one is still in use, the most recently used comes first.
+The self-test shows the number of paired assistants; without Connect it says
 that sign-in is not available.
 
 ## Rooms and floors

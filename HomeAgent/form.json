@@ -180,8 +180,8 @@
                   "width": "140px"
                 },
                 {
-                  "caption": "Last renewed",
-                  "name": "Refreshed",
+                  "caption": "Last used",
+                  "name": "Used",
                   "width": "140px"
                 },
                 {

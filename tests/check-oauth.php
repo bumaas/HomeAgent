@@ -321,4 +321,21 @@ if ($hat('isExpiredToken')) {
     pruefe(OAuthServer::isExpiredToken($tok, 'Bearer ACCESS-1', $t + 3600) && !OAuthServer::isExpiredToken($tok, 'Bearer ACCESS-1', $t + 10) && !OAuthServer::isExpiredToken($tok, 'Bearer ANDERES', $t + 3600), 'abgelaufen erkannt, gültige und unbekannte nicht');
 }
 
+/* --- Zuletzt benutzt (Burkhard 12.10.2026: drei gleiche Zeilen „Claude-App“, welche ist noch in Gebrauch?) --- */
+
+// Jedes neue Hinzufügen des Connectors in claude.ai legt eine neue Kopplung an, die alten bleiben. Das Modul merkt sich
+// je Kopplung, wann ihr Zugriffstoken zuletzt galt, höchstens alle zehn Minuten (das Attribut wird sonst bei jeder
+// Anfrage geschrieben). Ältere Kopplungen ohne diesen Wert zählen ab Kopplung bzw. letzter Erneuerung.
+$t = 1791800000;
+$fam = OAuthServer::startFamily([], 'fam-1', ['client_id' => 'https://claude.ai/oauth/mcp-oauth-client-metadata', 'access' => 'a', 'scope' => 'mcp', 'resource' => 'r'], 'R1', $t);
+pruefe(method_exists(OAuthServer::class, 'lastUse') && OAuthServer::lastUse($fam['fam-1']) === $t, 'neu gekoppelt: zuletzt benutzt beim Koppeln');
+$neu = method_exists(OAuthServer::class, 'markUsed') ? OAuthServer::markUsed($fam, 'fam-1', $t + 700) : null;
+pruefe(is_array($neu) && OAuthServer::lastUse($neu['fam-1']) === $t + 700, 'eine Anfrage nach elf Minuten wird gemerkt');
+pruefe($neu !== null && OAuthServer::markUsed($neu, 'fam-1', $t + 700 + 599) === null, 'innerhalb von zehn Minuten nichts zu schreiben');
+pruefe($neu !== null && is_array(OAuthServer::markUsed($neu, 'fam-1', $t + 700 + 600)), 'nach zehn Minuten wieder');
+pruefe(method_exists(OAuthServer::class, 'markUsed') && OAuthServer::markUsed($fam, 'unbekannt', $t + 700) === null, 'unbekannte Kopplung: nichts');
+$alt = $fam['fam-1'];
+$alt['expires'] = $t + 5000 + OAuthServer::REFRESH_SECONDS;
+pruefe(method_exists(OAuthServer::class, 'lastUse') && OAuthServer::lastUse($alt) === $t + 5000, 'ohne gemerkte Nutzung zählt die letzte Erneuerung');
+
 ende('OAuth');

@@ -1145,24 +1145,23 @@ class HomeAgent extends IPSModuleStrict
 
     /**
      * Zeilen der Liste „Gekoppelte Assistenten“: Client mit Host der client_id (den Namen wählt der
-     * Client selbst), Zugang, gekoppelt, zuletzt erneuert, gültig bis. Keine Tokens.
+     * Client selbst), Zugang, gekoppelt, zuletzt benutzt, gültig bis; die zuletzt benutzte zuerst. Keine Tokens.
      *
-     * @return list<array{Client: string, Access: string, Paired: string, Refreshed: string, Expires: string, Family: string}>
+     * @return list<array{Client: string, Access: string, Paired: string, Used: string, Expires: string, Family: string}>
      */
     private function oauthClientRows(): array
     {
         $rows = [];
-        foreach ($this->storedJson('OAuthGrants', true) as $family) {
-            if (!is_array($family) || ($family['expires'] ?? 0) <= time()) {
-                continue;
-            }
+        $families = array_filter($this->storedJson('OAuthGrants', true), static fn (mixed $family): bool => is_array($family) && ($family['expires'] ?? 0) > time());
+        uasort($families, static fn (array $a, array $b): int => OAuthServer::lastUse($b) <=> OAuthServer::lastUse($a));
+        foreach ($families as $family) {
             $host = (string)parse_url((string)$family['client_id'], PHP_URL_HOST);
             $name = trim((string)($family['client_name'] ?? ''));
             $rows[] = [
                 'Client'    => $this->clientLabel($family),
                 'Access'    => $this->accessNameFor((string)$family['access']) ?? $this->Translate('(access removed or token changed)'),
                 'Paired'    => date('d.m.Y H:i', (int)$family['created']),
-                'Refreshed' => date('d.m.Y H:i', (int)$family['expires'] - OAuthServer::REFRESH_SECONDS),
+                'Used'      => date('d.m.Y H:i', OAuthServer::lastUse($family)),
                 'Expires'   => date('d.m.Y', (int)$family['expires']),
                 'Family'    => (string)$family['id'],
             ];
@@ -1362,6 +1361,12 @@ class HomeAgent extends IPSModuleStrict
         }
         foreach ($accesses as $access) {
             if (hash_equals($entry['access'], hash('sha256', $access['Token']))) {
+                // Für „Zuletzt benutzt“ in der Liste der Kopplungen, höchstens alle zehn Minuten gespeichert
+                $now = time();
+                $family = (string)$entry['family'];
+                if (OAuthServer::markUsed($this->storedJson('OAuthGrants', true), $family, $now) !== null) {
+                    $this->changeStored('OAuthGrants', static fn (array $families): array => OAuthServer::markUsed($families, $family, $now) ?? $families, true);
+                }
                 return $access;
             }
         }

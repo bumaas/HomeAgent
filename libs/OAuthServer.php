@@ -353,6 +353,31 @@ final class OAuthServer
      *
      * @param array{client_id: string, scope: string, resource: string, access: string} $grant
      */
+    /** Die letzte Nutzung einer Kopplung wird höchstens so oft gespeichert (Sekunden), sonst bei jeder Anfrage. */
+    public const USE_STEP = 600;
+
+    /**
+     * Wann eine Kopplung zuletzt benutzt wurde: gemerkte Nutzung, sonst die letzte Erneuerung oder die Kopplung selbst
+     * (Kopplungen von vor build 120 haben keinen gemerkten Wert).
+     */
+    public static function lastUse(array $family): int
+    {
+        return max((int)($family['lastUse'] ?? 0), (int)($family['created'] ?? 0), (int)($family['expires'] ?? 0) - self::REFRESH_SECONDS);
+    }
+
+    /**
+     * Merkt die Nutzung einer Kopplung (Burkhard 12.10.2026: drei gleiche Zeilen „Claude-App“, welche ist noch in
+     * Gebrauch?). null, wenn nichts zu schreiben ist: unbekannte Kopplung oder zuletzt vor weniger als USE_STEP gemerkt.
+     */
+    public static function markUsed(array $families, string $id, int $now): ?array
+    {
+        if (!isset($families[$id]) || $now - (int)($families[$id]['lastUse'] ?? 0) < self::USE_STEP) {
+            return null;
+        }
+        $families[$id]['lastUse'] = $now;
+        return $families;
+    }
+
     public static function startFamily(array $families, string $id, array $grant, string $refreshToken, int $now): array
     {
         $families = array_filter($families, static fn (array $f): bool => $f['expires'] > $now);
