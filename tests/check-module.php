@@ -2593,6 +2593,37 @@ pruefe(oderNull(static fn () => $p->UIDownloadLog()) === 'The protocol is empty.
 $eigenschaft('LogEnabled', false);
 IPS_ApplyChanges($pid);
 
+/* --- Origin-Prüfung (MCP, Schutz vor DNS-Rebinding, 12.10.2026) ------------------------------------- */
+
+// Gemessen am nuc (Protokoll 12.10.2026): Claude Code, Home Assistant und die Claude-App über claude.ai schicken keine
+// Origin-Kopfzeile. Schickt ein Browser eine, muss sie auf diese Anlage zeigen (Host der Anfrage oder Connect-Adresse),
+// sonst 403, bevor das Token geprüft wird; ein Fehlversuch ist das nicht.
+$origin = static function (string $herkunft, string $host = '192.168.178.86:3777') use ($pHook, $p, $pid, $pToken): array {
+    $_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $pid, 'REMOTE_ADDR' => '192.0.2.5', 'HTTP_AUTHORIZATION' => 'Bearer ' . $pToken, 'HTTP_HOST' => $host];
+    if ($herkunft !== '') {
+        $_SERVER['HTTP_ORIGIN'] = $herkunft;
+    }
+    HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list']);
+    $p->response = null;
+    ob_start();
+    $pHook->invoke($p);
+    ob_end_clean();
+    HomeAgentHarness::$body = '';
+    return $p->response ?? ['status' => 0, 'body' => ''];
+};
+HomeAgentHarness::$connect = 'https://beispiel.ipmagic.de';
+pruefe($origin('')['status'] === 200, 'ohne Origin wie bisher');
+pruefe($origin('http://192.168.178.86:3777')['status'] === 200, 'Origin auf den Host der Anfrage geht durch');
+pruefe($origin('https://beispiel.ipmagic.de')['status'] === 200, 'Origin auf die Connect-Adresse geht durch');
+$a = $origin('https://boese.example');
+pruefe($a['status'] === 403 && str_contains($a['body'], 'Origin'), 'fremde Origin: 403: ' . $a['status'] . ' ' . $a['body']);
+pruefe($origin('http://192.168.178.86:3777.boese.example')['status'] === 403, 'ein Host, der nur so anfängt, zählt nicht');
+pruefe($origin('null')['status'] === 403, 'Origin „null“ (Datei, Sandbox) zählt als fremd');
+$merke = $p->logs();
+$origin('https://boese.example');
+pruefe(!str_contains(implode("\n", array_column(array_slice($p->logs(), count($merke)), 'Message')), 'Rejected sign-in'), 'eine fremde Origin ist kein Fehlversuch beim Anmelden');
+HomeAgentHarness::$connect = '';
+
 /* --- Protokoll 2026-07-28 am Hook (Backlog B62) -------------------------------------------------- */
 
 // Das Modul reicht die Kopfzeilen der Anfrage an die Protokollschicht weiter; Symcon legt sie als HTTP_* in $_SERVER.

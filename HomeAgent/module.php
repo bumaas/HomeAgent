@@ -872,6 +872,24 @@ class HomeAgent extends IPSModuleStrict
         return $headers;
     }
 
+    /** Zeigt eine Origin-Kopfzeile auf diese Anlage, also auf den Host der Anfrage oder auf die Connect-Adresse? */
+    private function originAllowed(string $origin): bool
+    {
+        $hostOf = static function (string $url): string {
+            $parts = parse_url($url);
+            if (!is_array($parts) || !isset($parts['scheme'], $parts['host'])) {
+                return '';
+            }
+            return strtolower($parts['host']) . (isset($parts['port']) ? ':' . $parts['port'] : '');
+        };
+        $given = $hostOf($origin);
+        if ($given === '') {
+            return false;
+        }
+        $own = array_filter([strtolower(trim((string)($_SERVER['HTTP_HOST'] ?? ''))), $hostOf($this->connectUrl())]);
+        return in_array($given, $own, true);
+    }
+
     /** Adresse des Endpunkts relativ zum Webserver, z. B. /hook/homeagent/12345. */
     public function GetEndpoint(): string
     {
@@ -979,6 +997,15 @@ class HomeAgent extends IPSModuleStrict
             $this->SendDebug('OAuth', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . $route . ' → HTTP ' . $response['status'], 0);
             $this->writeLog('–', 'OAuth', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . $route, 'HTTP ' . $response['status']);
             $this->send($response);
+            return;
+        }
+        // Origin-Prüfung (MCP, Schutz vor DNS-Rebinding): Eine Origin-Kopfzeile kommt nur aus einem Browser und muss
+        // auf diese Anlage zeigen. Claude Code, Home Assistant und die Claude-App über claude.ai schicken keine
+        // (Protokoll am nuc, 12.10.2026). Vor dem Token geprüft und kein Fehlversuch.
+        if ($origin !== '' && !$this->originAllowed($origin)) {
+            $this->SendDebug('Hook', 'rejected: Origin not allowed', 0);
+            $this->writeLog('–', 'origin rejected', mb_substr($origin, 0, 200), 'HTTP 403');
+            $this->send(['status' => 403, 'headers' => McpProtocol::BASE_HEADERS, 'body' => (string)json_encode(['jsonrpc' => '2.0', 'error' => ['code' => -32600, 'message' => 'Origin not allowed']])]);
             return;
         }
         // Die Anmeldung bestimmt den Zugang, und der Zugang bestimmt Werkzeugliste, Standardraum und

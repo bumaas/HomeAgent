@@ -286,7 +286,7 @@ Weitere Regeln, die nicht offensichtlich sind:
   Kein Knopf „Als Alias übernehmen“: dann bräuchten alle Arten etwas Ähnliches (Burkhard). Das Protokoll
   (`LogEnabled`, standardmäßig aus, `LogLines` 5000) schreibt `writeLog()` unter einer Sperre nach
   `IPS_GetLogDir()/homeagent_<ID>.log`, gewechselt nach 24 h oder `LogLines` zur `.old.log`; Zustand im Buffer
-  `LogState`, nach einem Neustart aus der Datei. Leere Felder fallen in der Zeile weg (`initialize` ohne Argumente). Eine `Origin`-Kopfzeile kommt als eigene Zeile mit Absender hinein (Vorstufe der Origin-Prüfung, die MCP verlangt; erst sehen, was echte Clients schicken, 12.10.2026). Herunterladen über den Button-Parameter `download` (Data-URL, beide
+  `LogState`, nach einem Neustart aus der Datei. Leere Felder fallen in der Zeile weg (`initialize` ohne Argumente). Eine `Origin`-Kopfzeile kommt als eigene Zeile mit Absender hinein. **Origin-Prüfung** (MCP, DNS-Rebinding, build 107): Eine `Origin` muss auf den Host der Anfrage oder die Connect-Adresse zeigen (`originAllowed`), sonst 403 vor der Anmeldung, kein Fehlversuch; die OAuth-Pfade sind ausgenommen. Gemessen am nuc 12.10.2026: Claude Code, Home Assistant und die Claude-App über claude.ai schicken keine `Origin`. Die Claude-App spricht seitdem 2026-07-28 (`server/discover`). Herunterladen über den Button-Parameter `download` (Data-URL, beide
   Dateien, die alte zuerst). Tokens, Adressen und Kopplungscodes übergibt kein Aufrufer.
 
 ## Entwickeln und Testen
