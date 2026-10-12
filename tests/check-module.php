@@ -2097,10 +2097,11 @@ pruefe($mitAufruf("HAGT_CreatePairingCode(\$id, \$Accesses['Name'])") === null, 
 $liste = $element('OAuthClients');
 $zeile = $liste['values'][0] ?? [];
 pruefe(($liste['type'] ?? '') === 'List' && ($liste['loadValuesFromConfiguration'] ?? true) === false && count($liste['values'] ?? []) === 1, 'Formular: Liste der gekoppelten Assistenten mit einer Zeile: ' . json_encode($liste['values'] ?? null));
-pruefe(($zeile['Client'] ?? '') === 'Claude (claude.ai)' && ($zeile['Access'] ?? '') === 'Claude-App' && ($zeile['Family'] ?? '') !== '', 'Zeile nennt Client mit Host und Zugang: ' . json_encode($zeile));
+// Burkhard 12.10.2026: wie in der Spalte „Verbindung“ heißt der Client so wie der Unterbereich
+pruefe(($zeile['Client'] ?? '') === 'Claude app' && ($zeile['Access'] ?? '') === 'Claude-App' && ($zeile['Family'] ?? '') !== '', 'Zeile nennt Client mit Host und Zugang: ' . json_encode($zeile));
 pruefe(preg_match('/^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$/', (string)($zeile['Paired'] ?? '')) === 1 && preg_match('/^\d{2}\.\d{2}\.\d{4}$/', (string)($zeile['Expires'] ?? '')) === 1, 'Zeile mit Datum der Kopplung und Ablauf: ' . json_encode($zeile));
 $spalte = array_column($liste['columns'] ?? [], null, 'name')['Revoke'] ?? [];
-pruefe(($spalte['onClick'] ?? '') === "HAGT_UIRevokeClient(\$id, \$OAuthClients['Family']);" && ($spalte['confirm'] ?? '') !== '' && ($zeile['Revoke'] ?? '') === 'revoke', 'Formular: „widerrufen“ als Spalte in der Zeile, mit Rückfrage: ' . json_encode($spalte));
+pruefe(($spalte['onClick'] ?? '') === "HAGT_UIRevokeClient(\$id, \$OAuthClients['Family']);" && ($spalte['confirm'] ?? '') !== '' && ($zeile['Revoke'] ?? '') === '✖ revoke' && ($spalte['caption'] ?? '') === 'Action', 'Formular: „widerrufen“ als Spalte in der Zeile, mit Rückfrage: ' . json_encode($spalte));
 pruefe($mitAufruf("HAGT_UIRevokeClient(\$id, \$OAuthClients['Family'])") === null, 'kein Knopf mehr, der eine ausgewählte Zeile voraussetzt');
 pruefe(($liste['visible'] ?? true) === true && ($liste['rowCount'] ?? 0) === 1, 'die Liste ist sichtbar und so hoch wie ihre Einträge: ' . json_encode($liste['rowCount'] ?? null));
 pruefe(!str_contains((string)json_encode($formular), $zugriff ?: 'kein Token'), 'kein Token im Formular');

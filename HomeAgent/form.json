@@ -189,7 +189,7 @@
                   "visible": false
                 },
                 {
-                  "caption": "",
+                  "caption": "Action",
                   "name": "Revoke",
                   "width": "120px",
                   "onClick": "HAGT_UIRevokeClient($id, $OAuthClients['Family']);",

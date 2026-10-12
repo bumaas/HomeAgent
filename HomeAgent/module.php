@@ -443,7 +443,7 @@ class HomeAgent extends IPSModuleStrict
                 $element['value'] = $paired[0] ?? $names[0] ?? '';
             }
             if ($name === 'OAuthClients') {
-                $rows = array_map(fn (array $row): array => $row + ['Revoke' => $this->Translate('revoke')], $this->oauthClientRows());
+                $rows = array_map(fn (array $row): array => $row + ['Revoke' => '✖ ' . $this->Translate('revoke')], $this->oauthClientRows());
                 $element['values'] = $rows;
                 $element['rowCount'] = max(1, min(8, count($rows)));
                 $element['visible'] = $base !== '' && $rows !== [];
@@ -943,7 +943,7 @@ class HomeAgent extends IPSModuleStrict
             return $families;
         }, true);
         $this->SendDebug('OAuth', 'pairing revoked', 0);
-        $rows = array_map(fn (array $row): array => $row + ['Revoke' => $this->Translate('revoke')], $this->oauthClientRows());
+        $rows = array_map(fn (array $row): array => $row + ['Revoke' => '✖ ' . $this->Translate('revoke')], $this->oauthClientRows());
         $this->UpdateFormField('OAuthClients', 'values', (string)json_encode($rows));
         $this->UpdateFormField('OAuthClients', 'visible', $rows !== []);
     }
@@ -964,7 +964,7 @@ class HomeAgent extends IPSModuleStrict
             $host = (string)parse_url((string)$family['client_id'], PHP_URL_HOST);
             $name = trim((string)($family['client_name'] ?? ''));
             $rows[] = [
-                'Client'    => $name === '' ? $host : $name . ' (' . $host . ')',
+                'Client'    => $this->clientLabel($family),
                 'Access'    => $this->accessNameFor((string)$family['access']) ?? $this->Translate('(access removed or token changed)'),
                 'Paired'    => date('d.m.Y H:i', (int)$family['created']),
                 'Refreshed' => date('d.m.Y H:i', (int)$family['expires'] - OAuthServer::REFRESH_SECONDS),

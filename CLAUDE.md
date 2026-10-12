@@ -239,7 +239,7 @@ Weitere Regeln, die nicht offensichtlich sind:
   Darunter je Assistent ein aufklappbarer Unterbereich (Burkhard 12.10.2026: „das funktioniert“, verschachtelte
   ExpansionPanels): Claude-App mit Connect-Adresse, Auswahl `PairingAccess` direkt am Knopf Kopplungscode
   (vorausgewählt ein Zugang, an dem schon ein Claude-Connector hängt), Liste `OAuthClients` nur mit Einträgen und
-  „widerrufen“ als Spalte (Spalten-`onClick` wählt laut Doku die Zeile aus, mit `confirm`), ohne Connect nur `ClaudeNoConnect`; Home Assistant mit Auswahl `AddressAccess` (nur Zugänge mit
+  „✖ widerrufen“ als Spalte „Aktion“ (sonst als Aktion nicht zu erkennen, Spalten-`onClick` wählt laut Doku die Zeile aus, mit `confirm`), ohne Connect nur `ClaudeNoConnect`; Home Assistant mit Auswahl `AddressAccess` (nur Zugänge mit
   `InPath`) und **Adresse anzeigen** (`UIShowAddress`, Token erst auf Knopfdruck; Adresse und Token stehen im Fenster
   `SecretPopup` in einem breiten Textfeld, `showSecret`: als Ausgabe eines Knopfs öffnete die Konsole eine Adresse im
   Browser, und ein Token passte nicht ins Meldungsfenster); andere Assistenten mit dem
