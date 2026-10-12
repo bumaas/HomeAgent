@@ -166,6 +166,22 @@ $a = sende($aufruf, $kopf);
 pruefe(($a['json']['result']['structuredContent'] ?? null) === ['kind' => 'history', 'series' => []] && ($a['json']['result']['content'][0]['text'] ?? null) === '1 device(s) found.', 'structuredContent geht mit, der Text für das Modell auch: ' . $a['body']);
 $strukturiert = null;
 
+// claude.ai holt die Werkzeugliste für den Chat über „Anthropic/Toolbox 1.0.0“ ohne Apps-Fähigkeit, gezeichnet wird
+// aber im Chat, der sich als „Anthropic/ClaudeAI 1.0.0 (extension io.modelcontextprotocol/ui)“ meldet (Protokoll am
+// nuc, Neueinrichtung des Connectors 12.10.2026 16:43; in claude.ai stand danach nur „Get state“). Clients von
+// Anthropic bekommen show_chart deshalb immer.
+$toolbox = $meta;
+$toolbox['io.modelcontextprotocol/clientInfo'] = ['name' => 'Anthropic/Toolbox', 'version' => '1.0.0'];
+$toolbox['io.modelcontextprotocol/clientCapabilities'] = [];
+$mitApps = null;
+sende(['jsonrpc' => '2.0', 'id' => 13, 'method' => 'tools/list', 'params' => ['_meta' => $toolbox]], $liste['header']);
+pruefe($mitApps === true, 'Anthropic/Toolbox ohne angemeldete Apps: trotzdem mit Diagramm: ' . var_export($mitApps, true));
+$fremd = $toolbox;
+$fremd['io.modelcontextprotocol/clientInfo'] = ['name' => 'codex', 'version' => '1.0.0'];
+$mitApps = null;
+sende(['jsonrpc' => '2.0', 'id' => 14, 'method' => 'tools/list', 'params' => ['_meta' => $fremd]], $liste['header']);
+pruefe($mitApps === false, 'andere Clients ohne Apps: weiter ohne: ' . var_export($mitApps, true));
+
 /* --- Vorlagen (Prompts, Backlog B63) ------------------------------------------------------------ */
 
 $a = sende($discover['koerper'], $discover['header']);

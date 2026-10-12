@@ -119,7 +119,10 @@ Backend. So laufen die Tests mit echten Mitschnitten.
 
 - **Diagramm als MCP App** (`show_chart`, Backlog B63): nur für Clients, die `io.modelcontextprotocol/ui` mit
   `text/html;profile=mcp-app` anmelden (nach 2026-07-28 in jeder Anfrage, `McpProtocol::showsApps`; gemessen: Claude-App ja,
-  Claude Code und HA nein) und nur mit einem Gerät mit Verlauf. Das Werkzeug trägt `_meta.ui.resourceUri`
+  Claude Code und HA nein) und nur mit einem Gerät mit Verlauf. Clients von Anthropic (`clientInfo.name` „Anthropic/…“)
+  bekommen es immer: claude.ai holt die Liste für den Chat als „Anthropic/Toolbox“ ohne Apps-Fähigkeit (nuc, 12.10.2026,
+  danach stand in claude.ai nur „Get state“). claude.ai erneuert die Werkzeugliste erst, wenn der Connector neu
+  hinzugefügt wird; ein Neustart der App oder `ttlMs` reichen nicht. Das Werkzeug trägt `_meta.ui.resourceUri`
   `ui://homeagent/chart`, die Seite liefert `resources/read` aus `HomeAgent/chart.html` (ohne Bibliotheken, die CSP der
   Apps erlaubt nichts Fremdes; Handshake `ui/initialize`, Werte über `ui/notifications/tool-result`). `DeviceIndex::chart()`
   gibt dem Modell nur Kopfzeile und Minimum/Maximum, die Werte stehen in `structuredContent`. Resources gibt es nur, wenn

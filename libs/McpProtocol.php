@@ -392,7 +392,13 @@ final class McpProtocol
     private static function showsApps(array $params): bool
     {
         $mimeTypes = $params['_meta']['io.modelcontextprotocol/clientCapabilities']['extensions']['io.modelcontextprotocol/ui']['mimeTypes'] ?? [];
-        return is_array($mimeTypes) && in_array(self::APP_MIME_TYPE, $mimeTypes, true);
+        if (is_array($mimeTypes) && in_array(self::APP_MIME_TYPE, $mimeTypes, true)) {
+            return true;
+        }
+        // claude.ai holt die Werkzeugliste für den Chat als „Anthropic/Toolbox“ ohne Apps-Fähigkeit, gezeichnet wird im
+        // Chat („Anthropic/ClaudeAI“ mit Fähigkeit). Gemessen am nuc 12.10.2026; sonst fehlt show_chart im Chat.
+        $name = $params['_meta']['io.modelcontextprotocol/clientInfo']['name'] ?? '';
+        return is_string($name) && str_starts_with($name, 'Anthropic/');
     }
 
     /** Fähigkeiten des Servers: Werkzeuge immer, Resources (Seiten der Apps) und Prompts (Vorlagen), wenn es sie gibt. */
