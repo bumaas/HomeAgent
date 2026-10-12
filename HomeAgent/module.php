@@ -818,6 +818,44 @@ class HomeAgent extends IPSModuleStrict
         return '/hook/' . $this->hookPath();
     }
 
+    /**
+     * Die Adressen eines Zugangs (leerer Name = alle) für Skripte und KI-Assistenten, das Token nur als
+     * Platzhalter <token>. Im Einrichtungs-Blindtest vom 12.10.2026 suchte der Agent die fertige Adresse;
+     * das Token selbst käme über den MCP-Server von Symcon beim Agenten an und gehört nur ins Formular.
+     */
+    public function GetAddresses(string $AccessName): string
+    {
+        $name = trim($AccessName);
+        $accesses = array_values(array_filter($this->usableAccesses(), static fn (array $access): bool => $name === '' || $access['Name'] === $name));
+        if ($accesses === []) {
+            return sprintf($this->Translate('There is no usable access named "%s"'), $name);
+        }
+        $connect = rtrim($this->connectUrl(), '/');
+        $blocks = [];
+        foreach ($accesses as $access) {
+            $suffix = $access['InPath'] ? '/<token>' : '';
+            $lines = [sprintf(
+                $this->Translate('Access "%s": %s, %s'),
+                $access['Name'],
+                $this->Translate($access['ReadOnly'] ? 'may only query' : 'may query and switch'),
+                $this->Translate($access['InPath'] ? 'token also in the address' : 'token in the header')
+            )];
+            $lines[] = sprintf($this->Translate('Home network: %s'), $this->localEndpoint() . $suffix);
+            if ($connect !== '') {
+                $lines[] = sprintf($this->Translate('Internet (Symcon Connect): %s'), $connect . $this->GetEndpoint() . $suffix);
+                $lines[] = $this->Translate('Sign-in with OAuth: possible with a pairing code for this access (HAGT_CreatePairingCode or the form), then the address without token');
+            } else {
+                $lines[] = $this->Translate($this->connectConfigured() ? 'Internet: no address right now, Symcon Connect is set up but not connected' : 'Internet: no address, Symcon Connect is not set up');
+                $lines[] = $this->Translate('Sign-in with OAuth: not possible without an active Symcon Connect');
+            }
+            if (!$access['InPath']) {
+                $lines[] = $this->Translate('Send the token as the header Authorization: Bearer <token>');
+            }
+            $blocks[] = implode("\n", $lines);
+        }
+        return implode("\n\n", $blocks) . "\n" . $this->Translate('The token is shown in the form ("Show address", "Show token"); no script function returns it.');
+    }
+
     protected function ProcessHookData(): void
     {
         $this->checkedOnce(function (): void {

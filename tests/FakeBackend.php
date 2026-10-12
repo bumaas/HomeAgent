@@ -109,6 +109,14 @@ final class FakeBackend implements DeviceBackend
             $this->failures[$variableId] = 'Variable #' . $variableId . ' existiert nicht';
             return null;
         }
+        // Denon-Modul (Testbox 12.10.2026): einen Wert außerhalb des Rasters lehnt es ab, RequestAction liefert false.
+        if (isset($v['raster']) && is_numeric($value)) {
+            $schritte = ((float)$value - (float)$v['bereich']['min']) / (float)$v['raster'];
+            if (abs($schritte - round($schritte)) > 1e-6) {
+                $this->failures[$variableId] = (string)$v['fehlertext'];
+                return null;
+            }
+        }
         switch ($v['verhalten'] ?? 'sofort') {
             case 'fehler':
                 $this->failures[$variableId] = (string)$v['fehlertext'];
@@ -300,6 +308,7 @@ final class FakeBackend implements DeviceBackend
             'closed'  => (float)($range['geschlossen'] ?? $range['max']),
             'source'  => (string)($range['herkunft'] ?? 'default'),
             'profile' => (string)($range['profil'] ?? ''),
+            'step'    => (float)($range['schritt'] ?? 0),
         ];
     }
 
@@ -462,6 +471,10 @@ final class FakeBackend implements DeviceBackend
             if ((string)$value === (string)$v['wert']) {
                 return (string)$caption;
             }
+        }
+        // Darstellung mit Nachkommastellen und Suffix (Denon: DIGITS 1, SUFFIX „  dB“, wie GetValueFormatted es zeigte).
+        if (isset($v['suffix'])) {
+            return number_format((float)$v['wert'], (int)($v['stellen'] ?? 0), '.', '') . $v['suffix'];
         }
         if (isset($v['bereich'])) {
             $span = $v['bereich']['max'] - $v['bereich']['min'];

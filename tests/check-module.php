@@ -512,6 +512,9 @@ foreach ([
     'Room names are the words the user speaks (Küche, Bad oben), without technical additions.'                                                      => 'Raumnamen sind die Wörter, die der Anwender spricht (Küche, Bad oben), ohne technische Zusätze.',
     'The fields of each type (volume, mode, fan and others) are named by HAGT_UIDeviceForm(int $InstanceID, string $Type).'                           => 'Die Felder je Typ (Lautstärke, Modus, Lüfter und andere) nennt HAGT_UIDeviceForm(int $InstanceID, string $Type).',
     'For every blind HAGT_RunSelfTest shows which value counts as open; if open and closed are swapped, set Invert.'                                 => 'Für jeden Rollladen zeigt HAGT_RunSelfTest, welcher Wert als offen gilt; sind offen und geschlossen vertauscht, Invert setzen.',
+    // Einrichtungs-Blindtest 12.10.2026 (Backlog B58, B59)
+    'The volume counts in percent of the range of the variable, also for a range in dB (-80 to 18 dB: 50 % = -31 dB), and is sent in the step size of the variable.' => 'Die Lautstärke zählt in Prozent des Bereichs der Variable, auch bei einem Bereich in dB (-80 bis 18 dB: 50 % = -31 dB), und wird in der Schrittweite der Variable gesendet.',
+    'HAGT_GetAddresses(int $InstanceID, string $AccessName): string names the addresses of an access (empty name = all accesses) with <token> as a placeholder; no script function returns a token.' => 'HAGT_GetAddresses(int $InstanceID, string $AccessName): string nennt die Adressen eines Zugangs (leerer Name = alle Zugänge) mit <token> als Platzhalter; keine Skriptfunktion gibt ein Token heraus.',
 ] as $en => $de) {
     pruefe(str_contains($hinweis, $en), 'Hinweistext nennt: ' . $en);
     pruefe(str_contains($hinweisDe, $de), 'Hinweistext deutsch nennt: ' . $de);
@@ -2298,6 +2301,48 @@ pruefe(preg_match('/^[0-9a-f]{64}$/', (string)($probeZugang[0]['Token'] ?? '')) 
 pruefe(IPS_GetInstance($probe)['InstanceStatus'] === IS_ACTIVE, 'die Instanz ist danach aktiv, ohne zweites Übernehmen: ' . IPS_GetInstance($probe)['InstanceStatus']);
 pruefe(HomeAgentRustProbe::$abgelehnt === 0, 'auch der nachgeholte Aufruf wird nicht abgelehnt: ' . HomeAgentRustProbe::$abgelehnt);
 IPS_DeleteInstance($probe);
+
+/* --- Adressen für Skripte und KI-Assistenten (Backlog B59, Blindtest 12.10.2026) ------------------- */
+
+// Im Blindtest suchte der Agent die fertige Adresse; UIShowAddress und UIShowToken öffnen nur ein Fenster und
+// liefern nichts. HAGT_GetAddresses nennt die Adressen, das Token nur als Platzhalter: Über den MCP-Server von
+// Symcon käme es sonst beim Agenten an.
+$merkeConnect = [HomeAgentHarness::$connect, HomeAgentHarness::$connectConfigured, HomeAgentHarness::$lanIp];
+HomeAgentHarness::$lanIp = '192.168.178.86';
+$setze('Accesses', [$zugang('Claude-App', str_repeat('a1', 32), '', false, true), $zugang('Nur Header', str_repeat('b2', 32), '', true, false)]);
+$pfad = '/hook/homeagent/' . $iid;
+$adressen = static fn (string $name): string => (string)oderNull(static fn () => $m->GetAddresses($name));
+
+HomeAgentHarness::$connect = '';
+HomeAgentHarness::$connectConfigured = false;
+$a = $adressen('Claude-App');
+pruefe(str_starts_with($a, 'Access "Claude-App": may query and switch, token also in the address'), 'erste Zeile nennt Zugang, Rechte und Anmeldung: ' . $a);
+pruefe(str_contains($a, "\nHome network: http://192.168.178.86:3777" . $pfad . '/<token>' . "\n"), 'Adresse im Heimnetz mit Platzhalter: ' . $a);
+pruefe(str_contains($a, "\nInternet: no address, Symcon Connect is not set up\n"), 'ohne Connect keine Adresse aus dem Internet: ' . $a);
+pruefe(str_contains($a, "\nSign-in with OAuth: not possible without an active Symcon Connect\n"), 'ohne Connect kein OAuth: ' . $a);
+pruefe(str_ends_with($a, "\n" . 'The token is shown in the form ("Show address", "Show token"); no script function returns it.'), 'Schlusszeile sagt, wo das Token steht: ' . $a);
+pruefe(!str_contains($a, 'a1a1a1'), 'das Token steht nie in der Antwort');
+
+HomeAgentHarness::$connectConfigured = true;
+$a = $adressen('Claude-App');
+pruefe(str_contains($a, "\nInternet: no address right now, Symcon Connect is set up but not connected\n"), 'Connect eingerichtet, aber getrennt: ' . $a);
+
+HomeAgentHarness::$connect = 'https://beispiel.ipmagic.de';
+$a = $adressen('Claude-App');
+pruefe(str_contains($a, "\nInternet (Symcon Connect): https://beispiel.ipmagic.de" . $pfad . '/<token>' . "\n"), 'Adresse über Connect mit Platzhalter: ' . $a);
+pruefe(str_contains($a, "\nSign-in with OAuth: possible with a pairing code for this access (HAGT_CreatePairingCode or the form), then the address without token\n"), 'mit Connect geht OAuth: ' . $a);
+
+$a = $adressen('Nur Header');
+pruefe(str_starts_with($a, 'Access "Nur Header": may only query, token in the header'), 'Nur-Lese-Zugang mit Token im Header: ' . $a);
+pruefe(str_contains($a, "\nHome network: http://192.168.178.86:3777" . $pfad . "\n") && str_contains($a, "\nInternet (Symcon Connect): https://beispiel.ipmagic.de" . $pfad . "\n"), 'ohne Token in der Adresse kein Platzhalter im Pfad: ' . $a);
+pruefe(str_contains($a, "\nSend the token as the header Authorization: Bearer <token>\n"), 'sagt, wie das Token mitgeht: ' . $a);
+pruefe(!str_contains($a, 'b2b2b2'), 'auch hier kein Token');
+
+$a = $adressen('');
+pruefe(substr_count($a, 'Access "') === 2 && str_contains($a, "\n\nAccess \"Nur Header\"") && substr_count($a, 'no script function returns it') === 1, 'leerer Name: alle Zugänge, durch Leerzeilen getrennt, Schlusszeile einmal: ' . $a);
+pruefe($adressen('Gibt es nicht') === 'There is no usable access named "Gibt es nicht"', 'unbekannter Zugang: ' . $adressen('Gibt es nicht'));
+pruefe(($m->RunSelfTest() !== '') && !str_contains(json_encode($m->GetConfigurationForm()), 'a1a1a1a1'), 'das Formular zeigt die Tokens weiter nicht');
+[HomeAgentHarness::$connect, HomeAgentHarness::$connectConfigured, HomeAgentHarness::$lanIp] = $merkeConnect;
 
 /* --- Gliederung mit Unterbereichen und kleine Punkte (build 84) ---------------------------------- */
 

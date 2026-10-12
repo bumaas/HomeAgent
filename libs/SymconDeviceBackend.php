@@ -309,7 +309,7 @@ final class SymconDeviceBackend implements DeviceBackend
             if ($range !== null && $module !== null) {
                 return self::travel($range['max'], $range['min'], 'module') + ['module' => $module];
             }
-            return $range;
+            return $range === null ? null : $range + ['step' => (float)($presentation['STEP_SIZE'] ?? 0)];
         }
         // Legacy-Darstellung: der Bereich steht im Profil. Trägt der Profilname „.Reversed“, zählt
         // Symcon ihn als 100 % bis 0 % (Doku „Legacy-Icons“); bei Homematic ist LEVEL 0 geschlossen.
@@ -320,7 +320,7 @@ final class SymconDeviceBackend implements DeviceBackend
             if ($range !== null && str_contains(strtolower($profile), '.reversed')) {
                 return self::travel($range['max'], $range['min'], 'reversed', $profile);
             }
-            return $range;
+            return $range === null ? null : $range + ['step' => (float)$data['StepSize']];
         }
         return null;
     }

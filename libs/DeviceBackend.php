@@ -38,7 +38,7 @@ interface DeviceBackend
      * dann steht der Name in „profile“), „module“ (das Modul des Geräts zählt den größten Wert als
      * offen, sein Name steht in „module“) oder „default“ (kleinster Wert offen). null = unbekannt.
      *
-     * @return null|array{min: float, max: float, open: float, closed: float, source: string, profile: string, module?: string}
+     * @return null|array{min: float, max: float, open: float, closed: float, source: string, profile: string, module?: string, step?: float}
      */
     public function range(int $variableId): ?array;
 

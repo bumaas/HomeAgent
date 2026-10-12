@@ -120,6 +120,11 @@ es beim Übernehmen; alle Assistenten dieses Zugangs brauchen dann das neue.
 
 Ohne Zugang mit Token zeigt die Instanz den Status 104 und weist alle Anfragen ab.
 
+Wer per Skript oder mit einem KI-Assistenten einrichtet, bekommt die Adressen eines Zugangs mit
+`HAGT_GetAddresses($InstanzID, 'Claude-App')` (leerer Name für alle Zugänge): im Heimnetz, über Symcon
+Connect und ob die Anmeldung per OAuth geht. Das Token steht dort nur als `<token>`, es zeigt allein das
+Formular.
+
 ## Anmeldung per OAuth
 
 Die Claude-App kann sich anmelden, statt das Token in der Adresse zu tragen. Symcon Connect muss dafür
@@ -347,7 +352,9 @@ Werkzeug pausiert wurden. So klappt „Musik aus“ und später „weiter“, oh
 es keinen solchen Player, verlangt das Werkzeug wie sonst einen Raum.
 
 Die Lautstärke rechnet das Modul in Prozent des Bereichs, den die Darstellung oder das Profil der
-Variable nennt. Beim Sonos-Modul geht er von 0 bis 100, beim HomeAssistant-Modul von 0 bis 1.
+Variable nennt. Beim Sonos-Modul geht er von 0 bis 100, beim HomeAssistant-Modul von 0 bis 1, bei einem
+Denon-Receiver von -80 bis 18 dB. Dort sind 50 % also -31 dB, und die Abfrage nennt beides
+(„Lautstärke 64 % = -17.5 dB“). Gesendet wird in der Schrittweite der Variable, beim Denon in halben dB.
 
 Eine Temperatur prüft das Modul gegen den Bereich des Sollwerts, den es aus der Darstellung oder dem
 Profil der Variable liest. Liegt sie außerhalb, geht nichts hinaus, und die Antwort nennt den Bereich.

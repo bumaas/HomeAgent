@@ -1,0 +1,108 @@
+{
+    "_quelle": "12.10.2026 mittags, Testbox, Denon-Receiver über das Modul DenonAVRTelnet (Store fonzo.ipsymcondenon). Lautstärke „Master Volume“ als Kommazahl in dB, Darstellung Schieberegler MIN -80, MAX 18, Schritt 0.5, Suffix „  dB“ (zwei Leerzeichen, wie gelesen), kein Profil. Gemessen mit RequestAction und Mitschnitt alle 100 ms (messung): -50.6 lehnt das Modul ab (RequestAction false, Hinweis „no association found“), -50.5 nimmt es an. Im Standby ändert sich die Variable nicht; eingeschaltet stand -50.5 nach 217 ms, zurück auf -17.5 nach 321 ms. Danach Receiver wieder aus, Lautstärke wieder -17.5. „verzoegerungMs“ aus der Messung aufgerundet. Der Name „Denon“ und der Raum Wohnzimmer sind die des Blindtests, die Variablen-IDs echt. Power steht im Mitschnitt auf aus (Standby); für die Tests eingeschaltet wie während der Messung. „suffix“ und „stellen“ aus der Darstellung (SUFFIX, DIGITS), damit nach dem Stellen derselbe Anzeigetext entsteht.",
+    "variablen": {
+        "44763": {
+            "name": "Master Volume",
+            "wert": -17.5,
+            "formatiert": "-17.5  dB",
+            "aktion": true,
+            "bereich": {
+                "min": -80,
+                "max": 18,
+                "schritt": 0.5
+            },
+            "raster": 0.5,
+            "fehlertext": "no association found. Ident: MV, Value: -50.6",
+            "verhalten": "traege",
+            "verzoegerungMs": 400,
+            "suffix": "  dB",
+            "stellen": 1
+        },
+        "27691": {
+            "name": "Main Mute",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true
+        },
+        "49916": {
+            "name": "Power",
+            "wert": true,
+            "formatiert": "An",
+            "aktion": true
+        }
+    },
+    "geraete": [
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Denon",
+            "Aliases": "",
+            "Type": "media",
+            "Invert": false,
+            "StateVariableID": 49916,
+            "VolumeVariableID": 44763,
+            "MuteVariableID": 27691
+        }
+    ],
+    "messung": [
+        {
+            "zustand": "Standby",
+            "ziel": -50.6,
+            "ergebnis": false,
+            "fehler": "Notice: no association found. Ident: MV, Value: -50.6 in /mnt/data/symcon/modules/.store/fonzo.ipsymcondenon/libs/DENONIPSProfiles.php on line 2175",
+            "requestaction_ms": 17,
+            "werte": [
+                [
+                    18,
+                    -17.5
+                ]
+            ]
+        },
+        {
+            "zustand": "Standby",
+            "ziel": -50.5,
+            "ergebnis": true,
+            "fehler": null,
+            "requestaction_ms": 15,
+            "werte": [
+                [
+                    15,
+                    -17.5
+                ]
+            ]
+        },
+        {
+            "zustand": "eingeschaltet nach 3503 ms",
+            "ziel": -50.5,
+            "ergebnis": true,
+            "fehler": null,
+            "requestaction_ms": 17,
+            "werte": [
+                [
+                    17,
+                    -17.5
+                ],
+                [
+                    217,
+                    -50.5
+                ]
+            ]
+        },
+        {
+            "zustand": "eingeschaltet",
+            "ziel": -17.5,
+            "ergebnis": true,
+            "fehler": null,
+            "requestaction_ms": 20,
+            "werte": [
+                [
+                    20,
+                    -50.5
+                ],
+                [
+                    321,
+                    -17.5
+                ]
+            ]
+        }
+    ]
+}

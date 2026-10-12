@@ -113,6 +113,11 @@ access then need the new one.
 
 Without an access that has a token, the instance shows status 104 and rejects all requests.
 
+Whoever sets up by script or with an AI assistant gets the addresses of an access with
+`HAGT_GetAddresses($InstanceID, 'Claude-App')` (empty name for all accesses): in the home network, through
+Symcon Connect and whether sign-in with OAuth works. The token only appears as `<token>` there, only the
+form shows it.
+
 ## Sign-in with OAuth
 
 The Claude app can sign in instead of carrying the token in the address. Symcon Connect has to be
@@ -329,7 +334,9 @@ last hour. So "music off" and later "go on" work without repeating the room. Wit
 tool asks for a room as usual.
 
 The module calculates the volume in percent of the range given by the presentation or the profile of the
-variable. For the Sonos module it runs from 0 to 100, for the HomeAssistant module from 0 to 1.
+variable. For the Sonos module it runs from 0 to 100, for the HomeAssistant module from 0 to 1, for a
+Denon receiver from -80 to 18 dB. There 50 % is -31 dB, and the query names both ("volume 64 % = -17.5 dB").
+Values are sent in the step size of the variable, half dB for the Denon.
 
 The module checks a temperature against the range of the setpoint, which it reads from the presentation
 or the profile of the variable. Outside of it nothing is sent, and the answer names the range. Odd values

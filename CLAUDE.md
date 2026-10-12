@@ -205,6 +205,9 @@ Weitere Regeln, die nicht offensichtlich sind:
   (`runVolume`, `runMute`, gemeinsames Warten in `confirmJobs`). Die Lautstärke zählt in Prozent des
   Bereichs: Sonos-Modul `~Volume` 0 bis 100 (Ganzzahl), HomeAssistant-Modul Kommazahl 0 bis 1 aus der
   Darstellung (ein Befehl 25 wird dort 1 = 100 %, gemessen). Gesendet wird auf ganze Prozent gerundet.
+  Gesendet wird im Raster der Variable (`range()['step']`, Darstellung `STEP_SIZE` oder Profil `StepSize`): Das
+  Denon-Modul (DenonAVRTelnet, -80 bis 18 dB, Schritt 0.5) lehnt -50.6 ab und nimmt -50.5 an, gemessen 12.10.2026
+  (`check-lautstaerke-db.php`). Ein Bereich in anderer Einheit steht in der Abfrage dabei („64 % = -17.5 dB“).
   Mit `volume_change` ist `set_state` nicht mehr idempotent (`idempotentHint`). `play` ohne Raum,
   Etage und Name (Typ höchstens `media`) setzt fort, was in der letzten Stunde per Werkzeug pausiert
   wurde (`recentlyPaused`, Merker über `DeviceBackend::rememberPaused`, im Modul Buffer `Paused`, unter einer Sperre wie alle Buffer, die gleichzeitige Anfragen ändern).
@@ -249,7 +252,8 @@ Weitere Regeln, die nicht offensichtlich sind:
   `InPath`) und **Adresse anzeigen** (`UIShowAddress`, Token erst auf Knopfdruck; Adresse und Token stehen im Fenster
   `SecretPopup` in einem breiten Textfeld, `showSecret`: als Ausgabe eines Knopfs öffnete die Konsole eine Adresse im
   Browser, und ein Token passte nicht ins Meldungsfenster); andere Assistenten mit dem
-  Endpunkt im Heimnetz (`localEndpoint`: erste private IPv4 aus `Sys_GetNetworkInfo`, Port 3777: laut Doku
+  Endpunkt im Heimnetz (`HAGT_GetAddresses` nennt dieselben Adressen für Skripte und KI-Assistenten, das Token
+  nur als `<token>`, Blindtest 12.10.2026; `localEndpoint`: erste private IPv4 aus `Sys_GetNetworkInfo`, Port 3777: laut Doku
   der feste Grundport; weitere Ports kommen nur über eigene WebServer-Instanzen, die bewusst nicht angezeigt werden,
   Burkhard 12.10.2026).
 

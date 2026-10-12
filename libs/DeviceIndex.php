@@ -2292,7 +2292,9 @@ final class DeviceIndex
             $volume = $this->backend->read($roles['volume']);
             $range = $this->backend->range($roles['volume']);
             if ($volume !== null && $range !== null && $range['max'] > $range['min'] && (is_int($volume['value']) || is_float($volume['value']))) {
-                $extras[] = sprintf($this->t('volume %s'), self::formatNumber(round(($volume['value'] - $range['min']) / ($range['max'] - $range['min']) * 100.0)) . ' %');
+                // Ein Bereich in anderer Einheit (Denon in dB) steht mit dabei, sonst fehlt der Bezug zum Gerät.
+                $unit = str_contains($volume['formatted'], '%') ? '' : ' = ' . preg_replace('/\s+/u', ' ', trim($volume['formatted']));
+                $extras[] = sprintf($this->t('volume %s'), self::formatNumber(round(($volume['value'] - $range['min']) / ($range['max'] - $range['min']) * 100.0)) . ' %' . $unit);
             } elseif ($volume !== null) {
                 $extras[] = sprintf($this->t('volume %s'), $volume['formatted']);
             }
@@ -2472,6 +2474,12 @@ final class DeviceIndex
                 $now = round(((float)$current['value'] - $range['min']) / $span * 100.0);
                 $percent = $absolute !== null ? round((float)$absolute) : max(0.0, min(100.0, $now + round((float)$change)));
                 $raw = $range['min'] + $percent / 100.0 * $span;
+                // Im Raster der Variable senden: Das Denon-Modul lehnt -50.6 dB ab und nimmt -50.5 an
+                // (Testbox 12.10.2026, Schritt 0.5 aus der Darstellung).
+                $step = (float)($range['step'] ?? 0);
+                if ($step > 0) {
+                    $raw = max($range['min'], min($range['max'], $range['min'] + round(($raw - $range['min']) / $step) * $step));
+                }
                 $job['target'] = is_int($current['value']) ? (int)round($raw) : round($raw, 4);
                 $job['tolerance'] = $span / 200.0;
                 if ($percent == $now) {
