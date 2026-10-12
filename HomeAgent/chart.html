@@ -25,7 +25,7 @@
     --muted: var(--color-text-secondary, #9198a1);
     --grid: var(--color-border-tertiary, #3d444d);
   }
-  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); overflow: hidden; }
   body { font: 13px/1.4 var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif); padding: 8px 4px 4px; }
   .chart { margin-bottom: 10px; }
   .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0 0 4px 6px; }
@@ -73,11 +73,13 @@
   }
 
   var lastHeight = 0;
+  // Höhe des Inhalts, nicht des Rahmens: sonst meldet die Seite die Höhe, die der Client ihr gerade gibt, und es
+  // bleibt ein Scrollbalken (claude.ai, 12.10.2026).
   function reportSize() {
-    var height = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    var height = Math.ceil(document.getElementById("root").getBoundingClientRect().bottom + 8);
     if (height !== lastHeight) {
       lastHeight = height;
-      notify("ui/notifications/size-changed", { width: Math.ceil(document.documentElement.getBoundingClientRect().width), height: height });
+      notify("ui/notifications/size-changed", { width: Math.ceil(document.body.getBoundingClientRect().width), height: height });
     }
   }
 
@@ -100,6 +102,37 @@
     }
     if (per === "month") { return d.toLocaleDateString(lang, { month: "short", year: "2-digit" }); }
     return d.toLocaleDateString(lang, { day: "2-digit", month: "2-digit" });
+  }
+
+  // Zeitmarken auf runden Zeitpunkten: volle Stunden (1, 2, 3, 4, 6, 12 h), ganze Tage (1, 2, 3, 7, 14) oder
+  // Monatsanfänge, höchstens sechs. Vorher teilte die Seite den Zeitraum gleichmäßig (03:12, 06:24 …).
+  function timeTicks(t0, t1, per) {
+    var ticks = [], d;
+    if (per === "month") {
+      var months = Math.round((t1 - t0) / (30 * 86400)) + 1;
+      var stepM = [1, 2, 3, 6, 12].filter(function (s) { return months / s <= 6; })[0] || 12;
+      d = new Date(t0 * 1000);
+      d.setDate(1);
+      d.setHours(0, 0, 0, 0);
+      if (d.getTime() / 1000 < t0) { d.setMonth(d.getMonth() + 1); }
+      while (d.getTime() / 1000 <= t1) { ticks.push(d.getTime() / 1000); d.setMonth(d.getMonth() + stepM); }
+      return ticks;
+    }
+    var hours = (t1 - t0) / 3600;
+    var stepH = [1, 2, 3, 4, 6, 12, 24, 48, 72, 168, 336].filter(function (s) { return hours / s <= 6; })[0] || 336;
+    d = new Date(t0 * 1000);
+    d.setMinutes(0, 0, 0);
+    if (stepH >= 24) {
+      d.setHours(0);
+    } else {
+      d.setHours(Math.floor(d.getHours() / stepH) * stepH);
+    }
+    while (d.getTime() / 1000 < t0) { advance(d, stepH); }
+    while (d.getTime() / 1000 <= t1) { ticks.push(d.getTime() / 1000); advance(d, stepH); }
+    return ticks;
+  }
+  function advance(d, stepH) {
+    if (stepH >= 24) { d.setDate(d.getDate() + stepH / 24); } else { d.setHours(d.getHours() + stepH); }
   }
 
   function niceStep(range) {
@@ -144,11 +177,12 @@
       svg.appendChild(el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, number(v)));
     }
     var spansDays = (t1 - t0) > 86400;
-    var ticks = 5;
-    for (var k = 0; k <= ticks; k++) {
-      var t = t0 + (t1 - t0) * k / ticks;
-      svg.appendChild(el("text", { x: x(t), y: H - 8, "text-anchor": k === 0 ? "start" : k === ticks ? "end" : "middle" }, timeLabel(t, data.per, spansDays)));
-    }
+    timeTicks(t0, t1, data.per).forEach(function (t) {
+      var px = x(t);
+      var anchor = px < L + 20 ? "start" : px > W - R - 20 ? "end" : "middle";
+      svg.appendChild(el("line", { x1: px, x2: px, y1: H - B, y2: H - B + 4, stroke: "var(--grid)", "stroke-width": 1 }));
+      svg.appendChild(el("text", { x: px, y: H - 8, "text-anchor": anchor }, timeLabel(t, data.per, spansDays && data.per === "hour")));
+    });
     series.forEach(function (s, i) {
       var color = COLORS[(i + colorOffset) % COLORS.length];
       var top = s.points.map(function (p) { return x(p[0]) + "," + y(p[3]); });

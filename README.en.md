@@ -409,6 +409,20 @@ echo HAGT_SwitchDevices($InstanceID, 'Wohnzimmer', 'light', '', false);
 echo HAGT_SetLevel($InstanceID, '', '', 'Deckenpanel', 30);
 ```
 
+### Charts and templates in the Claude app
+
+Asking the Claude app for a chart, for example "Show me the temperature in the guest room over the last 30 days
+as a chart", makes the module draw the history right in the chat: one chart per unit, a band from minimum to
+maximum and a line for the average. The values only go to the chart, the language model gets minimum and maximum.
+The tool is called `show_chart` and appears in the connector settings under "Interactive tools", where it can be
+set to "Always allow". Other assistants do not see it.
+
+Under "+" → "Connectors" → "Add from …" the Claude app offers ready templates: **Leaving home** and **Good
+night** check what is still open or on, **Energy report** names consumption, self-sufficiency and the largest
+consumers of yesterday. Which ones exist depends on the release list.
+
+The Claude app only learns about new tools when the connector is added again. Restarting the app is not enough.
+
 ### Starting scenes
 
 **run_scene** starts a scene. The names of your scenes are part of the tool description, so the

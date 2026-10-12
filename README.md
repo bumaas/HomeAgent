@@ -427,6 +427,21 @@ echo HAGT_SwitchDevices($InstanzID, 'Wohnzimmer', 'light', '', false);
 echo HAGT_SetLevel($InstanzID, '', '', 'Deckenpanel', 30);
 ```
 
+### Diagramme und Vorlagen in der Claude-App
+
+Fragt man die Claude-App nach einem Diagramm, etwa „Zeig mir die Temperatur im Gästezimmer der letzten 30 Tage
+als Diagramm“, zeichnet das Modul den Verlauf direkt im Chat: je Einheit ein Diagramm, ein Band von Minimum bis
+Maximum und eine Linie für das Mittel. Die Werte gehen nur an das Diagramm, das Sprachmodell bekommt Minimum und
+Maximum. Das Werkzeug heißt `show_chart` und erscheint in den Einstellungen des Connectors unter „Interaktive
+Tools“; dort lässt es sich auf „Immer erlauben“ stellen. Andere Assistenten sehen es nicht.
+
+Über „+“ → „Konnektoren“ → „Von … hinzufügen“ bietet die Claude-App fertige Vorlagen an: **Haus verlassen** und
+**Gute Nacht** prüfen, was noch offen oder an ist, **Energiebericht** nennt Verbrauch, Autarkie und die größten
+Verbraucher von gestern. Welche es gibt, richtet sich nach der Freigabeliste.
+
+Neue Werkzeuge kennt die Claude-App erst, wenn der Connector neu hinzugefügt wird. Ein Neustart der App reicht
+dafür nicht.
+
 ### Szenen starten
 
 **run_scene** startet eine Szene. Die Namen Ihrer Szenen stehen in der Beschreibung des Werkzeugs, der
