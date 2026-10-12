@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+// Gemeinsame Kopfzeilen der JSON-Antworten (BASE_HEADERS), Code-Review 12.10.2026
+require_once __DIR__ . '/McpProtocol.php';
+
 /**
  * OAuth 2.1 für den MCP-Endpunkt, ohne Symcon-Abhängigkeit.
  *
@@ -44,8 +47,6 @@ final class OAuthServer
 
     /** Parameter der Autorisierungsanfrage, die die Einwilligungsseite verdeckt weitergibt. */
     private const AUTHORIZE_PARAMS = ['response_type', 'client_id', 'redirect_uri', 'code_challenge', 'code_challenge_method', 'state', 'scope', 'resource'];
-
-    private const JSON_HEADERS =['Content-Type' => 'application/json', 'Cache-Control' => 'no-store', 'X-Content-Type-Options' => 'nosniff'];
 
     /**
      * Reservierter Unterpfad der Anfrage, sonst null. Der Query-String zählt nicht dazu.
@@ -506,7 +507,7 @@ final class OAuthServer
     {
         return [
             'status'  => $status,
-            'headers' => $headers + self::JSON_HEADERS,
+            'headers' => $headers + McpProtocol::BASE_HEADERS,
             'body'    => json_encode($content, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
         ];
     }

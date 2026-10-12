@@ -2221,6 +2221,29 @@ pruefe(str_contains((string)($element('Endpoint')['caption'] ?? ''), 'http://<ad
 HomeAgentHarness::$lanIp = '192.168.178.86';
 HomeAgentHarness::$connect = '';
 
+/* --- Pausenmerker unter Sperre (Code-Review 12.10.2026, Befund 3) -------------------------------- */
+
+// Alle anderen Buffer, die gleichzeitige Anfragen ändern, liegen unter einer Semaphore; der Merker der pausierten
+// Mediaplayer nicht. Zwei gleichzeitige Pausen konnten so einen Merker verlieren. Im Kernel-Stub ist eine belegte
+// Semaphore sofort „nicht frei“: Dann darf storePaused nichts schreiben.
+$merken = static function (array $variablen, int $um) use ($m): void {
+    try {
+        (new ReflectionMethod($m, 'storePaused'))->invoke($m, $variablen, $um);
+    } catch (Throwable) {
+    }
+};
+$pausiert = static fn (): string => (string)(new ReflectionMethod($m, 'GetBuffer'))->invoke($m, 'Paused');
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'Paused', '');
+IPS_SemaphoreEnter('HAGT_Paused_' . $iid, 0);
+$merken([12345], 1_000_000);
+pruefe($pausiert() === '', 'belegte Sperre: der Pausenmerker wird nicht ohne Sperre geschrieben: ' . $pausiert());
+IPS_SemaphoreLeave('HAGT_Paused_' . $iid);
+$merken([12345], 1_000_000);
+pruefe(json_decode($pausiert(), true) === ['12345' => 1_000_000], 'freie Sperre: der Merker steht im Buffer: ' . $pausiert());
+pruefe(IPS_SemaphoreEnter('HAGT_Paused_' . $iid, 0), 'die Sperre ist danach wieder frei');
+IPS_SemaphoreLeave('HAGT_Paused_' . $iid);
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'Paused', '');
+
 /* --- Gliederung mit Unterbereichen und kleine Punkte (build 84) ---------------------------------- */
 
 HomeAgentHarness::$connect = 'https://example.ipmagic.de';

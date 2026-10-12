@@ -207,7 +207,7 @@ Weitere Regeln, die nicht offensichtlich sind:
   Darstellung (ein Befehl 25 wird dort 1 = 100 %, gemessen). Gesendet wird auf ganze Prozent gerundet.
   Mit `volume_change` ist `set_state` nicht mehr idempotent (`idempotentHint`). `play` ohne Raum,
   Etage und Name (Typ höchstens `media`) setzt fort, was in der letzten Stunde per Werkzeug pausiert
-  wurde (`recentlyPaused`, Merker über `DeviceBackend::rememberPaused`, im Modul Buffer `Paused`).
+  wurde (`recentlyPaused`, Merker über `DeviceBackend::rememberPaused`, im Modul Buffer `Paused`, unter einer Sperre wie alle Buffer, die gleichzeitige Anfragen ändern).
   Noch offen: Ein/Aus; das Sonos-Modul hat an `Volume` teils keine Aktion (dann „nicht stellbar“).
 - **Dieselbe Leistung oder derselbe Zähler an zwei Geräten** (Messsteckdose und Gerät dahinter) zählt in
   `consumption()` und `power()` nur einmal, unter dem ersten Gerät der Liste (`firstPerVariable`, wie der Verlauf);

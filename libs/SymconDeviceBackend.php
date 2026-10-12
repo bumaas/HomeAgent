@@ -492,11 +492,6 @@ final class SymconDeviceBackend implements DeviceBackend
         return $ok ? null : ($error ?? $fallback);
     }
 
-    /**
-     * Bereich ohne eigene Richtungsangabe: der kleinste Wert ist offen (~Shutter, KLF200).
-     *
-     * @return null|array{min: float, max: float, open: float, closed: float, source: string, profile: string}
-     */
     /** Einheit einer Variable: Suffix des Profils, sonst das der Darstellung. */
     private static function unitOf(int $variableId): string
     {
@@ -509,6 +504,11 @@ final class SymconDeviceBackend implements DeviceBackend
         return trim((string)($presentation['SUFFIX'] ?? ''));
     }
 
+    /**
+     * Bereich ohne eigene Richtungsangabe: der kleinste Wert ist offen (~Shutter, KLF200).
+     *
+     * @return null|array{min: float, max: float, open: float, closed: float, source: string, profile: string}
+     */
     private static function validRange(float $min, float $max, string $profile = ''): ?array
     {
         return $max > $min ? self::travel($min, $max, 'default', $profile) : null;

@@ -1966,15 +1966,26 @@ class HomeAgent extends IPSModuleStrict
         return $result;
     }
 
-    /** Merkt pausierte Mediaplayer; ältere als eine Stunde fallen heraus, höchstens 50 bleiben. */
+    /**
+     * Merkt pausierte Mediaplayer; ältere als eine Stunde fallen heraus, höchstens 50 bleiben. Unter einer
+     * Sperre wie die übrigen Buffer, sonst verlieren zwei gleichzeitige Pausen einen Merker (Code-Review 12.10.2026).
+     */
     private function storePaused(array $variables, int $at): void
     {
-        $paused = array_filter($this->readPaused(), static fn (int $time): bool => $time >= $at - DeviceIndex::PAUSE_MEMORY_MS);
-        foreach ($variables as $variable) {
-            unset($paused[(int)$variable]);
-            $paused[(int)$variable] = $at;
+        $lock = 'HAGT_Paused_' . $this->InstanceID;
+        if (!IPS_SemaphoreEnter($lock, 1000)) {
+            return;
         }
-        $this->SetBuffer('Paused', (string)json_encode(array_slice($paused, -self::PAUSED_MAX_ENTRIES, null, true)));
+        try {
+            $paused = array_filter($this->readPaused(), static fn (int $time): bool => $time >= $at - DeviceIndex::PAUSE_MEMORY_MS);
+            foreach ($variables as $variable) {
+                unset($paused[(int)$variable]);
+                $paused[(int)$variable] = $at;
+            }
+            $this->SetBuffer('Paused', (string)json_encode(array_slice($paused, -self::PAUSED_MAX_ENTRIES, null, true)));
+        } finally {
+            IPS_SemaphoreLeave($lock);
+        }
     }
 
     /**
