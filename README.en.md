@@ -118,7 +118,7 @@ Without an access that has a token, the instance shows status 104 and rejects al
 The Claude app can sign in instead of carrying the token in the address. Symcon Connect has to be
 active, because the app reaches your system from the internet.
 
-1. Under **Endpoint and accesses**, the address for the connector is shown below **Claude app**.
+1. Under **Endpoint and accesses**, the address for the connector is shown below **Connect the Claude app**.
    Without an active Connect a note is shown there instead.
 2. In the Claude app, add a custom connector with this address under "Customize" → "Connectors". Keep
    the preselection: sign in when connecting, and "Use Claude's published identity" as OAuth client.
@@ -129,7 +129,7 @@ active, because the app reaches your system from the internet.
 The assistant gets the rights and the default room of this access. The page names it together with the
 address it comes from. If it shows anything other than claude.ai, click **Deny**.
 
-The paired assistants are listed below. **Revoke selected assistant** disconnects one at once. If an
+The paired assistants are listed below. **revoke** in its row disconnects one at once. If an
 access gets a new token, all assistants paired through it are disconnected. A pairing that has not been
 used for 90 days expires. The self-test shows the number of paired assistants; without Connect it says
 that sign-in is not available.

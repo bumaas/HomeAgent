@@ -217,7 +217,8 @@ Weitere Regeln, die nicht offensichtlich sind:
 ## Formular
 
 - Bereiche „Endpunkt und Zugänge“, „Räume“, „Geräte“, „Szenen“ und „Energiebilanz“ als
-  `ExpansionPanel`; der Zustand wird im Attribut `ExpandedPanels` gemerkt (`UITogglePanel`).
+  `ExpansionPanel`, in „Endpunkt und Zugänge“ dazu drei Unterbereiche (`PanelClaude`, `PanelHA`, `PanelOther`);
+  der Zustand aller steht im Attribut `ExpandedPanels` (`UITogglePanel`, Namen in `PANELS`).
 - Der Bearbeitungsdialog einer Geräte-Zeile entsteht je Typ über `UIDeviceForm`; sichtbare Spalten sind
   Textspalten mit dem Namen der Variable, die IDs stehen in unsichtbaren Spalten.
 - „Geräte aus Alexa vorschlagen“ öffnet ein `PopupAlert` mit Haken und bearbeitbarem Raum je Vorschlag;
@@ -234,9 +235,10 @@ Weitere Regeln, die nicht offensichtlich sind:
   gebraucht wird: **Token anzeigen** (`UIShowToken`, Auswahl `TokenAccess`) für Clients mit Header, **Adresse
   anzeigen** für Home Assistant; bei OAuth nie. Anlass (Burkhard 12.10.2026, build 81 bis 83): Im Kennwortfeld sah
   man das erzeugte Token nicht, als Textfeld stand es offen da, und gebraucht wird es fast nie.
-  Darunter je Assistent eine Anleitung mit fetten Labels (verschachtelte ExpansionPanels sind nicht dokumentiert):
-  Claude-App mit Connect-Adresse, Auswahl `PairingAccess` direkt am Knopf Kopplungscode, Liste `OAuthClients`
-  mit Widerrufen, ohne Connect nur `ClaudeNoConnect`; Home Assistant mit Auswahl `AddressAccess` (nur Zugänge mit
+  Darunter je Assistent ein aufklappbarer Unterbereich (Burkhard 12.10.2026: „das funktioniert“, verschachtelte
+  ExpansionPanels): Claude-App mit Connect-Adresse, Auswahl `PairingAccess` direkt am Knopf Kopplungscode
+  (vorausgewählt ein Zugang, an dem schon ein Claude-Connector hängt), Liste `OAuthClients` nur mit Einträgen und
+  „widerrufen“ als Spalte (Spalten-`onClick` wählt laut Doku die Zeile aus, mit `confirm`), ohne Connect nur `ClaudeNoConnect`; Home Assistant mit Auswahl `AddressAccess` (nur Zugänge mit
   `InPath`) und **Adresse anzeigen** (`UIShowAddress`, Token erst auf Knopfdruck); andere Assistenten mit dem
   Endpunkt im Heimnetz (`localEndpoint`: erste private IPv4 aus `Sys_GetNetworkInfo`, Port 3777: laut Doku
   der feste Grundport; weitere Ports kommen nur über eigene WebServer-Instanzen, die bewusst nicht angezeigt werden,

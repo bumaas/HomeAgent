@@ -373,7 +373,7 @@ $zugangsDialog = array_column(flach($benannt['Accesses']['form'] ?? []), null, '
 // deshalb gar nicht mehr sichtbar; ein leeres Token füllt das Modul beim Übernehmen.
 pruefe(($zugangsDialog['Token']['visible'] ?? true) === false && !isset($zugangsDialog['Token']['validate']) && isset($zugangsDialog['Name'], $zugangsDialog['ReadOnly'], $zugangsDialog['DefaultRoom'], $zugangsDialog['InPath']), 'der Bearbeiten-Dialog zeigt das Token nicht: ' . json_encode($zugangsDialog['Token'] ?? null));
 pruefe(array_column($benannt['Rooms']['columns'] ?? [], 'name') === ['Name', 'Aliases', 'Floor'], 'Spalten der Raumliste');
-pruefe(str_contains($m->GetConfigurationForm(), '\/<Token>') && !str_contains($m->GetConfigurationForm(), 'gast-token-0123456789abcdef'), 'das Formular nennt die Adresse nur mit Platzhalter, kein echtes Token');
+pruefe(str_contains($m->GetConfigurationForm(), 'Bearer <token>') && !str_contains($m->GetConfigurationForm(), 'gast-token-0123456789abcdef'), 'das Formular nennt das Token nur mit Platzhalter, kein echtes Token');
 
 /* --- Raumliste mit Aliasen und Etagen -------------------------------------------------------- */
 
@@ -540,7 +540,7 @@ pruefe(($geraete['form'] ?? null) === "return json_decode(HAGT_UIDeviceForm(\$id
 $oben = $formular['elements'];
 $bereiche = array_values(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel'));
 $inhalt = array_map(static fn (array $b): array => array_values(array_filter(array_column($b['items'], 'name'))), $bereiche);
-pruefe(count($bereiche) === 5 && $inhalt[0] === ['Accesses', 'ConnectHeading', 'ClaudeHeading', 'ClaudeStep1', 'ClaudeNoConnect', 'PairingRow', 'ClaudeStep2', 'OAuthClients', 'RevokeClient', 'HAHeading', 'HAText', 'AddressRow', 'OtherHeading', 'Endpoint', 'OtherText', 'TokenRow'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['Devices'] && $inhalt[3] === ['Scenes'] && in_array('GridImportVariableID', array_column(flach($bereiche[4]['items']), 'name'), true), 'fünf Bereiche in dieser Reihenfolge: ' . json_encode($inhalt));
+pruefe(count($bereiche) === 5 && $inhalt[0] === ['Accesses', 'ConnectHeading', 'PanelClaude', 'PanelHA', 'PanelOther'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['Devices'] && $inhalt[3] === ['Scenes'] && in_array('GridImportVariableID', array_column(flach($bereiche[4]['items']), 'name'), true), 'fünf Bereiche in dieser Reihenfolge: ' . json_encode($inhalt));
 pruefe(array_values(array_filter(array_column(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') !== 'ExpansionPanel'), 'name'))) === [], 'oben steht außer den Bereichen nur Erklärtext, kein Feld: ' . json_encode(array_column($oben, 'name')));
 // Burkhard, 10.10.2026: einheitlich zugeklappt, und jeder Bereich merkt sich seinen Zustand
 $zustand = static fn (): array => array_map(static fn (array $b): bool => ($b['expanded'] ?? false) === true, array_values(array_filter(json_decode($m->GetConfigurationForm(), true)['elements'], static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel')));
@@ -551,6 +551,22 @@ pruefe($zustand() === [false, false, true, false, false], 'nach dem Aufklappen b
 oderNull(static fn () => $m->UITogglePanel('PanelDevices'));
 oderNull(static fn () => $m->UITogglePanel('Unbekannt'));
 pruefe($zustand() === [false, false, false, false, false], 'nach dem Zuklappen wieder zu, ein unbekannter Name ändert nichts: ' . json_encode($zustand()));
+
+// Unterbereiche in „Endpunkt und Zugänge“: je Assistent ein aufklappbarer Bereich, der sich seinen Zustand merkt
+$unter = array_column(array_values(array_filter($bereiche[0]['items'], static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel')), null, 'name');
+pruefe(array_keys($unter) === ['PanelClaude', 'PanelHA', 'PanelOther'], 'drei Unterbereiche für Claude-App, Home Assistant und andere Assistenten: ' . json_encode(array_keys($unter)));
+pruefe(array_values(array_filter(array_column($unter['PanelClaude']['items'] ?? [], 'name'))) === ['ClaudeStep1', 'ClaudeNoConnect', 'PairingRow', 'ClaudeStep2', 'OAuthClients'], 'Claude-App: Schritte und gekoppelte Assistenten: ' . json_encode(array_column($unter['PanelClaude']['items'] ?? [], 'name')));
+pruefe(array_values(array_filter(array_column($unter['PanelHA']['items'] ?? [], 'name'))) === ['HAText', 'AddressRow'], 'Home Assistant: Text und Adresse anzeigen');
+pruefe(array_values(array_filter(array_column($unter['PanelOther']['items'] ?? [], 'name'))) === ['Endpoint', 'OtherText', 'TokenRow'], 'Andere Assistenten: Endpunkt, Text, Token anzeigen');
+pruefe(array_map(static fn (array $b): string => $b['onClick'] ?? '', array_values($unter)) === ["HAGT_UITogglePanel(\$id, 'PanelClaude');", "HAGT_UITogglePanel(\$id, 'PanelHA');", "HAGT_UITogglePanel(\$id, 'PanelOther');"], 'jeder Unterbereich meldet das Auf- und Zuklappen');
+$unterZustand = static function () use ($m): array {
+    $zugaenge = array_values(array_filter(json_decode($m->GetConfigurationForm(), true)['elements'], static fn (array $e): bool => ($e['name'] ?? '') === 'PanelAccesses'))[0];
+    return array_map(static fn (array $b): bool => ($b['expanded'] ?? false) === true, array_values(array_filter($zugaenge['items'], static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel')));
+};
+pruefe($unterZustand() === [false, false, false], 'die Unterbereiche sind anfangs zu');
+oderNull(static fn () => $m->UITogglePanel('PanelHA'));
+pruefe($unterZustand() === [false, true, false], 'aufgeklappt bleibt „Home Assistant verbinden“ beim nächsten Öffnen auf: ' . json_encode($unterZustand()));
+oderNull(static fn () => $m->UITogglePanel('PanelHA'));
 
 $de = json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/locale.json'), true, 512, JSON_THROW_ON_ERROR)['translations']['de'];
 $dialogFehler = [];
@@ -2083,8 +2099,10 @@ $zeile = $liste['values'][0] ?? [];
 pruefe(($liste['type'] ?? '') === 'List' && ($liste['loadValuesFromConfiguration'] ?? true) === false && count($liste['values'] ?? []) === 1, 'Formular: Liste der gekoppelten Assistenten mit einer Zeile: ' . json_encode($liste['values'] ?? null));
 pruefe(($zeile['Client'] ?? '') === 'Claude (claude.ai)' && ($zeile['Access'] ?? '') === 'Claude-App' && ($zeile['Family'] ?? '') !== '', 'Zeile nennt Client mit Host und Zugang: ' . json_encode($zeile));
 pruefe(preg_match('/^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$/', (string)($zeile['Paired'] ?? '')) === 1 && preg_match('/^\d{2}\.\d{2}\.\d{4}$/', (string)($zeile['Expires'] ?? '')) === 1, 'Zeile mit Datum der Kopplung und Ablauf: ' . json_encode($zeile));
-$widerrufen = $mitAufruf("HAGT_UIRevokeClient(\$id, \$OAuthClients['Family'])");
-pruefe($widerrufen !== null && ($widerrufen['confirm'] ?? '') !== '', 'Formular: Knopf Widerrufen mit Rückfrage');
+$spalte = array_column($liste['columns'] ?? [], null, 'name')['Revoke'] ?? [];
+pruefe(($spalte['onClick'] ?? '') === "HAGT_UIRevokeClient(\$id, \$OAuthClients['Family']);" && ($spalte['confirm'] ?? '') !== '' && ($zeile['Revoke'] ?? '') === 'revoke', 'Formular: „widerrufen“ als Spalte in der Zeile, mit Rückfrage: ' . json_encode($spalte));
+pruefe($mitAufruf("HAGT_UIRevokeClient(\$id, \$OAuthClients['Family'])") === null, 'kein Knopf mehr, der eine ausgewählte Zeile voraussetzt');
+pruefe(($liste['visible'] ?? true) === true && ($liste['rowCount'] ?? 0) === 1, 'die Liste ist sichtbar und so hoch wie ihre Einträge: ' . json_encode($liste['rowCount'] ?? null));
 pruefe(!str_contains((string)json_encode($formular), $zugriff ?: 'kein Token'), 'kein Token im Formular');
 
 // Widerrufen trennt sofort
@@ -2143,6 +2161,35 @@ $formular = json_decode($m->GetConfigurationForm(), true);
 $alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
 pruefe(str_contains((string)($element('Endpoint')['caption'] ?? ''), 'http://<address>:3777/hook/homeagent/' . $iid), 'ohne bekannte IP bleibt der Platzhalter: ' . ($element('Endpoint')['caption'] ?? '-'));
 HomeAgentHarness::$lanIp = '192.168.178.86';
+HomeAgentHarness::$connect = '';
+
+/* --- Gliederung mit Unterbereichen und kleine Punkte (build 84) ---------------------------------- */
+
+HomeAgentHarness::$connect = 'https://example.ipmagic.de';
+$fuenf = [$zugang('Claude Code', 'cc-token-0123456789abcdefgh'), $zugang('Claude-App', $token, 'Halle', true), $zugang('A3', 'a3-token-0123456789abcdefgh'), $zugang('A4', 'a4-token-0123456789abcdefgh'), $zugang('A5', 'a5-token-0123456789abcdefgh')];
+IPS_SetProperty($iid, 'Accesses', json_encode($fuenf));
+IPS_ApplyChanges($iid);
+$koppeln();
+$formular = json_decode($m->GetConfigurationForm(), true);
+$alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
+pruefe(($element('Accesses')['rowCount'] ?? 0) === 5, 'fünf Zugänge, fünf Zeilen ohne Scrollbalken: ' . json_encode($element('Accesses')['rowCount'] ?? null));
+pruefe(($element('PairingAccess')['value'] ?? '') === 'Claude-App', 'Kopplungscode: vorausgewählt ist der Zugang, an dem schon ein Claude-Connector hängt: ' . json_encode($element('PairingAccess')['value'] ?? null));
+IPS_SetProperty($iid, 'Accesses', json_encode(array_merge($fuenf, array_map(static fn (int $n): array => $zugang('B' . $n, 'b' . $n . '-token-0123456789abcdefgh'), range(1, 6)))));
+IPS_ApplyChanges($iid);
+$formular = json_decode($m->GetConfigurationForm(), true);
+$alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
+pruefe(($element('Accesses')['rowCount'] ?? 0) === 8, 'bei elf Zugängen höchstens acht Zeilen: ' . json_encode($element('Accesses')['rowCount'] ?? null));
+IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude Code', 'cc-token-0123456789abcdefgh')]));
+IPS_ApplyChanges($iid);
+try {
+    (new ReflectionMethod($m, 'WriteAttributeString'))->invoke($m, 'OAuthGrants', '{}');
+} catch (Throwable) {
+}
+$formular = json_decode($m->GetConfigurationForm(), true);
+$alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
+pruefe(($element('Accesses')['rowCount'] ?? 0) === 3, 'ein Zugang: mindestens drei Zeilen: ' . json_encode($element('Accesses')['rowCount'] ?? null));
+pruefe(($element('OAuthClients')['visible'] ?? true) === false, 'ohne gekoppelte Assistenten keine leere Liste');
+pruefe(!str_contains((string)json_encode($formular), '/<Token>'), 'der Text unter „Andere Assistenten“ ist kürzer, ohne /<Token>');
 HomeAgentHarness::$connect = '';
 
 ende('Modul');

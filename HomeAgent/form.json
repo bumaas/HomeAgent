@@ -107,155 +107,161 @@
           "bold": true
         },
         {
-          "type": "Label",
-          "name": "ClaudeHeading",
-          "caption": "Claude app (recommended)",
-          "bold": true
-        },
-        {
-          "type": "Label",
-          "name": "ClaudeStep1",
-          "caption": ""
-        },
-        {
-          "type": "Label",
-          "name": "ClaudeNoConnect",
-          "caption": "The Claude app reaches your system from the internet and therefore needs an active Symcon Connect (instance Connect Control).",
-          "visible": false
-        },
-        {
-          "type": "RowLayout",
-          "name": "PairingRow",
+          "type": "ExpansionPanel",
+          "name": "PanelClaude",
+          "caption": "Connect the Claude app (recommended)",
+          "onClick": "HAGT_UITogglePanel($id, 'PanelClaude');",
           "items": [
             {
               "type": "Label",
-              "caption": "2. Create a pairing code for the access"
+              "name": "ClaudeStep1",
+              "caption": ""
             },
             {
-              "type": "Select",
-              "name": "PairingAccess",
-              "caption": "Access",
-              "options": []
-            },
-            {
-              "type": "Button",
-              "caption": "Create pairing code",
-              "onClick": "echo HAGT_CreatePairingCode($id, $PairingAccess);"
-            }
-          ]
-        },
-        {
-          "type": "Label",
-          "name": "ClaudeStep2",
-          "caption": "3. Enter the code on the sign-in page. The assistant gets the rights of this access."
-        },
-        {
-          "type": "List",
-          "name": "OAuthClients",
-          "caption": "Assistants paired via OAuth",
-          "rowCount": 3,
-          "add": false,
-          "delete": false,
-          "loadValuesFromConfiguration": false,
-          "columns": [
-            {
-              "caption": "Assistant",
-              "name": "Client",
-              "width": "auto"
-            },
-            {
-              "caption": "Access",
-              "name": "Access",
-              "width": "160px"
-            },
-            {
-              "caption": "Paired",
-              "name": "Paired",
-              "width": "140px"
-            },
-            {
-              "caption": "Last renewed",
-              "name": "Refreshed",
-              "width": "140px"
-            },
-            {
-              "caption": "Valid until",
-              "name": "Expires",
-              "width": "110px"
-            },
-            {
-              "caption": "Family",
-              "name": "Family",
+              "type": "Label",
+              "name": "ClaudeNoConnect",
+              "caption": "The Claude app reaches your system from the internet and therefore needs an active Symcon Connect (instance Connect Control).",
               "visible": false
-            }
-          ],
-          "values": []
-        },
-        {
-          "type": "Button",
-          "caption": "Revoke selected assistant",
-          "confirm": "Revoke the selected assistant? It has to be paired again with a new pairing code.",
-          "onClick": "HAGT_UIRevokeClient($id, $OAuthClients['Family']);",
-          "name": "RevokeClient"
-        },
-        {
-          "type": "Label",
-          "name": "HAHeading",
-          "caption": "Home Assistant",
-          "bold": true
-        },
-        {
-          "type": "Label",
-          "name": "HAText",
-          "caption": "In Home Assistant add the integration \"Model Context Protocol\" and enter the address with the token. For this, tick \"Token also in the address\" for its access."
-        },
-        {
-          "type": "RowLayout",
-          "name": "AddressRow",
-          "items": [
-            {
-              "type": "Select",
-              "name": "AddressAccess",
-              "caption": "Access",
-              "options": []
             },
             {
-              "type": "Button",
-              "caption": "Show address",
-              "onClick": "echo HAGT_UIShowAddress($id, $AddressAccess);"
+              "type": "RowLayout",
+              "name": "PairingRow",
+              "items": [
+                {
+                  "type": "Label",
+                  "caption": "2. Create a pairing code for the access"
+                },
+                {
+                  "type": "Select",
+                  "name": "PairingAccess",
+                  "caption": "Access",
+                  "options": []
+                },
+                {
+                  "type": "Button",
+                  "caption": "Create pairing code",
+                  "onClick": "echo HAGT_CreatePairingCode($id, $PairingAccess);"
+                }
+              ]
+            },
+            {
+              "type": "Label",
+              "name": "ClaudeStep2",
+              "caption": "3. Enter the code on the sign-in page. The assistant gets the rights of this access."
+            },
+            {
+              "type": "List",
+              "name": "OAuthClients",
+              "caption": "Assistants paired via OAuth",
+              "rowCount": 3,
+              "add": false,
+              "delete": false,
+              "loadValuesFromConfiguration": false,
+              "columns": [
+                {
+                  "caption": "Assistant",
+                  "name": "Client",
+                  "width": "auto"
+                },
+                {
+                  "caption": "Access",
+                  "name": "Access",
+                  "width": "160px"
+                },
+                {
+                  "caption": "Paired",
+                  "name": "Paired",
+                  "width": "140px"
+                },
+                {
+                  "caption": "Last renewed",
+                  "name": "Refreshed",
+                  "width": "140px"
+                },
+                {
+                  "caption": "Valid until",
+                  "name": "Expires",
+                  "width": "110px"
+                },
+                {
+                  "caption": "Family",
+                  "name": "Family",
+                  "visible": false
+                },
+                {
+                  "caption": "",
+                  "name": "Revoke",
+                  "width": "120px",
+                  "onClick": "HAGT_UIRevokeClient($id, $OAuthClients['Family']);",
+                  "confirm": "Revoke the selected assistant? It has to be paired again with a new pairing code."
+                }
+              ],
+              "values": []
             }
           ]
         },
         {
-          "type": "Label",
-          "name": "OtherHeading",
-          "caption": "Other assistants",
-          "bold": true
-        },
-        {
-          "type": "Label",
-          "name": "Endpoint",
-          "caption": "Endpoint"
-        },
-        {
-          "type": "Label",
-          "name": "OtherText",
-          "caption": "They send the token of their access as \"Authorization: Bearer <token>\"; \"Show token\" shows it. A client that cannot do that may append it to the address as /<Token>, if \"Token also in the address\" is ticked."
-        },
-        {
-          "type": "RowLayout",
-          "name": "TokenRow",
+          "type": "ExpansionPanel",
+          "name": "PanelHA",
+          "caption": "Connect Home Assistant",
+          "onClick": "HAGT_UITogglePanel($id, 'PanelHA');",
           "items": [
             {
-              "type": "Select",
-              "name": "TokenAccess",
-              "caption": "Access",
-              "options": []
+              "type": "Label",
+              "name": "HAText",
+              "caption": "In Home Assistant add the integration \"Model Context Protocol\" and enter the address with the token. For this, tick \"Token also in the address\" for its access."
             },
             {
-              "type": "Button",
-              "caption": "Show token",
-              "onClick": "echo HAGT_UIShowToken($id, $TokenAccess);"
+              "type": "RowLayout",
+              "name": "AddressRow",
+              "items": [
+                {
+                  "type": "Select",
+                  "name": "AddressAccess",
+                  "caption": "Access",
+                  "options": []
+                },
+                {
+                  "type": "Button",
+                  "caption": "Show address",
+                  "onClick": "echo HAGT_UIShowAddress($id, $AddressAccess);"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "ExpansionPanel",
+          "name": "PanelOther",
+          "caption": "Connect other assistants (Claude Code, Codex and others)",
+          "onClick": "HAGT_UITogglePanel($id, 'PanelOther');",
+          "items": [
+            {
+              "type": "Label",
+              "name": "Endpoint",
+              "caption": "Endpoint"
+            },
+            {
+              "type": "Label",
+              "name": "OtherText",
+              "caption": "They send the token of their access in the header \"Authorization: Bearer <token>\". \"Show token\" shows it."
+            },
+            {
+              "type": "RowLayout",
+              "name": "TokenRow",
+              "items": [
+                {
+                  "type": "Select",
+                  "name": "TokenAccess",
+                  "caption": "Access",
+                  "options": []
+                },
+                {
+                  "type": "Button",
+                  "caption": "Show token",
+                  "onClick": "echo HAGT_UIShowToken($id, $TokenAccess);"
+                }
+              ]
             }
           ]
         }

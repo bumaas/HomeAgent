@@ -125,7 +125,7 @@ Ohne Zugang mit Token zeigt die Instanz den Status 104 und weist alle Anfragen a
 Die Claude-App kann sich anmelden, statt das Token in der Adresse zu tragen. Symcon Connect muss dafür
 aktiv sein, denn die App erreicht die Anlage aus dem Internet.
 
-1. Im Bereich **Endpunkt und Zugänge** steht unter **Claude-App** die Adresse für den Connector. Ohne
+1. Im Bereich **Endpunkt und Zugänge** steht unter **Claude-App verbinden** die Adresse für den Connector. Ohne
    aktives Connect steht dort stattdessen ein Hinweis.
 2. In der Claude-App unter „Anpassen“ → „Connectoren“ einen benutzerdefinierten Connector mit dieser
    Adresse anlegen. Die Vorauswahl „Jetzt anmelden“ und „Claudes veröffentlichte Identität verwenden“
@@ -138,7 +138,7 @@ aktiv sein, denn die App erreicht die Anlage aus dem Internet.
 Der Assistent bekommt die Rechte und den Standardraum dieses Zugangs. Die Seite nennt ihn mit der
 Adresse, von der er stammt. Steht dort etwas anderes als claude.ai, klicken Sie auf **Ablehnen**.
 
-Die gekoppelten Assistenten stehen in der Liste darunter. **Ausgewählten Assistenten widerrufen** trennt
+Die gekoppelten Assistenten stehen in der Liste darunter. **widerrufen** in seiner Zeile trennt
 einen sofort. Bekommt ein Zugang ein neues Token, sind alle Assistenten getrennt, die über ihn gekoppelt
 sind. Eine Kopplung, die 90 Tage lang nicht benutzt wurde, verfällt. Der Selbsttest nennt die Zahl der
 gekoppelten Assistenten, ohne Connect sagt er, dass die Anmeldung nicht möglich ist.

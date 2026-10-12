@@ -51,7 +51,7 @@ class HomeAgent extends IPSModuleStrict
     private const ROW_COLOR_ERROR = '#FFC0C0';
 
     /** Aufklappbare Bereiche des Formulars, deren Zustand das Modul sich merkt. */
-    private const PANELS = ['PanelAccesses', 'PanelRooms', 'PanelDevices', 'PanelScenes', 'PanelBalance'];
+    private const PANELS = ['PanelAccesses', 'PanelRooms', 'PanelDevices', 'PanelScenes', 'PanelBalance', 'PanelClaude', 'PanelHA', 'PanelOther'];
 
     private const LABEL_COLOR_ERROR = 0xC00000;
 
@@ -414,7 +414,8 @@ class HomeAgent extends IPSModuleStrict
         // Die Listen stecken in aufklappbaren Bereichen; angepasst wird jedes Element, auch verschachtelt.
         $base = $this->oauthBase();
         $usable = $this->usableAccesses();
-        $adjust = function (array &$element) use (&$adjust, $failedRows, $base, $usable): void {
+        $expanded = $this->expandedPanels();
+        $adjust = function (array &$element) use (&$adjust, $failedRows, $base, $usable, $expanded): void {
             // Bereich „Endpunkt und Zugänge“: je Assistent eine Anleitung mit echten Adressen
             // (Burkhard 12.10.2026: „für einsteiger wirkt es kompliziert“).
             $name = (string)($element['name'] ?? '');
@@ -424,8 +425,12 @@ class HomeAgent extends IPSModuleStrict
             if ($name === 'ClaudeStep1') {
                 $element['caption'] = sprintf($this->Translate('1. In the Claude app, add a custom connector under Connectors with this address and choose "Sign in now": %s'), $base);
             }
-            if (in_array($name, ['ClaudeStep1', 'PairingRow', 'ClaudeStep2', 'OAuthClients', 'RevokeClient'], true)) {
+            if (in_array($name, ['ClaudeStep1', 'PairingRow', 'ClaudeStep2'], true)) {
                 $element['visible'] = $base !== '';
+            }
+            // Bereiche und Unterbereiche merken sich ihren Zustand (Unterbereiche: Burkhard 12.10.2026)
+            if (($element['type'] ?? '') === 'ExpansionPanel' && in_array($name, self::PANELS, true)) {
+                $element['expanded'] = in_array($name, $expanded, true);
             }
             if ($name === 'ClaudeNoConnect') {
                 $element['visible'] = $base === '';
@@ -433,15 +438,22 @@ class HomeAgent extends IPSModuleStrict
             if (in_array($name, ['PairingAccess', 'AddressAccess', 'TokenAccess'], true)) {
                 $names = array_values(array_map(static fn (array $access): string => $access['Name'], array_filter($usable, static fn (array $access): bool => $name !== 'AddressAccess' || $access['InPath'])));
                 $element['options'] = array_map(static fn (string $access): array => ['caption' => $access, 'value' => $access], $names);
-                $element['value'] = $names[0] ?? '';
+                // Beim Kopplungscode zuerst ein Zugang, an dem schon ein Claude-Connector hängt
+                $paired = $name === 'PairingAccess' ? array_values(array_intersect(array_column($this->oauthClientRows(), 'Access'), $names)) : [];
+                $element['value'] = $paired[0] ?? $names[0] ?? '';
             }
             if ($name === 'OAuthClients') {
-                $element['values'] = $this->oauthClientRows();
+                $rows = array_map(fn (array $row): array => $row + ['Revoke' => $this->Translate('revoke')], $this->oauthClientRows());
+                $element['values'] = $rows;
+                $element['rowCount'] = max(1, min(8, count($rows)));
+                $element['visible'] = $base !== '' && $rows !== [];
             }
             if ($name === 'Accesses') {
                 // Nur die Spalte Verbindung; die Konsole ergänzt die gespeicherten Zeilen der Reihe nach,
                 // die Tokens kommen also nicht in die Werte.
                 $element['values'] = array_map(fn (array $access): array => ['Connection' => $this->connectionOf($access)], $this->accessList());
+                // So hoch wie die Liste, ohne Scrollbalken bis acht Zugänge
+                $element['rowCount'] = max(3, min(8, count($this->accessList())));
             }
 
             if (($element['name'] ?? '') === 'Devices') {
@@ -468,18 +480,11 @@ class HomeAgent extends IPSModuleStrict
                 }
             }
         };
+        // Jeder Bereich und Unterbereich steht so, wie der Anwender ihn zuletzt gelassen hat; anfangs sind
+        // alle zu (Burkhard, 10.10.2026: einheitlich, und den Zustand merken). Das setzt $adjust.
         foreach (array_keys($form['elements']) as $index) {
             $adjust($form['elements'][$index]);
         }
-        // Jeder Bereich steht so, wie der Anwender ihn zuletzt gelassen hat; anfangs sind alle zu
-        // (Burkhard, 10.10.2026: einheitlich, und den Zustand merken).
-        $expanded = $this->expandedPanels();
-        foreach ($form['elements'] as &$panel) {
-            if (($panel['type'] ?? '') === 'ExpansionPanel') {
-                $panel['expanded'] = in_array($panel['name'] ?? '', $expanded, true);
-            }
-        }
-        unset($panel);
 
         // Vorschlag aus Alexa nur, wenn es eine Alexa-Instanz gibt; die erste ist vorgewählt.
         // Auswahl und Knopf stehen zusammen in einer Zeile (RowLayout).
@@ -723,11 +728,6 @@ class HomeAgent extends IPSModuleStrict
     }
 
     /**
-     * Nur für das Konfigurationsformular, Knopf „Token erzeugen“: zeigt ein neues Zufallstoken an.
-     * Es wird nicht gespeichert; der Anwender kopiert es in die Spalte Token eines Zugangs und in
-     * die Einrichtung des Assistenten.
-     */
-    /**
      * Nur für den Bearbeiten-Dialog eines Zugangs („Neues Token“): leert das unsichtbare Feld „Token“, das neue
      * Token entsteht beim Übernehmen. Gezeigt wird es nicht; dafür gibt es „Token anzeigen“ und „Adresse anzeigen“.
      */
@@ -928,7 +928,9 @@ class HomeAgent extends IPSModuleStrict
             return $families;
         }, true);
         $this->SendDebug('OAuth', 'pairing revoked', 0);
-        $this->UpdateFormField('OAuthClients', 'values', (string)json_encode($this->oauthClientRows()));
+        $rows = array_map(fn (array $row): array => $row + ['Revoke' => $this->Translate('revoke')], $this->oauthClientRows());
+        $this->UpdateFormField('OAuthClients', 'values', (string)json_encode($rows));
+        $this->UpdateFormField('OAuthClients', 'visible', $rows !== []);
     }
 
     /**
