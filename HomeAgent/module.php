@@ -2202,6 +2202,7 @@ class HomeAgent extends IPSModuleStrict
             $type === 'thermostat'                             => ['state' => $this->Translate('Current temperature'), 'setpoint' => $this->Translate('Setpoint')],
             $type === 'media'                                  => ['state' => $this->Translate('On/off')],
             $type === 'humidifier'                             => ['state' => $this->Translate('On/off'), 'humidity' => $this->Translate('Current humidity'), 'setpoint' => $this->Translate('Target humidity'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed')],
+            $type === 'fan'                                    => ['state' => $this->Translate('On/off'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed')],
             in_array($type, ['presence', 'water_leak'], true)  => ['state' => $this->Translate('Detector')],
             DeviceIndex::TYPES[$type] === null                 => ['state' => $this->Translate('Measured value')],
             default                                            => ['state' => $this->Translate('Switching state')],

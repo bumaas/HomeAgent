@@ -152,17 +152,17 @@ then shows only the variables that belong to this type.
 |---|---|
 | Room | The way you call the room. Case and umlauts do not matter ("Küche" = "kueche"). |
 | Name, aliases | The name and further names, separated by commas. A partial word is enough when searching. If a device is found through an alias, the answer shows it in brackets after the name. |
-| Type | Light, switch, socket, appliance, blind, thermostat, media player, humidifier, window, door, presence, water leak, temperature, humidity, air quality or other measured value. |
+| Type | Light, switch, socket, appliance, blind, thermostat, media player, humidifier, ventilation/fan, window, door, presence, water leak, temperature, humidity, air quality or other measured value. |
 | State or measured value | The variable for on/off, open/closed or detected, for measured values the value itself. For a thermostat the current temperature. |
 | Setpoint | Only for a thermostat: the variable with the target temperature. It needs an action. |
 | Colour temperature | Only for a light, optional: the variable with the colour temperature in Kelvin or mired. It needs an action. |
 | Colour | Only for a light, optional: the variable with the colour as an integer (RGB, for example profile `~HexColor`). It needs an action. |
-| Current humidity, target humidity, mode, fan speed | Only for a humidifier or dehumidifier: the measured humidity, the target humidity the assistant may set (range and step from presentation or profile), and two selection variables whose entries it sets by name. The state is called "On/off" there. |
+| Current humidity, target humidity, mode, fan speed | For a humidifier or dehumidifier: the measured humidity, the target humidity the assistant may set (range and step from presentation or profile), and two selection variables whose entries it sets by name. For ventilation only mode and fan speed. The state is called "On/off" there. |
 | Playback, volume, mute, title, artist | Only for a media player. These are the variables Symcon combines in the "Media Player" presentation: playback with one of the profiles `~Playback`, `~PlaybackNoStop`, `~PlaybackPreviousNext`, `~PlaybackPreviousNextNoStop` or `~PlayerStatus`, the volume (announced in percent of its range), mute as a boolean, title and artist as text. For a media player the state is called "On/off". |
 | Brightness/position | For a light the brightness. It is announced together with a light that is on and can be set in percent. For a blind the position, for a window the drive. |
 | Moving state | Only for blinds and windows with a drive, and only if such a variable exists: it reports whether the blind is moving, for example `WORKING` on Homematic or the run status on the Velux KLF200. The module then answers "moving" at once, even if the position only arrives at the end. |
 | Stop | Only for blinds and windows with a drive, optional: a variable that stops the travel, that is a boolean with an action or a selection with the entry "Stop" (such as "Aktion" in the HomeAssistant module). Homematic and Velux KLF200 devices are stopped by the module even without it. |
-| Power | Only for lights, switches, sockets, appliances and humidifiers, optional: the current power, for example `POWER` of a Homematic metering channel. It follows the state in every answer, for example "on (26.1 W)". |
+| Power | Only for lights, switches, sockets, appliances, humidifiers and ventilation, optional: the current power, for example `POWER` of a Homematic metering channel. It follows the state in every answer, for example "on (26.1 W)". |
 | Energy meter | Also optional: the energy counter, for example `ENERGY_COUNTER`. For consumption over periods it must be aggregated as a counter in the archive. If a device hangs on a metering socket, both rows may carry the same power and energy meter; consumption and power of a room or the house count each variable only once, and the self test points it out. |
 | Inverted | Tick this if `true` means "closed" or "off". Many window contacts report `true` for closed. For blinds the module finds out by itself which value means "open"; the tick reverses that if open and closed are swapped. |
 | Tilt window | Only for a window with a drive: tick this if the drive only tilts the window. The answer then says "tilted" and "50 % tilted" instead of "open" and "50 % open". |
@@ -179,6 +179,7 @@ Which variables a device needs depends on its type:
 | Thermostat | Setpoint, optionally the current temperature |
 | Media player | On/off, playback or volume, optionally mute, title and artist |
 | Humidifier | On/off or target humidity, optionally current humidity, mode and fan speed |
+| Ventilation/fan | On/off or fan speed, optionally mode |
 | Window | Contact, drive or both, optionally moving state and stop for the drive |
 | Door | Contact |
 | Presence, water leak | Detector |
@@ -215,7 +216,7 @@ If the assistant asks for `type=temperature`, it also finds thermostats with a c
 do not need a separate temperature entry on the same variable. A setpoint outside its range is called a
 special setpoint: some Homematic thermostats use 100 for "valve fully open".
 
-A dehumidifier reports "on (51 %, setpoint 55 %, Smart, fan Niedrig)" or "off" and counts as active while it runs.
+A dehumidifier reports "on (51 %, setpoint 55 %, Smart, fan Niedrig)" or "off" and counts as active while it runs. Ventilation reports the same way without humidity: "on (Nacht, fan niedrig)".
 
 A media player reports for example "playing "Can't Get Enough" by Bad Company (volume 20 %)",
 "paused (volume 37 %, muted)" or "off". It counts as active while it plays. With the HomeAssistant
@@ -284,7 +285,7 @@ when querying and adds a command or a percent value:
 
 | Input | Effect |
 |---|---|
-| `on`, `off` | switches lights, switches, sockets, appliances, media players and dehumidifiers on or off |
+| `on`, `off` | switches lights, switches, sockets, appliances, media players, dehumidifiers and ventilation on or off |
 | `open`, `close` | moves blinds and windows with a drive fully open or fully closed |
 | `stop` | stops blinds and windows that are moving and ends playback of a media player |
 | `play`, `pause` | resumes or pauses playback of a media player |

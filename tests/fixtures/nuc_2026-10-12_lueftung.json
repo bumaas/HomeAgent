@@ -1,0 +1,166 @@
+{
+    "_quelle": "12.10.2026, nuc, Ambientika im Büro (Modul Ambientika Device #10547): Werte, Profilzuordnungen und Aktionen am Vormittag gelesen; Zeitverhalten aus der Messung in der Nacht (02:00, mit Burkhards OK, nachts, weil das Büro tagsüber belegt ist): Lüfter 2 und zurück 1, Modus 3 und zurück 2, alles am Ende auf den Ausgangswerten. RequestAction blockierte je 2,2 bis 2,4 s (das Modul fragt danach den Stand aus der Cloud ab); erst danach konnte die Messung lesen. Laut Quelltext des Ambientika-Moduls (changeDeviceMode: SetValue vor der Cloud-Anfrage) steht der neue Wert schon beim Senden in der Variable: die 100 ms in „reaktion“ sind daraus angenommen, nicht gemessen. Gemessen ist der Sprung des Modus von 2 auf 0 (Smart) nach dem Stellen der Lüfterstufe (Backlog B56, Fehler im Ambientika-Modul). Ein/Aus nicht gemessen. „formatiert“ ergibt sich aus den Profilzuordnungen.",
+    "variablen": {
+        "46282": {
+            "name": "Büro: Power",
+            "wert": true,
+            "aktion": true,
+            "verhalten": "reaktion",
+            "reaktion": {
+                "": [
+                    [
+                        100,
+                        46282,
+                        false
+                    ]
+                ],
+                "1": [
+                    [
+                        100,
+                        46282,
+                        true
+                    ]
+                ]
+            }
+        },
+        "20833": {
+            "name": "Büro: Lüftergeschwindigkeit",
+            "wert": 1,
+            "aktion": true,
+            "optionen": [
+                [
+                    1,
+                    "niedrig"
+                ],
+                [
+                    2,
+                    "mittel"
+                ],
+                [
+                    3,
+                    "hoch"
+                ]
+            ],
+            "verhalten": "reaktion",
+            "reaktion": {
+                "2": [
+                    [
+                        100,
+                        20833,
+                        2
+                    ],
+                    [
+                        2350,
+                        31702,
+                        0
+                    ]
+                ],
+                "1": [
+                    [
+                        100,
+                        20833,
+                        1
+                    ]
+                ],
+                "3": [
+                    [
+                        100,
+                        20833,
+                        3
+                    ]
+                ]
+            }
+        },
+        "31702": {
+            "name": "Büro: Betriebsmodus",
+            "wert": 2,
+            "aktion": true,
+            "optionen": [
+                [
+                    0,
+                    "Smart"
+                ],
+                [
+                    1,
+                    "automatisch"
+                ],
+                [
+                    2,
+                    "Manuelle Wärmerückgewinnung"
+                ],
+                [
+                    3,
+                    "Nacht"
+                ],
+                [
+                    4,
+                    "Außer Haus"
+                ],
+                [
+                    5,
+                    "Überwachung"
+                ],
+                [
+                    6,
+                    "Zeitgesteuerter Abluftbetrieb"
+                ],
+                [
+                    7,
+                    "Abluft"
+                ],
+                [
+                    8,
+                    "Zuluft"
+                ],
+                [
+                    9,
+                    "Luftfluss Master - Slave"
+                ],
+                [
+                    10,
+                    "Luftfluss Slave - Master"
+                ],
+                [
+                    11,
+                    "Aus"
+                ]
+            ],
+            "verhalten": "reaktion",
+            "reaktion": {
+                "3": [
+                    [
+                        100,
+                        31702,
+                        3
+                    ]
+                ],
+                "2": [
+                    [
+                        100,
+                        31702,
+                        2
+                    ]
+                ],
+                "0": [
+                    [
+                        100,
+                        31702,
+                        0
+                    ]
+                ]
+            }
+        }
+    },
+    "geraete": [
+        {
+            "Room": "Büro",
+            "Name": "Lüftung",
+            "Aliases": "Ambientika",
+            "Type": "fan",
+            "StateVariableID": 46282,
+            "FanVariableID": 20833,
+            "ModeVariableID": 31702,
+            "Invert": false
+        }
+    ]
+}

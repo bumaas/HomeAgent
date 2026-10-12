@@ -23,6 +23,7 @@ final class DeviceIndex
         'thermostat'  => null,
         'media'       => ['on', 'off'],
         'humidifier'  => ['on', 'off'],
+        'fan'         => ['on', 'off'],
         'window'      => ['open', 'closed'],
         'door'        => ['open', 'closed'],
         'presence'    => ['detected', 'not detected'],
@@ -34,7 +35,7 @@ final class DeviceIndex
     ];
 
     /** Nur diese Typen lassen sich schalten oder stellen; alle anderen sind Melder und Messwerte. */
-    public const CONTROLLABLE = ['light', 'switch', 'socket', 'appliance', 'blind', 'thermostat', 'media', 'humidifier'];
+    public const CONTROLLABLE = ['light', 'switch', 'socket', 'appliance', 'blind', 'thermostat', 'media', 'humidifier', 'fan'];
 
     /**
      * Fähigkeiten eines Geräts und der Schlüssel, unter dem ihre Variable in der Zeile steht.
@@ -127,6 +128,7 @@ final class DeviceIndex
         'thermostat'  => ['roles' => ['state', 'setpoint'], 'required' => ['setpoint']],
         'media'       => ['roles' => ['state', 'playback', 'volume', 'mute', 'title', 'artist'], 'required' => ['state', 'playback', 'volume']],
         'humidifier'  => ['roles' => ['state', 'humidity', 'setpoint', 'mode', 'fan', 'power', 'energy'], 'required' => ['state', 'setpoint']],
+        'fan'         => ['roles' => ['state', 'mode', 'fan', 'power', 'energy'], 'required' => ['state', 'fan']],
         'window'      => ['roles' => ['state', 'level', 'moving', 'stop'], 'required' => ['state', 'level']],
         'door'        => ['roles' => ['state'], 'required' => ['state']],
         'presence'    => ['roles' => ['state'], 'required' => ['state']],
@@ -1111,8 +1113,9 @@ final class DeviceIndex
         if ($type === 'thermostat') {
             return isset($roles['setpoint']) ? ['temperature'] : [];
         }
-        // Ein Luftentfeuchter schaltet und stellt seine Zielfeuchte.
-        if ($type === 'humidifier') {
+        // Ein Luftentfeuchter schaltet und stellt seine Zielfeuchte; eine Lüftung schaltet, Modus und Lüfterstufe
+        // gehen bei beiden per Name.
+        if ($type === 'humidifier' || $type === 'fan') {
             return array_merge(isset($roles['state']) ? ['on', 'off'] : [], isset($roles['setpoint']) ? ['humidity'] : [], isset($roles['mode']) ? ['mode'] : [], isset($roles['fan']) ? ['fan_speed'] : []);
         }
         // Ein Mediaplayer versteht die Wiedergabebefehle; welche das Gerät kennt, sagt erst sein Profil.
@@ -2708,7 +2711,8 @@ final class DeviceIndex
         if ($entry['Type'] === 'media') {
             return $this->mediaText($entry);
         }
-        if ($entry['Type'] === 'humidifier') {
+        // Die Lüftung hat dieselbe Zeile wie der Luftentfeuchter, nur ohne Feuchte.
+        if ($entry['Type'] === 'humidifier' || $entry['Type'] === 'fan') {
             return $this->humidifierText($entry);
         }
         $main = $this->backend->read($this->mainVariable($entry));

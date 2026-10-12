@@ -632,6 +632,8 @@ pruefe(($felder['media']['PlaybackVariableID']['onChange'] ?? '') === 'HAGT_UIDe
 // Luftentfeuchter (build 65): Ein/Aus, Ist-Feuchte, Zielfeuchte.
 pruefe(array_map(static fn (string $f): string => ($felder['humidifier'][$f]['visible'] ?? false) ? ($felder['humidifier'][$f]['caption'] ?? '') : '', ['StateVariableID', 'HumidityVariableID', 'SetpointVariableID', 'ModeVariableID', 'FanVariableID']) === ['On/off', 'Current humidity', 'Target humidity', 'Mode', 'Fan speed'], 'Luftentfeuchter: fünf Felder mit eigenen Beschriftungen: ' . json_encode(array_map(static fn (array $f): string => ($f['visible'] ?? false) ? ($f['caption'] ?? '') : '-', $felder['humidifier'] ?? []), JSON_UNESCAPED_UNICODE));
 pruefe(($felder['thermostat']['HumidityVariableID']['visible'] ?? true) === false && ($felder['humidifier']['ReadOnly']['visible'] ?? false) === true, 'Ist-Feuchte nur beim Luftentfeuchter, der ist steuerbar');
+// Lüftung (build 90): Ein/Aus, Betriebsmodus, Lüfterstufe, wahlweise Leistung und Zähler.
+pruefe(array_map(static fn (string $f): string => ($felder['fan'][$f]['visible'] ?? false) ? ($felder['fan'][$f]['caption'] ?? '') : '', ['StateVariableID', 'ModeVariableID', 'FanVariableID', 'HumidityVariableID', 'SetpointVariableID']) === ['On/off', 'Mode', 'Fan speed', '', ''] && ($felder['fan']['ReadOnly']['visible'] ?? false) === true, 'Lüftung: Ein/Aus, Modus und Lüfterstufe, steuerbar: ' . json_encode(array_keys(array_filter($felder['fan'] ?? [], static fn ($e) => $e['visible'] ?? false))));
 $m->formUpdates = [];
 $lautstaerke = variable(VARIABLETYPE_INTEGER, 37);
 IPS_SetName($lautstaerke, 'Lautstärke');
