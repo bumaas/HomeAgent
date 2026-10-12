@@ -71,24 +71,6 @@
               "width": "400px"
             },
             {
-              "type": "RowLayout",
-              "items": [
-                {
-                  "type": "ValidationTextBox",
-                  "name": "Token",
-                  "caption": "Token (at least 24 characters)",
-                  "validate": "^\\s*\\S.{22,}\\S\\s*$",
-                  "width": "500px"
-                },
-                {
-                  "type": "Button",
-                  "caption": "Create token",
-                  "onClick": "echo HAGT_UIGenerateToken($id);",
-                  "confirm": "A new token disconnects every assistant that uses this access until it gets the new token. Continue?"
-                }
-              ]
-            },
-            {
               "type": "CheckBox",
               "name": "ReadOnly",
               "caption": "Query only (the assistant cannot switch anything)"
@@ -103,6 +85,18 @@
               "type": "CheckBox",
               "name": "InPath",
               "caption": "Token also in the address (for Home Assistant and the Claude app without sign-in)"
+            },
+            {
+              "type": "ValidationTextBox",
+              "name": "Token",
+              "caption": "Token",
+              "visible": false
+            },
+            {
+              "type": "Button",
+              "caption": "New token",
+              "onClick": "echo HAGT_UIGenerateToken($id);",
+              "confirm": "A new token disconnects every assistant that uses this access until it gets the new token. Continue?"
             }
           ]
         },
@@ -246,7 +240,24 @@
         {
           "type": "Label",
           "name": "OtherText",
-          "caption": "They send the token of their access as \"Authorization: Bearer <token>\". A client that cannot do that may append it to the address as /<Token>, if \"Token also in the address\" is ticked."
+          "caption": "They send the token of their access as \"Authorization: Bearer <token>\"; \"Show token\" shows it. A client that cannot do that may append it to the address as /<Token>, if \"Token also in the address\" is ticked."
+        },
+        {
+          "type": "RowLayout",
+          "name": "TokenRow",
+          "items": [
+            {
+              "type": "Select",
+              "name": "TokenAccess",
+              "caption": "Access",
+              "options": []
+            },
+            {
+              "type": "Button",
+              "caption": "Show token",
+              "onClick": "echo HAGT_UIShowToken($id, $TokenAccess);"
+            }
+          ]
         }
       ]
     },
@@ -1128,7 +1139,7 @@
     {
       "type": "Label",
       "visible": false,
-      "caption": "Hint for scripts and AI assistants: HAGT_QueryState(int $InstanceID, string $Room, string $Type, string $Name, bool $ActiveOnly): string returns the same text as the tool get_state (first line = count, then room | name | type | state). $Type is one of light, switch, socket, appliance, blind, thermostat, media, humidifier, window, door, presence, water_leak, temperature, humidity, air_quality, measurement. Empty parameters mean no restriction. The property Accesses is a JSON list of accesses, one per assistant: Name, Token, DefaultRoom, ReadOnly, InPath. Each assistant logs in with its own token as Authorization: Bearer <token>; with InPath the endpoint also accepts that token without Authorization header at <hook path>/<token>. Home Assistant (MCP integration) and the Claude app (custom connector without sign-in) only work with InPath. The Claude app connects from the internet, its address is the Connect address from the instance Connect Control (or another public HTTPS address) followed by the hook path and the token. A token needs at least 24 characters, for example bin2hex(random_bytes(20)); HAGT_UIGenerateToken only fills the edit dialog. An access with ReadOnly only gets the tool get_state. DefaultRoom applies when a tool call names neither room nor name nor floor; room=all then means the whole house. The script functions have no access and therefore no default room. The property Rooms is an optional JSON list (Name, Aliases, Floor) that gives rooms aliases and a floor; with floors the tools also accept the parameter floor. Room names are the words the user speaks (Küche, Bad oben), without technical additions. The property Devices is a JSON list of devices with their capabilities: Room, Name, Aliases, Type, Invert, ReadOnly (true = the assistant may query the device but not switch it), StateVariableID (state or measured value; for a thermostat the current temperature), LevelVariableID (brightness or position) and SetpointVariableID (setpoint of a thermostat). A blind only uses LevelVariableID, a light needs at least one of the two, a thermostat needs SetpointVariableID, all other types use StateVariableID; an ID of 0 or 1 means not set. The fields of each type (volume, mode, fan and others) are named by HAGT_UIDeviceForm(int $InstanceID, string $Type). For every blind HAGT_RunSelfTest shows which value counts as open; if open and closed are swapped, set Invert. HAGT_UIDeviceForm and HAGT_UIDeviceChanged only serve the edit dialog of this list, HAGT_UIImportAlexa opens a window with devices proposed from an Alexa instance, HAGT_UISetAlexaTakes ticks all or none of them, HAGT_UIApplyAlexa releases the ticked ones. The assistant has three tools: get_state, set_state (command on, off, open, close, stop, or percent, or temperature in °C for a thermostat; only what a released device can do is offered, and devices of a group that do not understand a command are left out) and run_scene. HAGT_SwitchDevices(int $InstanceID, string $Room, string $Type, string $Name, bool $On): string switches the matching devices on or off, HAGT_SetLevel(int $InstanceID, string $Room, string $Type, string $Name, float $Percent): string sets brightness or position in percent (0 switches a light off; blinds and windows: 0 = closed, 100 = open). Both need at least one filter, a name must match exactly one device, and they return one line per device with the result. HAGT_RunScene(int $InstanceID, string $Room, string $Name): string starts exactly one scene of the scene list (empty name = nothing is started, the answer lists the scenes; the room may stay empty). HAGT_GetEndpoint(int $InstanceID): string returns the hook path. HAGT_RunSelfTest(int $InstanceID): string checks accesses, lists and endpoint without side effects (first line OK or ERROR). Status 104 = no access with a token, 201 = the room list has errors or no access is free of errors (details in the log); a faulty access, device or scene, for example with a deleted variable, only disables itself, the energy balance only as a whole. Sign-in with OAuth (offered as soon as Symcon Connect is active): HAGT_CreatePairingCode(int $InstanceID, string $AccessName): string returns a six-digit pairing code for an access, valid for 10 minutes; the user enters it on the sign-in page of the assistant, which then gets the rights of that access."
+      "caption": "Hint for scripts and AI assistants: HAGT_QueryState(int $InstanceID, string $Room, string $Type, string $Name, bool $ActiveOnly): string returns the same text as the tool get_state (first line = count, then room | name | type | state). $Type is one of light, switch, socket, appliance, blind, thermostat, media, humidifier, window, door, presence, water_leak, temperature, humidity, air_quality, measurement. Empty parameters mean no restriction. The property Accesses is a JSON list of accesses, one per assistant: Name, Token, DefaultRoom, ReadOnly, InPath. Each assistant logs in with its own token as Authorization: Bearer <token>; with InPath the endpoint also accepts that token without Authorization header at <hook path>/<token>. Home Assistant (MCP integration) and the Claude app (custom connector without sign-in) only work with InPath. The Claude app connects from the internet, its address is the Connect address from the instance Connect Control (or another public HTTPS address) followed by the hook path and the token. An access without a token gets one on apply (64 hex characters); a token set by script needs at least 24 characters. An access with ReadOnly only gets the tool get_state. DefaultRoom applies when a tool call names neither room nor name nor floor; room=all then means the whole house. The script functions have no access and therefore no default room. The property Rooms is an optional JSON list (Name, Aliases, Floor) that gives rooms aliases and a floor; with floors the tools also accept the parameter floor. Room names are the words the user speaks (Küche, Bad oben), without technical additions. The property Devices is a JSON list of devices with their capabilities: Room, Name, Aliases, Type, Invert, ReadOnly (true = the assistant may query the device but not switch it), StateVariableID (state or measured value; for a thermostat the current temperature), LevelVariableID (brightness or position) and SetpointVariableID (setpoint of a thermostat). A blind only uses LevelVariableID, a light needs at least one of the two, a thermostat needs SetpointVariableID, all other types use StateVariableID; an ID of 0 or 1 means not set. The fields of each type (volume, mode, fan and others) are named by HAGT_UIDeviceForm(int $InstanceID, string $Type). For every blind HAGT_RunSelfTest shows which value counts as open; if open and closed are swapped, set Invert. HAGT_UIDeviceForm and HAGT_UIDeviceChanged only serve the edit dialog of this list, HAGT_UIImportAlexa opens a window with devices proposed from an Alexa instance, HAGT_UISetAlexaTakes ticks all or none of them, HAGT_UIApplyAlexa releases the ticked ones. The assistant has three tools: get_state, set_state (command on, off, open, close, stop, or percent, or temperature in °C for a thermostat; only what a released device can do is offered, and devices of a group that do not understand a command are left out) and run_scene. HAGT_SwitchDevices(int $InstanceID, string $Room, string $Type, string $Name, bool $On): string switches the matching devices on or off, HAGT_SetLevel(int $InstanceID, string $Room, string $Type, string $Name, float $Percent): string sets brightness or position in percent (0 switches a light off; blinds and windows: 0 = closed, 100 = open). Both need at least one filter, a name must match exactly one device, and they return one line per device with the result. HAGT_RunScene(int $InstanceID, string $Room, string $Name): string starts exactly one scene of the scene list (empty name = nothing is started, the answer lists the scenes; the room may stay empty). HAGT_GetEndpoint(int $InstanceID): string returns the hook path. HAGT_RunSelfTest(int $InstanceID): string checks accesses, lists and endpoint without side effects (first line OK or ERROR). Status 104 = no access with a token, 201 = the room list has errors or no access is free of errors (details in the log); a faulty access, device or scene, for example with a deleted variable, only disables itself, the energy balance only as a whole. Sign-in with OAuth (offered as soon as Symcon Connect is active): HAGT_CreatePairingCode(int $InstanceID, string $AccessName): string returns a six-digit pairing code for an access, valid for 10 minutes; the user enters it on the sign-in page of the assistant, which then gets the rights of that access."
     }
   ],
   "actions": [

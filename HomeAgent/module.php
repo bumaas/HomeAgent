@@ -106,6 +106,23 @@ class HomeAgent extends IPSModuleStrict
 
         $this->SetSummary($this->GetEndpoint());
 
+        // Ein Zugang ohne Token bekommt beim Übernehmen eines. Der Anwender braucht es nur für Clients, die es im
+        // Header schicken („Token anzeigen“), oder in der Adresse („Adresse anzeigen“), Burkhard 12.10.2026.
+        $accesses = $this->listProperty('Accesses');
+        $filled = false;
+        foreach ($accesses as &$row) {
+            if (trim((string)($row['Token'] ?? '')) === '') {
+                $row['Token'] = bin2hex(random_bytes(32));
+                $filled = true;
+            }
+        }
+        unset($row);
+        if ($filled) {
+            IPS_SetProperty($this->InstanceID, 'Accesses', (string)json_encode($accesses));
+            IPS_ApplyChanges($this->InstanceID);
+            return;
+        }
+
         if (IPS_GetKernelRunlevel() === KR_READY) {
             $this->registerReferences();
         }
@@ -413,8 +430,8 @@ class HomeAgent extends IPSModuleStrict
             if ($name === 'ClaudeNoConnect') {
                 $element['visible'] = $base === '';
             }
-            if ($name === 'PairingAccess' || $name === 'AddressAccess') {
-                $names = array_values(array_map(static fn (array $access): string => $access['Name'], array_filter($usable, static fn (array $access): bool => $name === 'PairingAccess' || $access['InPath'])));
+            if (in_array($name, ['PairingAccess', 'AddressAccess', 'TokenAccess'], true)) {
+                $names = array_values(array_map(static fn (array $access): string => $access['Name'], array_filter($usable, static fn (array $access): bool => $name !== 'AddressAccess' || $access['InPath'])));
                 $element['options'] = array_map(static fn (string $access): array => ['caption' => $access, 'value' => $access], $names);
                 $element['value'] = $names[0] ?? '';
             }
@@ -711,15 +728,25 @@ class HomeAgent extends IPSModuleStrict
      * die Einrichtung des Assistenten.
      */
     /**
-     * Nur für den Bearbeiten-Dialog eines Zugangs: schreibt ein neues Token in das Feld „Token“ und nennt es
-     * einmal zum Kopieren, denn das Kennwortfeld zeigt nur Punkte (Burkhard 12.10.2026: „passiert nichts“).
+     * Nur für den Bearbeiten-Dialog eines Zugangs („Neues Token“): leert das unsichtbare Feld „Token“, das neue
+     * Token entsteht beim Übernehmen. Gezeigt wird es nicht; dafür gibt es „Token anzeigen“ und „Adresse anzeigen“.
      */
     public function UIGenerateToken(): string
     {
-        $token = bin2hex(random_bytes(32));
-        $this->UpdateFormField('Token', 'value', $token);
-        // Das Token allein in einer Zeile, ohne Satzzeichen daneben, damit es sich kopieren lässt.
-        return $this->Translate('New token for the assistant:') . "\n\n" . $token . "\n\n" . $this->Translate('It only takes effect with OK and Apply.');
+        $this->UpdateFormField('Token', 'value', '');
+        return $this->Translate('The new token is created with OK and Apply. Afterwards "Show token" or "Show address" shows it.');
+    }
+
+    /** Nur für das Formular: das Token eines Zugangs für Clients, die es im Header schicken, erst auf Knopfdruck. */
+    public function UIShowToken(string $AccessName): string
+    {
+        foreach ($this->usableAccesses() as $access) {
+            if ($access['Name'] === trim($AccessName)) {
+                // Das Token allein in einer Zeile, ohne Satzzeichen daneben, damit es sich kopieren lässt.
+                return sprintf($this->Translate('Token of the access "%s":'), $access['Name']) . "\n\n" . $access['Token'];
+            }
+        }
+        return sprintf($this->Translate('There is no usable access named "%s"'), $AccessName);
     }
 
     /**

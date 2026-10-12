@@ -41,9 +41,8 @@ die Geräte, die Sie freigeben.
 1. **Instanz anlegen.** Modul installieren und eine Instanz **Home Agent** anlegen. Das Formular ist in
    aufklappbare Bereiche gegliedert, die sich merken, ob sie offen oder zu sind.
 2. **Zugang anlegen.** Im Bereich **Endpunkt und Zugänge** in der Liste **Zugänge** einen Zugang mit
-   Namen anlegen. Der Knopf **Token erzeugen** unten im Formular zeigt eine Zufallsfolge aus 64 Zeichen,
-   die Sie in die Spalte Token kopieren. Für den Anfang empfiehlt sich der Haken **Nur abfragen**: Der
-   Assistent kann dann fragen, aber nichts schalten.
+   Namen anlegen. Das Token erzeugt das Modul beim Übernehmen selbst. Für den Anfang empfiehlt sich der
+   Haken **Nur abfragen**: Der Assistent kann dann fragen, aber nichts schalten.
 3. **Räume anlegen (wahlweise).** Im Bereich **Räume** die Räume mit weiteren Bezeichnungen und Etage
    eintragen, etwa „Gast“ mit dem Alias „Gästezimmer“. Das lohnt sich vor dem nächsten Schritt, denn der
    Vorschlag aus Alexa erkennt diese Räume auch an anderen Namen und kennt danach ihre Etage.
@@ -106,13 +105,15 @@ die Meldung nach dem Klick zählt sie.
 
 Jeder Assistent bekommt seinen eigenen Zugang. Die Geräte pflegen Sie trotzdem nur einmal, alle
 Zugänge einer Instanz sehen dieselbe Freigabeliste. Die Liste zeigt Name, Nur abfragen, Standardraum und in
-der Spalte **Verbindung**, wie der Assistent verbunden ist. Token und „Token auch in der Adresse“ stehen im
-Bearbeiten-Dialog der Zeile; dort erzeugt **Token erzeugen** ein neues.
+der Spalte **Verbindung**, wie der Assistent verbunden ist. „Token auch in der Adresse“ steht im
+Bearbeiten-Dialog der Zeile. Das Token selbst sehen Sie nur, wenn Sie es brauchen: **Token anzeigen** für
+Claude Code und ähnliche Clients, **Adresse anzeigen** für Home Assistant. **Neues Token** im Dialog ersetzt
+es beim Übernehmen; alle Assistenten dieses Zugangs brauchen dann das neue.
 
 | Spalte | Bedeutung |
 |---|---|
 | Name | Frei wählbar, zum Beispiel „Küche“ oder „Gäste“. Er erscheint im Debug der Instanz. |
-| Token | Das Kennwort dieses Zugangs, mindestens 24 Zeichen. Jeder Zugang braucht ein eigenes. |
+| Token | Das Kennwort dieses Zugangs. Ein Zugang ohne Token bekommt beim Übernehmen eines aus 64 Zeichen; ein per Skript gesetztes braucht mindestens 24. |
 | Standardraum | Der Raum, in dem der Assistent steht. „Mach das Licht an“ ohne Raum meint dann diesen Raum, und bei gleichen Gerätenamen gewinnt das Gerät dort. Für das ganze Haus sagt der Assistent `room=all`. |
 | Nur abfragen | Dieser Zugang darf fragen, aber nichts schalten. Er sieht nur das Werkzeug zum Abfragen, und der Assistent erfährt, dass der Zugang nur lesen darf. |
 | Token auch in der Adresse | Für Clients, die keine Anmeldung mitschicken können. Das Token hängt dann an der Adresse. |

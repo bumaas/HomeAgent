@@ -38,9 +38,8 @@ unambiguous answer. It only sees and switches the devices you release.
 1. **Create the instance.** Install the module and create a **Home Agent** instance. The form is divided
    into expandable sections that remember whether they are open or closed.
 2. **Create an access.** In the section **Endpoint and accesses**, create an access with a name in the
-   list **Accesses**. The button **Generate token** at the bottom of the form shows a random string of 64
-   characters that you copy into the Token column. To start with, tick **Query only**: the assistant can
-   then ask but not switch anything.
+   list **Accesses**. The module creates the token itself on apply. To start with, tick **Query only**: the
+   assistant can then ask but not switch anything.
 3. **Create rooms (optional).** In the section **Rooms**, enter the rooms with further names and a floor,
    for example "Gast" with the alias "Gästezimmer". This pays off before the next step, because the
    proposal from Alexa then also recognises these rooms by their other names and knows their floor.
@@ -99,13 +98,15 @@ twice. Locks, televisions, colour lights, scenes and blinds that only know open,
 
 Each assistant gets an access of its own. You still maintain the devices only once, all accesses of
 an instance see the same release list. The list shows name, query only, default room and, in the column
-**Connection**, how the assistant is connected. Token and "Token also in the address" are in the edit
-dialog of the row; **Create token** there creates a new one.
+**Connection**, how the assistant is connected. "Token also in the address" is in the edit dialog of the
+row. You only see the token itself where you need it: **Show token** for Claude Code and similar clients,
+**Show address** for Home Assistant. **New token** in the dialog replaces it on apply; all assistants of this
+access then need the new one.
 
 | Column | Meaning |
 |---|---|
 | Name | Free text, for example "Kitchen" or "Guests". It appears in the debug of the instance. |
-| Token | The password of this access, at least 24 characters. Each access needs its own. |
+| Token | The password of this access. An access without a token gets one of 64 characters on apply; one set by script needs at least 24. |
 | Default room | The room the assistant is in. "Turn on the light" without a room then means this room, and with equal device names the device there wins. For the whole house the assistant says `room=all`. |
 | Query only | This access may ask but not switch anything. It only sees the query tool, and the assistant is told that the access can only read. |
 | Token also in the address | For clients that cannot send a login. The token is then appended to the address. |

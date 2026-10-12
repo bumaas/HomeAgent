@@ -294,12 +294,13 @@ $logText = static fn (): string => implode("\n", array_column($m->logs(), 'Messa
 $geraeteStart = json_decode(IPS_GetProperty($iid, 'Devices'), true);
 
 $setze('Accesses', [$zugang('Leer', '')]);
-pruefe($status() === 104, 'ein Zugang ohne Token zählt nicht: Status 104, nicht ' . $status());
+$gefuellt = json_decode(IPS_GetProperty($iid, 'Accesses'), true);
+pruefe(preg_match('/^[0-9a-f]{64}$/', (string)($gefuellt[0]['Token'] ?? '')) === 1 && $status() === IS_ACTIVE, 'ein Zugang ohne Token bekommt beim Übernehmen eines (64 Hex-Zeichen) und ist aktiv: ' . $status());
 $setze('Accesses', [$zugang('A', 'abc-token-0123456789abcdef'), $zugang('', 'def-token-0123456789abcdef'), $zugang('C', ''), $zugang('D', 'abc-token-0123456789abcdef'), $zugang('E', 'xyz-token-0123456789abcdef', 'Dachboden')]);
 pruefe($status() === IS_ACTIVE, 'fehlerhafte Zugänge sperren nur sich selbst, A hält den Endpunkt offen: Status ' . $status());
 pruefe(str_contains($logText(), 'Faulty entries are disabled until they are corrected: '), 'das Log sagt, dass die fehlerhaften Zugänge gesperrt sind: ' . $logText());
 $log = $logText();
-pruefe(str_contains($log, 'Access without a name: name is missing') && str_contains($log, 'Access "C": token is missing') && str_contains($log, 'Access "D": token is used twice'), 'Log nennt Zugänge ohne Name, ohne Token und mit doppeltem Token: ' . $log);
+pruefe(str_contains($log, 'Access without a name: name is missing') && !str_contains($log, 'Access "C": token is missing') && str_contains($log, 'Access "D": token is used twice'), 'Log nennt Zugänge ohne Name, ohne Token und mit doppeltem Token: ' . $log);
 pruefe(str_contains($log, 'Access "E": default room "Dachboden" is neither in the room list nor the room of a device'), 'unbekannter Standardraum wird benannt');
 pruefe(!str_contains($log, 'abc-token-0123456789abcdef') && !str_contains($log, 'xyz-token-0123456789abcdef'), 'kein Token steht im Log');
 
@@ -368,9 +369,9 @@ pruefe(array_keys($zugangsSpalten) === ['Name', 'ReadOnly', 'DefaultRoom', 'Conn
 pruefe(($zugangsSpalten['Token']['visible'] ?? true) === false && ($zugangsSpalten['Token']['save'] ?? false) === true && ($zugangsSpalten['InPath']['visible'] ?? true) === false && ($zugangsSpalten['InPath']['save'] ?? false) === true, 'Token und „Token in der Adresse“ sind unsichtbar, werden aber gespeichert');
 pruefe(($zugangsSpalten['Connection']['save'] ?? null) === false && ($zugangsSpalten['Name']['save'] ?? false) === true && ($zugangsSpalten['DefaultRoom']['save'] ?? false) === true, 'die Spalte Verbindung ist nur Anzeige, Name und Standardraum werden gespeichert');
 $zugangsDialog = array_column(flach($benannt['Accesses']['form'] ?? []), null, 'name');
-// Burkhard 12.10.2026: Im Kennwortfeld erschienen nach „Token erzeugen“ nur Punkte, das Token ließ sich weder sehen
-// noch kopieren. Im Dialog ist es deshalb ein Textfeld; in der Liste bleibt es unsichtbar.
-pruefe(($zugangsDialog['Token']['type'] ?? '') === 'ValidationTextBox' && isset($zugangsDialog['Name'], $zugangsDialog['ReadOnly'], $zugangsDialog['DefaultRoom'], $zugangsDialog['InPath']), 'der Bearbeiten-Dialog hat alle Felder, das Token als sichtbares Textfeld: ' . json_encode(array_keys($zugangsDialog)));
+// Burkhard 12.10.2026: Das Token braucht der Anwender nur für Claude Code und ähnliche Clients. Im Dialog steht es
+// deshalb gar nicht mehr sichtbar; ein leeres Token füllt das Modul beim Übernehmen.
+pruefe(($zugangsDialog['Token']['visible'] ?? true) === false && !isset($zugangsDialog['Token']['validate']) && isset($zugangsDialog['Name'], $zugangsDialog['ReadOnly'], $zugangsDialog['DefaultRoom'], $zugangsDialog['InPath']), 'der Bearbeiten-Dialog zeigt das Token nicht: ' . json_encode($zugangsDialog['Token'] ?? null));
 pruefe(array_column($benannt['Rooms']['columns'] ?? [], 'name') === ['Name', 'Aliases', 'Floor'], 'Spalten der Raumliste');
 pruefe(str_contains($m->GetConfigurationForm(), '\/<Token>') && !str_contains($m->GetConfigurationForm(), 'gast-token-0123456789abcdef'), 'das Formular nennt die Adresse nur mit Platzhalter, kein echtes Token');
 
@@ -499,7 +500,7 @@ $hinweisDe = (string)(json_decode((string)file_get_contents(dirname(__DIR__) . '
 foreach ([
     'Home Assistant (MCP integration) and the Claude app (custom connector without sign-in) only work with InPath.'                                  => 'Home Assistant (MCP-Integration) und die Claude-App (benutzerdefinierter Connector ohne Anmeldung) gehen nur mit InPath.',
     'The Claude app connects from the internet, its address is the Connect address from the instance Connect Control'                               => 'Die Claude-App verbindet sich aus dem Internet, ihre Adresse ist die Connect-Adresse aus der Instanz Connect Control',
-    'A token needs at least 24 characters, for example bin2hex(random_bytes(20)); HAGT_UIGenerateToken only fills the edit dialog.'                  => 'Ein Token braucht mindestens 24 Zeichen, etwa bin2hex(random_bytes(20)); HAGT_UIGenerateToken füllt nur den Bearbeitungsdialog.',
+    'An access without a token gets one on apply (64 hex characters); a token set by script needs at least 24 characters.'                         => 'Ein Zugang ohne Token bekommt beim Übernehmen eines (64 Hex-Zeichen); ein per Skript gesetztes Token braucht mindestens 24 Zeichen.',
     'Room names are the words the user speaks (Küche, Bad oben), without technical additions.'                                                      => 'Raumnamen sind die Wörter, die der Anwender spricht (Küche, Bad oben), ohne technische Zusätze.',
     'The fields of each type (volume, mode, fan and others) are named by HAGT_UIDeviceForm(int $InstanceID, string $Type).'                           => 'Die Felder je Typ (Lautstärke, Modus, Lüfter und andere) nennt HAGT_UIDeviceForm(int $InstanceID, string $Type).',
     'For every blind HAGT_RunSelfTest shows which value counts as open; if open and closed are swapped, set Invert.'                                 => 'Für jeden Rollladen zeigt HAGT_RunSelfTest, welcher Wert als offen gilt; sind offen und geschlossen vertauscht, Invert setzen.',
@@ -539,7 +540,7 @@ pruefe(($geraete['form'] ?? null) === "return json_decode(HAGT_UIDeviceForm(\$id
 $oben = $formular['elements'];
 $bereiche = array_values(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel'));
 $inhalt = array_map(static fn (array $b): array => array_values(array_filter(array_column($b['items'], 'name'))), $bereiche);
-pruefe(count($bereiche) === 5 && $inhalt[0] === ['Accesses', 'ConnectHeading', 'ClaudeHeading', 'ClaudeStep1', 'ClaudeNoConnect', 'PairingRow', 'ClaudeStep2', 'OAuthClients', 'RevokeClient', 'HAHeading', 'HAText', 'AddressRow', 'OtherHeading', 'Endpoint', 'OtherText'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['Devices'] && $inhalt[3] === ['Scenes'] && in_array('GridImportVariableID', array_column(flach($bereiche[4]['items']), 'name'), true), 'fünf Bereiche in dieser Reihenfolge: ' . json_encode($inhalt));
+pruefe(count($bereiche) === 5 && $inhalt[0] === ['Accesses', 'ConnectHeading', 'ClaudeHeading', 'ClaudeStep1', 'ClaudeNoConnect', 'PairingRow', 'ClaudeStep2', 'OAuthClients', 'RevokeClient', 'HAHeading', 'HAText', 'AddressRow', 'OtherHeading', 'Endpoint', 'OtherText', 'TokenRow'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['Devices'] && $inhalt[3] === ['Scenes'] && in_array('GridImportVariableID', array_column(flach($bereiche[4]['items']), 'name'), true), 'fünf Bereiche in dieser Reihenfolge: ' . json_encode($inhalt));
 pruefe(array_values(array_filter(array_column(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') !== 'ExpansionPanel'), 'name'))) === [], 'oben steht außer den Bereichen nur Erklärtext, kein Feld: ' . json_encode(array_column($oben, 'name')));
 // Burkhard, 10.10.2026: einheitlich zugeklappt, und jeder Bereich merkt sich seinen Zustand
 $zustand = static fn (): array => array_map(static fn (array $b): bool => ($b['expanded'] ?? false) === true, array_values(array_filter(json_decode($m->GetConfigurationForm(), true)['elements'], static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel')));
@@ -1304,9 +1305,6 @@ pruefe(count($fehlerTexte) === 2 && in_array('Access "Kurz": token is shorter th
 pruefe(in_array('Faulty entries are disabled until they are corrected:', $fehlerTexte, true), 'die Überschrift sagt, dass nur die Zugänge gesperrt sind: ' . json_encode($fehlerTexte));
 pruefe(array_column($elemente['Accesses']['values'] ?? [], 'rowColor') === ['#FFC0C0', ''], 'die fehlerhafte Zeile ist rot, die andere nicht: ' . json_encode($elemente['Accesses']['values'] ?? null));
 pruefe(!str_contains(json_encode($formular), 'abc123'), 'das Formular trägt das Token nicht in die Werte');
-$tokenSpalte = array_column(flach($elemente['Accesses']['form'] ?? []), null, 'name')['Token'] ?? [];
-$muster = '/' . str_replace('/', '\/', (string)($tokenSpalte['validate'] ?? 'x^')) . '/';
-pruefe(preg_match($muster, str_repeat('a1', 32)) === 1 && preg_match($muster, ' ' . str_repeat('b', 24) . ' ') === 1 && preg_match($muster, 'abc123') === 0 && preg_match($muster, '') === 0, 'die Token-Spalte prüft die Mindestlänge schon bei der Eingabe: ' . ($tokenSpalte['validate'] ?? '-'));
 
 $ausgaben = [];
 try {
@@ -1315,14 +1313,12 @@ try {
 } catch (Throwable $e) {
     pruefe(false, 'UIGenerateToken fehlt: ' . $e->getMessage());
 }
-$erzeugt = array_values(array_filter($m->formUpdates, static fn (array $u): bool => $u[0] === 'Token' && $u[1] === 'value'));
-pruefe(count($erzeugt) === 2 && preg_match('/^[0-9a-f]{64}$/', (string)$erzeugt[0][2]) === 1 && $erzeugt[0][2] !== $erzeugt[1][2], 'der Knopf erzeugt jedes Mal ein neues Token aus 64 Hex-Zeichen, direkt ins Feld des Dialogs: ' . count($erzeugt));
-// Burkhard 12.10.2026: „beim button "token erzeugen" passiert nichts“. Das Kennwortfeld zeigt nur Punkte, also
-// nennt der Knopf das neue Token einmal zum Kopieren, und er fragt vorher, weil ein neues Token Assistenten trennt.
-pruefe(count($erzeugt) === 2 && in_array((string)$erzeugt[0][2], explode("\n", $ausgaben[0]), true) && str_contains($ausgaben[0], 'only takes effect with OK and Apply'), 'der Knopf zeigt das neue Token allein in einer Zeile zum Kopieren und sagt, wann es gilt: ' . json_encode($ausgaben[0] ?? null));
+$geleert = array_values(array_filter($m->formUpdates, static fn (array $u): bool => $u[0] === 'Token' && $u[1] === 'value'));
+pruefe(count($geleert) === 2 && $geleert[0][2] === '', 'der Knopf „Neues Token“ leert das unsichtbare Feld, das neue Token entsteht beim Übernehmen: ' . json_encode($geleert));
+pruefe(preg_match('/[0-9a-f]{24,}/', $ausgaben[0] ?? '') === 0 && str_contains($ausgaben[0] ?? '', 'Show token'), 'er zeigt kein Token und sagt, wo man das neue findet: ' . json_encode($ausgaben[0] ?? null));
 $formular = json_decode($m->GetConfigurationForm(), true);
 $knopf = array_values(array_filter(flach(array_column(array_filter(flach($formular['elements']), static fn ($e) => ($e['name'] ?? '') === 'Accesses'), 'form')[0] ?? []), static fn ($e) => str_contains((string)($e['onClick'] ?? ''), 'HAGT_UIGenerateToken')))[0] ?? [];
-pruefe(($knopf['onClick'] ?? '') === 'echo HAGT_UIGenerateToken($id);', 'der Knopf „Token erzeugen“ steht im Bearbeiten-Dialog und gibt das Token aus: ' . json_encode($knopf));
+pruefe(($knopf['onClick'] ?? '') === 'echo HAGT_UIGenerateToken($id);' && ($knopf['caption'] ?? '') === 'New token', 'der Knopf „Neues Token“ steht im Bearbeiten-Dialog: ' . json_encode($knopf));
 pruefe(str_contains((string)($knopf['confirm'] ?? ''), 'disconnects every assistant'), 'der Knopf fragt vorher, weil ein neues Token alle Assistenten des Zugangs trennt: ' . json_encode($knopf['confirm'] ?? null));
 pruefe(!in_array('GeneratedToken', array_column(flach($formular['actions']), 'name'), true) && !in_array('echo HAGT_UIGenerateToken($id);', array_column(flach($formular['actions']), 'onClick'), true), 'unten im Formular gibt es Knopf und Feld nicht mehr');
 
@@ -2136,6 +2132,12 @@ $adresse = oderNull(static fn () => $m->UIShowAddress('Home Assistant'));
 pruefe($adresse === 'http://192.168.178.86:3777/hook/homeagent/' . $iid . '/ha-token-0123456789abcdefgh', 'Adresse mit Token zum Kopieren, erst auf Knopfdruck: ' . json_encode($adresse));
 $adresse = oderNull(static fn () => $m->UIShowAddress('Claude Code'));
 pruefe(is_string($adresse) && !str_contains($adresse, 'cc-token') && str_contains($adresse, 'Token also in the address'), 'ohne „Token in der Adresse“ keine Adresse mit Token, sondern ein Hinweis: ' . json_encode($adresse));
+$tokenAuswahl = $element('TokenAccess');
+pruefe(array_column($tokenAuswahl['options'] ?? [], 'value') === ['Claude-App', 'Home Assistant', 'Claude Code'], 'Token anzeigen: Auswahl aller benutzbaren Zugänge: ' . json_encode($tokenAuswahl['options'] ?? null));
+pruefe($mitAufruf('HAGT_UIShowToken($id, $TokenAccess)') !== null, 'Knopf „Token anzeigen“ neben der Auswahl');
+$gezeigt = (string)oderNull(static fn () => $m->UIShowToken('Claude Code'));
+pruefe(in_array('cc-token-0123456789abcdefgh', explode("\n", $gezeigt), true), 'das Token steht allein in einer Zeile zum Kopieren: ' . json_encode($gezeigt));
+pruefe(!str_contains((string)oderNull(static fn () => $m->UIShowToken('Gibt es nicht')), 'token-'), 'unbekannter Zugang: kein Token');
 HomeAgentHarness::$lanIp = '';
 $formular = json_decode($m->GetConfigurationForm(), true);
 $alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
