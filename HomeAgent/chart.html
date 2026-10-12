@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home Agent</title>
+<style>
+  :root {
+    --bg: var(--color-background-primary, #ffffff);
+    --fg: var(--color-text-primary, #1f2328);
+    --muted: var(--color-text-secondary, #656d76);
+    --grid: var(--color-border-tertiary, #d8dee4);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: var(--color-background-primary, #1e1e1e);
+      --fg: var(--color-text-primary, #e6edf3);
+      --muted: var(--color-text-secondary, #9198a1);
+      --grid: var(--color-border-tertiary, #3d444d);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: var(--color-background-primary, #1e1e1e);
+    --fg: var(--color-text-primary, #e6edf3);
+    --muted: var(--color-text-secondary, #9198a1);
+    --grid: var(--color-border-tertiary, #3d444d);
+  }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); }
+  body { font: 13px/1.4 var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif); padding: 8px 4px 4px; }
+  .chart { margin-bottom: 10px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0 0 4px 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  .note { color: var(--muted); margin: 0 0 0 6px; font-size: 12px; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  svg text { fill: var(--muted); font-size: 11px; }
+  .empty { color: var(--muted); padding: 12px 6px; }
+</style>
+</head>
+<body>
+<div id="root"><div class="empty">…</div></div>
+<script>
+(function () {
+  "use strict";
+  // Seite für das Werkzeug show_chart von Home Agent (MCP Apps, Erweiterung io.modelcontextprotocol/ui, Spezifikation
+  // 2026-01-26). Sie meldet sich mit ui/initialize beim Client an, bekommt mit ui/notifications/tool-result die Werte
+  // in structuredContent und zeichnet je Einheit ein Diagramm: Band von Minimum bis Maximum, Linie für das Mittel.
+  var COLORS = ["#2f81f7", "#e5534b", "#3fb950", "#d29922", "#a371f7"];
+  var nextId = 1;
+  var pending = {};
+  var lang = (navigator.language || "de").slice(0, 2);
+
+  function send(message) { window.parent.postMessage(message, "*"); }
+  function request(method, params) {
+    var id = nextId++;
+    send({ jsonrpc: "2.0", id: id, method: method, params: params });
+    return new Promise(function (resolve, reject) { pending[id] = { resolve: resolve, reject: reject }; });
+  }
+  function notify(method, params) { send({ jsonrpc: "2.0", method: method, params: params || {} }); }
+
+  function applyContext(context) {
+    if (!context) { return; }
+    if (context.theme === "dark" || context.theme === "light") {
+      document.documentElement.setAttribute("data-theme", context.theme);
+    }
+    var vars = context.styles && context.styles.variables;
+    if (vars) {
+      Object.keys(vars).forEach(function (key) {
+        if (vars[key]) { document.documentElement.style.setProperty(key, vars[key]); }
+      });
+    }
+    if (context.locale) { lang = String(context.locale).slice(0, 2); }
+  }
+
+  var lastHeight = 0;
+  function reportSize() {
+    var height = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    if (height !== lastHeight) {
+      lastHeight = height;
+      notify("ui/notifications/size-changed", { width: Math.ceil(document.documentElement.getBoundingClientRect().width), height: height });
+    }
+  }
+
+  function el(name, attrs, text) {
+    var node = document.createElementNS("http://www.w3.org/2000/svg", name);
+    Object.keys(attrs || {}).forEach(function (key) { node.setAttribute(key, attrs[key]); });
+    if (text !== undefined) { node.textContent = text; }
+    return node;
+  }
+
+  function number(value) {
+    return (Math.round(value * 10) / 10).toLocaleString(lang);
+  }
+
+  function timeLabel(seconds, per, spansDays) {
+    var d = new Date(seconds * 1000);
+    if (per === "hour") {
+      var hm = d.toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
+      return spansDays ? d.toLocaleDateString(lang, { day: "2-digit", month: "2-digit" }) + " " + hm : hm;
+    }
+    if (per === "month") { return d.toLocaleDateString(lang, { month: "short", year: "2-digit" }); }
+    return d.toLocaleDateString(lang, { day: "2-digit", month: "2-digit" });
+  }
+
+  function niceStep(range) {
+    var raw = range / 4;
+    var power = Math.pow(10, Math.floor(Math.log10(raw)));
+    var factor = raw / power;
+    return (factor <= 1 ? 1 : factor <= 2 ? 2 : factor <= 5 ? 5 : 10) * power;
+  }
+
+  function drawGroup(container, unit, series, data, colorOffset) {
+    var W = 640, H = 240, L = 44, R = 10, T = 8, B = 26;
+    var times = [], low = Infinity, high = -Infinity;
+    series.forEach(function (s) {
+      s.points.forEach(function (p) { times.push(p[0]); low = Math.min(low, p[1]); high = Math.max(high, p[3]); });
+    });
+    if (!times.length) { return; }
+    var t0 = Math.min.apply(null, times), t1 = Math.max.apply(null, times);
+    if (t1 === t0) { t1 = t0 + 3600; }
+    if (high === low) { high += 1; low -= 1; }
+    var step = niceStep(high - low);
+    var y0 = Math.floor(low / step) * step, y1 = Math.ceil(high / step) * step;
+    var x = function (t) { return L + (t - t0) / (t1 - t0) * (W - L - R); };
+    var y = function (v) { return T + (y1 - v) / (y1 - y0) * (H - T - B); };
+
+    var box = document.createElement("div");
+    box.className = "chart";
+    var legend = document.createElement("div");
+    legend.className = "legend";
+    series.forEach(function (s, i) {
+      var item = document.createElement("span");
+      var mark = document.createElement("i");
+      mark.style.background = COLORS[(i + colorOffset) % COLORS.length];
+      item.appendChild(mark);
+      item.appendChild(document.createTextNode(s.room + " · " + s.name + (unit ? " (" + unit + ")" : "")));
+      legend.appendChild(item);
+    });
+    box.appendChild(legend);
+
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
+    for (var v = y0; v <= y1 + step / 2; v += step) {
+      svg.appendChild(el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "var(--grid)", "stroke-width": 1 }));
+      svg.appendChild(el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, number(v)));
+    }
+    var spansDays = (t1 - t0) > 86400;
+    var ticks = 5;
+    for (var k = 0; k <= ticks; k++) {
+      var t = t0 + (t1 - t0) * k / ticks;
+      svg.appendChild(el("text", { x: x(t), y: H - 8, "text-anchor": k === 0 ? "start" : k === ticks ? "end" : "middle" }, timeLabel(t, data.per, spansDays)));
+    }
+    series.forEach(function (s, i) {
+      var color = COLORS[(i + colorOffset) % COLORS.length];
+      var top = s.points.map(function (p) { return x(p[0]) + "," + y(p[3]); });
+      var bottom = s.points.slice().reverse().map(function (p) { return x(p[0]) + "," + y(p[1]); });
+      svg.appendChild(el("polygon", { points: top.concat(bottom).join(" "), fill: color, "fill-opacity": 0.15, stroke: "none" }));
+      svg.appendChild(el("polyline", { points: s.points.map(function (p) { return x(p[0]) + "," + y(p[2]); }).join(" "), fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round" }));
+      s.points.forEach(function (p) {
+        var dot = el("circle", { cx: x(p[0]), cy: y(p[2]), r: 6, fill: "transparent" });
+        dot.appendChild(el("title", {}, timeLabel(p[0], data.per, true) + ": " + number(p[1]) + " / " + number(p[2]) + " / " + number(p[3]) + (unit ? " " + unit : "")));
+        svg.appendChild(dot);
+      });
+    });
+    box.appendChild(svg);
+    container.appendChild(box);
+  }
+
+  function render(data) {
+    var root = document.getElementById("root");
+    root.textContent = "";
+    if (!data || !data.series || !data.series.length) {
+      var empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "–";
+      root.appendChild(empty);
+      reportSize();
+      return;
+    }
+    var groups = {}, order = [];
+    data.series.forEach(function (s) {
+      if (!groups[s.unit]) { groups[s.unit] = []; order.push(s.unit); }
+      groups[s.unit].push(s);
+    });
+    var offset = 0;
+    order.forEach(function (unit) {
+      drawGroup(root, unit, groups[unit], data, offset);
+      offset += groups[unit].length;
+    });
+    var labels = data.labels || {};
+    var note = document.createElement("p");
+    note.className = "note";
+    note.textContent = (labels.per ? labels.per + ": " : "") + [labels.minimum, labels.average, labels.maximum].filter(Boolean).join(" / ");
+    root.appendChild(note);
+    reportSize();
+  }
+
+  window.addEventListener("message", function (event) {
+    if (event.source !== window.parent) { return; }
+    var msg = event.data;
+    if (!msg || msg.jsonrpc !== "2.0") { return; }
+    if (msg.id !== undefined && pending[msg.id] && (msg.result !== undefined || msg.error !== undefined)) {
+      var entry = pending[msg.id];
+      delete pending[msg.id];
+      if (msg.error) { entry.reject(msg.error); } else { entry.resolve(msg.result); }
+      return;
+    }
+    if (msg.method === "ui/notifications/tool-result") {
+      render((msg.params || {}).structuredContent);
+    } else if (msg.method === "ui/notifications/host-context-changed") {
+      applyContext(msg.params);
+    } else if (msg.id !== undefined && msg.method) {
+      // ping, ui/resource-teardown und Ähnliches: ohne Aufwand bestätigen
+      send({ jsonrpc: "2.0", id: msg.id, result: {} });
+    }
+  });
+
+  if (window.ResizeObserver) { new ResizeObserver(reportSize).observe(document.documentElement); }
+
+  request("ui/initialize", {
+    appCapabilities: {},
+    appInfo: { name: "Home Agent chart", version: "1.0.0" },
+    protocolVersion: "2026-01-26"
+  }).then(function (result) {
+    applyContext(result && result.hostContext);
+    notify("ui/notifications/initialized");
+  }, function () {
+    notify("ui/notifications/initialized");
+  });
+})();
+</script>
+</body>
+</html>

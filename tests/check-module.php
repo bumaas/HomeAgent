@@ -2647,4 +2647,30 @@ ob_end_clean();
 HomeAgentHarness::$body = '';
 pruefe(($p->response['status'] ?? 0) === 400 && str_contains((string)($p->response['body'] ?? ''), '-32020'), 'ohne Mcp-Method abgewiesen, die Kopfzeilen kommen also an: ' . ($p->response['body'] ?? ''));
 
+/* --- show_chart nur für Clients mit MCP Apps (Backlog B63) ----------------------------------------- */
+
+// Die Claude-App meldet „io.modelcontextprotocol/ui“ an (Protokoll am nuc 12.10.2026). Nur ihr bietet das Modul
+// show_chart an, und nur, wenn ein freigegebenes Gerät einen Verlauf haben kann.
+$kuecheTemp = variable(VARIABLETYPE_FLOAT, 21.5);
+IPS_SetProperty($pid, 'Devices', json_encode([
+    ['Room' => 'Küche', 'Name' => 'Deckenlicht', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $kueche, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Temperatur', 'Aliases' => '', 'Type' => 'temperature', 'StateVariableID' => $kuecheTemp, 'Invert' => false],
+]));
+IPS_ApplyChanges($pid);
+$zugangP = ['Name' => 'Claude-App', 'Token' => $pToken, 'DefaultRoom' => '', 'ReadOnly' => true, 'InPath' => true];
+$werkzeugNamen = static fn (bool $apps): array => array_column(oderNull(static fn () => \Closure::bind(fn () => $this->tools($zugangP, $apps), $p, HomeAgent::class)()) ?? [], null, 'name');
+$mit = $werkzeugNamen(true);
+pruefe(isset($mit['show_chart']) && ($mit['show_chart']['_meta']['ui']['resourceUri'] ?? null) === 'ui://homeagent/chart', 'mit Apps: show_chart mit Verweis auf die Seite des Diagramms: ' . json_encode(array_keys($mit)));
+pruefe(($mit['show_chart']['annotations']['readOnlyHint'] ?? null) === true && !isset($mit['show_chart']['inputSchema']['properties']['active_only']), 'liest nur, ohne active_only: ' . json_encode($mit['show_chart']['inputSchema']['properties'] ?? null));
+pruefe(!in_array('now', $mit['show_chart']['inputSchema']['properties']['period']['enum'] ?? ['now'], true), 'period ohne now');
+pruefe(!isset($werkzeugNamen(false)['show_chart']), 'ohne Apps kein show_chart');
+$nurLicht = json_encode([['Room' => 'Küche', 'Name' => 'Deckenlicht', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $kueche, 'Invert' => false]]);
+IPS_SetProperty($pid, 'Devices', $nurLicht);
+IPS_ApplyChanges($pid);
+pruefe(!isset($werkzeugNamen(true)['show_chart']), 'ohne Gerät mit Verlauf kein show_chart, auch mit Apps');
+$seite = oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/chart'), $p, HomeAgent::class)());
+pruefe(is_string($seite) && str_starts_with(ltrim($seite), '<!DOCTYPE html>') && str_contains($seite, 'ui/initialize') && str_contains($seite, 'ui/notifications/tool-result'), 'die Seite des Diagramms meldet sich beim Client an und nimmt das Ergebnis entgegen');
+pruefe(oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/anderes'), $p, HomeAgent::class)()) === null, 'andere Ressourcen gibt es nicht');
+pruefe(strlen((string)$seite) < 20000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$seite), 'die Seite lädt nichts nach (CSP der Apps) und bleibt klein: ' . strlen((string)$seite) . ' Bytes');
+
 ende('Modul');

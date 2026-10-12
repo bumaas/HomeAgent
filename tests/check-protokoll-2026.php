@@ -24,14 +24,22 @@ function sende(array|string $koerper, array $kopf, bool $angemeldet = true): arr
 {
     global $info, $aufrufe, $werkzeuge;
     $body = is_string($koerper) ? $koerper : (string)json_encode($koerper, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    $parameter = ['POST', $angemeldet, $body, static fn (): array => $werkzeuge, static function (string $name, array $argumente) use (&$aufrufe): array {
+    global $mitApps, $strukturiert;
+    $parameter = ['POST', $angemeldet, $body, static function (bool $apps = false) use (&$mitApps, $werkzeuge): array {
+        $mitApps = $apps;
+        return $werkzeuge;
+    }, static function (string $name, array $argumente) use (&$aufrufe, &$strukturiert): array {
         $aufrufe[] = [$name, $argumente];
-        return ['text' => '1 device(s) found.', 'isError' => false];
+        return ['text' => '1 device(s) found.', 'isError' => false] + ($strukturiert === null ? [] : ['structuredContent' => $strukturiert]);
     }, $info];
+    $seite = static fn (string $uri): ?string => $uri === 'ui://homeagent/chart' ? '<!DOCTYPE html><html><body>Diagramm</body></html>' : null;
     try {
-        $antwort = (new ReflectionMethod(McpProtocol::class, 'handleHttp'))->getNumberOfParameters() > 6
-            ? McpProtocol::handleHttp(...array_merge($parameter, [$kopf]))
-            : McpProtocol::handleHttp(...$parameter);
+        $anzahl = (new ReflectionMethod(McpProtocol::class, 'handleHttp'))->getNumberOfParameters();
+        $antwort = match (true) {
+            $anzahl > 7 => McpProtocol::handleHttp(...array_merge($parameter, [$kopf, $seite])),
+            $anzahl > 6 => McpProtocol::handleHttp(...array_merge($parameter, [$kopf])),
+            default     => McpProtocol::handleHttp(...$parameter),
+        };
     } catch (Throwable $e) {
         return ['status' => 0, 'headers' => [], 'body' => '', 'json' => ['fehler' => $e->getMessage()]];
     }
@@ -115,5 +123,43 @@ $a = sende(['jsonrpc' => '2.0', 'id' => 2, 'method' => 'tools/list'], ['mcp-prot
 pruefe($a['status'] === 200 && !isset($a['json']['result']['ttlMs']) && ($a['json']['result']['tools'][0]['name'] ?? null) === 'get_state', 'tools/list ohne _meta wie bisher: ' . $a['body']);
 $a = sende(['jsonrpc' => '2.0', 'id' => 3, 'method' => 'ping'], []);
 pruefe($a['status'] === 200 && isset($a['json']['result']), 'ping ohne _meta wie bisher');
+
+/* --- MCP Apps: Diagramm (Backlog B63) ---------------------------------------------------------- */
+
+// Gemessen am nuc (Protokoll 12.10.2026): Die Claude-App meldet „extension io.modelcontextprotocol/ui“ an. Nur dann
+// bietet das Modul show_chart an, und nur dann holt der Client die Seite des Diagramms.
+$apps = $meta;
+$apps['io.modelcontextprotocol/clientCapabilities'] = ['extensions' => ['io.modelcontextprotocol/ui' => ['mimeTypes' => ['text/html;profile=mcp-app']]]];
+$listeApps = ['jsonrpc' => '2.0', 'id' => 3, 'method' => 'tools/list', 'params' => ['_meta' => $apps]];
+$mitApps = null;
+sende($listeApps, $liste['header']);
+pruefe($mitApps === true, 'Client mit Apps: die Werkzeugliste weiß es: ' . var_export($mitApps, true));
+$mitApps = null;
+sende($liste['koerper'], $liste['header']);
+pruefe($mitApps === false, 'Claude Code ohne Apps: nein: ' . var_export($mitApps, true));
+$mitApps = null;
+sende(['jsonrpc' => '2.0', 'id' => 4, 'method' => 'tools/list'], ['mcp-protocol-version' => '2025-06-18']);
+pruefe($mitApps === false, 'ältere Clients ohne Sitzung: nein');
+$a = sende($discover['koerper'], $discover['header']);
+pruefe(isset($a['json']['result']['capabilities']['resources']), 'server/discover nennt Resources: ' . json_encode($a['json']['result']['capabilities'] ?? null));
+$lesen = ['jsonrpc' => '2.0', 'id' => 5, 'method' => 'resources/read', 'params' => ['uri' => 'ui://homeagent/chart', '_meta' => $apps]];
+$a = sende($lesen, ['mcp-protocol-version' => '2026-07-28', 'mcp-method' => 'resources/read', 'mcp-name' => 'ui://homeagent/chart']);
+$inhalt = $a['json']['result']['contents'][0] ?? [];
+pruefe($a['status'] === 200 && ($inhalt['uri'] ?? null) === 'ui://homeagent/chart' && ($inhalt['mimeType'] ?? null) === 'text/html;profile=mcp-app' && str_contains((string)($inhalt['text'] ?? ''), 'Diagramm'), 'resources/read liefert die Seite: ' . $a['status'] . ' ' . substr($a['body'], 0, 200));
+pruefe(($a['json']['result']['resultType'] ?? null) === 'complete', 'mit resultType');
+$falschUri = $lesen;
+$falschUri['params']['uri'] = 'ui://gibt-es-nicht';
+$a = sende($falschUri, ['mcp-protocol-version' => '2026-07-28', 'mcp-method' => 'resources/read', 'mcp-name' => 'ui://homeagent/chart']);
+pruefe($a['status'] === 400 && ($a['json']['error']['code'] ?? null) === -32020, 'Mcp-Name muss auch bei resources/read zur URI passen: ' . $a['body']);
+$falsch = $lesen;
+$falsch['params']['uri'] = 'ui://gibt-es-nicht';
+$a = sende($falsch, ['mcp-protocol-version' => '2026-07-28', 'mcp-method' => 'resources/read', 'mcp-name' => 'ui://gibt-es-nicht']);
+pruefe(($a['json']['error']['code'] ?? null) === -32602, 'unbekannte Ressource: -32602 (2026-07-28): ' . $a['body']);
+$a = sende(['jsonrpc' => '2.0', 'id' => 6, 'method' => 'resources/read', 'params' => ['uri' => 'ui://homeagent/chart']], []);
+pruefe(($a['json']['result']['contents'][0]['mimeType'] ?? null) === 'text/html;profile=mcp-app', 'resources/read auch für ältere Clients: ' . substr($a['body'], 0, 120));
+$strukturiert = ['kind' => 'history', 'series' => []];
+$a = sende($aufruf, $kopf);
+pruefe(($a['json']['result']['structuredContent'] ?? null) === ['kind' => 'history', 'series' => []] && ($a['json']['result']['content'][0]['text'] ?? null) === '1 device(s) found.', 'structuredContent geht mit, der Text für das Modell auch: ' . $a['body']);
+$strukturiert = null;
 
 ende('Protokoll 2026-07-28');

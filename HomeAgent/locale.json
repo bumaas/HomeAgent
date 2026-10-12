@@ -482,7 +482,13 @@
             "The assistant sent a request the module does not accept.": "Der Assistent hat eine Anfrage geschickt, die das Modul nicht annimmt.",
             "Sign-in rejected: check the token or the address in the client.": "Anmeldung abgewiesen: Token oder Adresse im Client prüfen.",
             "Too many rejected sign-ins from %s, this sender is blocked for %d s.": "Zu viele abgewiesene Anmeldungen von %s, dieser Absender ist für %d s gesperrt.",
-            "minimum %s (%s), maximum %s (%s)": "Minimum %s (%s), Maximum %s (%s)"
+            "minimum %s (%s), maximum %s (%s)": "Minimum %s (%s), Maximum %s (%s)",
+            "minimum": "Minimum",
+            "average": "Mittel",
+            "maximum": "Maximum",
+            "The chart is shown in the chat.": "Das Diagramm steht im Chat.",
+            "A chart needs a period or from and to, now has no history.": "Ein Diagramm braucht einen Zeitraum oder from und to, now hat keinen Verlauf.",
+            "None of the matching devices has a history for a chart (%s).": "Keines der passenden Geräte hat einen Verlauf für ein Diagramm (%s)."
         }
     }
 }

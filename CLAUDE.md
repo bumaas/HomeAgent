@@ -117,6 +117,14 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   `claude_code_2026-10-12_mcp_2026-07-28.json`, am nuc belegt 12.10.2026); die Claude-App über claude.ai nutzt weiter
   `initialize`.
 
+- **Diagramm als MCP App** (`show_chart`, Backlog B63): nur für Clients, die `io.modelcontextprotocol/ui` mit
+  `text/html;profile=mcp-app` anmelden (nach 2026-07-28 in jeder Anfrage, `McpProtocol::showsApps`; gemessen: Claude-App ja,
+  Claude Code und HA nein) und nur mit einem Gerät mit Verlauf. Das Werkzeug trägt `_meta.ui.resourceUri`
+  `ui://homeagent/chart`, die Seite liefert `resources/read` aus `HomeAgent/chart.html` (ohne Bibliotheken, die CSP der
+  Apps erlaubt nichts Fremdes; Handshake `ui/initialize`, Werte über `ui/notifications/tool-result`). `DeviceIndex::chart()`
+  gibt dem Modell nur Kopfzeile und Minimum/Maximum, die Werte stehen in `structuredContent`. Resources gibt es nur, wenn
+  der Aufrufer `$readResource` übergibt.
+
 ## Werkzeuge
 
 Drei Werkzeuge: `get_state`, `set_state`, `run_scene`. Alle tragen `openWorldHint: false`.

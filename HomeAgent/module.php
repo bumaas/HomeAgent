@@ -80,6 +80,9 @@ class HomeAgent extends IPSModuleStrict
      * gewechselt nach 24 Stunden oder nach der eingestellten Zeilenzahl. Eine Zeile ist höchstens so lang.
      */
     private const LOG_ROTATE_SECONDS = 86400;
+
+    /** Seite des Diagramms für show_chart (MCP Apps, Backlog B63). */
+    private const CHART_URI = 'ui://homeagent/chart';
     private const LOG_MIN_LINES = 10;
     private const LOG_LINE_MAX = 2000;
     private const LOG_SHOW_LINES = 200;
@@ -890,6 +893,16 @@ class HomeAgent extends IPSModuleStrict
         return in_array($given, $own, true);
     }
 
+    /** Seite einer MCP App (ui://), null = gibt es nicht. Bisher nur das Diagramm von show_chart. */
+    private function readResource(string $uri): ?string
+    {
+        if ($uri !== self::CHART_URI) {
+            return null;
+        }
+        $html = file_get_contents(__DIR__ . '/chart.html');
+        return $html === false ? null : $html;
+    }
+
     /** Adresse des Endpunkts relativ zum Webserver, z. B. /hook/homeagent/12345. */
     public function GetEndpoint(): string
     {
@@ -1028,10 +1041,11 @@ class HomeAgent extends IPSModuleStrict
             $_SERVER['REQUEST_METHOD'] ?? 'GET',
             $access !== null,
             fn (): string => $this->requestBody(),
-            fn (): array => $this->tools($access),
+            fn (bool $apps = false): array => $this->tools($access, $apps),
             fn (string $name, array $arguments): array => $this->callTool($name, $arguments, $access),
             $this->serverInfo($access),
-            self::mcpHeaders($_SERVER)
+            self::mcpHeaders($_SERVER),
+            fn (string $uri): ?string => $this->readResource($uri)
         );
 
         // Mit OAuth nennt der 401 die Metadaten; daran erkennt ein Client, dass er sich anmelden kann.
@@ -1581,7 +1595,10 @@ class HomeAgent extends IPSModuleStrict
      *
      * @return list<array<string, mixed>>
      */
-    private function tools(?array $access = null): array
+    /**
+     * @param bool $apps der Client zeigt MCP Apps (Claude-App); nur dann gibt es show_chart (Backlog B63)
+     */
+    private function tools(?array $access = null, bool $apps = false): array
     {
         // Der Standardraum des Zugangs und die Etagen der Raumliste stehen in den Beschreibungen,
         // damit der Assistent sie ohne eigenen Aufruf kennt. Ohne Etagen gibt es den Parameter nicht.
@@ -1649,6 +1666,35 @@ class HomeAgent extends IPSModuleStrict
             ],
             'annotations' => ['readOnlyHint' => true, 'openWorldHint' => false],
         ]];
+
+        // Diagramm als MCP App, nur für Clients, die Apps anmelden, und nur mit einem Gerät, das einen Verlauf haben kann
+        // (Leitbild: angeboten wird nur, was es gibt; andere Clients zahlen keine Tokens dafür).
+        if ($apps && $hasHistory) {
+            $historyTypes = array_values(array_unique(array_column(array_filter($this->usableDevices(), static fn (array $row): bool => DeviceIndex::isMeasured($row)), 'Type')));
+            $tools[] = [
+                'name'        => 'show_chart',
+                'title'       => 'Show chart',
+                'description' => 'Shows the history of measured values (temperature, humidity, air quality and others) as a chart in the chat. '
+                    . 'Use it when the user asks for a chart, diagram, graph or curve; for numbers alone use get_state. Without a period: today. '
+                    . 'The answer gives only the minimum and maximum per value, the values themselves go to the chart. '
+                    . 'Example: "Show me the temperature in the guest room over the last 30 days" → room=Gast, type=temperature, from=' . date('Y-m-d', strtotime('-29 days')) . ', to=' . date('Y-m-d') . '.',
+                'inputSchema' => [
+                    'type'                 => 'object',
+                    'properties'           => [
+                        'room' => ['type' => 'string', 'description' => 'Room as the user calls it. ' . $roomsText],
+                    ] + $floor + [
+                        'type'   => ['type' => 'string', 'enum' => $historyTypes, 'description' => 'Type of measured value. Empty = all measured values that match.'],
+                        'name'   => ['type' => 'string', 'description' => 'Device name or alias, a partial word is enough.'],
+                        'period' => ['type' => 'string', 'enum' => DeviceIndex::PERIODS, 'description' => 'Period of the chart, per hour for today and yesterday, per day for weeks and months, per month for years.'],
+                        'from'   => ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD. Today is ' . date('Y-m-d') . '.'],
+                        'to'     => ['type' => 'string', 'description' => 'Last day, inclusive.'],
+                    ],
+                    'additionalProperties' => false,
+                ],
+                'annotations' => ['readOnlyHint' => true, 'openWorldHint' => false],
+                '_meta'       => ['ui' => ['resourceUri' => self::CHART_URI]],
+            ];
+        }
 
         // Ein Nur-Lese-Zugang bekommt allein die Abfrage; alles Schreibende kennt er nicht.
         if (($access['ReadOnly'] ?? false) === true) {
@@ -1843,6 +1889,7 @@ class HomeAgent extends IPSModuleStrict
         $defaultRoom = (string)($access['DefaultRoom'] ?? '');
         $index = match (true) {
             $name === 'get_state'                  => $this->deviceIndex($defaultRoom),
+            $name === 'show_chart'                 => $this->deviceIndex($defaultRoom),
             $readOnly                              => null,
             $name === 'set_state'                  => $this->deviceIndex($defaultRoom),
             $name === 'run_scene'                  => $this->sceneIndex(),
@@ -1851,6 +1898,7 @@ class HomeAgent extends IPSModuleStrict
         $outcome = match (true) {
             $index === null                        => ['text' => 'Unknown tool ' . $name, 'isError' => true],
             $name === 'get_state'                  => $this->withNow($index->getState($arguments)),
+            $name === 'show_chart'                 => $index->chart($arguments),
             $name === 'set_state'                  => $index->setState($arguments),
             default                                => $index->runScene($arguments),
         };

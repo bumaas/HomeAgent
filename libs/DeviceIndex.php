@@ -242,6 +242,9 @@ final class DeviceIndex
     /** Art des Problems der letzten Anfrage, null = alles erreicht (problem()). */
     private ?string $problem = null;
 
+    /** Während chart(): hier sammelt history() die Daten fürs Diagramm statt der Tabellenzeilen. */
+    private ?array $chart = null;
+
     /**
      * @param list<array<string, mixed>> $entries Zeilen der Formularliste „Devices“
      * @param null|RoomIndex $rooms Raumliste mit Aliasen und Etagen
@@ -363,7 +366,7 @@ final class DeviceIndex
         // Ein Zeitraum für Messwerte meint ihren Verlauf (Claude-App, 10.10.2026: „Diagramm der
         // Temperaturen im Gästezimmer der letzten 30 Tage“). Wo Zähler sind und fürs ganze Haus bleibt es beim Verbrauch.
         if (($range !== null || ($period !== '' && $period !== self::NOW)) && !$wholeHouse
-            && (in_array($type, self::HISTORY_TYPES, true)
+            && ($this->chart !== null || in_array($type, self::HISTORY_TYPES, true)
                 || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy'])) && array_any($matches, static fn (array $e): bool => self::isMeasured($e))))) {
             if ($range !== null) {
                 [, $from, $to] = self::rangeBounds($range[0], $range[1], $this->backend->timestamp());
@@ -514,6 +517,10 @@ final class DeviceIndex
         }
         [$per, $format] = self::HISTORY_LEVELS[$level];
         $lines = [sprintf($this->t('History of %d measured value(s) (%s), per %s: minimum / average / maximum.'), count($measured), $filter, $this->t($per))];
+        if ($this->chart !== null) {
+            $this->chart += ['kind' => 'history', 'title' => $lines[0], 'per' => $per, 'filter' => $filter,
+                'labels' => ['minimum' => $this->t('minimum'), 'average' => $this->t('average'), 'maximum' => $this->t('maximum'), 'per' => $this->t($per)]];
+        }
         foreach ($measured as $entry) {
             $history = $this->backend->history($entry['roles']['state'], $level, $from, $to);
             if ($history === null) {
@@ -541,6 +548,14 @@ final class DeviceIndex
                     self::formatNumber($high['max']) . $suffix,
                     date($format, $high['time'])
                 ));
+            }
+            if ($this->chart !== null) {
+                // Fürs Diagramm gehen die Werte an die Seite, nicht ans Modell
+                if ($history['rows'] !== []) {
+                    $this->chart['series'][] = ['room' => $entry['Room'], 'name' => $entry['Name'], 'unit' => $unit,
+                        'points' => array_map(static fn (array $row): array => [$row['time'], $row['min'], $row['avg'], $row['max']], $history['rows'])];
+                }
+                continue;
             }
             foreach ($history['rows'] as $row) {
                 $lines[] = date($format, $row['time']) . ' ' . self::formatNumber($row['min']) . ' / ' . self::formatNumber($row['avg']) . ' / ' . self::formatNumber($row['max']);
@@ -3013,6 +3028,41 @@ final class DeviceIndex
     public function problem(): ?string
     {
         return $this->problem;
+    }
+
+    /**
+     * Werkzeug „show_chart“ (Backlog B63): der Verlauf von Messwerten als Diagramm. Das Modell bekommt die Kurzfassung
+     * (Kopfzeile, je Messwert Minimum und Maximum), die Werte je Stunde, Tag oder Monat stehen in structuredContent für
+     * die Seite des Diagramms (MCP Apps) und kosten keine Tokens. Ohne Zeitraum gilt heute.
+     *
+     * @return array{text: string, isError: bool, structuredContent?: array<string, mixed>}
+     */
+    public function chart(array $arguments): array
+    {
+        $period = trim((string)($arguments['period'] ?? ''));
+        if ($period === self::NOW) {
+            return $this->fail($this->t('A chart needs a period or from and to, now has no history.'));
+        }
+        if ($period === '' && trim((string)($arguments['from'] ?? '')) === '') {
+            $arguments['period'] = 'today';
+        }
+        $this->chart = ['series' => []];
+        try {
+            $result = $this->getState($arguments);
+            $chart = $this->chart;
+        } finally {
+            $this->chart = null;
+        }
+        if ($result['isError']) {
+            return $result;
+        }
+        if (($chart['series'] ?? []) === []) {
+            $this->problem = 'no_match';
+            return $this->fail(sprintf($this->t('None of the matching devices has a history for a chart (%s).'), (string)($chart['filter'] ?? '')));
+        }
+        unset($chart['filter']);
+        $result['text'] .= "\n" . $this->t('The chart is shown in the chat.');
+        return $result + ['structuredContent' => $chart];
     }
 
     /** Kein Treffer: Liegt es am Raum, am Namen oder an der Kombination? */
