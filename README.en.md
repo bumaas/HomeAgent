@@ -7,9 +7,12 @@ operates Symcon with it, whether spoken, typed or from a workflow of its own. It
 still open?", say "Turn off the lights in the living room" or close a blind halfway and gets a short,
 unambiguous answer. It only sees and switches the devices you release.
 
-> **Status:** early preview. Querying, switching, setting brightness, colour temperature, colour, position and heating setpoint,
-> stopping blinds, consumption and power, the history of measured values starting scenes as well as playback and volume of media players work. The device list can be proposed from
-> an Alexa instance. The Claude app can sign in with OAuth. So far the module has been tried on three systems.
+> **Status:** early preview. Querying, switching, setting brightness, colour temperature, colour, position,
+> heating setpoint and target humidity, operating mode and fan speed of dehumidifiers and ventilation units,
+> stopping blinds, consumption and power, the history of measured values, starting scenes as well as playback
+> and volume of media players work. The device list can be proposed from an Alexa instance. The Claude app can
+> sign in with OAuth. The form shows what did not work, a protocol for troubleshooting can be switched on. So far
+> the module has been tried on three systems.
 
 ## When do I need this?
 
@@ -469,6 +472,8 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
   Set the tick only for accesses whose client cannot send the login in the header.
 - The tokens are part of the instance configuration. Whoever may read the configuration of the system,
   for example a script or another module, reads them as well.
+- The protocol for troubleshooting contains room and device names and the answers to the assistants. Whoever
+  can read the log directory of Symcon reads it as well. Tokens and pairing codes are not in it.
 - The script functions know neither default room nor floor. They exist for state, switching, setting
   and scenes, not for stop, setpoint, colour temperature, colour, consumption, power and history.
 

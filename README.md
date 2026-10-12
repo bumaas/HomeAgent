@@ -8,10 +8,12 @@ spricht, bedient damit Symcon, ob gesprochen, getippt oder aus einem eigenen Abl
 Rollladen halb schließen und bekommt eine kurze, eindeutige Antwort. Er sieht und schaltet dabei nur
 die Geräte, die Sie freigeben.
 
-> **Stand:** frühe Vorschau. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Farbe, Position und
-> Heizungs-Sollwert, das Anhalten von Rollläden, Verbrauch und Leistung, der Verlauf von Messwerten
-> das Starten von Szenen sowie Wiedergabe und Lautstärke von Mediaplayern gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen. Die Claude-App meldet sich auf Wunsch per OAuth an. Erprobt ist das Modul bisher
-> auf drei Anlagen.
+> **Stand:** frühe Vorschau. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Farbe, Position,
+> Heizungs-Sollwert und Zielfeuchte, Betriebsart und Lüfterstufe von Luftentfeuchtern und Lüftungen, das
+> Anhalten von Rollläden, Verbrauch und Leistung, der Verlauf von Messwerten, das Starten von Szenen sowie
+> Wiedergabe und Lautstärke von Mediaplayern gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz
+> vorschlagen. Die Claude-App meldet sich auf Wunsch per OAuth an. Was nicht geklappt hat, zeigt das
+> Formular, ein Protokoll zur Fehlersuche lässt sich einschalten. Erprobt ist das Modul bisher auf drei Anlagen.
 
 ## Wann brauche ich das?
 
@@ -494,6 +496,8 @@ sie. Tokens und Kopplungscodes stehen nie darin.
   mitschicken kann.
 - Die Tokens stehen in der Konfiguration der Instanz. Wer die Konfiguration der Anlage lesen darf, etwa ein
   Skript oder ein anderes Modul, liest sie mit.
+- Das Protokoll zur Fehlersuche enthält Raum- und Gerätenamen und die Antworten an die Assistenten. Wer das
+  Log-Verzeichnis von Symcon lesen kann, liest es mit. Tokens und Kopplungscodes stehen nicht darin.
 - Die Skriptfunktionen kennen weder Standardraum noch Etage. Es gibt sie für Zustand, Schalten,
   Stellen und Szenen, für Stopp, Sollwert, Farbtemperatur, Farbe, Verbrauch, Leistung und Verlauf nicht.
 
