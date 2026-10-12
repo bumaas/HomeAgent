@@ -3046,16 +3046,33 @@ final class DeviceIndex
         if ($period === '' && trim((string)($arguments['from'] ?? '')) === '') {
             $arguments['period'] = 'today';
         }
+        // Mehrere Räume mit Komma für einen Vergleich in einem Diagramm (Claude-App 12.10.2026 holte sich dafür zwei
+        // Tabellen über get_state). Jeder Raum wird wie sonst gesucht; ein unbekannter steht im Text, die anderen werden
+        // gezeichnet.
+        $rooms = array_values(array_filter(array_map('trim', explode(',', (string)($arguments['room'] ?? ''))), static fn (string $room): bool => $room !== ''));
         $this->chart = ['series' => []];
+        $texts = [];
+        $failures = [];
         try {
-            $result = $this->getState($arguments);
+            foreach (count($rooms) > 1 ? $rooms : [null] as $room) {
+                $part = $this->getState($room === null ? $arguments : ['room' => $room] + $arguments);
+                if ($part['isError']) {
+                    $failures[] = $part;
+                    continue;
+                }
+                $texts[] = $part['text'];
+            }
             $chart = $this->chart;
         } finally {
             $this->chart = null;
         }
-        if ($result['isError']) {
-            return $result;
+        if ($texts === []) {
+            return $failures[0];
         }
+        if (count($chart['series'] ?? []) > self::HISTORY_MAX) {
+            return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s). Give a room or a name, at most %d at a time.'), count($chart['series']), 'room=' . implode(', ', $rooms), self::HISTORY_MAX));
+        }
+        $result = ['text' => implode("\n", array_merge($texts, array_map(static fn (array $failure): string => (string)strtok($failure['text'], "\n"), $failures))), 'isError' => false];
         if (($chart['series'] ?? []) === []) {
             $this->problem = 'no_match';
             return $this->fail(sprintf($this->t('None of the matching devices has a history for a chart (%s).'), (string)($chart['filter'] ?? '')));

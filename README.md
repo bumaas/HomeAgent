@@ -432,7 +432,8 @@ echo HAGT_SetLevel($InstanzID, '', '', 'Deckenpanel', 30);
 Fragt man die Claude-App nach einem Diagramm, etwa „Zeig mir die Temperatur im Gästezimmer der letzten 30 Tage
 als Diagramm“, zeichnet das Modul den Verlauf direkt im Chat: je Einheit ein Diagramm, ein Band von Minimum bis
 Maximum und eine Linie für das Mittel. Die Werte gehen nur an das Diagramm, das Sprachmodell bekommt Minimum und
-Maximum. Das Werkzeug heißt `show_chart` und erscheint in den Einstellungen des Connectors unter „Interaktive
+Maximum. Mehrere Räume lassen sich in einem Diagramm vergleichen, etwa „Vergleiche die Temperatur im Gästezimmer
+und draußen in der letzten Woche“. Das Werkzeug heißt `show_chart` und erscheint in den Einstellungen des Connectors unter „Interaktive
 Tools“; dort lässt es sich auf „Immer erlauben“ stellen. Andere Assistenten sehen es nicht.
 
 Über „+“ → „Konnektoren“ → „Von … hinzufügen“ bietet die Claude-App fertige Vorlagen an: **Haus verlassen** und

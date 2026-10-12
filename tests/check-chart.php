@@ -61,6 +61,20 @@ pruefe($r['isError'] && !isset($r['structuredContent']), 'period=now ergibt kein
 $r = diagramm(['room' => 'Gast', 'type' => 'window', 'period' => 'last_week']);
 pruefe($r['isError'] && !isset($r['structuredContent']), 'ohne Messwert kein Diagramm: ' . $r['text']);
 
+/* --- Mehrere Räume in einem Diagramm (Claude-App 12.10.2026: Vergleich Gästezimmer und Simone über get_state) --- */
+
+$r = diagramm(['room' => 'Gast, Wintergarten', 'type' => 'temperature', 'period' => 'last_week']);
+$raeume = array_column($r['structuredContent']['series'] ?? [], 'room');
+pruefe(!$r['isError'] && $raeume === ['Gast', 'Wintergarten'], 'zwei Räume in einem Diagramm (der Heizkörper im Wintergarten hat keinen archivierten Verlauf, wie am nuc): ' . json_encode($raeume));
+pruefe(str_contains($r['text'], 'room=Gast,') && str_contains($r['text'], 'room=Wintergarten,') && substr_count($r['text'], 'The chart is shown in the chat.') === 1, 'je Raum Kopfzeile und Gerätezeilen, die Schlusszeile einmal: ' . $r['text']);
+pruefe(($r['structuredContent']['per'] ?? null) === 'day', 'gemeinsame Stufe');
+$r = diagramm(['room' => 'Gast, Badezimmer', 'type' => 'temperature', 'period' => 'last_week']);
+pruefe(!$r['isError'] && array_column($r['structuredContent']['series'] ?? [], 'room') === ['Gast'] && str_contains($r['text'], 'No released device matches room=Badezimmer'), 'ein unbekannter Raum: die anderen werden gezeichnet, der Text nennt ihn: ' . $r['text']);
+$r = diagramm(['room' => 'Badezimmer, Dachboden', 'period' => 'last_week']);
+pruefe($r['isError'] && !isset($r['structuredContent']), 'kein Raum bekannt: Fehler ohne Diagramm: ' . $r['text']);
+$r = diagramm(['room' => 'Gast, Wintergarten, Keller, Wohnzimmer, Garten', 'period' => 'last_week']);
+pruefe($r['isError'] && str_contains($r['text'], 'at most 5'), 'mehr als fünf Messwerte über alle Räume: Absage: ' . $r['text']);
+
 /* --- get_state bleibt, wie es ist --------------------------------------------------------------- */
 
 $anlage = new FakeBackend($mitschnitt['variablen']);

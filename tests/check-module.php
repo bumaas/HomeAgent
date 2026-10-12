@@ -2663,6 +2663,7 @@ $mit = $werkzeugNamen(true);
 pruefe(isset($mit['show_chart']) && ($mit['show_chart']['_meta']['ui']['resourceUri'] ?? null) === 'ui://homeagent/chart', 'mit Apps: show_chart mit Verweis auf die Seite des Diagramms: ' . json_encode(array_keys($mit)));
 pruefe(($mit['show_chart']['annotations']['readOnlyHint'] ?? null) === true && !isset($mit['show_chart']['inputSchema']['properties']['active_only']), 'liest nur, ohne active_only: ' . json_encode($mit['show_chart']['inputSchema']['properties'] ?? null));
 pruefe(!in_array('now', $mit['show_chart']['inputSchema']['properties']['period']['enum'] ?? ['now'], true), 'period ohne now');
+pruefe(str_contains($mit['show_chart']['inputSchema']['properties']['room']['description'] ?? '', 'several rooms separated by commas'), 'room nimmt mehrere Räume für einen Vergleich: ' . ($mit['show_chart']['inputSchema']['properties']['room']['description'] ?? ''));
 pruefe(!isset($werkzeugNamen(false)['show_chart']), 'ohne Apps kein show_chart');
 $nurLicht = json_encode([['Room' => 'Küche', 'Name' => 'Deckenlicht', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $kueche, 'Invert' => false]]);
 IPS_SetProperty($pid, 'Devices', $nurLicht);

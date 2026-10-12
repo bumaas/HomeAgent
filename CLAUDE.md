@@ -125,7 +125,9 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   hinzugefügt wird; ein Neustart der App oder `ttlMs` reichen nicht. Das Werkzeug trägt `_meta.ui.resourceUri`
   `ui://homeagent/chart`, die Seite liefert `resources/read` aus `HomeAgent/chart.html` (ohne Bibliotheken, die CSP der
   Apps erlaubt nichts Fremdes; Handshake `ui/initialize`, Werte über `ui/notifications/tool-result`). `DeviceIndex::chart()`
-  gibt dem Modell nur Kopfzeile und Minimum/Maximum, die Werte stehen in `structuredContent`. Resources gibt es nur, wenn
+  gibt dem Modell nur Kopfzeile und Minimum/Maximum, die Werte stehen in `structuredContent`. `room` darf mehrere Räume mit Komma
+  enthalten (Vergleich in einem Diagramm, höchstens `HISTORY_MAX` Reihen insgesamt; ein unbekannter Raum steht im Text, die
+  anderen werden gezeichnet). Anlass: Die Claude-App holte sich für einen Vergleich zweier Räume zwei Tabellen über `get_state`. Resources gibt es nur, wenn
   der Aufrufer `$readResource` übergibt; `resources/read` und `resources/list` tragen wie `tools/list` `ttlMs` und
   `cacheScope` (Pflicht in 2026-07-28, ohne meldete claude.ai „kann nicht erreicht werden“).
 - **Vorlagen (Prompts, B63):** `libs/PromptCatalog.php` baut „Haus verlassen“, „Gute Nacht“ (Fenster, Türen, Licht,

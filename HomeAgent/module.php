@@ -1704,7 +1704,7 @@ class HomeAgent extends IPSModuleStrict
                 'inputSchema' => [
                     'type'                 => 'object',
                     'properties'           => [
-                        'room' => ['type' => 'string', 'description' => 'Room as the user calls it. ' . $roomsText],
+                        'room' => ['type' => 'string', 'description' => 'Room as the user calls it, or several rooms separated by commas to compare them in one chart. ' . $roomsText],
                     ] + $floor + [
                         'type'   => ['type' => 'string', 'enum' => $historyTypes, 'description' => 'Type of measured value. Empty = all measured values that match.'],
                         'name'   => ['type' => 'string', 'description' => 'Device name or alias, a partial word is enough.'],
