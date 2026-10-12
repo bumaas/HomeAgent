@@ -510,7 +510,8 @@ sie. Tokens und Kopplungscodes stehen nie darin.
   GET wird mit 405 abgewiesen, Benachrichtigungen mit 202 quittiert.
 - Anmeldung mit `Authorization: Bearer <Token>`, bei Zugängen mit gesetztem Haken auch über das Token
   als letzten Teil des Pfads. Schickt ein Client beides, zählt der Header.
-- Unterstützte Protokollversionen: 2025-11-25, 2025-06-18, 2025-03-26.
+- Unterstützte Protokollversionen: 2026-07-28 (ohne `initialize`, mit `server/discover`; Clients dürfen die
+  Werkzeugliste 5 Minuten behalten), dazu 2025-11-25, 2025-06-18 und 2025-03-26.
 - Status 104: kein Zugang mit Token, der Endpunkt weist alle Anfragen ab. Status 201: Die Raumliste ist
   fehlerhaft, oder es gibt keinen fehlerfreien Zugang mehr; das Log nennt jeden betroffenen Eintrag, und
   der Endpunkt bleibt bis zur Korrektur geschlossen. In beiden Fällen antwortet er mit HTTP 503

@@ -106,6 +106,17 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   Ende zu Ende mit der Claude-App erprobt am 11.10.2026 (Connector mit „Jetzt anmelden“ und CIMD,
   Kopplungscode, danach `get_state`); die Token-Anfrage steht als Mitschnitt in der Fixture.
 
+- **Protokoll 2026-07-28 neben den älteren** („dual-era“, Backlog B62): Eine Anfrage mit
+  `params._meta['io.modelcontextprotocol/protocolVersion']` geht nach 2026-07-28 (`McpProtocol::handleModern`):
+  kein `initialize`, Kopfzeilen `MCP-Protocol-Version`, `Mcp-Method` und bei `tools/call` `Mcp-Name` müssen zum
+  Körper passen (400, -32020), unbekannte Version 400 mit -32022 und der Liste, unbekannte Methode 404 (auch `ping`
+  und `initialize`), kein Stapel. `server/discover` (auch ohne `_meta`), `resultType: complete` und Serverinfo in
+  `_meta` jedes Ergebnisses, `tools/list` und `server/discover` mit `ttlMs` 300000 und `cacheScope: private`.
+  Ohne `_meta` bleibt alles wie in 2025-11-25. Das Modul reicht die Kopfzeilen aus `$_SERVER['HTTP_MCP_*']` durch
+  (`mcpHeaders`). Claude Code 2.1.296 verbindet so mit 2 statt 5 Anfragen (Mitschnitt
+  `claude_code_2026-10-12_mcp_2026-07-28.json`, am nuc belegt 12.10.2026); die Claude-App über claude.ai nutzt weiter
+  `initialize`.
+
 ## Werkzeuge
 
 Drei Werkzeuge: `get_state`, `set_state`, `run_scene`. Alle tragen `openWorldHint: false`.

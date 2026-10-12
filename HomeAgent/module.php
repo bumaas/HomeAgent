@@ -856,6 +856,22 @@ class HomeAgent extends IPSModuleStrict
         }
     }
 
+    /**
+     * Die Kopfzeilen, die das Protokoll 2026-07-28 mit dem Körper vergleicht; Symcon legt sie wie PHP als HTTP_* ab.
+     *
+     * @return array<string, string> Namen klein
+     */
+    private static function mcpHeaders(array $server): array
+    {
+        $headers = [];
+        foreach (['mcp-protocol-version' => 'HTTP_MCP_PROTOCOL_VERSION', 'mcp-method' => 'HTTP_MCP_METHOD', 'mcp-name' => 'HTTP_MCP_NAME'] as $name => $key) {
+            if (isset($server[$key])) {
+                $headers[$name] = trim((string)$server[$key]);
+            }
+        }
+        return $headers;
+    }
+
     /** Adresse des Endpunkts relativ zum Webserver, z. B. /hook/homeagent/12345. */
     public function GetEndpoint(): string
     {
@@ -980,7 +996,8 @@ class HomeAgent extends IPSModuleStrict
             fn (): string => $this->requestBody(),
             fn (): array => $this->tools($access),
             fn (string $name, array $arguments): array => $this->callTool($name, $arguments, $access),
-            $this->serverInfo($access)
+            $this->serverInfo($access),
+            self::mcpHeaders($_SERVER)
         );
 
         // Mit OAuth nennt der 401 die Metadaten; daran erkennt ein Client, dass er sich anmelden kann.

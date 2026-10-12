@@ -484,7 +484,8 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
   `application/json`. GET is rejected with 405, notifications are acknowledged with 202.
 - Login with `Authorization: Bearer <token>`, for accesses with the tick set also through the token
   as the last part of the path. If a client sends both, the header counts.
-- Supported protocol versions: 2025-11-25, 2025-06-18, 2025-03-26.
+- Supported protocol versions: 2026-07-28 (without `initialize`, with `server/discover`; clients may keep the
+  tool list for 5 minutes), plus 2025-11-25, 2025-06-18 and 2025-03-26.
 - Status 104: no access with a token, the endpoint rejects all requests. Status 201: the room list has
   errors, or there is no faultless access left; the log names every affected entry, and the endpoint
   stays closed until they are corrected. In both cases it answers with HTTP 503 ("not ready"), not

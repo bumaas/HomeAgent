@@ -2584,4 +2584,27 @@ pruefe(oderNull(static fn () => $p->UIDownloadLog()) === 'The protocol is empty.
 $eigenschaft('LogEnabled', false);
 IPS_ApplyChanges($pid);
 
+/* --- Protokoll 2026-07-28 am Hook (Backlog B62) -------------------------------------------------- */
+
+// Das Modul reicht die Kopfzeilen der Anfrage an die Protokollschicht weiter; Symcon legt sie als HTTP_* in $_SERVER.
+$discover = fixture('claude_code_2026-10-12_mcp_2026-07-28.json')['anfragen'][0];
+$_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $pid, 'REMOTE_ADDR' => '192.0.2.5', 'HTTP_AUTHORIZATION' => 'Bearer ' . $pToken,
+    'HTTP_MCP_PROTOCOL_VERSION' => '2026-07-28', 'HTTP_MCP_METHOD' => 'server/discover'];
+HomeAgentHarness::$body = (string)json_encode($discover['koerper'], JSON_UNESCAPED_SLASHES);
+$p->response = null;
+ob_start();
+$pHook->invoke($p);
+ob_end_clean();
+HomeAgentHarness::$body = '';
+$antwort = json_decode((string)($p->response['body'] ?? ''), true);
+pruefe(($p->response['status'] ?? 0) === 200 && ($antwort['result']['supportedVersions'][0] ?? null) === '2026-07-28', 'server/discover über den Hook: ' . ($p->response['status'] ?? 0) . ' ' . ($p->response['body'] ?? ''));
+pruefe(str_contains((string)($antwort['result']['instructions'] ?? ''), 'smart home'), 'mit der Anleitung des Zugangs: ' . ($antwort['result']['instructions'] ?? ''));
+unset($_SERVER['HTTP_MCP_METHOD']);
+HomeAgentHarness::$body = (string)json_encode($discover['koerper'], JSON_UNESCAPED_SLASHES);
+ob_start();
+$pHook->invoke($p);
+ob_end_clean();
+HomeAgentHarness::$body = '';
+pruefe(($p->response['status'] ?? 0) === 400 && str_contains((string)($p->response['body'] ?? ''), '-32020'), 'ohne Mcp-Method abgewiesen, die Kopfzeilen kommen also an: ' . ($p->response['body'] ?? ''));
+
 ende('Modul');

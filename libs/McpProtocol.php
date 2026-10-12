@@ -9,13 +9,27 @@ declare(strict_types=1);
  * Stapel), Antwort als application/json. Einen Datenstrom (GET/SSE) und Sitzungen bietet der
  * Server nicht an; die Spezifikation erlaubt das, GET wird mit 405 abgewiesen.
  *
+ * Zwei Generationen an einem Endpunkt („dual-era“, Spezifikation 2026-07-28, Backlog B62): Eine Anfrage mit
+ * der Protokollversion in params._meta folgt 2026-07-28 (kein initialize, Kopfzeilen MCP-Protocol-Version,
+ * Mcp-Method und Mcp-Name werden geprüft, server/discover, resultType, Zwischenspeichern von tools/list). Ohne
+ * _meta bleibt alles wie in 2025-11-25 und davor. Claude Code verbindet so mit 2 statt 5 Anfragen.
+ *
  * Die Werkzeuge kommen von außen: $listTools liefert die Liste für tools/list, $callTool führt
  * ein Werkzeug aus und gibt ['text' => string, 'isError' => bool] zurück.
  */
 final class McpProtocol
 {
-    /** Unterstützte Protokollversionen, neueste zuerst. */
+    /** Unterstützte Protokollversionen mit initialize, neueste zuerst. */
     public const VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26'];
+
+    /** Versionen ohne initialize, mit Version und Client je Anfrage in _meta. */
+    public const MODERN_VERSIONS = ['2026-07-28'];
+
+    /** So lange darf ein Client Werkzeugliste und Discover-Antwort behalten (Burkhard 12.10.2026: 5 Minuten). */
+    public const LIST_TTL_MS = 300000;
+
+    private const META_VERSION = 'io.modelcontextprotocol/protocolVersion';
+    private const META_SERVER = 'io.modelcontextprotocol/serverInfo';
 
     /** Gehen mit jeder Antwort hinaus: nichts zwischenspeichern, den Inhaltstyp nicht raten. */
     public const BASE_HEADERS = ['Content-Type' => 'application/json', 'Cache-Control' => 'no-store', 'X-Content-Type-Options' => 'nosniff'];
@@ -29,9 +43,10 @@ final class McpProtocol
      * @param callable(): list<array<string, mixed>> $listTools
      * @param callable(string, array<string, mixed>): array{text: string, isError: bool} $callTool
      * @param array{name: string, title: string, version: string, instructions: string} $info
+     * @param array<string, string> $headers Kopfzeilen der Anfrage, Namen klein (mcp-protocol-version, mcp-method, mcp-name)
      * @return array{status: int, headers: array<string, string>, body: string, methods?: list<string>} methods = aufgerufene JSON-RPC-Methoden, fürs Debug
      */
-    public static function handleHttp(string $method, bool $authorized, string|Closure $body, callable $listTools, callable $callTool, array $info): array
+    public static function handleHttp(string $method, bool $authorized, string|Closure $body, callable $listTools, callable $callTool, array $info, array $headers = []): array
     {
         if (!$authorized) {
             return self::response(401, ['WWW-Authenticate' => 'Bearer'], ['error' => 'Missing or invalid bearer token']);
@@ -45,6 +60,11 @@ final class McpProtocol
             $message = json_decode($body instanceof Closure ? (string)$body() : $body, true, 64, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             return self::response(400, [], self::error(null, -32700, 'Parse error'));
+        }
+
+        // Protokoll 2026-07-28: erkennbar an der Version in _meta (bei einem Stapel an irgendeiner Nachricht)
+        if (self::isModern($message)) {
+            return self::handleModern($message, $headers, $listTools, $callTool, $info);
         }
 
         // Stapel gibt es nur in der Protokollversion 2025-03-26. Jeder Werkzeugaufruf kann bis zu
@@ -152,6 +172,9 @@ final class McpProtocol
                 ]);
             case 'ping':
                 return self::result($id, new stdClass());
+            case 'server/discover':
+                // Pflicht für Server nach 2026-07-28; auch ohne _meta beantwortet, wie ein Client es zur Probe schickt
+                return self::result($id, self::discoverResult($info));
             case 'tools/list':
                 return self::result($id, ['tools' => $listTools()]);
             case 'tools/call':
@@ -176,6 +199,105 @@ final class McpProtocol
             default:
                 return self::error($id, -32601, 'Method not found: ' . $message['method']);
         }
+    }
+
+    /** Trägt die Nachricht (oder eine Nachricht des Stapels) eine Protokollversion in params._meta? */
+    private static function isModern(mixed $message): bool
+    {
+        $messages = is_array($message) && array_is_list($message) ? $message : [$message];
+        foreach ($messages as $single) {
+            if (is_array($single) && is_array($single['params'] ?? null) && is_array($single['params']['_meta'] ?? null)
+                && array_key_exists(self::META_VERSION, $single['params']['_meta'])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Eine Anfrage nach 2026-07-28: genau eine Nachricht, Kopfzeilen passend zum Körper, Version unterstützt.
+     *
+     * @param array<string, string> $headers
+     * @return array{status: int, headers: array<string, string>, body: string, methods: list<string>}
+     */
+    private static function handleModern(array $message, array $headers, callable $listTools, callable $callTool, array $info): array
+    {
+        if (array_is_list($message)) {
+            return self::response(400, [], self::error(null, -32600, 'Invalid Request: protocol version 2026-07-28 takes one message per request')) + ['methods' => ['(batch)']];
+        }
+        $id = $message['id'] ?? null;
+        $rpc = is_string($message['method'] ?? null) ? $message['method'] : '';
+        $params = is_array($message['params'] ?? null) ? $message['params'] : [];
+        $version = $params['_meta'][self::META_VERSION];
+        $methods = [$rpc === '' ? '?' : $rpc];
+        if (($message['jsonrpc'] ?? null) !== '2.0' || $rpc === '') {
+            return self::response(400, [], self::error($id, -32600, 'Invalid Request')) + ['methods' => $methods];
+        }
+        // Kopfzeilen und Körper müssen übereinstimmen (Server Validation, HeaderMismatch -32020)
+        $mismatch = match (true) {
+            !isset($headers['mcp-protocol-version'])                 => 'MCP-Protocol-Version header is missing',
+            $headers['mcp-protocol-version'] !== $version            => 'MCP-Protocol-Version header does not match _meta',
+            !isset($headers['mcp-method'])                           => 'Mcp-Method header is missing',
+            $headers['mcp-method'] !== $rpc                          => 'Mcp-Method header does not match the method',
+            in_array($rpc, ['tools/call', 'prompts/get'], true) && !isset($headers['mcp-name'])                                      => 'Mcp-Name header is missing',
+            in_array($rpc, ['tools/call', 'prompts/get'], true) && self::headerValue($headers['mcp-name']) !== ($params['name'] ?? null) => 'Mcp-Name header does not match params.name',
+            default                                                  => null,
+        };
+        if ($mismatch !== null) {
+            return self::response(400, [], self::error($id, -32020, 'Header mismatch: ' . $mismatch)) + ['methods' => $methods];
+        }
+        if (!in_array($version, self::MODERN_VERSIONS, true)) {
+            return self::response(400, [], self::error($id, -32022, 'Unsupported protocol version', ['supported' => array_merge(self::MODERN_VERSIONS, self::VERSIONS), 'requested' => is_scalar($version) ? (string)$version : '?'])) + ['methods' => $methods];
+        }
+        if (!array_key_exists('id', $message)) {
+            return ['status' => 202, 'headers' => ['Cache-Control' => 'no-store'], 'body' => '', 'methods' => $methods];
+        }
+        $serverInfo = [self::META_SERVER => self::serverInfo($info)];
+        switch ($rpc) {
+            case 'server/discover':
+                return self::response(200, [], self::result($id, self::discoverResult($info))) + ['methods' => $methods];
+            case 'tools/list':
+                return self::response(200, [], self::result($id, ['resultType' => 'complete', 'tools' => $listTools(), 'ttlMs' => self::LIST_TTL_MS, 'cacheScope' => 'private', '_meta' => $serverInfo])) + ['methods' => $methods];
+            case 'tools/call':
+                $reply = self::handleMessage($message, $listTools, $callTool, $info);
+                if (isset($reply['result'])) {
+                    $reply['result'] = ['resultType' => 'complete'] + $reply['result'] + ['_meta' => $serverInfo];
+                }
+                return self::response(200, [], $reply) + ['methods' => $methods];
+            default:
+                // Unbekannt, auch initialize und ping, die es in 2026-07-28 nicht mehr gibt
+                return self::response(404, [], self::error($id, -32601, 'Method not found: ' . $rpc)) + ['methods' => $methods];
+        }
+    }
+
+    /** Kopfzeile in der Base64-Form =?base64?…?= dekodiert, sonst unverändert. */
+    private static function headerValue(string $value): string
+    {
+        if (preg_match('/^=\?base64\?(.*)\?=$/', $value, $parts) === 1) {
+            $decoded = base64_decode($parts[1], true);
+            return $decoded === false ? '' : $decoded;
+        }
+        return $value;
+    }
+
+    /** @return array{name: string, title: string, version: string} */
+    private static function serverInfo(array $info): array
+    {
+        return ['name' => $info['name'], 'title' => $info['title'], 'version' => $info['version']];
+    }
+
+    /** Antwort auf server/discover: Versionen, Fähigkeiten, Serverinfo, Anleitung, Zwischenspeichern. */
+    private static function discoverResult(array $info): array
+    {
+        return [
+            'resultType'        => 'complete',
+            'supportedVersions' => array_merge(self::MODERN_VERSIONS, self::VERSIONS),
+            'capabilities'      => ['tools' => ['listChanged' => false]],
+            '_meta'             => [self::META_SERVER => self::serverInfo($info)],
+            'instructions'      => $info['instructions'],
+            'ttlMs'             => self::LIST_TTL_MS,
+            'cacheScope'        => 'private',
+        ];
     }
 
     /**
@@ -210,9 +332,9 @@ final class McpProtocol
         return ['jsonrpc' => '2.0', 'id' => $id, 'result' => $result];
     }
 
-    private static function error(mixed $id, int $code, string $text): array
+    private static function error(mixed $id, int $code, string $text, ?array $data = null): array
     {
-        return ['jsonrpc' => '2.0', 'id' => $id, 'error' => ['code' => $code, 'message' => $text]];
+        return ['jsonrpc' => '2.0', 'id' => $id, 'error' => ['code' => $code, 'message' => $text] + ($data === null ? [] : ['data' => $data])];
     }
 
     /** @return array{status: int, headers: array<string, string>, body: string} */
