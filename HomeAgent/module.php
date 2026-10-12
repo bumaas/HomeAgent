@@ -51,7 +51,38 @@ class HomeAgent extends IPSModuleStrict
     private const ROW_COLOR_ERROR = '#FFC0C0';
 
     /** Aufklappbare Bereiche des Formulars, deren Zustand das Modul sich merkt. */
-    private const PANELS = ['PanelAccesses', 'PanelRooms', 'PanelDevices', 'PanelScenes', 'PanelBalance', 'PanelClaude', 'PanelHA', 'PanelOther'];
+    private const PANELS = ['PanelAccesses', 'PanelRooms', 'PanelDevices', 'PanelScenes', 'PanelBalance', 'PanelTrouble', 'PanelClaude', 'PanelHA', 'PanelOther'];
+
+    /**
+     * Was nicht geklappt hat (Burkhard 12.10.2026): höchstens so viele Einträge, je Art ein Hinweis für den
+     * Anwender. Abgewiesene Anmeldungen desselben Absenders innerhalb von zehn Minuten sind ein Eintrag.
+     */
+    private const PROBLEMS_MAX_ENTRIES = 50;
+    private const PROBLEMS_SIGN_IN_MERGE_SECONDS = 600;
+    private const PROBLEM_HINTS = [
+        'unknown_room'   => 'Room unknown: enter the word as an alias of a room in the room list.',
+        'unknown_name'   => 'Name unknown: enter the word as an alias of the device. A faulty entry is disabled and is not found either.',
+        'unknown_floor'  => 'Floor unknown: check the floors in the room list.',
+        'unknown_scene'  => 'Scene unknown: enter the word as an alias of the scene.',
+        'no_match'       => 'No device fits this combination of room, type and name.',
+        'ambiguous'      => 'Several devices fit: give them distinct names, or the assistant says the room as well.',
+        'read_only'      => 'The devices are set to query only.',
+        'not_understood' => 'The devices cannot do this.',
+        'left_out'       => 'Some devices cannot do this and were left out.',
+        'not_confirmed'  => 'The device has not confirmed: check whether it is reachable.',
+        'failed'         => 'The action failed: check the device and the action of its variable.',
+        'invalid'        => 'The assistant sent a request the module does not accept.',
+        'sign_in'        => 'Sign-in rejected: check the token or the address in the client.',
+    ];
+
+    /**
+     * Protokoll zur Fehlersuche (Burkhard 12.10.2026): standardmäßig aus, zwei Dateien im Log-Verzeichnis,
+     * gewechselt nach 24 Stunden oder nach der eingestellten Zeilenzahl. Eine Zeile ist höchstens so lang.
+     */
+    private const LOG_ROTATE_SECONDS = 86400;
+    private const LOG_MIN_LINES = 10;
+    private const LOG_LINE_MAX = 2000;
+    private const LOG_SHOW_LINES = 200;
 
     private const LABEL_COLOR_ERROR = 0xC00000;
 
@@ -92,6 +123,11 @@ class HomeAgent extends IPSModuleStrict
         $this->RegisterAttributeString('OAuthGrants', '{}');
         // Aufgeklappte Bereiche des Formulars, damit sie beim nächsten Öffnen wieder so stehen.
         $this->RegisterAttributeString('ExpandedPanels', '[]');
+        // Was nicht geklappt hat, für die Liste im Formular; überlebt einen Neustart.
+        $this->RegisterAttributeString('Problems', '[]');
+        // Protokoll zur Fehlersuche, standardmäßig aus (Burkhard 12.10.2026).
+        $this->RegisterPropertyBoolean('LogEnabled', false);
+        $this->RegisterPropertyInteger('LogLines', 5000);
         foreach (array_merge(array_values(DeviceIndex::BALANCE), array_values(DeviceIndex::BALANCE_POWER)) as $property) {
             $this->RegisterPropertyInteger($property, 0);
         }
@@ -179,7 +215,8 @@ class HomeAgent extends IPSModuleStrict
     public function SwitchDevices(string $Room, string $Type, string $Name, bool $On): string
     {
         $arguments = ['room' => $Room, 'type' => $Type, 'name' => $Name, 'on' => $On];
-        return $this->logged('SwitchDevices', $arguments, $this->deviceIndex()->switchDevices($arguments))['text'];
+        $started = hrtime(true);
+        return $this->logged('SwitchDevices', $arguments, $this->deviceIndex()->switchDevices($arguments), null, null, $started)['text'];
     }
 
     /**
@@ -188,7 +225,8 @@ class HomeAgent extends IPSModuleStrict
     public function SetLevel(string $Room, string $Type, string $Name, float $Percent): string
     {
         $arguments = ['room' => $Room, 'type' => $Type, 'name' => $Name, 'percent' => $Percent];
-        return $this->logged('SetLevel', $arguments, $this->deviceIndex()->setLevel($arguments))['text'];
+        $started = hrtime(true);
+        return $this->logged('SetLevel', $arguments, $this->deviceIndex()->setLevel($arguments), null, null, $started)['text'];
     }
 
     /**
@@ -453,6 +491,12 @@ class HomeAgent extends IPSModuleStrict
                 // Beim Kopplungscode zuerst ein Zugang, an dem schon ein Claude-Connector hängt
                 $paired = $name === 'PairingAccess' ? array_values(array_intersect(array_column($this->oauthClientRows(), 'Access'), $names)) : [];
                 $element['value'] = $paired[0] ?? $names[0] ?? '';
+            }
+            if ($name === 'Problems') {
+                $element['values'] = $this->problemRows();
+            }
+            if ($name === 'PanelTrouble') {
+                $element['caption'] = $this->troubleCaption();
             }
             if ($name === 'OAuthClients') {
                 $rows = array_map(fn (array $row): array => $row + ['Revoke' => '✖ ' . $this->Translate('revoke')], $this->oauthClientRows());
@@ -910,6 +954,7 @@ class HomeAgent extends IPSModuleStrict
                     ?? OAuthServer::error(503, 'temporarily_unavailable', 'Sign-in is not available yet'),
             };
             $this->SendDebug('OAuth', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . $route . ' → HTTP ' . $response['status'], 0);
+            $this->writeLog('–', 'OAuth', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . $route, 'HTTP ' . $response['status']);
             $this->send($response);
             return;
         }
@@ -953,9 +998,17 @@ class HomeAgent extends IPSModuleStrict
             $this->SendDebug('Hook', 'rejected: ' . ($expired ? 'OAuth token expired' : ($attempted ? 'authorization wrong' : 'no authorization')), 0);
             if ($attempted && !$expired) {
                 $this->recordSignInFailure((string)($_SERVER['REMOTE_ADDR'] ?? '?'));
+                // Über Connect kommt jede Anfrage von 127.0.0.1, der Absender steht in X-Forwarded-For.
+                $sender = trim(explode(',', (string)($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''))[0]) ?: (string)($_SERVER['REMOTE_ADDR'] ?? '?');
+                $this->rememberProblem(['access' => '–', 'request' => '', 'result' => '', 'kind' => 'sign_in', 'sender' => $sender]);
+                $this->writeLog('–', 'sign-in rejected', 'from ' . $sender, 'token missing or wrong');
             }
         } else {
             $this->SendDebug('Request', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . implode(', ', $response['methods'] ?? []) . ' → HTTP ' . $response['status'] . ' (' . ($_SERVER['REMOTE_ADDR'] ?? '?') . ', access ' . $access['Name'] . ($viaOAuth ? ', OAuth' : '') . ')', 0);
+            // Werkzeugaufrufe schreibt logged(); hier nur Anmeldung, Werkzeugliste und Ähnliches
+            if (!in_array('tools/call', $response['methods'] ?? [], true)) {
+                $this->writeLog((string)$access['Name'], implode(', ', $response['methods'] ?? []), $viaOAuth ? 'OAuth' : '', 'HTTP ' . $response['status']);
+            }
         }
         $this->send($response);
     }
@@ -1731,16 +1784,23 @@ class HomeAgent extends IPSModuleStrict
      */
     private function callTool(string $name, array $arguments, ?array $access = null): array
     {
+        $started = hrtime(true);
         $readOnly = ($access['ReadOnly'] ?? false) === true;
         $defaultRoom = (string)($access['DefaultRoom'] ?? '');
-        $outcome = match (true) {
-            $name === 'get_state'                  => $this->withNow($this->deviceIndex($defaultRoom)->getState($arguments)),
-            $readOnly                              => ['text' => 'Unknown tool ' . $name, 'isError' => true],
-            $name === 'set_state'                  => $this->deviceIndex($defaultRoom)->setState($arguments),
-            $name === 'run_scene'                  => $this->sceneIndex()->runScene($arguments),
-            default                                => ['text' => 'Unknown tool ' . $name, 'isError' => true],
+        $index = match (true) {
+            $name === 'get_state'                  => $this->deviceIndex($defaultRoom),
+            $readOnly                              => null,
+            $name === 'set_state'                  => $this->deviceIndex($defaultRoom),
+            $name === 'run_scene'                  => $this->sceneIndex(),
+            default                                => null,
         };
-        return $this->logged($name, $arguments, $outcome, $access);
+        $outcome = match (true) {
+            $index === null                        => ['text' => 'Unknown tool ' . $name, 'isError' => true],
+            $name === 'get_state'                  => $this->withNow($index->getState($arguments)),
+            $name === 'set_state'                  => $index->setState($arguments),
+            default                                => $index->runScene($arguments),
+        };
+        return $this->logged($name, $arguments, $outcome, $access, $index === null ? 'invalid' : $index->problem(), $started);
     }
 
     /**
@@ -1765,10 +1825,196 @@ class HomeAgent extends IPSModuleStrict
      * @param null|array<string, mixed> $access
      * @return array{text: string, isError: bool}
      */
-    private function logged(string $name, array $arguments, array $outcome, ?array $access = null): array
+    private function logged(string $name, array $arguments, array $outcome, ?array $access = null, ?string $problem = null, ?int $started = null): array
     {
         $this->SendDebug('Tool', ($access === null ? '' : '[' . $access['Name'] . '] ') . $name . ' ' . json_encode($arguments, JSON_UNESCAPED_UNICODE) . ' → ' . ($outcome['isError'] ? 'ERROR: ' : '') . str_replace("\n", ' ‖ ', $outcome['text']), 0);
+        $request = self::compactArguments($arguments);
+        // In die Liste nur, was ein Assistent nicht erreicht hat; Skriptfunktionen sieht der Aufrufer selbst.
+        if ($access !== null && $problem !== null) {
+            $this->rememberProblem([
+                'access'  => (string)$access['Name'],
+                'request' => trim($name . ' ' . $request),
+                'result'  => DeviceIndex::singleLine((string)strtok($outcome['text'], "\n"), self::FAILURE_TEXT_LENGTH),
+                'kind'    => $problem,
+            ]);
+        }
+        $this->writeLog($access === null ? 'script' : (string)$access['Name'], $name, $request, ($started === null ? 0 : intdiv(hrtime(true) - $started, 1_000_000)) . ' ms', $outcome['text']);
         return $outcome;
+    }
+
+    /** Argumente eines Aufrufs kurz und lesbar: room=Küche command=on, leere weggelassen. */
+    private static function compactArguments(array $arguments): string
+    {
+        $parts = [];
+        foreach ($arguments as $key => $value) {
+            if ($value === '' || $value === null || $value === []) {
+                continue;
+            }
+            $parts[] = $key . '=' . match (true) {
+                is_bool($value)   => $value ? 'true' : 'false',
+                is_scalar($value) => (string)$value,
+                default           => (string)json_encode($value, JSON_UNESCAPED_UNICODE),
+            };
+        }
+        return DeviceIndex::singleLine(implode(' ', $parts), self::FAILURE_TEXT_LENGTH);
+    }
+
+    /**
+     * Merkt einen Eintrag für „Was nicht geklappt hat“, die neuesten 50. Abgewiesene Anmeldungen desselben
+     * Absenders kurz hintereinander zählen in einem Eintrag, sonst füllt ein Client mit altem Token die Liste.
+     *
+     * @param array{access: string, request: string, result: string, kind: string, sender?: string} $entry
+     */
+    private function rememberProblem(array $entry): void
+    {
+        $now = time();
+        $this->changeStored('Problems', static function (array $list) use ($entry, $now): array {
+            $list = array_values($list);
+            $last = array_key_last($list);
+            if ($entry['kind'] === 'sign_in' && $last !== null && ($list[$last]['kind'] ?? '') === 'sign_in'
+                && ($list[$last]['sender'] ?? '') === ($entry['sender'] ?? '') && $now - (int)$list[$last]['time'] <= self::PROBLEMS_SIGN_IN_MERGE_SECONDS) {
+                $list[$last]['count'] = (int)($list[$last]['count'] ?? 1) + 1;
+                $list[$last]['time'] = $now;
+                return $list;
+            }
+            $list[] = $entry + ['time' => $now, 'count' => 1];
+            return array_slice($list, -self::PROBLEMS_MAX_ENTRIES);
+        }, true);
+    }
+
+    /** @return list<array{Time: string, Access: string, Request: string, Result: string, Hint: string}> neueste zuerst */
+    private function problemRows(): array
+    {
+        $rows = [];
+        foreach (array_reverse(array_values($this->storedJson('Problems', true))) as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+            $signIn = ($entry['kind'] ?? '') === 'sign_in';
+            $count = (int)($entry['count'] ?? 1);
+            $rows[] = [
+                'Time'    => date('d.m. H:i:s', (int)($entry['time'] ?? 0)),
+                'Access'  => (string)($entry['access'] ?? ''),
+                'Request' => $signIn ? sprintf($this->Translate('Sign-in from %s'), (string)($entry['sender'] ?? '?')) : (string)($entry['request'] ?? ''),
+                'Result'  => ($signIn ? $this->Translate('Token missing or wrong') : (string)($entry['result'] ?? '')) . ($count > 1 ? ' (' . $count . '×)' : ''),
+                'Hint'    => $this->Translate(self::PROBLEM_HINTS[$entry['kind'] ?? ''] ?? self::PROBLEM_HINTS['invalid']),
+            ];
+        }
+        return $rows;
+    }
+
+    /** Überschrift des Bereichs: mit der Zahl der Einträge der letzten 24 Stunden. */
+    private function troubleCaption(): string
+    {
+        $since = time() - 86400;
+        $recent = count(array_filter($this->storedJson('Problems', true), static fn (mixed $entry): bool => is_array($entry) && (int)($entry['time'] ?? 0) >= $since));
+        return $recent === 0 ? $this->Translate('What did not work') : sprintf($this->Translate('What did not work (%d in the last 24 hours)'), $recent);
+    }
+
+    /** Nur für das Formular: leert die Liste „Was nicht geklappt hat“. */
+    public function UIClearProblems(): void
+    {
+        $this->changeStored('Problems', static fn (array $list): array => [], true);
+        $this->UpdateFormField('Problems', 'values', '[]');
+        $this->UpdateFormField('PanelTrouble', 'caption', $this->troubleCaption());
+    }
+
+    /** Pfad einer Protokolldatei: die aktuelle oder die vorige. */
+    private function logFile(bool $old = false): string
+    {
+        return rtrim(IPS_GetLogDir(), '/\\') . DIRECTORY_SEPARATOR . 'homeagent_' . $this->InstanceID . ($old ? '.old.log' : '.log');
+    }
+
+    /**
+     * Schreibt eine Zeile ins Protokoll, wenn es eingeschaltet ist. Nach 24 Stunden oder der eingestellten
+     * Zeilenzahl wird die aktuelle Datei zur vorigen, so liegen immer ein bis zwei Tage vor. Tokens,
+     * Adressen und Kopplungscodes übergibt kein Aufrufer.
+     */
+    private function writeLog(string ...$fields): void
+    {
+        if (!$this->ReadPropertyBoolean('LogEnabled')) {
+            return;
+        }
+        $now = microtime(true);
+        $line = date('Y-m-d H:i:s', (int)$now) . sprintf('.%03d', (int)(($now - floor($now)) * 1000)) . ' | ' . implode(' | ', $fields);
+        $line = mb_substr(str_replace(["\r\n", "\n", "\r"], ' ‖ ', $line), 0, self::LOG_LINE_MAX);
+        $lock = 'HAGT_Log_' . $this->InstanceID;
+        if (!IPS_SemaphoreEnter($lock, 1000)) {
+            return;
+        }
+        try {
+            $current = $this->logFile();
+            if (!is_dir(dirname($current))) {
+                @mkdir(dirname($current), 0777, true);
+            }
+            $state = json_decode($this->GetBuffer('LogState'), true);
+            if (!is_file($current)) {
+                $state = ['started' => (int)$now, 'lines' => 0];
+            } elseif (!is_array($state)) {
+                // Nach einem Neustart: Beginn und Zeilen aus der Datei
+                $lines = (array)file($current, FILE_IGNORE_NEW_LINES);
+                $state = ['started' => (int)(strtotime(substr((string)($lines[0] ?? ''), 0, 19)) ?: filemtime($current)), 'lines' => count($lines)];
+            }
+            $max = max(self::LOG_MIN_LINES, $this->ReadPropertyInteger('LogLines'));
+            if ((int)$state['lines'] >= $max || (int)$state['started'] <= (int)$now - self::LOG_ROTATE_SECONDS) {
+                @rename($current, $this->logFile(true));
+                $state = ['started' => (int)$now, 'lines' => 0];
+            }
+            file_put_contents($current, $line . "\n", FILE_APPEND | LOCK_EX);
+            $state['lines'] = (int)$state['lines'] + 1;
+            $this->SetBuffer('LogState', (string)json_encode($state));
+        } finally {
+            IPS_SemaphoreLeave($lock);
+        }
+    }
+
+    /** Inhalt beider Protokolldateien, die vorige zuerst. */
+    private function logText(): string
+    {
+        $text = '';
+        foreach ([$this->logFile(true), $this->logFile()] as $file) {
+            if (is_file($file)) {
+                $text .= (string)file_get_contents($file);
+            }
+        }
+        return $text;
+    }
+
+    /** Nur für das Formular: die letzten Zeilen des Protokolls, neueste zuerst, im Fenster „Protokoll“. */
+    public function UIShowLog(): void
+    {
+        $lines = array_reverse(array_slice(array_values(array_filter(explode("\n", $this->logText()), static fn (string $line): bool => $line !== '')), -self::LOG_SHOW_LINES));
+        $this->UpdateFormField('LogView', 'values', (string)json_encode(array_map(static fn (string $line): array => ['Line' => $line], $lines)));
+        $this->UpdateFormField('LogPopup', 'visible', true);
+    }
+
+    /**
+     * Nur für das Formular: beide Protokolldateien als eine Textdatei. Der Knopf trägt den Parameter download,
+     * dann lädt die Konsole eine Data-URL als Datei herunter (Doku Button, ab 7.0).
+     */
+    public function UIDownloadLog(): string
+    {
+        $text = $this->logText();
+        return $text === '' ? $this->Translate('The protocol is empty.') : 'data:text/plain;charset=utf-8;base64,' . base64_encode($text);
+    }
+
+    /** Nur für das Formular: löscht beide Protokolldateien. */
+    public function UIClearLog(): void
+    {
+        $lock = 'HAGT_Log_' . $this->InstanceID;
+        if (!IPS_SemaphoreEnter($lock, 1000)) {
+            return;
+        }
+        try {
+            foreach ([$this->logFile(true), $this->logFile()] as $file) {
+                if (is_file($file)) {
+                    @unlink($file);
+                }
+            }
+            $this->SetBuffer('LogState', '');
+        } finally {
+            IPS_SemaphoreLeave($lock);
+        }
     }
 
     private function deviceIndex(string $defaultRoom = ''): DeviceIndex

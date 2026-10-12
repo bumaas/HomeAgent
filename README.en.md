@@ -421,6 +421,31 @@ For scripts:
 echo HAGT_RunScene($InstanceID, '', 'Filmabend');
 ```
 
+## What did not work
+
+The section **What did not work** shows the requests of the assistants that did not reach everything,
+newest first. The heading counts the entries of the last 24 hours. Each row names time, access, the request,
+the first line of the answer and a hint what you can do:
+
+| Case | Example | Hint |
+|---|---|---|
+| Room unknown | "light in the bathroom on", the room is called "Bath" | enter the word as an alias of the room |
+| Name unknown | "floor lamp on", the device is called "reading lamp" | enter the word as an alias of the device |
+| Several devices fit | "ceiling light on" without a room matches three ceiling lights | give distinct names |
+| Device cannot do this | "open the light" | nothing to do |
+| Device does not confirm | an LED strip without power | check whether the device is reachable |
+| Action failed | the variable has no action | check device and action |
+| Sign-in rejected | a client with an old token | check token or address in the client |
+
+A blind that is still moving is not listed. The last 50 entries are kept, also across a restart; **Clear
+list** removes them. Rejected sign-ins from the same sender within ten minutes are one entry with a count.
+
+For troubleshooting there is a **protocol** below, switched off at first. With **Keep a protocol** the module
+writes every request as a line into a file in the log directory of Symcon (`homeagent_<InstanceID>.log`):
+time, access, tool, arguments, duration and answer. After 24 hours or after **Lines per file** (5000 at first)
+a new file starts, the previous one stays as `homeagent_<InstanceID>.old.log`. So one to two days are
+available. **Show protocol** shows the last 200 lines, **Download protocol** downloads both files as one,
+**Clear protocol** deletes them. Tokens and pairing codes are never written.
 ## Limits
 
 - Colour as text and the operating mode of thermostats (off, heat, auto) are not supported yet.

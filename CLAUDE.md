@@ -257,6 +257,17 @@ Weitere Regeln, die nicht offensichtlich sind:
   der feste Grundport; weitere Ports kommen nur über eigene WebServer-Instanzen, die bewusst nicht angezeigt werden,
   Burkhard 12.10.2026).
 
+- **Was nicht geklappt hat und Protokoll** (Burkhard 12.10.2026): `DeviceIndex::problem()` und
+  `SceneIndex::problem()` nennen die Art (`unknown_room`, `unknown_name`, `ambiguous`, `not_understood`, `left_out`,
+  `not_confirmed`, `failed` …; ein fahrender Rollladen zählt nicht, `underway` in `runLevel`). `logged()` merkt
+  Aufrufe eines Zugangs mit Problem im Attribut `Problems` (50, neueste zuerst angezeigt, Hinweis je Art aus
+  `PROBLEM_HINTS`), abgewiesene Anmeldungen je Absender zehn Minuten zusammengefasst; Skriptfunktionen nicht.
+  Kein Knopf „Als Alias übernehmen“: dann bräuchten alle Arten etwas Ähnliches (Burkhard). Das Protokoll
+  (`LogEnabled`, standardmäßig aus, `LogLines` 5000) schreibt `writeLog()` unter einer Sperre nach
+  `IPS_GetLogDir()/homeagent_<ID>.log`, gewechselt nach 24 h oder `LogLines` zur `.old.log`; Zustand im Buffer
+  `LogState`, nach einem Neustart aus der Datei. Herunterladen über den Button-Parameter `download` (Data-URL, beide
+  Dateien, die alte zuerst). Tokens, Adressen und Kopplungscodes übergibt kein Aufrufer.
+
 ## Entwickeln und Testen
 
 - **Tests zuerst, mit Rot/Grün-Nachweis.** Jeder Fix und jede Funktion bekommt Prüfungen, die vor dem

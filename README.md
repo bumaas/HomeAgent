@@ -442,6 +442,33 @@ Für Skripte:
 echo HAGT_RunScene($InstanzID, '', 'Filmabend');
 ```
 
+## Was nicht geklappt hat
+
+Der Bereich **Was nicht geklappt hat** zeigt die Anfragen der Assistenten, bei denen nicht alles erreicht
+wurde, die neuesten zuerst. Die Überschrift zählt die Einträge der letzten 24 Stunden. Jede Zeile nennt Zeit,
+Zugang, die Anfrage, die erste Zeile der Antwort und einen Hinweis, was Sie tun können:
+
+| Fall | Beispiel | Hinweis |
+|---|---|---|
+| Raum unbekannt | „Licht im Badezimmer an“, der Raum heißt „Bad“ | das Wort als Alias des Raums eintragen |
+| Name unbekannt | „Stehlampe an“, das Gerät heißt „Leselampe“ | das Wort als Alias des Geräts eintragen |
+| Mehrere Geräte passen | „Deckenlicht an“ ohne Raum trifft drei Deckenlichter | eindeutige Namen vergeben |
+| Gerät kann das nicht | „Licht öffnen“ | nichts zu tun |
+| Gerät bestätigt nicht | ein stromloser LED-Streifen | prüfen, ob das Gerät erreichbar ist |
+| Aktion fehlgeschlagen | die Variable hat keine Aktion | Gerät und Aktion prüfen |
+| Anmeldung abgewiesen | ein Client mit altem Token | Token oder Adresse im Client prüfen |
+
+Ein Rollladen, der noch fährt, steht nicht darin. Die letzten 50 Einträge bleiben, auch über einen Neustart;
+**Liste leeren** räumt sie ab. Abgewiesene Anmeldungen desselben Absenders innerhalb von zehn Minuten sind ein
+Eintrag mit Anzahl.
+
+Für die Fehlersuche gibt es darunter ein **Protokoll**, anfangs ausgeschaltet. Mit **Protokoll führen**
+schreibt das Modul jede Anfrage als Zeile in eine Datei im Log-Verzeichnis von Symcon
+(`homeagent_<InstanzID>.log`): Zeit, Zugang, Werkzeug, Argumente, Dauer und Antwort. Nach 24 Stunden oder
+nach **Zeilen je Datei** (anfangs 5000) beginnt eine neue Datei, die vorige bleibt als
+`homeagent_<InstanzID>.old.log`. So liegen ein bis zwei Tage vor. **Protokoll anzeigen** zeigt die letzten
+200 Zeilen, **Protokoll herunterladen** lädt beide Dateien als eine herunter, **Protokoll leeren** löscht
+sie. Tokens und Kopplungscodes stehen nie darin.
 ## Grenzen
 
 - Farbe als Text und die Betriebsart von Thermostaten (aus, heizen, automatisch) gehen noch nicht.

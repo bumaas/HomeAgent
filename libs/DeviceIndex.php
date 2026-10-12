@@ -239,6 +239,9 @@ final class DeviceIndex
     /** @var array<string, int> Leistungen der Energiebilanz: Schlüssel aus BALANCE_POWER => Variablen-ID */
     private array $powerBalance;
 
+    /** Art des Problems der letzten Anfrage, null = alles erreicht (problem()). */
+    private ?string $problem = null;
+
     /**
      * @param list<array<string, mixed>> $entries Zeilen der Formularliste „Devices“
      * @param null|RoomIndex $rooms Raumliste mit Aliasen und Etagen
@@ -352,6 +355,7 @@ final class DeviceIndex
         $filter = $this->describeFilter($room, $type, $name, $floor);
         $matches = $this->find($room, $type, $name, $floor);
         if ($matches === []) {
+            $this->noMatch($room, $name);
             return $this->fail(sprintf($this->t('No released device matches %s.'), $filter) . ' ' . $this->knownRoomsAndTypes());
         }
         // Die Bilanz gilt nur fürs ganze Haus; nach Raum, Etage, Typ oder Name zählen die Geräte.
@@ -955,6 +959,7 @@ final class DeviceIndex
         $understand = array_filter($selection['entries'], static fn (array $e): bool => in_array($ability, self::abilitiesOf($e), true));
         $skipped = count($selection['entries']) - count($understand) + ($selection['windowsWithoutDrive'] ?? 0);
         if ($understand === []) {
+            $this->problem = 'not_understood';
             $known = self::offeredAbilities($selection['entries']);
             $list = $known === [] ? $this->t('(none)') : implode(', ', $known);
             if ($name !== '') {
@@ -977,6 +982,9 @@ final class DeviceIndex
         }
 
         $closing = $skipped > 0 ? [sprintf($this->t('%d device(s) of the selection do not understand "%s" and were left out.'), $skipped, $ability)] : [];
+        if ($skipped > 0) {
+            $this->problem = 'left_out';
+        }
         if ($color !== null) {
             $result = $this->runColor($understand, self::COLORS[$color]);
             $value = $this->t($color);
@@ -1369,6 +1377,9 @@ final class DeviceIndex
                 } else {
                     $result['pending']++;
                     $result['status'][$index] = 'pending';
+                    if (self::moves($job['entry'])) {
+                        $result['underway'] = ($result['underway'] ?? 0) + 1;
+                    }
                     // Viele Rollläden melden ihre Position erst am Ende der Fahrt (Velux KLF200), andere
                     // unterwegs. Beides ist kein Fehlschlag und bekommt deshalb einen eigenen Text.
                     $text = match (true) {
@@ -1887,6 +1898,12 @@ final class DeviceIndex
      */
     private function answer(string $head, array $result, array $closing): array
     {
+        // Ein Rollladen unterwegs zählt als „noch nicht bestätigt“, ist aber kein Problem.
+        if ($result['failed'] > 0) {
+            $this->problem = 'failed';
+        } elseif ($result['pending'] - ($result['underway'] ?? 0) > 0) {
+            $this->problem = 'not_confirmed';
+        }
         return [
             'text'    => implode("\n", array_merge([$head], array_values($result['lines']), $closing)),
             'isError' => $result['failed'] > 0 && $result['reached'] === 0 && $result['pending'] === 0,
@@ -1980,8 +1997,10 @@ final class DeviceIndex
         $entries = $this->find($room, $type, $name, $floor, fn (array $e): bool => $this->isControllable($e));
         if ($entries === []) {
             if ($this->find($room, $type, $name, $floor) !== []) {
+                $this->problem = 'read_only';
                 return ['error' => sprintf($this->t('Nothing was changed: the devices matching %s can only be read.'), $filter)];
             }
+            $this->noMatch($room, $name);
             return ['error' => sprintf($this->t('No released device matches %s.'), $filter) . ' ' . $this->knownRoomsAndTypes()];
         }
         if ($name !== '' && count($entries) > 1 && $this->defaultRoom !== '') {
@@ -2000,6 +2019,7 @@ final class DeviceIndex
             $text = count(array_unique(array_column($entries, 'Room'))) > 1
                 ? 'Nothing was changed: %d devices match %s. Ask which one is meant or add the room:'
                 : 'Nothing was changed: %d devices match %s. Ask which one is meant:';
+            $this->problem = 'ambiguous';
             return ['error' => sprintf($this->t($text), count($entries), $filter) . "\n" . implode("\n", $candidates)];
         }
         // Sollen Fenster mit Antrieb fahren, gehören die Fenster nur mit Kontakt derselben Auswahl zu
@@ -2897,6 +2917,7 @@ final class DeviceIndex
 
     private function unknownFloor(string $floor): string
     {
+        $this->problem = 'unknown_floor';
         $floors = $this->rooms->floors();
         return sprintf($this->t('Unknown floor "%s". Known floors: %s.'), $floor, $floors === [] ? $this->t('(none)') : implode(', ', $floors));
     }
@@ -2932,7 +2953,29 @@ final class DeviceIndex
     /** @return array{text: string, isError: bool} */
     private function fail(string $text): array
     {
+        $this->problem ??= 'invalid';
         return ['text' => $text, 'isError' => true];
+    }
+
+    /**
+     * Was bei der letzten Anfrage nicht geklappt hat, für die Liste im Formular (Burkhard 12.10.2026):
+     * unknown_room, unknown_name, unknown_floor, no_match, ambiguous, read_only, not_understood, left_out,
+     * not_confirmed, failed, invalid; null, wenn alles erreicht ist. Ein Rollladen, der noch fährt, ist kein
+     * Problem.
+     */
+    public function problem(): ?string
+    {
+        return $this->problem;
+    }
+
+    /** Kein Treffer: Liegt es am Raum, am Namen oder an der Kombination? */
+    private function noMatch(string $room, string $name): void
+    {
+        $this->problem = match (true) {
+            $room !== '' && !self::isAllRooms($room) && !$this->rooms->isKnown($room) && $this->find($room, '', '') === [] => 'unknown_room',
+            $name !== '' && $this->find('', '', $name) === []                                                                => 'unknown_name',
+            default                                                                                                          => 'no_match',
+        };
     }
 
     private static function formatNumber(float $value): string

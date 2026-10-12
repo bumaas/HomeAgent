@@ -18,6 +18,14 @@ final class SceneIndex
 
     private RoomIndex $rooms;
 
+    /** Art des Problems der letzten Anfrage wie bei DeviceIndex::problem(), null = gestartet. */
+    private ?string $problem = null;
+
+    public function problem(): ?string
+    {
+        return $this->problem;
+    }
+
     /**
      * @param list<array<string, mixed>> $entries Zeilen der Formularliste „Scenes“
      * @param null|RoomIndex $rooms Raumliste, damit eine Szene auch über ein Alias ihres Raums gefunden wird
@@ -52,6 +60,7 @@ final class SceneIndex
         $name = trim((string)($arguments['name'] ?? ''));
 
         if ($this->entries === []) {
+            $this->problem = 'unknown_scene';
             return $this->fail($this->t('No scene is released.'));
         }
         if ($name === '') {
@@ -62,13 +71,16 @@ final class SceneIndex
         $filter = ($room !== '' ? 'room=' . $room . ', ' : '') . 'name=' . $name;
         $matches = $this->find($room, $name);
         if ($matches === []) {
+            $this->problem = 'unknown_scene';
             return $this->fail(sprintf($this->t('Nothing was started: no released scene matches %s. Known scenes:'), $filter) . "\n" . implode("\n", $this->lines($this->entries)));
         }
         if (count($matches) > 1) {
+            $this->problem = 'ambiguous';
             return $this->fail(sprintf($this->t('Nothing was started: %d scenes match %s. Ask which one is meant:'), count($matches), $filter) . "\n" . implode("\n", $this->lines($matches)));
         }
 
         $scene = $matches[0];
+        $this->problem = 'failed'; // bleibt nur, wenn der Start scheitert
         if (!$this->backend->scriptExists($scene['ScriptID'])) {
             return $this->fail(sprintf($this->t('Scene "%s" could not be started: script %d is missing.'), $scene['Name'], $scene['ScriptID']));
         }
@@ -76,6 +88,7 @@ final class SceneIndex
         if ($error !== null) {
             return $this->fail(sprintf($this->t('Scene "%s" could not be started: %s'), $scene['Name'], $error));
         }
+        $this->problem = null;
         return ['text' => sprintf($this->t('Scene "%s" was started.'), $scene['Name']), 'isError' => false];
     }
 
@@ -106,6 +119,7 @@ final class SceneIndex
     /** @return array{text: string, isError: bool} */
     private function fail(string $text): array
     {
+        $this->problem ??= 'invalid';
         return ['text' => $text, 'isError' => true];
     }
 

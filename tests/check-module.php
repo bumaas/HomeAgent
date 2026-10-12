@@ -551,17 +551,17 @@ pruefe(($geraete['form'] ?? null) === "return json_decode(HAGT_UIDeviceForm(\$id
 $oben = $formular['elements'];
 $bereiche = array_values(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel'));
 $inhalt = array_map(static fn (array $b): array => array_values(array_filter(array_column($b['items'], 'name'))), $bereiche);
-pruefe(count($bereiche) === 5 && $inhalt[0] === ['Accesses', 'ConnectHeading', 'PanelClaude', 'PanelHA', 'PanelOther'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['Devices'] && $inhalt[3] === ['Scenes'] && in_array('GridImportVariableID', array_column(flach($bereiche[4]['items']), 'name'), true), 'fünf Bereiche in dieser Reihenfolge: ' . json_encode($inhalt));
+pruefe(count($bereiche) === 6 && $inhalt[0] === ['Accesses', 'ConnectHeading', 'PanelClaude', 'PanelHA', 'PanelOther'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['Devices'] && $inhalt[3] === ['Scenes'] && in_array('GridImportVariableID', array_column(flach($bereiche[4]['items']), 'name'), true) && in_array('Problems', array_column(flach($bereiche[5]['items']), 'name'), true), 'sechs Bereiche in dieser Reihenfolge, zuletzt „Was nicht geklappt hat“: ' . json_encode($inhalt));
 pruefe(array_values(array_filter(array_column(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') !== 'ExpansionPanel'), 'name'))) === [], 'oben steht außer den Bereichen nur Erklärtext, kein Feld: ' . json_encode(array_column($oben, 'name')));
 // Burkhard, 10.10.2026: einheitlich zugeklappt, und jeder Bereich merkt sich seinen Zustand
 $zustand = static fn (): array => array_map(static fn (array $b): bool => ($b['expanded'] ?? false) === true, array_values(array_filter(json_decode($m->GetConfigurationForm(), true)['elements'], static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel')));
-pruefe($zustand() === [false, false, false, false, false], 'anfangs sind alle Bereiche zu, auch mit leerer Liste: ' . json_encode($zustand()));
-pruefe(array_map(static fn (array $b): string => $b['onClick'] ?? '', $bereiche) === array_map(static fn (string $n): string => "HAGT_UITogglePanel(\$id, '$n');", ['PanelAccesses', 'PanelRooms', 'PanelDevices', 'PanelScenes', 'PanelBalance']), 'jeder Bereich meldet das Auf- und Zuklappen: ' . json_encode(array_column($bereiche, 'onClick')));
+pruefe($zustand() === [false, false, false, false, false, false], 'anfangs sind alle Bereiche zu, auch mit leerer Liste: ' . json_encode($zustand()));
+pruefe(array_map(static fn (array $b): string => $b['onClick'] ?? '', $bereiche) === array_map(static fn (string $n): string => "HAGT_UITogglePanel(\$id, '$n');", ['PanelAccesses', 'PanelRooms', 'PanelDevices', 'PanelScenes', 'PanelBalance', 'PanelTrouble']), 'jeder Bereich meldet das Auf- und Zuklappen: ' . json_encode(array_column($bereiche, 'onClick')));
 oderNull(static fn () => $m->UITogglePanel('PanelDevices'));
-pruefe($zustand() === [false, false, true, false, false], 'nach dem Aufklappen bleibt „Geräte“ beim nächsten Öffnen auf: ' . json_encode($zustand()));
+pruefe($zustand() === [false, false, true, false, false, false], 'nach dem Aufklappen bleibt „Geräte“ beim nächsten Öffnen auf: ' . json_encode($zustand()));
 oderNull(static fn () => $m->UITogglePanel('PanelDevices'));
 oderNull(static fn () => $m->UITogglePanel('Unbekannt'));
-pruefe($zustand() === [false, false, false, false, false], 'nach dem Zuklappen wieder zu, ein unbekannter Name ändert nichts: ' . json_encode($zustand()));
+pruefe($zustand() === [false, false, false, false, false, false], 'nach dem Zuklappen wieder zu, ein unbekannter Name ändert nichts: ' . json_encode($zustand()));
 
 // Unterbereiche in „Endpunkt und Zugänge“: je Assistent ein aufklappbarer Bereich, der sich seinen Zustand merkt
 $unter = array_column(array_values(array_filter($bereiche[0]['items'], static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel')), null, 'name');
@@ -2373,5 +2373,165 @@ pruefe(($element('Accesses')['rowCount'] ?? 0) === 3, 'ein Zugang: mindestens dr
 pruefe(($element('OAuthClients')['visible'] ?? true) === false, 'ohne gekoppelte Assistenten keine leere Liste');
 pruefe(!str_contains((string)json_encode($formular), '/<Token>'), 'der Text unter „Andere Assistenten“ ist kürzer, ohne /<Token>');
 HomeAgentHarness::$connect = '';
+
+/* --- Was nicht geklappt hat und Protokoll (Burkhard 12.10.2026) -------------------------------------- */
+
+// Der Anwender soll sehen, wenn ein Assistent etwas nicht erreicht hat, etwa bei einem abweichenden Raum- oder
+// Gerätenamen. Dazu ein Protokoll zum Einschalten, standardmäßig aus, zwei Dateien im Wechsel nach 24 Stunden
+// oder n Zeilen, beide zusammen herunterzuladen. Tokens und Kopplungscodes stehen nie darin.
+$p = neueInstanz();
+$pid = (int)(new ReflectionProperty(IPSModuleStrict::class, 'InstanceID'))->getValue($p);
+$pToken = str_repeat('c3', 32);
+$kueche = variable(VARIABLETYPE_BOOLEAN, false);
+IPS_SetProperty($pid, 'Devices', json_encode([['Room' => 'Küche', 'Name' => 'Deckenlicht', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $kueche, 'Invert' => false]]));
+IPS_SetProperty($pid, 'Accesses', json_encode([['Name' => 'Claude-App', 'Token' => $pToken, 'DefaultRoom' => '', 'ReadOnly' => false, 'InPath' => true]]));
+IPS_ApplyChanges($pid);
+pruefe(IPS_GetInstance($pid)['InstanceStatus'] === IS_ACTIVE, 'Ausgangslage: aktiv');
+$pHook = new ReflectionMethod(HomeAgent::class, 'ProcessHookData');
+$ruf = static function (string $werkzeug, array $argumente, string $auth = '', string $pfad = '', string $absender = '192.0.2.5') use ($pHook, $p, $pid, $pToken): void {
+    $_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $pid . $pfad, 'REMOTE_ADDR' => $absender, 'HTTP_AUTHORIZATION' => $auth === '' ? 'Bearer ' . $pToken : $auth];
+    if ($pfad !== '') {
+        unset($_SERVER['HTTP_AUTHORIZATION']);
+    }
+    HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/call', 'params' => ['name' => $werkzeug, 'arguments' => (object)$argumente]]);
+    ob_start();
+    try {
+        $pHook->invoke($p);
+    } finally {
+        ob_end_clean();
+        HomeAgentHarness::$body = '';
+    }
+};
+$pFormular = static fn (): array => json_decode($p->GetConfigurationForm(), true);
+$pElement = static function (string $name) use ($pFormular): array {
+    foreach (flach($pFormular()['elements']) as $e) {
+        if (($e['name'] ?? '') === $name) {
+            return $e;
+        }
+    }
+    return [];
+};
+$zeilen = static fn (): array => $pElement('Problems')['values'] ?? [];
+
+pruefe($pElement('PanelTrouble') !== [] && ($pElement('PanelTrouble')['caption'] ?? '') === 'What did not work', 'Bereich „Was nicht geklappt hat“, ohne Einträge ohne Zahl: ' . json_encode($pElement('PanelTrouble')['caption'] ?? null));
+pruefe($zeilen() === [], 'anfangs ist die Liste leer');
+
+$ruf('get_state', ['room' => 'Badezimmer']);
+$ruf('get_state', ['room' => 'Küche']);
+$ruf('set_state', ['name' => 'Stehlampe', 'command' => 'on']);
+$z = $zeilen();
+pruefe(count($z) === 2, 'zwei Einträge, die erfolgreiche Abfrage fehlt: ' . json_encode($z, JSON_UNESCAPED_UNICODE));
+pruefe(($z[0]['Request'] ?? '') === 'set_state name=Stehlampe command=on' && ($z[1]['Request'] ?? '') === 'get_state room=Badezimmer', 'neueste zuerst, Anfrage kompakt: ' . json_encode(array_column($z, 'Request'), JSON_UNESCAPED_UNICODE));
+pruefe(($z[1]['Access'] ?? '') === 'Claude-App' && preg_match('/^\d\d\.\d\d\. \d\d:\d\d:\d\d$/', (string)($z[1]['Time'] ?? '')) === 1, 'Zugang und Zeit: ' . json_encode($z[1] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(str_starts_with((string)($z[1]['Result'] ?? ''), 'No released device matches room=Badezimmer.'), 'Ergebnis ist die erste Zeile der Antwort: ' . ($z[1]['Result'] ?? ''));
+pruefe(($z[1]['Hint'] ?? '') === 'Room unknown: enter the word as an alias of a room in the room list.', 'Hinweis zum Raum: ' . ($z[1]['Hint'] ?? ''));
+pruefe(($z[0]['Hint'] ?? '') === 'Name unknown: enter the word as an alias of the device. A faulty entry is disabled and is not found either.', 'Hinweis zum Namen: ' . ($z[0]['Hint'] ?? ''));
+pruefe(($pElement('PanelTrouble')['caption'] ?? '') === 'What did not work (2 in the last 24 hours)', 'die Überschrift zählt die letzten 24 Stunden: ' . ($pElement('PanelTrouble')['caption'] ?? ''));
+
+// Skriptfunktionen haben keinen Assistenten, sie kommen nicht in die Liste
+$p->SwitchDevices('Badezimmer', '', '', true);
+pruefe(count($zeilen()) === 2, 'Skriptfunktionen stehen nicht in der Liste: ' . count($zeilen()));
+
+// Abgewiesene Anmeldungen desselben Absenders werden zusammengefasst
+for ($i = 0; $i < 3; $i++) {
+    $ruf('get_state', [], 'Bearer falsch-' . $i, '', '192.0.2.7');
+}
+$z = $zeilen();
+pruefe(count($z) === 3 && ($z[0]['Request'] ?? '') === 'Sign-in from 192.0.2.7' && ($z[0]['Result'] ?? '') === 'Token missing or wrong (3×)' && ($z[0]['Access'] ?? '') === '–', 'drei Fehlversuche, ein Eintrag: ' . json_encode($z[0] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($z[0]['Hint'] ?? '') === 'Sign-in rejected: check the token or the address in the client.', 'Hinweis zur Anmeldung');
+
+// Höchstens 50 Einträge
+for ($i = 0; $i < 55; $i++) {
+    $ruf('get_state', ['name' => 'Gibtsnicht' . $i]);
+}
+pruefe(count($zeilen()) === 50 && ($zeilen()[0]['Request'] ?? '') === 'get_state name=Gibtsnicht54', 'höchstens 50, die neuesten bleiben: ' . count($zeilen()));
+oderNull(static fn () => $p->UIClearProblems());
+pruefe($zeilen() === [] && ($pElement('PanelTrouble')['caption'] ?? '') === 'What did not work', 'Liste leeren');
+
+// Protokoll: standardmäßig aus
+$logAktuell = IPS_GetLogDir() . DIRECTORY_SEPARATOR . 'homeagent_' . $pid . '.log';
+$logAlt = IPS_GetLogDir() . DIRECTORY_SEPARATOR . 'homeagent_' . $pid . '.old.log';
+@unlink($logAktuell);
+@unlink($logAlt);
+// Vor dem Umbau gibt es die Properties nicht; der Stub wirft dann eine Exception.
+$eigenschaft = static function (string $name, mixed $wert = null) use ($pid): mixed {
+    try {
+        if ($wert !== null) {
+            IPS_SetProperty($pid, $name, $wert);
+            return null;
+        }
+        return IPS_GetProperty($pid, $name);
+    } catch (Throwable) {
+        return 'FEHLT';
+    }
+};
+pruefe($eigenschaft('LogEnabled') === false && $eigenschaft('LogLines') === 5000, 'Protokoll aus, 5000 Zeilen je Datei: ' . json_encode([$eigenschaft('LogEnabled'), $eigenschaft('LogLines')]));
+$ruf('get_state', ['room' => 'Küche']);
+pruefe(!file_exists($logAktuell), 'ohne Schalter keine Datei');
+
+$eigenschaft('LogEnabled', true);
+$eigenschaft('LogLines', 10);
+IPS_ApplyChanges($pid);
+$ruf('get_state', ['room' => 'Küche']);
+$inhalt = (string)@file_get_contents($logAktuell);
+pruefe(preg_match('/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d{3} \| Claude-App \| get_state \| room=Küche \| \d+ ms \| 1 device\(s\) found \(room=Küche\)\. ‖ Küche \| Deckenlicht \| light \| off/u', $inhalt) === 1, 'eine Zeile je Werkzeugaufruf: ' . $inhalt);
+$ruf('get_state', ['room' => 'Küche'], '', '/' . $pToken);
+$ruf('get_state', [], 'Bearer falsch-x', '', '192.0.2.8');
+$p->SwitchDevices('Badezimmer', '', '', true);
+$inhalt = (string)@file_get_contents($logAktuell);
+pruefe(!str_contains($inhalt, $pToken) && !str_contains($inhalt, 'falsch-x'), 'weder das Token aus der Adresse noch ein falsches Token stehen im Protokoll');
+pruefe(str_contains($inhalt, ' | – | sign-in rejected | from 192.0.2.8 | token missing or wrong'), 'abgewiesene Anmeldung mit Absender: ' . $inhalt);
+pruefe(str_contains($inhalt, ' | script | SwitchDevices | room=Badezimmer on=true | '), 'Skriptfunktionen mit „script“: ' . $inhalt);
+
+// Rundlauf nach Zeilen: bei 10 Zeilen wird gewechselt
+for ($i = 0; $i < 8; $i++) {
+    $ruf('get_state', ['room' => 'Küche']);
+}
+$alt = file_exists($logAlt) ? file($logAlt, FILE_IGNORE_NEW_LINES) : [];
+$neu = file_exists($logAktuell) ? file($logAktuell, FILE_IGNORE_NEW_LINES) : [];
+pruefe(count($alt) === 10 && count($neu) === 2, 'nach 12 Zeilen: 10 in der alten, 2 in der neuen Datei: ' . count($alt) . ' / ' . count($neu));
+
+// Rundlauf nach Zeit: die aktuelle Datei begann vor mehr als 24 Stunden
+(new ReflectionMethod($p, 'SetBuffer'))->invoke($p, 'LogState', json_encode(['started' => time() - 90000, 'lines' => 2]));
+$ruf('get_state', ['room' => 'Küche']);
+$alt = file_exists($logAlt) ? file($logAlt, FILE_IGNORE_NEW_LINES) : [];
+$neu = file_exists($logAktuell) ? file($logAktuell, FILE_IGNORE_NEW_LINES) : [];
+pruefe(count($alt) === 2 && count($neu) === 1, 'nach 24 Stunden gewechselt, auch mit wenigen Zeilen: ' . count($alt) . ' / ' . count($neu));
+
+// Herunterladen: beide Dateien, die alte zuerst, als Data-URL (Doku Button, Parameter download)
+$daten = (string)oderNull(static fn () => $p->UIDownloadLog());
+$praefix = 'data:text/plain;charset=utf-8;base64,';
+$text = str_starts_with($daten, $praefix) ? (string)base64_decode(substr($daten, strlen($praefix))) : '';
+pruefe($text === implode("\n", $alt) . "\n" . implode("\n", $neu) . "\n", 'Download enthält beide Dateien, die alte zuerst: ' . substr($daten, 0, 60));
+$knoepfe = [];
+foreach (flach($pFormular()['elements']) as $e) {
+    if (($e['type'] ?? '') === 'Button') {
+        $knoepfe[$e['caption'] ?? ''] = $e;
+    }
+}
+pruefe(($knoepfe['Download protocol']['download'] ?? '') === 'homeagent.log' && ($knoepfe['Download protocol']['onClick'] ?? '') === 'echo HAGT_UIDownloadLog($id);', 'Knopf zum Herunterladen: ' . json_encode($knoepfe['Download protocol'] ?? null));
+pruefe(isset($knoepfe['Show protocol'], $knoepfe['Clear protocol'], $knoepfe['Clear list']) && ($knoepfe['Clear protocol']['confirm'] ?? '') !== '', 'Knöpfe Anzeigen, Leeren (mit Rückfrage), Liste leeren: ' . implode(', ', array_keys($knoepfe)));
+
+// Anzeigen: die letzten Zeilen, neueste zuerst, im Fenster
+$p->formUpdates = [];
+oderNull(static fn () => $p->UIShowLog());
+$werte = [];
+$sichtbar = false;
+foreach ($p->formUpdates as [$feld, $parameter, $wert]) {
+    if ($feld === 'LogView' && $parameter === 'values') {
+        $werte = json_decode((string)$wert, true);
+    }
+    if ($feld === 'LogPopup' && $parameter === 'visible') {
+        $sichtbar = $wert === true;
+    }
+}
+pruefe($sichtbar && count($werte) === 3 && ($werte[0]['Line'] ?? '') === end($neu), 'Fenster mit den Zeilen, neueste zuerst: ' . json_encode(array_slice($werte, 0, 1), JSON_UNESCAPED_UNICODE));
+
+// Leeren: beide Dateien weg
+oderNull(static fn () => $p->UIClearLog());
+pruefe(!file_exists($logAktuell) && !file_exists($logAlt), 'Protokoll leeren löscht beide Dateien');
+pruefe(oderNull(static fn () => $p->UIDownloadLog()) === 'The protocol is empty.', 'leeres Protokoll: Hinweis statt Download');
+$eigenschaft('LogEnabled', false);
+IPS_ApplyChanges($pid);
 
 ende('Modul');
