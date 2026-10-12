@@ -52,6 +52,13 @@ pruefe(isset($r['capabilities']['tools']) && ($r['_meta']['io.modelcontextprotoc
 pruefe(($r['instructions'] ?? null) === 'Anleitung', 'die Anleitung des Zugangs steht dabei');
 pruefe(($r['ttlMs'] ?? null) === 300000 && ($r['cacheScope'] ?? null) === 'private', 'darf 5 Minuten zwischengespeichert werden, nur für diesen Client: ' . json_encode([$r['ttlMs'] ?? null, $r['cacheScope'] ?? null]));
 
+/* --- Client fürs Protokoll (B63: was kann welcher Client?) --------------------------------------- */
+
+pruefe((sende($discover['koerper'], $discover['header'])['client'] ?? null) === 'claude-code 2.1.296 (roots, elicitation: form, url)', 'server/discover nennt Client und Fähigkeiten aus _meta: ' . json_encode(sende($discover['koerper'], $discover['header'])['client'] ?? null));
+$init = ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'initialize', 'params' => ['protocolVersion' => '2025-06-18', 'clientInfo' => ['name' => 'mcp', 'version' => '0.1.0'], 'capabilities' => ['sampling' => (object)[], 'extensions' => ['io.modelcontextprotocol/ui' => ['mimeTypes' => ['text/html;profile=mcp-app']]]]]];
+pruefe((sende($init, [])['client'] ?? null) === 'mcp 0.1.0 (sampling, extension io.modelcontextprotocol/ui)', 'initialize nennt Client, Fähigkeiten und Erweiterungen: ' . json_encode(sende($init, [])['client'] ?? null));
+pruefe(!isset(sende($liste['koerper'], $liste['header'])['client']), 'bei anderen Anfragen kein Client, sonst stünde er in jeder Zeile');
+
 /* --- tools/list ohne initialize ------------------------------------------------------------- */
 
 $a = sende($liste['koerper'], $liste['header']);

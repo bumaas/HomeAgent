@@ -1058,7 +1058,7 @@ class HomeAgent extends IPSModuleStrict
             $this->SendDebug('Request', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . implode(', ', $response['methods'] ?? []) . ' → HTTP ' . $response['status'] . ' (' . ($_SERVER['REMOTE_ADDR'] ?? '?') . ', access ' . $access['Name'] . ($viaOAuth ? ', OAuth' : '') . ')', 0);
             // Werkzeugaufrufe schreibt logged(); hier nur Anmeldung, Werkzeugliste und Ähnliches
             if (!in_array('tools/call', $response['methods'] ?? [], true)) {
-                $this->writeLog((string)$access['Name'], implode(', ', $response['methods'] ?? []), $viaOAuth ? 'OAuth' : '', 'HTTP ' . $response['status']);
+                $this->writeLog((string)$access['Name'], implode(', ', $response['methods'] ?? []), $viaOAuth ? 'OAuth' : '', (string)($response['client'] ?? ''), 'HTTP ' . $response['status']);
             }
         }
         $this->send($response);

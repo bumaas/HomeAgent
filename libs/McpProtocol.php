@@ -62,9 +62,13 @@ final class McpProtocol
             return self::response(400, [], self::error(null, -32700, 'Parse error'));
         }
 
+        // Name, Version und Fähigkeiten des Clients fürs Protokoll, nur beim Verbinden (B63)
+        $client = self::clientLabel($message);
+        $withClient = static fn (array $response): array => $client === null ? $response : $response + ['client' => $client];
+
         // Protokoll 2026-07-28: erkennbar an der Version in _meta (bei einem Stapel an irgendeiner Nachricht)
         if (self::isModern($message)) {
-            return self::handleModern($message, $headers, $listTools, $callTool, $info);
+            return $withClient(self::handleModern($message, $headers, $listTools, $callTool, $info));
         }
 
         // Stapel gibt es nur in der Protokollversion 2025-03-26. Jeder Werkzeugaufruf kann bis zu
@@ -89,9 +93,38 @@ final class McpProtocol
         }
 
         if ($replies === []) {
-            return ['status' => 202, 'headers' => ['Cache-Control' => 'no-store'], 'body' => '', 'methods' => $methods];
+            return $withClient(['status' => 202, 'headers' => ['Cache-Control' => 'no-store'], 'body' => '', 'methods' => $methods]);
         }
-        return self::response(200, [], $isBatch ? $replies : $replies[0]) + ['methods' => $methods];
+        return $withClient(self::response(200, [], $isBatch ? $replies : $replies[0]) + ['methods' => $methods]);
+    }
+
+    /**
+     * Client bei initialize und server/discover: „Name Version (Fähigkeiten)“, bei Rückfragen mit ihren Arten und mit
+     * den Erweiterungen; null bei allen anderen Anfragen. Damit zeigt das Protokoll, was ein Client kann (B63).
+     */
+    private static function clientLabel(mixed $message): ?string
+    {
+        if (!is_array($message) || array_is_list($message) || !in_array($message['method'] ?? null, ['initialize', 'server/discover'], true)) {
+            return null;
+        }
+        $params = is_array($message['params'] ?? null) ? $message['params'] : [];
+        $meta = is_array($params['_meta'] ?? null) ? $params['_meta'] : [];
+        $info = $params['clientInfo'] ?? $meta['io.modelcontextprotocol/clientInfo'] ?? [];
+        $capabilities = $params['capabilities'] ?? $meta['io.modelcontextprotocol/clientCapabilities'] ?? [];
+        $parts = [];
+        foreach (is_array($capabilities) ? $capabilities : [] as $name => $value) {
+            if ($name === 'extensions' && is_array($value)) {
+                foreach (array_keys($value) as $extension) {
+                    $parts[] = 'extension ' . $extension;
+                }
+            } elseif ($name === 'elicitation' && is_array($value) && $value !== [] && !array_is_list($value)) {
+                $parts[] = 'elicitation: ' . implode(', ', array_keys($value));
+            } else {
+                $parts[] = (string)$name;
+            }
+        }
+        $label = trim((is_array($info) ? (string)($info['name'] ?? '?') . ' ' . (string)($info['version'] ?? '') : '?'));
+        return mb_substr($label . ($parts === [] ? '' : ' (' . implode(', ', $parts) . ')'), 0, 300);
     }
 
     /**

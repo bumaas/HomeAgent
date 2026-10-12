@@ -2531,7 +2531,7 @@ $pHook->invoke($p);
 ob_end_clean();
 HomeAgentHarness::$body = '';
 $inhalt = (string)@file_get_contents($logAktuell);
-pruefe(str_contains($inhalt, ' | Claude-App | initialize | HTTP 200') && !str_contains($inhalt, '|  |'), 'ohne Argumente kein leeres Feld: ' . $inhalt);
+pruefe(str_contains($inhalt, ' | Claude-App | initialize | Test 1 | HTTP 200') && !str_contains($inhalt, '|  |'), 'ohne Argumente kein leeres Feld, mit Name und Version des Clients: ' . $inhalt);
 // Origin ins Protokoll (MCP verlangt eine Prüfung; zuerst sehen, was echte Clients schicken, 12.10.2026)
 $_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $pid, 'REMOTE_ADDR' => '192.0.2.5', 'HTTP_AUTHORIZATION' => 'Bearer ' . $pToken, 'HTTP_ORIGIN' => 'https://beispiel.example'];
 HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list']);
