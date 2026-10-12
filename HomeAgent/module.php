@@ -941,6 +941,13 @@ class HomeAgent extends IPSModuleStrict
 
     private function handleHook(): void
     {
+        // MCP verlangt, eine unpassende Origin-Kopfzeile abzuweisen (DNS-Rebinding). Zuerst nur mitschreiben, was
+        // echte Clients schicken (12.10.2026); die Prüfung folgt danach.
+        $origin = trim((string)($_SERVER['HTTP_ORIGIN'] ?? ''));
+        if ($origin !== '') {
+            $this->SendDebug('Hook', 'Origin: ' . $origin, 0);
+            $this->writeLog('–', 'origin', mb_substr($origin, 0, 200), 'from ' . SignInGuard::sender($_SERVER));
+        }
         $ready = $this->GetStatus() === IS_ACTIVE;
         // Nicht bereit ist kein Anmeldefehler: Bei 401 sucht ein Client wie HA nach OAuth, und der
         // Anwender nach einem falschen Token. Einzelheiten stehen im Log, nicht in der Antwort.
