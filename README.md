@@ -429,7 +429,7 @@ echo HAGT_SwitchDevices($InstanzID, 'Wohnzimmer', 'light', '', false);
 echo HAGT_SetLevel($InstanzID, '', '', 'Deckenpanel', 30);
 ```
 
-### Diagramme und Vorlagen in der Claude-App
+### Diagramme, Gerätekarten und Vorlagen in der Claude-App
 
 Fragt man die Claude-App nach einem Diagramm, etwa „Zeig mir die Temperatur im Gästezimmer der letzten 30 Tage
 als Diagramm“, zeichnet das Modul den Verlauf direkt im Chat: je Einheit ein Diagramm, ein Band von Minimum bis
@@ -449,6 +449,13 @@ die fünf größten Geräte mit Zähler übereinander, der Rest als „übrige G
 erfasst“ aus der Energiebilanz. Hat ein Raum neben Zählern auch Messwerte, zeigt das Diagramm zunächst die
 Messwerte; nach dem Verbrauch muss man dann ausdrücklich fragen. Ein Zähler, der nur einmal am Tag weiterzählt,
 steht in einem Stundendiagramm mit dem ganzen Tag in einer Stunde.
+
+Mit „Zeig mir die Lichter im Wohnzimmer“ zeigt die Claude-App die Geräte als Karten: Zustand, dazu je nach Gerät
+ein Schalter, ein Schieberegler für Helligkeit oder Öffnungsgrad, Knöpfe für Auf, Stopp und Zu, der Sollwert mit
+Plus und Minus und die Wiedergabe. Ein Tippen auf der Karte schaltet sofort, ohne Umweg über das Sprachmodell, und
+die Karte zeigt danach, was das Gerät zurückgemeldet hat. Der Assistent erfährt im weiteren Gespräch, was auf den
+Karten bedient wurde. Bei einem Zugang mit **Nur abfragen** zeigen die Karten nur den Zustand. Betriebsart und
+Lüfterstufe gehen auf den Karten noch nicht.
 
 Über „+“ → „Konnektoren“ → „Von … hinzufügen“ bietet die Claude-App fertige Vorlagen an: **Haus verlassen** und
 **Gute Nacht** prüfen, was noch offen oder an ist, **Energiebericht** nennt Verbrauch, Autarkie und die größten

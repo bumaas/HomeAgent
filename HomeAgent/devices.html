@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home Agent</title>
+<style>
+  :root {
+    --bg: var(--color-background-primary, #ffffff);
+    --card: var(--color-background-secondary, #f6f8fa);
+    --fg: var(--color-text-primary, #1f2328);
+    --muted: var(--color-text-secondary, #656d76);
+    --border: var(--color-border-tertiary, #d8dee4);
+    --accent: #2f81f7;
+    --on: #3fb950;
+    --error: #e5534b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: var(--color-background-primary, #1e1e1e);
+      --card: var(--color-background-secondary, #262626);
+      --fg: var(--color-text-primary, #e6edf3);
+      --muted: var(--color-text-secondary, #9198a1);
+      --border: var(--color-border-tertiary, #3d444d);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: var(--color-background-primary, #1e1e1e);
+    --card: var(--color-background-secondary, #262626);
+    --fg: var(--color-text-primary, #e6edf3);
+    --muted: var(--color-text-secondary, #9198a1);
+    --border: var(--color-border-tertiary, #3d444d);
+  }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); overflow: hidden; }
+  body { font: 13px/1.4 var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif); padding: 6px 4px 4px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .card.busy { opacity: 0.55; pointer-events: none; }
+  .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .name { font-weight: 600; overflow-wrap: anywhere; }
+  .room { color: var(--muted); font-size: 12px; }
+  .text { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+  .text.on { color: var(--fg); }
+  .reply { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+  .reply.error { color: var(--error); }
+  .row { display: flex; align-items: center; gap: 6px; }
+  .row input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  .value { min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
+  button { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; cursor: pointer; min-width: 32px; }
+  button:hover { border-color: var(--accent); }
+  .switch { position: relative; width: 38px; height: 22px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch span { position: absolute; inset: 0; background: var(--border); border-radius: 11px; cursor: pointer; transition: background 0.15s; }
+  .switch span::before { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.15s; }
+  .switch input:checked + span { background: var(--on); }
+  .switch input:checked + span::before { transform: translateX(16px); }
+  .note { color: var(--muted); font-size: 12px; margin: 6px 0 0 4px; }
+  .empty { color: var(--muted); padding: 12px 6px; }
+</style>
+</head>
+<body>
+<div id="root"><div class="empty">…</div></div>
+<script>
+(function () {
+  "use strict";
+  // Seite der Gerätekarten von Home Agent (MCP Apps, Erweiterung io.modelcontextprotocol/ui, Spezifikation 2026-01-26).
+  // show_devices liefert die Karten in structuredContent; bedient wird über tools/call an control_device, das nur diese
+  // Seite sieht (_meta.ui.visibility ["app"]). Was der Anwender hier tut, erfährt das Modell über ui/update-model-context.
+  var nextId = 1;
+  var pending = {};
+  var lang = (navigator.language || "de").slice(0, 2);
+  var state = null;
+  var replies = {};
+  var done = [];
+
+  function send(message) { window.parent.postMessage(message, "*"); }
+  function request(method, params) {
+    var id = nextId++;
+    send({ jsonrpc: "2.0", id: id, method: method, params: params });
+    return new Promise(function (resolve, reject) { pending[id] = { resolve: resolve, reject: reject }; });
+  }
+  function notify(method, params) { send({ jsonrpc: "2.0", method: method, params: params || {} }); }
+
+  function applyContext(context) {
+    if (!context) { return; }
+    if (context.theme === "dark" || context.theme === "light") {
+      document.documentElement.setAttribute("data-theme", context.theme);
+    }
+    var vars = context.styles && context.styles.variables;
+    if (vars) {
+      Object.keys(vars).forEach(function (key) {
+        if (vars[key]) { document.documentElement.style.setProperty(key, vars[key]); }
+      });
+    }
+    if (context.locale) { lang = String(context.locale).slice(0, 2); }
+  }
+
+  var lastHeight = 0;
+  // Höhe des Inhalts, nicht des Rahmens (wie beim Diagramm, sonst bleibt ein Scrollbalken).
+  function reportSize() {
+    var height = Math.ceil(document.getElementById("root").getBoundingClientRect().bottom + 8);
+    if (height !== lastHeight) {
+      lastHeight = height;
+      notify("ui/notifications/size-changed", { width: Math.ceil(document.body.getBoundingClientRect().width), height: height });
+    }
+  }
+
+  function node(tag, className, text) {
+    var el = document.createElement(tag);
+    if (className) { el.className = className; }
+    if (text !== undefined) { el.textContent = text; }
+    return el;
+  }
+  function button(label, title, onClick) {
+    var b = node("button", "", label);
+    b.title = title;
+    b.setAttribute("aria-label", title);
+    b.addEventListener("click", onClick);
+    return b;
+  }
+  function number(value) {
+    return (Math.round(value * 10) / 10).toLocaleString(lang);
+  }
+
+  // Ein Gerät bedienen: Karte sperren, control_device aufrufen, die neue Karte und die Antwort zeigen, dem Modell
+  // sagen, was geschah. Jede Meldung an das Modell ersetzt die vorige, deshalb gehen die letzten fünf zusammen hin.
+  function control(card, args, element) {
+    element.classList.add("busy");
+    var call = { device: card.key };
+    Object.keys(args).forEach(function (key) { call[key] = args[key]; });
+    request("tools/call", { name: "control_device", arguments: call }).then(function (result) {
+      var text = ((result && result.content) || []).map(function (c) { return c.text || ""; }).join("\n");
+      var fresh = result && result.structuredContent && result.structuredContent.cards && result.structuredContent.cards[0];
+      replies[card.key] = { text: text, error: !!(result && result.isError) };
+      if (fresh) { replace(fresh); } else { draw(); }
+      done.push(card.room + " · " + card.name + ": " + text.split("\n")[0]);
+      done = done.slice(-5);
+      request("ui/update-model-context", { content: [{ type: "text", text: "Operated on the device cards by the user:\n" + done.join("\n") }] }).catch(function () {});
+    }, function (error) {
+      replies[card.key] = { text: (error && error.message) || "–", error: true };
+      draw();
+    });
+  }
+
+  function replace(fresh) {
+    if (!state) { return; }
+    state.cards = state.cards.map(function (c) { return c.key === fresh.key ? fresh : c; });
+    draw();
+  }
+
+  function cardElement(card) {
+    var el = node("div", "card");
+    var head = node("div", "head");
+    var title = node("div");
+    title.appendChild(node("div", "name", card.name));
+    title.appendChild(node("div", "room", card.room));
+    head.appendChild(title);
+    var c = card.controls || {};
+    if (c.switch) {
+      var label = node("label", "switch");
+      var box = node("input");
+      box.type = "checkbox";
+      box.checked = card.active === true;
+      box.setAttribute("aria-label", card.name);
+      box.addEventListener("change", function () { control(card, { command: box.checked ? "on" : "off" }, el); });
+      label.appendChild(box);
+      label.appendChild(node("span"));
+      head.appendChild(label);
+    }
+    el.appendChild(head);
+    el.appendChild(node("div", "text" + (card.active === true ? " on" : ""), card.text));
+
+    if (c.percent !== undefined) {
+      var row = node("div", "row");
+      var slider = node("input");
+      slider.type = "range";
+      slider.min = "0";
+      slider.max = "100";
+      slider.step = "1";
+      slider.value = String(c.percent === null ? 0 : c.percent);
+      var shown = node("span", "value", c.percent === null ? "–" : c.percent + " %");
+      slider.addEventListener("input", function () { shown.textContent = slider.value + " %"; });
+      slider.addEventListener("change", function () { control(card, { percent: Number(slider.value) }, el); });
+      row.appendChild(slider);
+      row.appendChild(shown);
+      el.appendChild(row);
+    }
+    if (c.cover) {
+      var cover = node("div", "row");
+      cover.appendChild(button("▲", "open", function () { control(card, { command: "open" }, el); }));
+      if (c.cover.stop) { cover.appendChild(button("■", "stop", function () { control(card, { command: "stop" }, el); })); }
+      cover.appendChild(button("▼", "close", function () { control(card, { command: "close" }, el); }));
+      el.appendChild(cover);
+    }
+    if (c.setpoint) {
+      var sp = c.setpoint, step = sp.step || 0.5;
+      var setRow = node("div", "row");
+      var setValue = node("span", "value", sp.value === null ? "–" : number(sp.value) + " " + sp.unit);
+      var change = function (direction) {
+        var base = sp.value === null || (sp.max !== null && sp.value > sp.max) || (sp.min !== null && sp.value < sp.min) ? (sp.min !== null ? sp.min : 0) : sp.value;
+        var target = Math.round((base + direction * step) / step) * step;
+        if (sp.min !== null) { target = Math.max(sp.min, target); }
+        if (sp.max !== null) { target = Math.min(sp.max, target); }
+        var args = {};
+        args[sp.field] = Math.round(target * 100) / 100;
+        control(card, args, el);
+      };
+      setRow.appendChild(button("−", "lower", function () { change(-1); }));
+      setRow.appendChild(setValue);
+      setRow.appendChild(button("+", "raise", function () { change(1); }));
+      el.appendChild(setRow);
+    }
+    if (c.playback) {
+      var play = node("div", "row");
+      [["⏮", "previous"], ["▶", "play"], ["⏸", "pause"], ["⏭", "next"]].forEach(function (b) {
+        play.appendChild(button(b[0], b[1], function () { control(card, { command: b[1] }, el); }));
+      });
+      el.appendChild(play);
+    }
+    var reply = replies[card.key];
+    if (reply) { el.appendChild(node("div", "reply" + (reply.error ? " error" : ""), reply.text)); }
+    return el;
+  }
+
+  function draw() {
+    var root = document.getElementById("root");
+    root.textContent = "";
+    if (!state || !state.cards || !state.cards.length) {
+      root.appendChild(node("div", "empty", "–"));
+      reportSize();
+      return;
+    }
+    var grid = node("div", "grid");
+    state.cards.forEach(function (card) { grid.appendChild(cardElement(card)); });
+    root.appendChild(grid);
+    if (state.more > 0 && state.labels && state.labels.more) {
+      root.appendChild(node("p", "note", state.labels.more.replace("%d", String(state.more))));
+    }
+    reportSize();
+  }
+
+  // Ergebnis eines Werkzeugs: die Karten von show_devices ersetzen alles; eine einzelne Karte von control_device, die
+  // der Host ebenfalls hierher schicken darf, ersetzt nur ihre eigene.
+  function render(data) {
+    if (!data || data.kind !== "cards") { return; }
+    if (state && data.cards && data.cards.length === 1 && state.cards.some(function (c) { return c.key === data.cards[0].key; })) {
+      replace(data.cards[0]);
+      return;
+    }
+    state = data;
+    replies = {};
+    draw();
+  }
+
+  window.addEventListener("message", function (event) {
+    if (event.source !== window.parent) { return; }
+    var msg = event.data;
+    if (!msg || msg.jsonrpc !== "2.0") { return; }
+    if (msg.id !== undefined && pending[msg.id] && (msg.result !== undefined || msg.error !== undefined)) {
+      var entry = pending[msg.id];
+      delete pending[msg.id];
+      if (msg.error) { entry.reject(msg.error); } else { entry.resolve(msg.result); }
+      return;
+    }
+    if (msg.method === "ui/notifications/tool-result") {
+      render((msg.params || {}).structuredContent);
+    } else if (msg.method === "ui/notifications/host-context-changed") {
+      applyContext(msg.params);
+    } else if (msg.id !== undefined && msg.method) {
+      // ping, ui/resource-teardown und Ähnliches: ohne Aufwand bestätigen
+      send({ jsonrpc: "2.0", id: msg.id, result: {} });
+    }
+  });
+
+  if (window.ResizeObserver) { new ResizeObserver(reportSize).observe(document.documentElement); }
+
+  request("ui/initialize", {
+    appCapabilities: {},
+    appInfo: { name: "Home Agent devices", version: "1.0.0" },
+    protocolVersion: "2026-01-26"
+  }).then(function (result) {
+    applyContext(result && result.hostContext);
+    notify("ui/notifications/initialized");
+  }, function () {
+    notify("ui/notifications/initialized");
+  });
+})();
+</script>
+</body>
+</html>

@@ -84,6 +84,9 @@ class HomeAgent extends IPSModuleStrict
 
     /** Seite des Diagramms für show_chart (MCP Apps, Backlog B63). */
     private const CHART_URI = 'ui://homeagent/chart';
+
+    /** Seite der Gerätekarten für show_devices und control_device (MCP Apps, Burkhard 12.10.2026). */
+    private const DEVICES_URI = 'ui://homeagent/devices';
     private const LOG_MIN_LINES = 10;
     private const LOG_LINE_MAX = 2000;
     private const LOG_SHOW_LINES = 200;
@@ -915,13 +918,14 @@ class HomeAgent extends IPSModuleStrict
         return static fn (?string $name): ?array => $name === null ? $catalog->list() : $catalog->get($name);
     }
 
-    /** Seite einer MCP App (ui://), null = gibt es nicht. Bisher nur das Diagramm von show_chart. */
+    /** Seite einer MCP App (ui://), null = gibt es nicht: das Diagramm von show_chart und die Gerätekarten. */
     private function readResource(string $uri): ?string
     {
-        if ($uri !== self::CHART_URI) {
+        $file = [self::CHART_URI => 'chart.html', self::DEVICES_URI => 'devices.html'][$uri] ?? null;
+        if ($file === null) {
             return null;
         }
-        $html = file_get_contents(__DIR__ . '/chart.html');
+        $html = file_get_contents(__DIR__ . '/' . $file);
         return $html === false ? null : $html;
     }
 
@@ -1728,9 +1732,56 @@ class HomeAgent extends IPSModuleStrict
             ];
         }
 
+        // Gerätekarten als MCP App (Burkhard 12.10.2026): Zustand mit Schaltern, Schiebereglern und Knöpfen im Chat.
+        if ($apps && $this->usableDevices() !== []) {
+            $tools[] = [
+                'name'        => 'show_devices',
+                'title'       => 'Show devices',
+                'description' => 'Shows the matching devices as cards in the chat' . ($readOnly ? '' : ', with switches, sliders and buttons the user can operate directly') . '. '
+                    . 'Use it when the user wants to see or operate several devices ("show me the lights in the living room"); for a plain answer use get_state. '
+                    . 'The answer gives the same lines as get_state.',
+                'inputSchema' => [
+                    'type'                 => 'object',
+                    'properties'           => [
+                        'room'        => ['type' => 'string', 'description' => 'Room as the user calls it. ' . $roomsText . ($defaultRule === '' ? 'Empty = all rooms.' : $defaultRule)],
+                    ] + $floor + [
+                        'type'        => ['type' => 'string', 'enum' => array_keys(DeviceIndex::TYPES), 'description' => 'Device type. Empty = all types.'],
+                        'name'        => ['type' => 'string', 'description' => 'Device name or alias, a partial word is enough.'],
+                        'active_only' => ['type' => 'boolean', 'description' => 'Only devices that are on, open or report presence.'],
+                    ],
+                    'additionalProperties' => false,
+                ],
+                'annotations' => ['readOnlyHint' => true, 'openWorldHint' => false],
+                '_meta'       => ['ui' => ['resourceUri' => self::DEVICES_URI]],
+            ];
+        }
+
         // Ein Nur-Lese-Zugang bekommt allein die Abfrage; alles Schreibende kennt er nicht.
         if (($access['ReadOnly'] ?? false) === true) {
             return $tools;
+        }
+
+        // Bedienen von der Karte aus: nur die Seite sieht das Werkzeug (visibility „app“), das Modell nimmt set_state.
+        if ($apps && DeviceIndex::offeredAbilities($this->deviceIndex()->entries()) !== []) {
+            $tools[] = [
+                'name'        => 'control_device',
+                'title'       => 'Control device',
+                'description' => 'Operates one device from its card in show_devices.',
+                'inputSchema' => [
+                    'type'                 => 'object',
+                    'properties'           => [
+                        'device'      => ['type' => 'string', 'description' => 'Key of the card.'],
+                        'command'     => ['type' => 'string', 'enum' => ['on', 'off', 'open', 'close', 'stop', 'play', 'pause', 'next', 'previous']],
+                        'percent'     => ['type' => 'number', 'minimum' => 0, 'maximum' => 100],
+                        'temperature' => ['type' => 'number'],
+                        'humidity'    => ['type' => 'number'],
+                    ],
+                    'required'             => ['device'],
+                    'additionalProperties' => false,
+                ],
+                'annotations' => ['readOnlyHint' => false, 'idempotentHint' => true, 'openWorldHint' => false],
+                '_meta'       => ['ui' => ['resourceUri' => self::DEVICES_URI, 'visibility' => ['app']]],
+            ];
         }
 
         // Ein Werkzeug für alles, was schaltet oder stellt. Sein Schema nennt nur, was mindestens
@@ -1922,8 +1973,10 @@ class HomeAgent extends IPSModuleStrict
         $index = match (true) {
             $name === 'get_state'                  => $this->deviceIndex($defaultRoom),
             $name === 'show_chart'                 => $this->deviceIndex($defaultRoom),
+            $name === 'show_devices'               => $this->deviceIndex($defaultRoom),
             $readOnly                              => null,
             $name === 'set_state'                  => $this->deviceIndex($defaultRoom),
+            $name === 'control_device'             => $this->deviceIndex($defaultRoom),
             $name === 'run_scene'                  => $this->sceneIndex(),
             default                                => null,
         };
@@ -1931,6 +1984,8 @@ class HomeAgent extends IPSModuleStrict
             $index === null                        => ['text' => 'Unknown tool ' . $name, 'isError' => true],
             $name === 'get_state'                  => $this->withNow($index->getState($arguments)),
             $name === 'show_chart'                 => $index->chart($arguments),
+            $name === 'show_devices'               => $index->cards($arguments, $readOnly),
+            $name === 'control_device'             => $index->controlDevice($arguments),
             $name === 'set_state'                  => $index->setState($arguments),
             default                                => $index->runScene($arguments),
         };

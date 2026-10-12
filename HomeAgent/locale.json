@@ -513,7 +513,10 @@
             "With a time of day the period may be at most 48 hours. Leave out the times for whole days.": "Mit Uhrzeit darf der Zeitraum höchstens 48 Stunden lang sein. Für ganze Tage die Uhrzeiten weglassen.",
             "other devices": "übrige Geräte",
             "not metered": "nicht erfasst",
-            "A consumption chart takes one room at a time.": "Ein Verbrauchsdiagramm zeigt nur einen Raum auf einmal."
+            "A consumption chart takes one room at a time.": "Ein Verbrauchsdiagramm zeigt nur einen Raum auf einmal.",
+            "The devices are shown as cards in the chat.": "Die Geräte stehen als Karten im Chat.",
+            "%d more device(s) not shown": "%d weitere Gerät(e) nicht angezeigt",
+            "This device is not on the release list any more, show the devices again.": "Dieses Gerät steht nicht mehr in der Freigabeliste, bitte die Geräte neu anzeigen."
         }
     }
 }

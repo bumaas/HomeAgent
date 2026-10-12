@@ -142,6 +142,15 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   im Stundendiagramm mit dem ganzen Tag in einer Stunde; ausgeglichen wird das nicht. Anlass: Die Claude-App holte sich für einen Vergleich zweier Räume zwei Tabellen über `get_state`. Resources gibt es nur, wenn
   der Aufrufer `$readResource` übergibt; `resources/read` und `resources/list` tragen wie `tools/list` `ttlMs` und
   `cacheScope` (Pflicht in 2026-07-28, ohne meldete claude.ai „kann nicht erreicht werden“).
+- **Gerätekarten als MCP App** (B63, Burkhard 12.10.2026): `show_devices` (für das Modell, Filter wie `get_state` ohne
+  Zeitraum, `DeviceIndex::cards`) liefert die Zeilen von `get_state` und je Gerät eine Karte (`cardOf`: Zustandstext,
+  `controls` aus `abilitiesOf`: `switch`, `percent`, `cover` mit `stop`, `setpoint` mit Bereich, `playback`), höchstens
+  `CARDS_MAX`. Seite `ui://homeagent/devices` (`HomeAgent/devices.html`). Bedient wird über `control_device`
+  (`_meta.ui.visibility: ["app"]`, der Host zeigt es dem Modell nicht; nur ohne „Nur abfragen“): Kartenschlüssel
+  (`cardKey`, alle Variablen des Geräts, weil Thermostat und Raumfühler eine teilen) und Befehl, intern `setState` mit
+  `onlyKey` in `find()`, also dieselbe Rückmeldung; zurück kommt die neue Karte. Die Seite meldet die letzten fünf
+  Bedienungen über `ui/update-model-context` (jede Meldung ersetzt die vorige). Am nuc 12.10.2026: Karte in 69 ms,
+  `control_device` 68 ms. Auswahl (Modus, Lüfterstufe) fehlt auf den Karten noch.
 - **Vorlagen (Prompts, B63):** `libs/PromptCatalog.php` baut „Haus verlassen“, „Gute Nacht“ (Fenster, Türen, Licht,
   Mediaplayer, je nach Freigabeliste, `active_only=true`) und „Energiebericht“ (nur mit Bilanz oder Zähler); ein
   Nur-Lese-Zugang bekommt keine Frage nach dem Schalten. `prompts/list` und `prompts/get` gibt es nur, wenn der

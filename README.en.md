@@ -411,7 +411,7 @@ echo HAGT_SwitchDevices($InstanceID, 'Wohnzimmer', 'light', '', false);
 echo HAGT_SetLevel($InstanceID, '', '', 'Deckenpanel', 30);
 ```
 
-### Charts and templates in the Claude app
+### Charts, device cards and templates in the Claude app
 
 Asking the Claude app for a chart, for example "Show me the temperature in the guest room over the last 30 days
 as a chart", makes the module draw the history right in the chat: one chart per unit, a band from minimum to
@@ -432,6 +432,13 @@ the five largest devices with a meter stacked, the rest as "other devices", and 
 metered" from the energy balance. If a room has measured values besides meters, the chart shows the measured
 values first; ask for the consumption explicitly then. A meter that only counts once a day shows the whole day in
 one hour of an hourly chart.
+
+With "Show me the lights in the living room" the Claude app shows the devices as cards: the state and, depending on
+the device, a switch, a slider for brightness or opening, buttons for open, stop and close, the setpoint with plus
+and minus, and playback. A tap on a card switches at once, without a detour through the language model, and the
+card then shows what the device reported back. The assistant learns in the further conversation what was operated
+on the cards. With a **Query only** access the cards only show the state. Operating mode and fan speed do not work
+on the cards yet.
 
 Under "+" → "Connectors" → "Add from …" the Claude app offers ready templates: **Leaving home** and **Good
 night** check what is still open or on, **Energy report** names consumption, self-sufficiency and the largest

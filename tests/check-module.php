@@ -2690,6 +2690,23 @@ $seite = oderNull(static fn () => \Closure::bind(fn () => $this->readResource('u
 pruefe(is_string($seite) && str_starts_with(ltrim($seite), '<!DOCTYPE html>') && str_contains($seite, 'ui/initialize') && str_contains($seite, 'ui/notifications/tool-result'), 'die Seite des Diagramms meldet sich beim Client an und nimmt das Ergebnis entgegen');
 pruefe(is_string($seite) && str_contains($seite, 'labels.band') && str_contains($seite, 'type="checkbox"') === false && str_contains($seite, '"checkbox"'), 'die Seite hat einen Schalter für das Band mit der Beschriftung vom Modul');
 pruefe(oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/anderes'), $p, HomeAgent::class)()) === null, 'andere Ressourcen gibt es nicht');
+
+/* --- Gerätekarten (MCP App, Burkhard 12.10.2026) ------------------------------------------------- */
+
+// Nur das Licht ist freigegeben. show_devices für jeden Zugang mit Apps, control_device nur zum Schalten und nur für die
+// Seite (_meta.ui.visibility ["app"]: der Host zeigt es dem Modell nicht).
+$zugangS = ['Name' => 'Claude-App schalten', 'Token' => $pToken, 'DefaultRoom' => '', 'ReadOnly' => false, 'InPath' => true];
+$schalten = array_column(oderNull(static fn () => \Closure::bind(fn () => $this->tools($zugangS, true), $p, HomeAgent::class)()) ?? [], null, 'name');
+pruefe(isset($schalten['show_devices']) && ($schalten['show_devices']['_meta']['ui']['resourceUri'] ?? null) === 'ui://homeagent/devices', 'show_devices mit der Seite der Karten: ' . json_encode(array_keys($schalten)));
+pruefe(isset($schalten['show_devices']['inputSchema']['properties']['room'], $schalten['show_devices']['inputSchema']['properties']['active_only']) && !isset($schalten['show_devices']['inputSchema']['properties']['period']), 'show_devices filtert wie get_state, ohne Zeitraum: ' . json_encode(array_keys($schalten['show_devices']['inputSchema']['properties'] ?? [])));
+pruefe(($schalten['control_device']['_meta']['ui']['visibility'] ?? null) === ['app'] && ($schalten['control_device']['_meta']['ui']['resourceUri'] ?? null) === 'ui://homeagent/devices', 'control_device nur für die Seite: ' . json_encode($schalten['control_device']['_meta'] ?? null));
+pruefe(($schalten['control_device']['inputSchema']['required'] ?? null) === ['device'] && in_array('on', $schalten['control_device']['inputSchema']['properties']['command']['enum'] ?? [], true), 'control_device braucht den Schlüssel der Karte: ' . json_encode($schalten['control_device']['inputSchema'] ?? null));
+$lesen = $werkzeugNamen(true);
+pruefe(isset($lesen['show_devices']) && !isset($lesen['control_device']), 'Nur-Lese-Zugang: Karten ja, Bedienen nein: ' . json_encode(array_keys($lesen)));
+pruefe(!isset($werkzeugNamen(false)['show_devices']), 'ohne Apps keine Karten');
+$karten = oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/devices'), $p, HomeAgent::class)());
+pruefe(is_string($karten) && str_contains($karten, 'ui/initialize') && str_contains($karten, '"control_device"') && str_contains($karten, 'ui/update-model-context'), 'die Seite der Karten bedient über control_device und sagt dem Modell, was geschah');
+pruefe(strlen((string)$karten) < 30000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$karten), 'die Seite der Karten lädt nichts nach: ' . strlen((string)$karten) . ' Bytes');
 pruefe(strlen((string)$seite) < 20000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$seite), 'die Seite lädt nichts nach (CSP der Apps) und bleibt klein: ' . strlen((string)$seite) . ' Bytes');
 
 /* --- Vorlagen am Modul (Prompts, Backlog B63) ---------------------------------------------------- */

@@ -245,6 +245,12 @@ final class DeviceIndex
     /** Während chart(): hier sammelt history() die Daten fürs Diagramm statt der Tabellenzeilen. */
     private ?array $chart = null;
 
+    /** Während controlDevice(): nur das Gerät mit diesem Kartenschlüssel ist zu finden. */
+    private ?string $onlyKey = null;
+
+    /** Höchstens so viele Karten je Aufruf; die übrigen nennt die Seite nur als Anzahl. */
+    private const CARDS_MAX = 30;
+
     /** Während chart() mit type=energy: Verbrauch je Gerät statt Verlauf bzw. Hausstapel. */
     private bool $chartByDevice = false;
 
@@ -2218,6 +2224,9 @@ final class DeviceIndex
             if ($accept !== null && !$accept($entry)) {
                 continue;
             }
+            if ($this->onlyKey !== null && self::cardKey($entry) !== $this->onlyKey) {
+                continue;
+            }
             $quality = $nameKey === '' ? 3 : self::nameMatchQuality($entry['Name'], $entry['Aliases'], $nameKey);
             if ($quality > 0) {
                 if ($nameKey !== '') {
@@ -3306,6 +3315,126 @@ final class DeviceIndex
         unset($chart['filter']);
         $result['text'] .= "\n" . $this->t('The chart is shown in the chat.');
         return $result + ['structuredContent' => $chart];
+    }
+
+    /**
+     * Werkzeug „show_devices“ (Gerätekarten, Burkhard 12.10.2026): dieselben Treffer und Zeilen wie get_state, dazu je
+     * Gerät eine Karte in structuredContent mit den Bedienelementen, die das Gerät versteht. Ein Nur-Lese-Zugang bekommt
+     * Karten ohne Bedienelemente. Zeiträume gibt es hier nicht.
+     *
+     * @return array{text: string, isError: bool, structuredContent?: array<string, mixed>}
+     */
+    public function cards(array $arguments, bool $readOnly): array
+    {
+        $arguments = array_diff_key($arguments, ['period' => 0, 'from' => 0, 'to' => 0]);
+        $result = $this->getState($arguments);
+        if ($result['isError']) {
+            return $result;
+        }
+        $name = trim((string)($arguments['name'] ?? ''));
+        $floor = trim((string)($arguments['floor'] ?? ''));
+        $matches = $this->find($this->effectiveRoom(trim((string)($arguments['room'] ?? '')), $name, $floor), trim((string)($arguments['type'] ?? '')), $name, $floor);
+        if ((bool)($arguments['active_only'] ?? false)) {
+            $matches = array_values(array_filter($matches, fn (array $entry): bool => $this->stateOf($entry)['active'] === true));
+        }
+        $cards = array_map(fn (array $entry): array => $this->cardOf($entry, $readOnly), array_slice($matches, 0, self::CARDS_MAX));
+        $result['text'] .= "\n" . $this->t('The devices are shown as cards in the chat.');
+        return $result + ['structuredContent' => ['kind' => 'cards', 'readOnly' => $readOnly, 'cards' => $cards,
+            'more' => max(0, count($matches) - self::CARDS_MAX), 'labels' => ['more' => $this->t('%d more device(s) not shown')]]];
+    }
+
+    /**
+     * Werkzeug „control_device“, nur für die Seite der Karten: ein Gerät per Kartenschlüssel bedienen, über set_state
+     * mit derselben Rückmeldung. Dazu die neue Karte, damit die Seite sie ersetzt.
+     *
+     * @return array{text: string, isError: bool, structuredContent?: array<string, mixed>}
+     */
+    public function controlDevice(array $arguments): array
+    {
+        $key = trim((string)($arguments['device'] ?? ''));
+        $entry = null;
+        foreach ($this->entries as $candidate) {
+            if ($key !== '' && self::cardKey($candidate) === $key) {
+                $entry = $candidate;
+                break;
+            }
+        }
+        if ($entry === null) {
+            $this->problem = 'unknown_name';
+            return $this->fail($this->t('This device is not on the release list any more, show the devices again.'));
+        }
+        $this->onlyKey = $key;
+        try {
+            $result = $this->setState(['name' => $entry['Name']] + array_intersect_key($arguments, array_flip(['command', 'percent', 'temperature', 'humidity'])));
+        } finally {
+            $this->onlyKey = null;
+        }
+        return $result + ['structuredContent' => ['kind' => 'cards', 'cards' => [$this->cardOf($entry, false)]]];
+    }
+
+    /** Schlüssel einer Karte aus allen Variablen des Geräts; ein Thermostat und sein Raumfühler teilen sich eine. */
+    public static function cardKey(array $entry): string
+    {
+        return implode('.', array_values(is_array($entry['roles'] ?? null) ? $entry['roles'] : self::rolesOf($entry)));
+    }
+
+    /**
+     * Karte eines Geräts: Zustandstext wie bei get_state und die Bedienelemente aus abilitiesOf().
+     *
+     * @return array<string, mixed>
+     */
+    private function cardOf(array $entry, bool $readOnly): array
+    {
+        $state = $this->stateOf($entry);
+        $abilities = $readOnly ? [] : self::abilitiesOf($entry);
+        $controls = [];
+        if (in_array('on', $abilities, true)) {
+            $controls['switch'] = true;
+        }
+        if (in_array('open', $abilities, true)) {
+            $controls['cover'] = ['stop' => in_array('stop', $abilities, true)];
+        }
+        if (in_array('percent', $abilities, true)) {
+            $controls['percent'] = $this->cardPercent($entry);
+        }
+        foreach (['temperature' => 'temperature', 'humidity' => 'humidity'] as $ability => $field) {
+            if (in_array($ability, $abilities, true)) {
+                $controls['setpoint'] = $this->cardSetpoint($entry, $field);
+            }
+        }
+        if (in_array('play', $abilities, true)) {
+            $controls['playback'] = true;
+        }
+        return ['key' => self::cardKey($entry), 'room' => $entry['Room'], 'name' => $entry['Name'], 'type' => $entry['Type'],
+            'text' => $state['text'], 'active' => $state['active'], 'controls' => $controls];
+    }
+
+    /** Stufe bzw. Öffnungsgrad in ganzen Prozent; null, wenn Wert oder Bereich unbekannt sind. */
+    private function cardPercent(array $entry): ?int
+    {
+        $variable = $entry['roles']['level'] ?? 0;
+        $value = $variable === 0 ? null : ($this->backend->read($variable)['value'] ?? null);
+        if (!is_int($value) && !is_float($value)) {
+            return null;
+        }
+        if ($entry['Type'] === 'blind' || $entry['Type'] === 'window') {
+            $percent = $this->openPercent($entry, $value);
+        } else {
+            $range = $this->backend->range($variable);
+            $percent = $range === null || $range['max'] <= $range['min'] ? null : ($value - $range['min']) / ($range['max'] - $range['min']) * 100.0;
+        }
+        return $percent === null ? null : (int)round(max(0.0, min(100.0, $percent)));
+    }
+
+    /** @return null|array{field: string, value: ?float, min: ?float, max: ?float, step: ?float, unit: string} */
+    private function cardSetpoint(array $entry, string $field): ?array
+    {
+        $variable = $entry['roles']['setpoint'] ?? 0;
+        $value = $this->backend->read($variable)['value'] ?? null;
+        $range = $this->backend->setpointRange($variable);
+        return ['field' => $field, 'value' => is_int($value) || is_float($value) ? (float)$value : null,
+            'min' => $range['min'] ?? null, 'max' => $range['max'] ?? null, 'step' => $range === null || $range['step'] <= 0 ? null : $range['step'],
+            'unit' => $this->temperatureUnit($variable, (string)$entry['Type'])];
     }
 
     /** Kein Treffer: Liegt es am Raum, am Namen oder an der Kombination? */
