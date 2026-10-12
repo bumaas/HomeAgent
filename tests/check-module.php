@@ -2706,6 +2706,10 @@ pruefe(($schalten['control_device']['inputSchema']['required'] ?? null) === ['de
 $lesen = $werkzeugNamen(true);
 pruefe(isset($lesen['show_devices']) && !isset($lesen['control_device']), 'Nur-Lese-Zugang: Karten ja, Bedienen nein: ' . json_encode(array_keys($lesen)));
 pruefe(!isset($werkzeugNamen(false)['show_devices']), 'ohne Apps keine Karten');
+// Claude-App 12.10.2026: „Zeig mir die Lichter im Wohnzimmer“ ergab eine Tabelle über get_state statt der Karten. Mit Apps
+// verweist get_state deshalb fürs Zeigen auf show_devices, und show_devices nennt „show me“ ausdrücklich.
+pruefe(str_contains($schalten['get_state']['description'] ?? '', 'use show_devices') && !str_contains($werkzeugNamen(false)['get_state']['description'] ?? 'show_devices', 'show_devices'), 'mit Apps verweist get_state fürs Zeigen auf die Karten, ohne Apps nicht: ' . ($schalten['get_state']['description'] ?? ''));
+pruefe(str_contains($schalten['show_devices']['description'] ?? '', '"show me'), 'show_devices nennt „show me“: ' . ($schalten['show_devices']['description'] ?? ''));
 $karten = oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/devices'), $p, HomeAgent::class)());
 pruefe(is_string($karten) && str_contains($karten, 'ui/initialize') && str_contains($karten, '"control_device"') && str_contains($karten, 'ui/update-model-context'), 'die Seite der Karten bedient über control_device und sagt dem Modell, was geschah');
 pruefe(strlen((string)$karten) < 30000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$karten), 'die Seite der Karten lädt nichts nach: ' . strlen((string)$karten) . ' Bytes');

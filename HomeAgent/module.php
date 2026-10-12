@@ -1656,6 +1656,9 @@ class HomeAgent extends IPSModuleStrict
         $hasPower = $this->usableBalance($this->powerBalance()) !== [] || array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['power']));
         // Verlauf von Messwerten (Temperatur, Feuchte …) über dieselben Zeiträume.
         $hasHistory = array_any($this->usableDevices(), static fn (array $row): bool => DeviceIndex::isMeasured($row));
+        // Gerätekarten nur für Clients mit Apps; get_state verweist dann fürs Zeigen darauf (Claude-App 12.10.2026:
+        // „Zeig mir die Lichter im Wohnzimmer“ ergab eine Tabelle über get_state).
+        $hasCards = $apps && $this->usableDevices() !== [];
         $consumption = $hasMeters || $hasBalance
             ? 'Energy consumption over this period instead of the state, in kWh; the first line gives the total. '
                 . ($hasBalance
@@ -1684,6 +1687,7 @@ class HomeAgent extends IPSModuleStrict
                 . (array_any($this->usableDevices(), static fn (array $row): bool => ($row['Type'] ?? '') === 'window' && in_array('open', DeviceIndex::abilitiesOf($row), true))
                     ? 'Windows marked "with drive" can be opened and closed with set_state, the others only report their state. ' : '')
                 . 'If nothing matches, the answer lists the known rooms and types. The last line gives the current date and time.'
+                . ($hasCards ? ' When the user wants to see devices ("show me …") or to switch them by hand, use show_devices instead.' : '')
                 . ($readOnly ? ' ' . self::READ_ONLY_NOTE : ''),
             'inputSchema' => [
                 'type'                 => 'object',
@@ -1738,12 +1742,12 @@ class HomeAgent extends IPSModuleStrict
         }
 
         // Gerätekarten als MCP App (Burkhard 12.10.2026): Zustand mit Schaltern, Schiebereglern und Knöpfen im Chat.
-        if ($apps && $this->usableDevices() !== []) {
+        if ($hasCards) {
             $tools[] = [
                 'name'        => 'show_devices',
                 'title'       => 'Show devices',
                 'description' => 'Shows the matching devices as cards in the chat' . ($readOnly ? '' : ', with switches, sliders and buttons the user can operate directly') . '. '
-                    . 'Use it when the user wants to see or operate several devices ("show me the lights in the living room"); for a plain answer use get_state. '
+                    . 'Use it whenever the user asks to be shown devices ("show me the lights in the living room", "show me the blinds") or wants to operate them by hand; for a question with a plain answer ("is any light on?") use get_state. '
                     . 'The answer gives the same lines as get_state.',
                 'inputSchema' => [
                     'type'                 => 'object',
