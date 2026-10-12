@@ -1320,6 +1320,27 @@ class HomeAgent extends IPSModuleStrict
     }
 
     /**
+     * Name eines per OAuth gekoppelten Clients für die Spalte „Verbindung“: Claude-App und Claude Code beim
+     * Namen, wie der Unterbereich heißt (beide melden sich von claude.ai), sonst Name und Host der client_id.
+     *
+     * @param array<string, mixed> $family
+     */
+    private function clientLabel(array $family): string
+    {
+        $id = (string)($family['client_id'] ?? '');
+        $known = [
+            'https://claude.ai/oauth/mcp-oauth-client-metadata'    => 'Claude app',
+            'https://claude.ai/oauth/claude-code-client-metadata'  => 'Claude Code',
+        ];
+        if (isset($known[$id])) {
+            return $this->Translate($known[$id]);
+        }
+        $host = (string)parse_url($id, PHP_URL_HOST);
+        $name = trim((string)($family['client_name'] ?? ''));
+        return $name === '' ? $host : $name . ' (' . $host . ')';
+    }
+
+    /**
      * Wie ein Zugang verbunden ist, in Worten für die Spalte „Verbindung“: per OAuth angemeldete
      * Clients (Host der client_id), sonst Token in der Adresse oder im Header.
      *
@@ -1327,17 +1348,17 @@ class HomeAgent extends IPSModuleStrict
      */
     private function connectionOf(array $access): string
     {
-        $hosts = [];
+        $clients = [];
         if ($access['Token'] !== '') {
             $hash = hash('sha256', $access['Token']);
             foreach ($this->storedJson('OAuthGrants', true) as $family) {
                 if (is_array($family) && ($family['access'] ?? '') === $hash && ($family['expires'] ?? 0) > time()) {
-                    $hosts[] = (string)parse_url((string)($family['client_id'] ?? ''), PHP_URL_HOST);
+                    $clients[] = $this->clientLabel($family);
                 }
             }
         }
-        if ($hosts !== []) {
-            return sprintf($this->Translate('signed in: %s'), implode(', ', array_unique($hosts)));
+        if ($clients !== []) {
+            return sprintf($this->Translate('signed in: %s'), implode(', ', array_unique($clients)));
         }
         return $this->Translate($access['InPath'] ? 'address with token' : 'token in the header');
     }

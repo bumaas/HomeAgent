@@ -2139,7 +2139,17 @@ $koppeln();
 $formular = json_decode($m->GetConfigurationForm(), true);
 $alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
 $verbindung = array_column($element('Accesses')['values'] ?? [], 'Connection');
-pruefe($verbindung === ['signed in: claude.ai', 'address with token', 'token in the header'], 'Spalte Verbindung je Zugang in Worten: ' . json_encode($verbindung));
+// Burkhard 12.10.2026: „angemeldet: Claude-App“ statt „claude.ai“, dann weiß man, wo man suchen muss
+pruefe($verbindung === ['signed in: Claude app', 'address with token', 'token in the header'], 'Spalte Verbindung je Zugang in Worten, mit dem Namen des Unterbereichs: ' . json_encode($verbindung));
+$bezeichnung = static function (array $familie) use ($m): ?string {
+    try {
+        return (new ReflectionMethod($m, 'clientLabel'))->invoke($m, $familie);
+    } catch (Throwable) {
+        return null;
+    }
+};
+pruefe($bezeichnung(['client_id' => 'https://claude.ai/oauth/claude-code-client-metadata', 'client_name' => 'Claude Code']) === 'Claude Code', 'Claude Code meldet sich auch von claude.ai und heißt Claude Code');
+pruefe($bezeichnung(['client_id' => 'https://example.org/client.json', 'client_name' => 'Mein Client']) === 'Mein Client (example.org)', 'ein unbekannter Client mit seinem Namen und Host');
 pruefe(!str_contains((string)json_encode($formular), $token) && !str_contains((string)json_encode($formular), 'ha-token-0123456789abcdefgh'), 'kein Token im Formular');
 $endpunkt = (string)($element('Endpoint')['caption'] ?? '');
 pruefe(str_contains($endpunkt, 'http://192.168.178.86:3777/hook/homeagent/' . $iid) && !str_contains($endpunkt, '<address>'), 'Endpunkt im Heimnetz mit der echten IP: ' . $endpunkt);

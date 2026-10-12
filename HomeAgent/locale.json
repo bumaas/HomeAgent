@@ -410,6 +410,8 @@
             "Show address": "Adresse anzeigen",
             "Endpoint in the home network: %s": "Endpunkt im Heimnetz: %s",
             "signed in: %s": "angemeldet: %s",
+            "Claude app": "Claude-App",
+            "Claude Code": "Claude Code",
             "address with token": "Adresse mit Token",
             "token in the header": "Token im Header",
             "Sign-in with OAuth needs an active Symcon Connect": "Die Anmeldung per OAuth braucht ein aktives Symcon Connect",

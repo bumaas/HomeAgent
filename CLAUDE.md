@@ -228,7 +228,7 @@ Weitere Regeln, die nicht offensichtlich sind:
 - **Bereich „Endpunkt und Zugänge“ für Einsteiger** (build 80, Burkhard 12.10.2026: „für einsteiger wirkt es
   kompliziert“): Die Zugangsliste (3 bis 5 Zeilen hoch, darüber mit Scrollbalken) zeigt Name, Nur abfragen, Standardraum und die
   Textspalte `Connection`
-  (`connectionOf`: per OAuth angemeldet mit Host, Adresse mit Token oder Token im Header; nur diese Spalte kommt in
+  (`connectionOf`: per OAuth angemeldet mit dem Namen aus `clientLabel`, Claude-App und Claude Code wie die Unterbereiche, sonst Name und Host, Adresse mit Token oder Token im Header; nur diese Spalte kommt in
   `values`, die Tokens nicht). Token und `InPath` sind unsichtbare Spalten mit `save: true`, bearbeitet im eigenen
   `form` der Liste (Doku List, Beispiel 1). Das Token steht dort nur als unsichtbares Feld: Ein Zugang ohne Token
   bekommt in `ApplyChanges` eines (64 Hex-Zeichen, danach Property setzen und erneut übernehmen). **Neues Token**
