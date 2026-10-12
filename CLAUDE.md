@@ -240,7 +240,9 @@ Weitere Regeln, die nicht offensichtlich sind:
   ExpansionPanels): Claude-App mit Connect-Adresse, Auswahl `PairingAccess` direkt am Knopf Kopplungscode
   (vorausgewählt ein Zugang, an dem schon ein Claude-Connector hängt), Liste `OAuthClients` nur mit Einträgen und
   „widerrufen“ als Spalte (Spalten-`onClick` wählt laut Doku die Zeile aus, mit `confirm`), ohne Connect nur `ClaudeNoConnect`; Home Assistant mit Auswahl `AddressAccess` (nur Zugänge mit
-  `InPath`) und **Adresse anzeigen** (`UIShowAddress`, Token erst auf Knopfdruck); andere Assistenten mit dem
+  `InPath`) und **Adresse anzeigen** (`UIShowAddress`, Token erst auf Knopfdruck; Adresse und Token stehen im Fenster
+  `SecretPopup` in einem breiten Textfeld, `showSecret`: als Ausgabe eines Knopfs öffnete die Konsole eine Adresse im
+  Browser, und ein Token passte nicht ins Meldungsfenster); andere Assistenten mit dem
   Endpunkt im Heimnetz (`localEndpoint`: erste private IPv4 aus `Sys_GetNetworkInfo`, Port 3777: laut Doku
   der feste Grundport; weitere Ports kommen nur über eigene WebServer-Instanzen, die bewusst nicht angezeigt werden,
   Burkhard 12.10.2026).

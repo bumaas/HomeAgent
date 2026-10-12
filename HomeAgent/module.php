@@ -738,33 +738,48 @@ class HomeAgent extends IPSModuleStrict
     }
 
     /** Nur für das Formular: das Token eines Zugangs für Clients, die es im Header schicken, erst auf Knopfdruck. */
-    public function UIShowToken(string $AccessName): string
+    public function UIShowToken(string $AccessName): void
     {
         foreach ($this->usableAccesses() as $access) {
             if ($access['Name'] === trim($AccessName)) {
-                // Das Token allein in einer Zeile, ohne Satzzeichen daneben, damit es sich kopieren lässt.
-                return sprintf($this->Translate('Token of the access "%s":'), $access['Name']) . "\n\n" . $access['Token'];
+                $this->showSecret(sprintf($this->Translate('Token of the access "%s":'), $access['Name']), $access['Token']);
+                return;
             }
         }
-        return sprintf($this->Translate('There is no usable access named "%s"'), $AccessName);
+        $this->showSecret(sprintf($this->Translate('There is no usable access named "%s"'), $AccessName), '');
+    }
+
+    /**
+     * Öffnet das Fenster „Kopieren“ mit einem breiten Textfeld. Als Ausgabe eines Knopfs öffnete die Konsole eine
+     * Adresse im Browser, und ein Token passte nicht in das Meldungsfenster (Burkhard 12.10.2026). Ohne Wert nur
+     * der Hinweis.
+     */
+    private function showSecret(string $caption, string $value): void
+    {
+        $this->UpdateFormField('SecretCaption', 'caption', $caption);
+        $this->UpdateFormField('SecretValue', 'value', $value);
+        $this->UpdateFormField('SecretValue', 'visible', $value !== '');
+        $this->UpdateFormField('SecretPopup', 'visible', true);
     }
 
     /**
      * Nur für das Formular: die Adresse mit Token eines Zugangs im Heimnetz, zum Eintragen in Home
-     * Assistant. Erst auf Knopfdruck, damit das Token nicht im Formular steht.
+     * Assistant, im Fenster „Kopieren“. Erst auf Knopfdruck, damit das Token nicht im Formular steht.
      */
-    public function UIShowAddress(string $AccessName): string
+    public function UIShowAddress(string $AccessName): void
     {
         foreach ($this->usableAccesses() as $access) {
             if ($access['Name'] !== trim($AccessName)) {
                 continue;
             }
             if (!$access['InPath']) {
-                return sprintf($this->Translate('The access "%s" does not accept its token in the address. Tick "Token also in the address" for it first.'), $access['Name']);
+                $this->showSecret(sprintf($this->Translate('The access "%s" does not accept its token in the address. Tick "Token also in the address" for it first.'), $access['Name']), '');
+                return;
             }
-            return $this->localEndpoint() . '/' . $access['Token'];
+            $this->showSecret(sprintf($this->Translate('Address with token of the access "%s":'), $access['Name']), $this->localEndpoint() . '/' . $access['Token']);
+            return;
         }
-        return sprintf($this->Translate('There is no usable access named "%s"'), $AccessName);
+        $this->showSecret(sprintf($this->Translate('There is no usable access named "%s"'), $AccessName), '');
     }
 
     /**

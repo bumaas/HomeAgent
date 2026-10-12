@@ -427,7 +427,10 @@
             "Connect the Claude app (recommended)": "Claude-App verbinden (empfohlen)",
             "Connect Home Assistant": "Home Assistant verbinden",
             "Connect other assistants (Claude Code, Codex and others)": "Andere Assistenten verbinden (Claude Code, Codex und andere)",
-            "revoke": "widerrufen"
+            "revoke": "widerrufen",
+            "Copy": "Kopieren",
+            "Close": "Schließen",
+            "Address with token of the access \"%s\":": "Adresse mit Token des Zugangs „%s“:"
         }
     }
 }

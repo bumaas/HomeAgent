@@ -2155,17 +2155,32 @@ $endpunkt = (string)($element('Endpoint')['caption'] ?? '');
 pruefe(str_contains($endpunkt, 'http://192.168.178.86:3777/hook/homeagent/' . $iid) && !str_contains($endpunkt, '<address>'), 'Endpunkt im Heimnetz mit der echten IP: ' . $endpunkt);
 $adressAuswahl = $element('AddressAccess');
 pruefe(array_column($adressAuswahl['options'] ?? [], 'value') === ['Home Assistant'], 'Adresse mit Token nur für Zugänge mit „Token in der Adresse“: ' . json_encode($adressAuswahl['options'] ?? null));
-pruefe($mitAufruf('HAGT_UIShowAddress($id, $AddressAccess)') !== null, 'Knopf „Adresse anzeigen“ neben der Auswahl');
-$adresse = oderNull(static fn () => $m->UIShowAddress('Home Assistant'));
-pruefe($adresse === 'http://192.168.178.86:3777/hook/homeagent/' . $iid . '/ha-token-0123456789abcdefgh', 'Adresse mit Token zum Kopieren, erst auf Knopfdruck: ' . json_encode($adresse));
-$adresse = oderNull(static fn () => $m->UIShowAddress('Claude Code'));
-pruefe(is_string($adresse) && !str_contains($adresse, 'cc-token') && str_contains($adresse, 'Token also in the address'), 'ohne „Token in der Adresse“ keine Adresse mit Token, sondern ein Hinweis: ' . json_encode($adresse));
+// Burkhard 12.10.2026: Die Adresse als Ausgabe des Knopfs öffnete die Konsole im Browser, das Token passte nicht in
+// das kleine Meldungsfenster. Beides steht jetzt in einem eigenen Fenster in einem breiten Textfeld zum Kopieren.
+$fenster = $element('SecretPopup');
+$feld = array_column(flach($fenster['popup']['items'] ?? []), null, 'name');
+pruefe(($fenster['type'] ?? '') === 'PopupAlert' && ($fenster['visible'] ?? true) === false && ($feld['SecretValue']['type'] ?? '') === 'ValidationTextBox' && isset($feld['SecretCaption']), 'eigenes Fenster mit Textfeld zum Kopieren, anfangs zu: ' . json_encode($fenster));
+pruefe($mitAufruf('HAGT_UIShowAddress($id, $AddressAccess);') !== null && $mitAufruf('echo HAGT_UIShowAddress($id, $AddressAccess);') === null, 'Knopf „Adresse anzeigen“ neben der Auswahl, ohne Ausgabe');
+$gezeigt = static function (callable $aufruf) use ($m): array {
+    $m->formUpdates = [];
+    oderNull($aufruf);
+    $werte = [];
+    foreach ($m->formUpdates as [$name, $parameter, $wert]) {
+        $werte[$name . '.' . $parameter] = $wert;
+    }
+    return $werte;
+};
+$w = $gezeigt(static fn () => $m->UIShowAddress('Home Assistant'));
+pruefe(($w['SecretValue.value'] ?? '') === 'http://192.168.178.86:3777/hook/homeagent/' . $iid . '/ha-token-0123456789abcdefgh' && ($w['SecretValue.visible'] ?? null) === true && ($w['SecretPopup.visible'] ?? null) === true && str_contains((string)($w['SecretCaption.caption'] ?? ''), 'Home Assistant'), 'Adresse mit Token im Fenster zum Kopieren: ' . json_encode($w));
+$w = $gezeigt(static fn () => $m->UIShowAddress('Claude Code'));
+pruefe(!str_contains((string)json_encode($w), 'cc-token') && ($w['SecretValue.visible'] ?? null) === false && str_contains((string)($w['SecretCaption.caption'] ?? ''), 'Token also in the address'), 'ohne „Token in der Adresse“ keine Adresse mit Token, sondern ein Hinweis im Fenster: ' . json_encode($w));
 $tokenAuswahl = $element('TokenAccess');
 pruefe(array_column($tokenAuswahl['options'] ?? [], 'value') === ['Claude-App', 'Home Assistant', 'Claude Code'], 'Token anzeigen: Auswahl aller benutzbaren Zugänge: ' . json_encode($tokenAuswahl['options'] ?? null));
-pruefe($mitAufruf('HAGT_UIShowToken($id, $TokenAccess)') !== null, 'Knopf „Token anzeigen“ neben der Auswahl');
-$gezeigt = (string)oderNull(static fn () => $m->UIShowToken('Claude Code'));
-pruefe(in_array('cc-token-0123456789abcdefgh', explode("\n", $gezeigt), true), 'das Token steht allein in einer Zeile zum Kopieren: ' . json_encode($gezeigt));
-pruefe(!str_contains((string)oderNull(static fn () => $m->UIShowToken('Gibt es nicht')), 'token-'), 'unbekannter Zugang: kein Token');
+pruefe($mitAufruf('HAGT_UIShowToken($id, $TokenAccess);') !== null && $mitAufruf('echo HAGT_UIShowToken($id, $TokenAccess);') === null, 'Knopf „Token anzeigen“ neben der Auswahl, ohne Ausgabe');
+$w = $gezeigt(static fn () => $m->UIShowToken('Claude Code'));
+pruefe(($w['SecretValue.value'] ?? '') === 'cc-token-0123456789abcdefgh' && ($w['SecretPopup.visible'] ?? null) === true && str_contains((string)($w['SecretCaption.caption'] ?? ''), 'Claude Code'), 'das Token im Fenster zum Kopieren: ' . json_encode($w));
+$w = $gezeigt(static fn () => $m->UIShowToken('Gibt es nicht'));
+pruefe(!str_contains((string)json_encode($w), 'token-') && ($w['SecretValue.visible'] ?? null) === false, 'unbekannter Zugang: kein Token: ' . json_encode($w));
 HomeAgentHarness::$lanIp = '';
 $formular = json_decode($m->GetConfigurationForm(), true);
 $alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));

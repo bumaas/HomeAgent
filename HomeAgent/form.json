@@ -224,7 +224,7 @@
                 {
                   "type": "Button",
                   "caption": "Show address",
-                  "onClick": "echo HAGT_UIShowAddress($id, $AddressAccess);"
+                  "onClick": "HAGT_UIShowAddress($id, $AddressAccess);"
                 }
               ]
             }
@@ -259,7 +259,7 @@
                 {
                   "type": "Button",
                   "caption": "Show token",
-                  "onClick": "echo HAGT_UIShowToken($id, $TokenAccess);"
+                  "onClick": "HAGT_UIShowToken($id, $TokenAccess);"
                 }
               ]
             }
@@ -1264,6 +1264,29 @@
           {
             "caption": "Release selected",
             "onClick": "$ausgewaehlt = []; foreach ($AlexaProposals as $zeile) { if ($zeile['Take']) { $ausgewaehlt[] = [$zeile['Index'], $zeile['Room']]; } } echo HAGT_UIApplyAlexa($id, json_encode($ausgewaehlt));"
+          }
+        ]
+      }
+    },
+    {
+      "type": "PopupAlert",
+      "name": "SecretPopup",
+      "visible": false,
+      "popup": {
+        "caption": "Copy",
+        "width": "70%",
+        "closeCaption": "Close",
+        "items": [
+          {
+            "type": "Label",
+            "name": "SecretCaption",
+            "caption": ""
+          },
+          {
+            "type": "ValidationTextBox",
+            "name": "SecretValue",
+            "caption": "",
+            "width": "100%"
           }
         ]
       }
