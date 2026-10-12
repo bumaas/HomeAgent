@@ -150,7 +150,9 @@ $lesen = ['jsonrpc' => '2.0', 'id' => 5, 'method' => 'resources/read', 'params' 
 $a = sende($lesen, ['mcp-protocol-version' => '2026-07-28', 'mcp-method' => 'resources/read', 'mcp-name' => 'ui://homeagent/chart']);
 $inhalt = $a['json']['result']['contents'][0] ?? [];
 pruefe($a['status'] === 200 && ($inhalt['uri'] ?? null) === 'ui://homeagent/chart' && ($inhalt['mimeType'] ?? null) === 'text/html;profile=mcp-app' && str_contains((string)($inhalt['text'] ?? ''), 'Diagramm'), 'resources/read liefert die Seite: ' . $a['status'] . ' ' . substr($a['body'], 0, 200));
-pruefe(($a['json']['result']['resultType'] ?? null) === 'complete', 'mit resultType');
+pruefe(($a['json']['result']['resultType'] ?? null) === 'complete' && ($a['json']['result']['ttlMs'] ?? null) === 300000 && ($a['json']['result']['cacheScope'] ?? null) === 'private', 'mit resultType, ttlMs und cacheScope (2026-07-28 verlangt sie bei resources/read; ohne meldete claude.ai „kann nicht erreicht werden“): ' . json_encode(array_diff_key($a['json']['result'] ?? [], ['contents' => 0])));
+$a = sende(['jsonrpc' => '2.0', 'id' => 15, 'method' => 'resources/list', 'params' => ['_meta' => $apps]], ['mcp-protocol-version' => '2026-07-28', 'mcp-method' => 'resources/list']);
+pruefe(($a['json']['result']['ttlMs'] ?? null) === 300000 && ($a['json']['result']['cacheScope'] ?? null) === 'private', 'resources/list ebenso: ' . $a['body']);
 $falschUri = $lesen;
 $falschUri['params']['uri'] = 'ui://gibt-es-nicht';
 $a = sende($falschUri, ['mcp-protocol-version' => '2026-07-28', 'mcp-method' => 'resources/read', 'mcp-name' => 'ui://homeagent/chart']);

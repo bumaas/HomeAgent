@@ -126,7 +126,8 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   `ui://homeagent/chart`, die Seite liefert `resources/read` aus `HomeAgent/chart.html` (ohne Bibliotheken, die CSP der
   Apps erlaubt nichts Fremdes; Handshake `ui/initialize`, Werte über `ui/notifications/tool-result`). `DeviceIndex::chart()`
   gibt dem Modell nur Kopfzeile und Minimum/Maximum, die Werte stehen in `structuredContent`. Resources gibt es nur, wenn
-  der Aufrufer `$readResource` übergibt.
+  der Aufrufer `$readResource` übergibt; `resources/read` und `resources/list` tragen wie `tools/list` `ttlMs` und
+  `cacheScope` (Pflicht in 2026-07-28, ohne meldete claude.ai „kann nicht erreicht werden“).
 - **Vorlagen (Prompts, B63):** `libs/PromptCatalog.php` baut „Haus verlassen“, „Gute Nacht“ (Fenster, Türen, Licht,
   Mediaplayer, je nach Freigabeliste, `active_only=true`) und „Energiebericht“ (nur mit Bilanz oder Zähler); ein
   Nur-Lese-Zugang bekommt keine Frage nach dem Schalten. `prompts/list` und `prompts/get` gibt es nur, wenn der

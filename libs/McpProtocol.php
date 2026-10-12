@@ -353,7 +353,8 @@ final class McpProtocol
                 }
                 $reply = self::handleMessage($message, $listTools, $callTool, $info, $context);
                 if (isset($reply['result'])) {
-                    $reply['result'] = ['resultType' => 'complete'] + $reply['result'] + ['_meta' => $serverInfo];
+                    // CacheableResult: 2026-07-28 verlangt ttlMs und cacheScope auch hier (ohne meldete claude.ai „kann nicht erreicht werden“)
+                    $reply['result'] = ['resultType' => 'complete'] + $reply['result'] + ['ttlMs' => self::LIST_TTL_MS, 'cacheScope' => 'private', '_meta' => $serverInfo];
                 }
                 return self::response(200, [], $reply) + ['methods' => $methods];
             case 'tools/call':
