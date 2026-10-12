@@ -72,6 +72,8 @@ class HomeAgent extends IPSModuleStrict
     private const CLIENT_DOCUMENT_MAX_BYTES = 5120;
     private const CLIENT_DOCUMENT_TIMEOUT = 5;
     private const CLIENT_DOCUMENT_KEEP_SECONDS = 3600;
+    /** Ein nicht lesbares Client-Dokument wird so lange nicht erneut geholt (Code-Review 12.10.2026). */
+    private const CLIENT_DOCUMENT_FAILURE_SECONDS = 60;
     private const CLIENT_DOCUMENT_MAX_ENTRIES = 10;
 
     /** Höchstgröße eines Körpers an oauth/authorize und oauth/token; beide sind ohne Anmeldung erreichbar. */
@@ -1209,10 +1211,17 @@ class HomeAgent extends IPSModuleStrict
         if (isset($cache[$clientId]['client'])) {
             return $cache[$clientId]['client'];
         }
+        // Ein nicht lesbares Dokument kurz merken: oauth/authorize ist ohne Anmeldung erreichbar, jede
+        // Wiederholung würde sonst erneut bis zum Zeitlimit warten.
+        if (array_key_exists($clientId, $cache) && ($cache[$clientId]['fetched'] ?? 0) > $now - self::CLIENT_DOCUMENT_FAILURE_SECONDS) {
+            return null;
+        }
         $json = $this->fetchClientDocument($clientId);
         $client = $json === null ? null : OAuthServer::clientFromDocument($clientId, $json);
         if ($client === null) {
             $this->SendDebug('OAuth', 'client document not usable: ' . $clientId, 0);
+            $cache[$clientId] = ['client' => null, 'fetched' => $now];
+            $this->SetBuffer('OAuthClients', (string)json_encode(array_slice($cache, -self::CLIENT_DOCUMENT_MAX_ENTRIES, null, true)));
             return null;
         }
         $cache[$clientId] = ['client' => $client, 'fetched' => $now];
@@ -1222,30 +1231,39 @@ class HomeAgent extends IPSModuleStrict
 
     /**
      * Holt ein Client-Dokument: nur HTTPS, keine Weiterleitung, Zeitlimit und Größengrenze, und die
-     * aufgelöste Adresse muss öffentlich sein. Verbunden wird mit genau dieser Adresse.
+     * Adresse, mit der verbunden wurde, muss öffentlich sein.
      */
     protected function fetchClientDocument(string $url): ?string
     {
-        $host = (string)parse_url($url, PHP_URL_HOST);
-        $port = (int)(parse_url($url, PHP_URL_PORT) ?? 443);
-        $addresses = gethostbynamel($host);
-        if ($addresses === false || $addresses === [] || array_any($addresses, static fn (string $ip): bool => !OAuthServer::publicAddress($ip))) {
-            return null;
-        }
         $curl = curl_init($url);
-        curl_setopt_array($curl, [
-            CURLOPT_RETURNTRANSFER   => true,
-            CURLOPT_FOLLOWLOCATION   => false,
-            CURLOPT_CONNECTTIMEOUT   => self::CLIENT_DOCUMENT_TIMEOUT,
-            CURLOPT_TIMEOUT          => self::CLIENT_DOCUMENT_TIMEOUT,
-            CURLOPT_RESOLVE          => [$host . ':' . $port . ':' . $addresses[0]],
-            CURLOPT_HTTPHEADER       => ['Accept: application/json'],
-            CURLOPT_NOPROGRESS       => false,
-            CURLOPT_XFERINFOFUNCTION => static fn (mixed $handle, int $total, int $received): int => $received > self::CLIENT_DOCUMENT_MAX_BYTES ? 1 : 0,
-        ]);
+        curl_setopt_array($curl, self::clientDocumentOptions());
         $body = curl_exec($curl);
         $status = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
         return is_string($body) && $status === 200 && strlen($body) <= self::CLIENT_DOCUMENT_MAX_BYTES ? $body : null;
+    }
+
+    /**
+     * curl-Optionen für das Client-Dokument. Die Namensauflösung macht curl selbst, asynchron und damit
+     * innerhalb von CURLOPT_CONNECTTIMEOUT; die eigene Auflösung vorher hatte kein Zeitlimit, und ein stummer
+     * Nameserver hielt eine Anfrage ohne Anmeldung beliebig lange fest (Code-Review 12.10.2026). Geprüft
+     * wird die Adresse nach dem Verbindungsaufbau und vor dem Senden der Anfrage (CURLOPT_PREREQFUNCTION,
+     * curl 8.21 an nuc und Testbox).
+     *
+     * @return array<int, mixed>
+     */
+    private static function clientDocumentOptions(): array
+    {
+        return [
+            CURLOPT_RETURNTRANSFER   => true,
+            CURLOPT_FOLLOWLOCATION   => false,
+            CURLOPT_PROTOCOLS_STR    => 'https',
+            CURLOPT_CONNECTTIMEOUT   => self::CLIENT_DOCUMENT_TIMEOUT,
+            CURLOPT_TIMEOUT          => self::CLIENT_DOCUMENT_TIMEOUT,
+            CURLOPT_HTTPHEADER       => ['Accept: application/json'],
+            CURLOPT_NOPROGRESS       => false,
+            CURLOPT_XFERINFOFUNCTION => static fn (mixed $handle, int $total, int $received): int => $received > self::CLIENT_DOCUMENT_MAX_BYTES ? 1 : 0,
+            CURLOPT_PREREQFUNCTION   => static fn (mixed $handle, string $primaryIp, string $localIp, int $primaryPort, int $localPort): int => OAuthServer::publicAddress($primaryIp) ? CURL_PREREQFUNC_OK : CURL_PREREQFUNC_ABORT,
+        ];
     }
 
     /** @return array{status: int, headers: array<string, string>, body: string} */

@@ -151,7 +151,10 @@ final class OAuthServer
     {
         $parts = parse_url($url);
         if (!is_array($parts) || ($parts['scheme'] ?? '') !== 'https' || ($parts['host'] ?? '') === ''
-            || isset($parts['user']) || isset($parts['pass']) || isset($parts['fragment'])) {
+            || isset($parts['user']) || isset($parts['pass']) || isset($parts['fragment'])
+            // Nur der HTTPS-Standardport: curl prüft die Adresse erst nach Verbindung und TLS-Handshake
+            // (Code-Review 12.10.2026), ein anderer Port würde interne Dienste abtasten lassen.
+            || (isset($parts['port']) && $parts['port'] !== 443)) {
             return false;
         }
         $path = (string)($parts['path'] ?? '');

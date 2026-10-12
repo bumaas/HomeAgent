@@ -1810,6 +1810,20 @@ $a = $autorisieren('GET', ['redirect_uri' => 'https://evil.example/cb'] + $abfra
 pruefe($a['status'] === 400 && !isset($a['headers']['Location']), 'fremde Rücksprungadresse: 400 ohne Weiterleitung');
 $a = $autorisieren('GET', ['client_id' => 'https://unbekannt.example/client'] + $abfrage);
 pruefe($a['status'] === 400 && !isset($a['headers']['Location']), 'Client-Dokument nicht lesbar: 400 ohne Weiterleitung');
+// Code-Review 12.10.2026 (Befund 1): oauth/authorize ist ohne Anmeldung erreichbar, und gethostbynamel() hatte
+// kein Zeitlimit. Ein nicht lesbares Dokument wird kurz gemerkt, damit Wiederholungen nicht jedes Mal warten.
+$a = $autorisieren('GET', ['client_id' => 'https://unbekannt.example/client'] + $abfrage);
+pruefe(count(array_keys(HomeAgentHarness::$fetched, 'https://unbekannt.example/client', true)) === 1, 'ein nicht lesbares Client-Dokument wird nicht gleich noch einmal geholt: ' . json_encode(HomeAgentHarness::$fetched));
+try {
+    $optionen = (new ReflectionMethod(HomeAgent::class, 'clientDocumentOptions'))->invoke(null);
+} catch (Throwable $e) {
+    $optionen = [];
+}
+$vorher = $optionen[CURLOPT_PREREQFUNCTION] ?? null;
+pruefe(is_callable($vorher) && $vorher(null, '10.0.0.1', '10.0.0.2', 443, 50000) === CURL_PREREQFUNC_ABORT && $vorher(null, '160.79.106.181', '10.0.0.2', 443, 50000) === CURL_PREREQFUNC_OK, 'die Adresse wird nach dem Verbindungsaufbau geprüft, bevor die Anfrage hinausgeht: privat abbrechen, öffentlich weiter');
+pruefe(($optionen[CURLOPT_CONNECTTIMEOUT] ?? 0) === 5 && !isset($optionen[CURLOPT_RESOLVE]) && ($optionen[CURLOPT_PROTOCOLS_STR] ?? '') === 'https', 'curl löst selbst auf, mit Zeitlimit 5 s, nur HTTPS: ' . json_encode(array_keys($optionen)));
+$quelle = (string)file_get_contents(dirname(__DIR__) . '/HomeAgent/module.php');
+pruefe(!str_contains($quelle, 'gethostbynamel'), 'keine Namensauflösung ohne Zeitlimit mehr');
 $a = $autorisieren('GET', ['client_id' => 'https://192.168.178.86/client'] + $abfrage);
 pruefe($a['status'] === 400 && !in_array('https://192.168.178.86/client', HomeAgentHarness::$fetched, true), 'eine Adresse im eigenen Netz wird gar nicht erst abgerufen');
 $a = $autorisieren('GET', ['code_challenge_method' => 'plain'] + $abfrage);

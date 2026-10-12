@@ -70,8 +70,9 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   steht nur in `X-Forwarded-For`. Die Anmeldeseite (`oauth/authorize`) kann zweimal kommen, der Service
   Worker der Kachel-Visu auf demselben Host ruft sie nach; ein GET darf nichts verbrauchen.
   Clients melden sich über ihr Client ID Metadata Document (CIMD, `client_id` ist eine HTTPS-Adresse):
-  Das Modul holt es selbst (`fetchClientDocument`, nur öffentliche Adressen, verbunden wird mit der
-  geprüften IP, 5 KB, 5 s, keine Weiterleitung) und hält es eine Stunde im Buffer `OAuthClients`.
+  Das Modul holt es selbst (`fetchClientDocument`, nur HTTPS auf Port 443, 5 KB, 5 s, keine Weiterleitung;
+  curl löst den Namen selbst auf, damit gilt das Zeitlimit auch für DNS, und `CURLOPT_PREREQFUNCTION` bricht vor der
+  Anfrage ab, wenn die Adresse nicht öffentlich ist; ein nicht lesbares Dokument wird 60 s gemerkt, Code-Review 12.10.2026) und hält es eine Stunde im Buffer `OAuthClients`.
   Gekoppelt wird mit einem Kopplungscode je Zugang (`HAGT_CreatePairingCode`, 6 Ziffern, 10 min,
   einmal, nach 5 Fehleingaben verfallen, jede zählt auch im `SignInGuard`); der Client erbt den Zugang,
   gemerkt als SHA-256 seines Tokens. Wer das Token eines Zugangs ändert, trennt damit dessen
