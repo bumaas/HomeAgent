@@ -166,7 +166,7 @@
     var W = 640, H = 240, L = 44, R = 10, T = 8, B = 26;
     var times = [], low = Infinity, high = -Infinity;
     series.forEach(function (s) {
-      s.points.forEach(function (p) { times.push(p[0]); low = Math.min(low, p[1]); high = Math.max(high, p[3]); });
+      s.points.concat(s.compare || []).forEach(function (p) { times.push(p[0]); low = Math.min(low, p[1]); high = Math.max(high, p[3]); });
     });
     if (!times.length) { return; }
     var t0 = range ? range[0] : Math.min.apply(null, times), t1 = range ? range[1] : Math.max.apply(null, times);
@@ -189,6 +189,9 @@
       item.appendChild(document.createTextNode(s.room + " · " + s.name + (unit ? " (" + unit + ")" : "")));
       legend.appendChild(item);
     });
+    if (data.compare && series.some(function (s) { return s.compare && s.compare.length; })) {
+      legend.appendChild(compareItem(data, "dashed"));
+    }
     box.appendChild(legend);
 
     var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
@@ -210,6 +213,9 @@
       if (showBand) {
         svg.appendChild(el("polygon", { points: top.concat(bottom).join(" "), fill: color, "fill-opacity": 0.15, stroke: "none" }));
       }
+      if (s.compare && s.compare.length) {
+        svg.appendChild(el("polyline", { points: s.compare.map(function (p) { return x(p[0]) + "," + y(p[2]); }).join(" "), fill: "none", stroke: color, "stroke-width": 1.5, "stroke-dasharray": "5 4", opacity: 0.75, "stroke-linejoin": "round" }));
+      }
       svg.appendChild(el("polyline", { points: s.points.map(function (p) { return x(p[0]) + "," + y(p[2]); }).join(" "), fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round" }));
       s.points.forEach(function (p) {
         var dot = el("circle", { cx: x(p[0]), cy: y(p[2]), r: 6, fill: "transparent" });
@@ -219,6 +225,23 @@
     });
     box.appendChild(svg);
     container.appendChild(box);
+  }
+
+  // Vergleich zweier Zeiträume (B69): gestrichelte Linie beim Verlauf, Marke je Balken beim Verbrauch
+  function compareText(data) {
+    return ((data.labels && data.labels.compare) || "comparison") + " " + data.compare.label;
+  }
+  function compareItem(data, style) {
+    var item = document.createElement("span");
+    var mark = document.createElement("i");
+    if (style === "dashed") {
+      mark.style.background = "repeating-linear-gradient(90deg, var(--muted) 0 4px, transparent 4px 7px)";
+    } else {
+      mark.style.background = "var(--fg)";
+    }
+    item.appendChild(mark);
+    item.appendChild(document.createTextNode(compareText(data)));
+    return item;
   }
 
   // Verbrauch als Stapeldiagramm: je Zeitraum ein Balken, positive Reihen übereinander, negative darunter. Beschriftet
@@ -231,7 +254,7 @@
     times.forEach(function (t, i) {
       var up = 0, down = 0;
       data.series.forEach(function (s) { var v = s.values[i] || 0; if (v > 0) { up += v; } else { down += v; } });
-      high = Math.max(high, up);
+      high = Math.max(high, up, data.compare && data.compare.values ? data.compare.values[i] || 0 : 0);
       low = Math.min(low, down);
     });
     // Ein paar Wattstunden Einspeisung sollen keinen Bereich unter der Nulllinie aufmachen
@@ -258,6 +281,8 @@
       item.appendChild(document.createTextNode(s.name));
       legend.appendChild(item);
     });
+    var compared = data.compare && data.compare.values ? data.compare.values : null;
+    if (compared) { legend.appendChild(compareItem(data, "mark")); }
     box.appendChild(legend);
 
     var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
@@ -278,6 +303,10 @@
         svg.appendChild(el("rect", { x: cx - width / 2, y: y(Math.max(from, to)), width: width, height: Math.max(0.5, Math.abs(y(from) - y(to))), fill: colors[j] }));
         tip.push(s.name + ": " + number(value) + (unit ? " " + unit : ""));
       });
+      if (compared && compared[i] !== undefined && compared[i] > 0) {
+        svg.appendChild(el("line", { x1: cx - width / 2 - 1, x2: cx + width / 2 + 1, y1: y(compared[i]), y2: y(compared[i]), stroke: "var(--fg)", "stroke-width": 2 }));
+        tip.push(compareText(data) + ": " + number(compared[i]) + (unit ? " " + unit : ""));
+      }
       var hit = el("rect", { x: cx - slot / 2, y: T, width: slot, height: H - T - B, fill: "transparent" });
       hit.appendChild(el("title", {}, tip.join("\n")));
       svg.appendChild(hit);

@@ -451,7 +451,11 @@ maximum and a line for the average. With several lines in one chart the band sta
 chart shows and hides it. The values only go to the chart, the language model gets minimum and maximum.
 Several rooms can be compared in one chart, for example "Compare the temperature in the guest room and outside
 last week". States such as on/off, open/closed or a battery mode appear as bands along the time axis, coloured by
-state, for example with "Show me when the front door was open today".
+state, for example with "Show me when the front door was open today". Two periods can be compared, for example
+"house consumption today compared with yesterday" or "temperature in the guest room this month against the same
+month last year": a dashed line for a history, a mark on each bar for consumption. While the period is still
+running, the answer also gives the consumption of the comparison period up to the same time. Timelines have no
+comparison.
 The tool is called `show_chart` and appears in the connector settings under "Interactive tools", where it can be
 set to "Always allow". Other assistants do not see it.
 

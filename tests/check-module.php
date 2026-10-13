@@ -2785,6 +2785,8 @@ $kartenUri = 'ui://homeagent/devices/' . substr(hash_file('sha256', dirname(__DI
 pruefe(isset($mit['show_chart']) && ($mit['show_chart']['_meta']['ui']['resourceUri'] ?? null) === $chartUri, 'mit Apps: show_chart mit Verweis auf die Seite des Diagramms samt Prüfsumme: ' . json_encode($mit['show_chart']['_meta'] ?? array_keys($mit)));
 pruefe(($mit['show_chart']['annotations']['readOnlyHint'] ?? null) === true && !isset($mit['show_chart']['inputSchema']['properties']['active_only']), 'liest nur, ohne active_only: ' . json_encode($mit['show_chart']['inputSchema']['properties'] ?? null));
 pruefe(!in_array('now', $mit['show_chart']['inputSchema']['properties']['period']['enum'] ?? ['now'], true), 'period ohne now');
+// Vergleich zweier Zeiträume (B69, 13.10.2026)
+pruefe(($mit['show_chart']['inputSchema']['properties']['compare']['enum'] ?? null) === ['previous', 'year_before'], 'show_chart bietet compare an: ' . json_encode($mit['show_chart']['inputSchema']['properties']['compare'] ?? null));
 pruefe(str_contains($mit['show_chart']['inputSchema']['properties']['room']['description'] ?? '', 'several rooms separated by commas'), 'room nimmt mehrere Räume für einen Vergleich: ' . ($mit['show_chart']['inputSchema']['properties']['room']['description'] ?? ''));
 pruefe(!isset($werkzeugNamen(false)['show_chart']), 'ohne Apps kein show_chart');
 // Claude-App 12.10.2026: „Zeig mir den Hausverbrauch von gestern als Diagramm“ ergab get_state und eine selbst gezeichnete

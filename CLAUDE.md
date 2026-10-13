@@ -242,6 +242,13 @@ Weitere Regeln, die nicht offensichtlich sind:
   Reihenfolge der Einträge (jeden Tag dieselben). Höchstens `TIMELINE_CHART_MAX` (10) Bänder. Mit Bändern haben Linien und Bänder eine
   gemeinsame Zeitachse (frühester Punkt bis Ende der Bänder) und denselben linken Rand; vorher endeten die Linien bei der
   letzten vollen Stunde und die Bänder bei jetzt.
+- **Vergleich zweier Zeiträume** (B69, `show_chart` mit `compare`: `previous` oder `year_before`, `DeviceIndex::COMPARES`):
+  `compareWindow` bestimmt den Vergleichszeitraum (der davor in der Einheit des Zeitraums, bei from/to gleich viele Tage
+  davor; nur ganze Tage), `compareChart` holt dasselbe Diagramm über from/to und legt es um den Abstand verschoben
+  darüber: Verlauf je Reihe `compare` (gestrichelt), Verbrauch `compare.values` als Summe der positiven Teile je Balken
+  nach Position (reicht der Vergleich weiter, etwa gestern gegen heute, kommen Balken ohne Werte dazu). Das Modell bekommt
+  den Text des Vergleichszeitraums wie aus get_state und, solange der Zeitraum läuft, den Verbrauch bis zur selben Zeit.
+  Nur ein Raum, keine Zeitleiste. Test `check-vergleich.php` (Orakel: das Diagramm des Vergleichszeitraums selbst).
 - **Verlauf statt Verbrauch** (`DeviceIndex::history`), wenn nach einem Typ aus `HISTORY_TYPES` gefragt
   wird oder kein Treffer einen Zähler hat, nie fürs ganze Haus. Stufe aus dem Zeitraum (heute und
   gestern stündlich, Wochen und Monate täglich, Jahre monatlich; `from`/`to` bis 2 Tage stündlich, bis

@@ -204,6 +204,9 @@ final class DeviceIndex
     /** Höchstens so viele Bänder in einem Diagramm. */
     private const TIMELINE_CHART_MAX = 10;
 
+    /** Vergleich in show_chart (B69): der Zeitraum davor oder derselbe ein Jahr früher. */
+    public const COMPARES = ['previous', 'year_before'];
+
     /** Zeiträume für den Verbrauch („period“ von get_state), in der Reihenfolge des Schemas. */
     public const PERIODS = ['today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year'];
 
@@ -3660,6 +3663,14 @@ final class DeviceIndex
         if ($byDevice && count($rooms) > 1) {
             return $this->fail($this->t('A consumption chart takes one room at a time.'));
         }
+        $compare = trim((string)($arguments['compare'] ?? ''));
+        unset($arguments['compare']);
+        if ($compare !== '' && !in_array($compare, self::COMPARES, true)) {
+            return $this->fail(sprintf($this->t('Unknown compare "%s". Allowed: %s.'), $compare, implode(', ', self::COMPARES)));
+        }
+        if ($compare !== '' && count($rooms) > 1) {
+            return $this->fail($this->t('A comparison takes one room at a time.'));
+        }
         $this->chartByDevice = $byDevice;
         $this->chart = ['series' => []];
         $texts = [];
@@ -3696,8 +3707,129 @@ final class DeviceIndex
             return $this->fail(sprintf($this->t('None of the matching devices has a history for a chart (%s).'), (string)($chart['filter'] ?? '')));
         }
         unset($chart['filter']);
+        if ($compare !== '') {
+            $result['text'] .= "\n" . $this->compareChart($chart, $arguments, $compare, $byDevice);
+        }
         $result['text'] .= "\n" . $this->t('The chart is shown in the chat.');
         return $result + ['structuredContent' => $chart];
+    }
+
+    /**
+     * Vergleich zweier Zeiträume (B69): holt dasselbe Diagramm für den Vergleichszeitraum und legt es auf den Zeitraum.
+     * Beim Verlauf bekommt jede Reihe „compare“ (Punkte, um den Abstand der Zeiträume verschoben), beim Verbrauch das
+     * Diagramm „compare.values“ (Summe je Balken, nach Position; reicht der Vergleich weiter, kommen Balken ohne Werte
+     * dazu). Zeitleisten haben keinen Vergleich. Zurück kommt der Text fürs Modell: der Vergleichszeitraum wie in
+     * get_state und, solange der Zeitraum noch läuft, der Verbrauch bis zur selben Zeit.
+     *
+     * @param array<string, mixed> $chart
+     */
+    private function compareChart(array &$chart, array $arguments, string $compare, bool $byDevice): string
+    {
+        $kind = (string)($chart['kind'] ?? '');
+        if ($kind !== 'history' && $kind !== 'consumption') {
+            return $this->t('There is no comparison for timelines.');
+        }
+        $window = $this->compareWindow($arguments, $compare);
+        if ($window === null) {
+            return $this->t('A comparison needs a period or whole days in from and to.');
+        }
+        [$from, $to, $mainFrom, $running] = $window;
+        $label = date('Y-m-d', $from) . (date('Y-m-d', $from) === date('Y-m-d', $to) ? '' : ' – ' . date('Y-m-d', $to));
+        $this->chart = ['series' => []];
+        $this->chartByDevice = $byDevice;
+        try {
+            $part = $this->getState(['from' => date('Y-m-d', $from), 'to' => date('Y-m-d', $to)] + array_diff_key($arguments, ['period' => 0, 'from' => 0, 'to' => 0]));
+            $other = $this->chart;
+        } finally {
+            $this->chart = null;
+            $this->chartByDevice = false;
+        }
+        $head = sprintf($this->t('Compared with %s:'), $label);
+        if ($part['isError'] || ($other['kind'] ?? '') !== $kind) {
+            return $head . "\n" . (string)strtok($part['text'], "\n");
+        }
+        $offset = $mainFrom - $from;
+        $chart['compare'] = ['label' => $label];
+        $chart['labels']['compare'] = $this->t('comparison');
+        $text = $head . "\n" . $part['text'];
+        if ($kind === 'history') {
+            foreach ($chart['series'] as &$series) {
+                foreach ($other['series'] ?? [] as $old) {
+                    if ($old['room'] === $series['room'] && $old['name'] === $series['name'] && $old['unit'] === $series['unit']) {
+                        $series['compare'] = array_map(static fn (array $p): array => [$p[0] + $offset, $p[1], $p[2], $p[3]], $old['points']);
+                    }
+                }
+            }
+            unset($series);
+            return $text;
+        }
+        // Verbrauch: Summe je Balken wie im Stapel (alle positiven Teile, die Einspeisung liegt darunter)
+        $values = [];
+        foreach ($other['times'] ?? [] as $i => $time) {
+            $values[$i] = 0.0;
+            foreach ($other['series'] ?? [] as $series) {
+                $values[$i] += max(0.0, (float)($series['values'][$i] ?? 0));
+            }
+        }
+        $count = count($chart['times'] ?? []);
+        foreach (array_slice($other['times'] ?? [], $count, null, true) as $i => $time) {
+            $chart['times'][$i] = $time + $offset;
+            foreach ($chart['series'] as &$series) {
+                $series['values'][$i] = 0;
+            }
+            unset($series);
+        }
+        $chart['compare']['values'] = array_values($values);
+        if ($running) {
+            $now = $this->backend->timestamp();
+            $sum = 0.0;
+            foreach ($other['times'] ?? [] as $i => $time) {
+                if ($time + $offset < $now) {
+                    $sum += $values[$i];
+                }
+            }
+            $text .= "\n" . sprintf($this->t('By the same time: %s kWh.'), self::formatNumber($sum));
+        }
+        return $text;
+    }
+
+    /**
+     * Zeitfenster des Vergleichs: [Beginn, Ende, Beginn des Zeitraums, läuft noch]. „previous“ ist der Zeitraum davor
+     * (gestern, letzte Woche, Vormonat, Vorjahr; bei from/to gleich viele Tage davor), „year_before“ derselbe ein Jahr
+     * früher. Ein laufender Zeitraum zählt bis zu seinem natürlichen Ende. null = from/to mit Uhrzeit.
+     *
+     * @return null|array{0: int, 1: int, 2: int, 3: bool}
+     */
+    private function compareWindow(array $arguments, string $compare): ?array
+    {
+        $now = $this->backend->timestamp();
+        $period = trim((string)($arguments['period'] ?? ''));
+        if ($period !== '') {
+            [, $from, $to] = self::periodBounds($period, $now);
+            $unit = match ($period) {
+                'today', 'yesterday'         => 'day',
+                'this_week', 'last_week'     => 'week',
+                'this_month', 'last_month'   => 'month',
+                default                      => 'year',
+            };
+            $end = (int)strtotime('+1 ' . $unit, $from) - 1;
+            $running = $to === 0;
+        } else {
+            $first = self::parseMoment(trim((string)($arguments['from'] ?? '')), false);
+            $toText = trim((string)($arguments['to'] ?? ''));
+            $last = $toText === '' ? null : self::parseMoment($toText, true);
+            if ($first === null || $first['hourly'] || ($last['hourly'] ?? false) || ($toText !== '' && $last === null)) {
+                return null;
+            }
+            $from = $first['time'];
+            $end = (int)strtotime('+1 day', ($last ?? $first)['time']) - 1;
+            $unit = (int)round(($end + 1 - $from) / 86400) . ' days';
+            $running = $end >= $now;
+        }
+        if ($compare === 'year_before') {
+            return [(int)strtotime('-1 year', $from), (int)strtotime('-1 year', $end + 1) - 1, $from, $running];
+        }
+        return [(int)strtotime('-1 ' . $unit, $from), $from - 1, $from, $running];
     }
 
     /**

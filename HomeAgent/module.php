@@ -1809,6 +1809,7 @@ class HomeAgent extends IPSModuleStrict
                         'period' => ['type' => 'string', 'enum' => array_merge($hasPowerBalance ? [DeviceIndex::NOW] : [], DeviceIndex::PERIODS), 'description' => 'Period of the chart, per hour for today and yesterday, per day for weeks and months, per month for years.'],
                         'from'   => ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD, or a start hour, YYYY-MM-DD HH:MM. Today is ' . date('Y-m-d') . '.'],
                         'to'     => ['type' => 'string', 'description' => 'Last day, inclusive, or the end hour, YYYY-MM-DD HH:MM, exclusive.'],
+                        'compare' => ['type' => 'string', 'enum' => DeviceIndex::COMPARES, 'description' => 'Compare with the previous period (yesterday, last week, last month, last year) or the same period a year before; drawn as a dashed line or as marks on the bars.'],
                     ],
                     'additionalProperties' => false,
                 ],
