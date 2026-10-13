@@ -155,6 +155,59 @@ pruefe(!$r['isError'] && $b->requests === [[25833, 'Continuous']], 'Modus per Ka
 $schluessel = karte(rufe(static fn () => $idx->cards(['room' => 'Büro'], false)), 'Lüftung')['key'] ?? '';
 $r = rufe(static fn () => $idx->controlDevice(['device' => $schluessel, 'fan_speed' => 'hoch']));
 pruefe(!$r['isError'] && ($b->requests[0] ?? null) === [20833, 3], 'Lüftung: Stufe hoch per Karte, gesendet 3: ' . json_encode($b->requests) . ' / ' . $r['text']);
+/* --- Gestaltung nach pitti: Gruppe, Hauptwert, kurzer Zustand ------------------------------------------ */
+
+// pitti hat die Karten am 13.10.2026 neu gezeichnet (PN t/144633 #9): Gruppen je Art mit Überschrift, der Wert groß
+// rechts (100 %, 21 W, 22,1 °C), links nur der kurze Zustand. Dafür bekommt jede Karte eine Gruppe, einen Hauptwert
+// (`figure`, Zahl und Einheit) und `status`, den Zustandstext ohne den Hauptwert. Mitschnitte wie oben, dazu
+// nuc_2026-10-09_energie.json (Leistung) und betreut_2026-10-13_klima.json.
+$energie = fixture('nuc_2026-10-09_energie.json');
+$klima = fixture('betreut_2026-10-13_klima.json');
+
+/** Karte nach Name über die Namenssuche. */
+function karteVon(array $mitschnitt, string $name, ?array $de): array
+{
+    [$idx] = anlage($mitschnitt, $de);
+    return karte(rufe(static fn () => $idx->cards(['name' => $name], false)), $name);
+}
+
+[$idx] = anlage($fx, $de);
+$r = rufe(static fn () => $idx->cards(['room' => 'Testraum'], false));
+$lampe = karte($r, 'Testlampe');
+pruefe(($lampe['group'] ?? null) === 'light' && array_key_exists('figure', $lampe) && $lampe['figure'] === null && ($lampe['status'] ?? null) === 'aus', 'Testlampe aus: Gruppe Licht, kein Hauptwert (die Stufe 100 % gilt erst eingeschaltet), Zustand „aus“: ' . json_encode($lampe, JSON_UNESCAPED_UNICODE));
+$rollo = karte($r, 'Rollladen');
+pruefe(($rollo['group'] ?? null) === 'cover' && ($rollo['figure'] ?? null) === ['value' => '100', 'unit' => '%'] && ($rollo['status'] ?? null) === 'offen', 'Rollladen: Gruppe Rollläden, 100 %, offen: ' . json_encode($rollo, JSON_UNESCAPED_UNICODE));
+pruefe(array_column($r['structuredContent']['labels']['groups'] ?? [], 0) === ['cover', 'light', 'power', 'climate', 'opening', 'sensor', 'media']
+    && ($r['structuredContent']['labels']['groups'][0][1] ?? null) === 'Rollläden', 'Überschriften der Gruppen in fester Reihenfolge, übersetzt: ' . json_encode($r['structuredContent']['labels']['groups'] ?? null, JSON_UNESCAPED_UNICODE));
+
+[$idx, $b] = anlage($fx, $de);
+$schluessel = karte(rufe(static fn () => $idx->cards(['room' => 'Testraum'], false)), 'Testlampe')['key'] ?? '';
+$r = rufe(static fn () => $idx->controlDevice(['device' => $schluessel, 'percent' => 60]));
+$k = $r['structuredContent']['cards'][0] ?? [];
+pruefe(($k['figure'] ?? null) === ['value' => '60', 'unit' => '%'] && ($k['status'] ?? null) === 'an', 'Testlampe auf 60 %: der Hauptwert ist die Stufe: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
+
+$k = karteVon($energie, 'Entfeuchter', $de);
+pruefe(($k['group'] ?? null) === 'power' && ($k['figure'] ?? null) === ['value' => '26.1', 'unit' => 'W'] && ($k['status'] ?? null) === 'an', 'Schalter mit Leistung: 26.1 W, Zustand „an“ statt „an (26.1 W)“: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
+$k = karteVon($energie, 'Deckenlicht', $de);
+pruefe(($k['figure'] ?? null) === ['value' => '0.0', 'unit' => 'W'] && ($k['status'] ?? null) === 'aus', 'Licht aus mit Leistung: die Leistung ist der Hauptwert: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
+
+[$idx] = anlage($thermo, $de);
+$r = rufe(static fn () => $idx->cards(['room' => 'Gast'], false));
+$k = karte($r, 'Temperatur');
+pruefe(($k['group'] ?? null) === 'climate' && ($k['figure'] ?? null) === ['value' => '21.7', 'unit' => '°C'] && array_key_exists('status', $k) && $k['status'] === null, 'Messwert: nur der Hauptwert, kein Zustand: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
+$r = rufe(static fn () => $idx->cards(['room' => 'Wintergarten'], false));
+$k = karte($r, 'Heizung');
+pruefe(($k['figure'] ?? null) === ['value' => '20.6', 'unit' => '°C'] && ($k['status'] ?? null) === 'Soll 21 °C', 'Thermostat: Ist-Temperatur groß, links der Sollwert: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
+$k = karte($r, 'Fenster links') ?: karte(rufe(static fn () => $idx->cards(['name' => 'Fenster links'], false)), 'Fenster links');
+pruefe(($k['group'] ?? null) === 'opening' && ($k['status'] ?? null) === 'geschlossen', 'Fenster: Gruppe Fenster und Türen: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
+
+$k = karteVon($klima, 'Klimagerät', $de);
+pruefe(($k['figure'] ?? null) === ['value' => '20.0', 'unit' => '°C'] && ($k['status'] ?? null) === 'Soll 24 °C, Aus, Lüfter Auto', 'Klimagerät: Ist groß, Soll, Modus und Lüfter links: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
+$k = karteVon($entfeuchter, 'Luftentfeuchter', $de);
+pruefe(($k['figure'] ?? null) === ['value' => '51', 'unit' => '%'] && ($k['status'] ?? null) === 'an (Soll 55 %, Smart, Lüfter Niedrig)', 'Luftentfeuchter: Ist-Feuchte groß, der Rest bleibt: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
+$k = karteVon(fixture('nuc_2026-10-10_medien.json'), 'Echo', $de);
+pruefe(($k['group'] ?? null) === 'media' && array_key_exists('figure', $k) && $k['figure'] === null && ($k['status'] ?? null) === ($k['text'] ?? 1), 'Mediaplayer: vorerst ohne Hauptwert, Zustand = Text: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
+
 /* --- Übersetzung ---------------------------------------------------------------------------------- */
 
 [$idx] = anlage($fx, $de);

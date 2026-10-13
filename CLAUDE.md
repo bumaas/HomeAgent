@@ -163,6 +163,11 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   `control_device` 68 ms. Modus und Lüfterstufe stehen als Auswahl auf der Karte (`controls.options`, `cardChoice`: Beschriftungen aus
   `DeviceBackend::options()` und der aktuelle Eintrag); die Seite schickt die Beschriftung als `mode` bzw. `fan_speed`, `runOption`
   sucht den Wert dazu (13.10.2026).
+  **Gestaltung nach pitti** (Forum, Entwurf 13.10.2026): Jede Karte trägt `group` (`CARD_GROUPS`, Überschriften in fester
+  Reihenfolge aus `labels.groups`, erst ab zwei Gruppen), `figure` (Hauptwert als Zahl und Einheit, `cardFigure`: Stufe eines
+  eingeschalteten Lichts, Öffnungsgrad, Messwert, Ist-Temperatur bzw. Ist-Feuchte, sonst Leistung; Mediaplayer vorerst
+  ohne) und `status` (`cardStatus`: der Zustandstext ohne den Hauptwert, null bei reinen Messwerten). Die Seite färbt, was
+  an ist, Rollläden und Klima immer; der Balken ist zugleich Schieberegler, der Raum steht nur bei mehreren Räumen da.
   Mit Karten verweist die Beschreibung von `get_state` fürs Zeigen („show me …“) auf `show_devices` (`$hasCards`): Die
   Claude-App beantwortete „Zeig mir die Lichter im Wohnzimmer“ sonst mit einer Tabelle über `get_state` (12.10.2026).
   Ebenso verweist sie für Diagramme auf `show_chart` (`$hasChart`): „Hausverbrauch von gestern als Diagramm“ ergab

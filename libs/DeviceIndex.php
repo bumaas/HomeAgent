@@ -251,6 +251,21 @@ final class DeviceIndex
     /** Höchstens so viele Karten je Aufruf; die übrigen nennt die Seite nur als Anzahl. */
     private const CARDS_MAX = 30;
 
+    /**
+     * Gruppe einer Karte je Typ (Gestaltung nach pitti, 13.10.2026). Die Reihenfolge von CARD_GROUP_LABELS ist die der
+     * Überschriften auf der Seite.
+     */
+    private const CARD_GROUPS = [
+        'blind' => 'cover', 'light' => 'light', 'switch' => 'power', 'socket' => 'power', 'appliance' => 'power',
+        'thermostat' => 'climate', 'humidifier' => 'climate', 'fan' => 'climate', 'temperature' => 'climate',
+        'humidity' => 'climate', 'air_quality' => 'climate', 'measurement' => 'climate', 'window' => 'opening',
+        'door' => 'opening', 'presence' => 'sensor', 'water_leak' => 'sensor', 'media' => 'media',
+    ];
+    private const CARD_GROUP_LABELS = [
+        'cover' => 'Blinds', 'light' => 'Lights', 'power' => 'Switches and sockets', 'climate' => 'Climate',
+        'opening' => 'Windows and doors', 'sensor' => 'Sensors', 'media' => 'Media',
+    ];
+
     /** Während chart() mit type=energy: Verbrauch je Gerät statt Verlauf bzw. Hausstapel. */
     private bool $chartByDevice = false;
 
@@ -3453,7 +3468,8 @@ final class DeviceIndex
         $cards = array_map(fn (array $entry): array => $this->cardOf($entry, $readOnly), array_slice($matches, 0, self::CARDS_MAX));
         $result['text'] .= "\n" . $this->t('The devices are shown as cards in the chat.');
         return $result + ['structuredContent' => ['kind' => 'cards', 'readOnly' => $readOnly, 'cards' => $cards,
-            'more' => max(0, count($matches) - self::CARDS_MAX), 'labels' => ['more' => $this->t('%d more device(s) not shown')]]];
+            'more' => max(0, count($matches) - self::CARDS_MAX), 'labels' => ['more' => $this->t('%d more device(s) not shown'),
+                'groups' => array_map(fn (string $group): array => [$group, $this->t(self::CARD_GROUP_LABELS[$group])], array_keys(self::CARD_GROUP_LABELS))]]];
     }
 
     /**
@@ -3526,8 +3542,51 @@ final class DeviceIndex
                 $controls['options'][] = $choice;
             }
         }
+        [$figure, $shown] = $this->cardFigure($entry, $state['active']);
         return ['key' => self::cardKey($entry), 'room' => $entry['Room'], 'name' => $entry['Name'], 'type' => $entry['Type'],
-            'text' => $state['text'], 'active' => $state['active'], 'controls' => $controls];
+            'group' => self::CARD_GROUPS[$entry['Type']] ?? 'sensor', 'text' => $state['text'], 'active' => $state['active'],
+            'figure' => $figure, 'status' => self::cardStatus($state['text'], $shown), 'controls' => $controls];
+    }
+
+    /**
+     * Hauptwert einer Karte, groß rechts: die Stufe eines eingeschalteten Lichts, der Öffnungsgrad, der Messwert, die
+     * Ist-Temperatur bzw. Ist-Feuchte, sonst die Leistung. Dazu der Text, wie er im Zustandstext steht.
+     *
+     * @return array{0: ?array{value: string, unit: string}, 1: ?string}
+     */
+    private function cardFigure(array $entry, ?bool $active): array
+    {
+        $roles = $entry['roles'];
+        $percent = in_array($entry['Type'], ['blind', 'window'], true) || ($entry['Type'] === 'light' && $active === true) ? $this->cardPercent($entry) : null;
+        if ($percent !== null) {
+            return [['value' => (string)$percent, 'unit' => '%'], $percent . ' %'];
+        }
+        $variable = match (true) {
+            in_array($entry['Type'], ['temperature', 'humidity', 'air_quality', 'measurement', 'thermostat'], true) => $roles['state'] ?? 0,
+            $entry['Type'] === 'humidifier'                                                                     => $roles['humidity'] ?? 0,
+            $entry['Type'] !== 'media'                                                                          => $roles['power'] ?? 0,
+            default                                                                                             => 0,
+        };
+        $formatted = $variable === 0 ? '' : trim((string)($this->backend->read($variable)['formatted'] ?? ''));
+        if (preg_match('/^(-?\d+(?:[.,]\d+)?)\s*(\S.*)$/u', $formatted, $m) !== 1) {
+            return [null, null];
+        }
+        return [['value' => $m[1], 'unit' => $m[2]], $formatted];
+    }
+
+    /** Zustand ohne den Hauptwert: Teile in Klammern, die auf ihn enden, fallen weg; steht nur er da, bleibt nichts. */
+    private static function cardStatus(string $text, ?string $shown): ?string
+    {
+        if ($shown === null) {
+            return $text;
+        }
+        if ($text === $shown) {
+            return null;
+        }
+        return (string)preg_replace_callback('/ \(([^()]*)\)/u', static function (array $m) use ($shown): string {
+            $parts = array_filter(explode(', ', $m[1]), static fn (string $part): bool => $part !== $shown && !str_ends_with($part, ' ' . $shown));
+            return $parts === [] ? '' : ' (' . implode(', ', $parts) . ')';
+        }, $text);
     }
 
     /**

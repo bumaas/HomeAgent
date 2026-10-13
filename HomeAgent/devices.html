@@ -33,29 +33,49 @@
   }
   html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); overflow: hidden; }
   body { font: 13px/1.4 var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif); padding: 6px 4px 4px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  /* Gestaltung nach pitti (Forum, 13.10.2026): Gruppen je Art, Symbol, Farbe nach Zustand, Wert groß rechts, Balken. */
+  .group { color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin: 10px 2px 6px; }
+  .group:first-child { margin-top: 2px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+  .card { --tone: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .card.lit { border-color: color-mix(in srgb, var(--tone) 30%, var(--border)); background: linear-gradient(180deg, color-mix(in srgb, var(--tone) 4%, var(--bg)), color-mix(in srgb, var(--tone) 14%, var(--bg))); }
   .card.busy { opacity: 0.55; pointer-events: none; }
-  .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .t-cover { --tone: #5b6cf0; } .t-light { --tone: #e8a800; } .t-power { --tone: #12b886; } .t-climate { --tone: #1c9fe0; }
+  .t-opening { --tone: #7b8794; } .t-sensor { --tone: #f08c00; } .t-media { --tone: #9c5de6; }
+  .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-height: 28px; }
+  .icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex: none; color: var(--muted); background: color-mix(in srgb, var(--muted) 12%, transparent); }
+  .lit .icon { color: var(--tone); background: color-mix(in srgb, var(--tone) 16%, transparent); }
+  .icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
   .name { font-weight: 600; overflow-wrap: anywhere; }
   .room { color: var(--muted); font-size: 12px; }
-  .text { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
-  .text.on { color: var(--fg); }
+  .state { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: auto; }
+  .status { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+  .lit .status { color: color-mix(in srgb, var(--tone) 75%, var(--fg)); }
+  .figure { font-size: 20px; font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .figure small { font-size: 12px; color: var(--muted); margin-left: 2px; font-weight: 400; }
   .reply { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
   .reply.error { color: var(--error); }
   .row { display: flex; align-items: center; gap: 6px; }
-  .row input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); }
-  .value { min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
-  button { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; cursor: pointer; min-width: 32px; }
-  button:hover { border-color: var(--accent); }
-  .row .label { color: var(--muted); min-width: 80px; }
-  .row select { flex: 1; min-width: 0; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
-  .switch { position: relative; width: 38px; height: 22px; flex: none; }
+  .value { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; }
+  button { font: inherit; font-size: 11px; color: var(--fg); background: color-mix(in srgb, var(--muted) 12%, transparent); border: 0; border-radius: 5px; padding: 4px 8px; cursor: pointer; min-width: 26px; line-height: 1.2; }
+  button:hover { background: color-mix(in srgb, var(--tone) 25%, transparent); }
+  .buttons { display: flex; gap: 3px; }
+  .row .label { color: var(--muted); font-size: 12px; min-width: 72px; }
+  .row select { flex: 1; min-width: 0; font: inherit; font-size: 12px; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
+  /* Balken: zugleich Schieberegler, der Griff erscheint erst unter dem Zeiger */
+  .bar { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; margin: 2px 0; border-radius: 3px; cursor: pointer;
+    background: linear-gradient(90deg, var(--tone) 0, var(--tone) var(--fill), color-mix(in srgb, var(--muted) 18%, transparent) var(--fill)); }
+  .bar.static { cursor: default; }
+  .bar::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--tone); border: 2px solid var(--bg); opacity: 0; transition: opacity 0.15s; }
+  .bar::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--tone); border: 2px solid var(--bg); opacity: 0; }
+  .bar:not(.static):hover::-webkit-slider-thumb, .bar:focus::-webkit-slider-thumb, .bar:active::-webkit-slider-thumb { opacity: 1; }
+  .bar:not(.static):hover::-moz-range-thumb, .bar:focus::-moz-range-thumb { opacity: 1; }
+  .switch { position: relative; width: 34px; height: 20px; flex: none; }
   .switch input { opacity: 0; width: 0; height: 0; }
-  .switch span { position: absolute; inset: 0; background: var(--border); border-radius: 11px; cursor: pointer; transition: background 0.15s; }
-  .switch span::before { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.15s; }
-  .switch input:checked + span { background: var(--on); }
-  .switch input:checked + span::before { transform: translateX(16px); }
+  .switch span { position: absolute; inset: 0; background: color-mix(in srgb, var(--muted) 25%, transparent); border-radius: 10px; cursor: pointer; transition: background 0.15s; }
+  .switch span::before { content: ""; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+  .switch input:checked + span { background: var(--tone); }
+  .switch input:checked + span::before { transform: translateX(14px); }
   .note { color: var(--muted); font-size: 12px; margin: 6px 0 0 4px; }
   .empty { color: var(--muted); padding: 12px 6px; }
 </style>
@@ -120,6 +140,44 @@
     b.addEventListener("click", onClick);
     return b;
   }
+  // Symbole je Typ, Linien im Raster 24 × 24
+  var ICONS = {
+    light: "M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z",
+    blind: "M4 4h16M6 4v13M18 4v13M6 8h12M6 12h12M6 16h12M12 17v3",
+    switch: "M7 4h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3zM12 8v8",
+    socket: "M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM9.5 10v3M14.5 10v3",
+    appliance: "M13 2 4 14h7l-1 8 9-12h-7z",
+    thermostat: "M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0zM12 11v6",
+    temperature: "M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0zM12 11v6",
+    humidity: "M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z",
+    humidifier: "M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11zM9.5 14.5a2.5 2.5 0 0 0 2.5 2.5",
+    fan: "M12 12m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0M12 10.5C12 6 13 3.5 15.5 3.5s2.5 4-2 7M13.5 12c4.5 0 7 1 7 3.5s-4 2.5-7-2M12 13.5c0 4.5-1 7-3.5 7s-2.5-4 2-7M10.5 12C6 12 3.5 11 3.5 8.5s4-2.5 7 2",
+    air_quality: "M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7",
+    measurement: "M4 18a8 8 0 1 1 16 0M12 18l4-6",
+    window: "M5 3h14v18H5zM12 3v18M5 12h14",
+    door: "M6 21V3h12v18M3 21h18M14.5 12h.01",
+    presence: "M12 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21v-3a6 6 0 0 1 12 0v3",
+    water_leak: "M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11zM4 21h16",
+    media: "M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"
+  };
+  function icon(type) {
+    var box = node("div", "icon");
+    var svgNs = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgNs, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    var path = document.createElementNS(svgNs, "path");
+    path.setAttribute("d", ICONS[type] || ICONS.measurement);
+    svg.appendChild(path);
+    box.appendChild(svg);
+    return box;
+  }
+  // Zahl aus der Anlage („21.7“) in der Schreibweise des Anwenders, mit so vielen Nachkommastellen wie geliefert
+  function localNumber(text) {
+    if (!/^-?\d+([.,]\d+)?$/.test(text)) { return text; }
+    var decimals = (text.split(/[.,]/)[1] || "").length;
+    return Number(text.replace(",", ".")).toLocaleString(lang, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
   function number(value) {
     return (Math.round(value * 10) / 10).toLocaleString(lang);
   }
@@ -155,14 +213,15 @@
     draw();
   }
 
-  function cardElement(card) {
-    var el = node("div", "card");
-    var head = node("div", "head");
-    var title = node("div");
-    title.appendChild(node("div", "name", card.name));
-    title.appendChild(node("div", "room", card.room));
-    head.appendChild(title);
+  function cardElement(card, showRoom) {
+    var group = card.group || "sensor";
+    // Farbig ist, was an ist; Rollläden und Klimawerte haben keinen Aus-Zustand und sind es immer
+    var lit = card.active === true || (card.active === null && (group === "cover" || group === "climate"));
+    var el = node("div", "card t-" + group + (lit ? " lit" : ""));
     var c = card.controls || {};
+
+    var top = node("div", "top");
+    top.appendChild(icon(card.type));
     if (c.switch) {
       var label = node("label", "switch");
       var box = node("input");
@@ -172,32 +231,55 @@
       box.addEventListener("change", function () { control(card, { command: box.checked ? "on" : "off" }, el); });
       label.appendChild(box);
       label.appendChild(node("span"));
-      head.appendChild(label);
-    }
-    el.appendChild(head);
-    el.appendChild(node("div", "text" + (card.active === true ? " on" : ""), card.text));
-
-    if (c.percent !== undefined) {
-      var row = node("div", "row");
-      var slider = node("input");
-      slider.type = "range";
-      slider.min = "0";
-      slider.max = "100";
-      slider.step = "1";
-      slider.value = String(c.percent === null ? 0 : c.percent);
-      var shown = node("span", "value", c.percent === null ? "–" : c.percent + " %");
-      slider.addEventListener("input", function () { shown.textContent = slider.value + " %"; });
-      slider.addEventListener("change", function () { control(card, { percent: Number(slider.value) }, el); });
-      row.appendChild(slider);
-      row.appendChild(shown);
-      el.appendChild(row);
-    }
-    if (c.cover) {
-      var cover = node("div", "row");
+      top.appendChild(label);
+    } else if (c.cover) {
+      var cover = node("div", "buttons");
       cover.appendChild(button("▲", "open", function () { control(card, { command: "open" }, el); }));
       if (c.cover.stop) { cover.appendChild(button("■", "stop", function () { control(card, { command: "stop" }, el); })); }
       cover.appendChild(button("▼", "close", function () { control(card, { command: "close" }, el); }));
-      el.appendChild(cover);
+      top.appendChild(cover);
+    }
+    el.appendChild(top);
+
+    var title = node("div");
+    title.appendChild(node("div", "name", card.name));
+    if (showRoom) { title.appendChild(node("div", "room", card.room)); }
+    el.appendChild(title);
+
+    var state = node("div", "state");
+    var status = card.status === undefined ? card.text : card.status;
+    state.appendChild(node("div", "status", status === null ? "" : status));
+    var figure = node("div", "figure");
+    if (card.figure) {
+      figure.textContent = localNumber(card.figure.value);
+      figure.appendChild(node("small", "", card.figure.unit));
+    }
+    state.appendChild(figure);
+    el.appendChild(state);
+
+    // Balken für Stufe und Öffnungsgrad; bedienbar ist er nur mit Fähigkeit, ein ausgeschaltetes Licht steht auf 0
+    var percent = c.percent !== undefined ? c.percent : (card.figure && card.figure.unit === "%" && (group === "cover" || group === "light") ? Number(card.figure.value) : undefined);
+    if (percent !== undefined) {
+      var shownPercent = percent === null || (group === "light" && card.active === false) ? 0 : percent;
+      var bar = node("input", "bar" + (c.percent === undefined ? " static" : ""));
+      bar.type = "range";
+      bar.min = "0";
+      bar.max = "100";
+      bar.step = "1";
+      bar.value = String(shownPercent);
+      bar.style.setProperty("--fill", shownPercent + "%");
+      bar.setAttribute("aria-label", card.name);
+      if (c.percent === undefined) {
+        bar.disabled = true;
+      } else {
+        bar.addEventListener("input", function () {
+          bar.style.setProperty("--fill", bar.value + "%");
+          figure.textContent = bar.value;
+          figure.appendChild(node("small", "", "%"));
+        });
+        bar.addEventListener("change", function () { control(card, { percent: Number(bar.value) }, el); });
+      }
+      el.appendChild(bar);
     }
     if (c.setpoint) {
       var sp = c.setpoint, step = sp.step || 0.5;
@@ -218,7 +300,7 @@
       el.appendChild(setRow);
     }
     if (c.playback) {
-      var play = node("div", "row");
+      var play = node("div", "buttons");
       [["⏮", "previous"], ["▶", "play"], ["⏸", "pause"], ["⏭", "next"]].forEach(function (b) {
         play.appendChild(button(b[0], b[1], function () { control(card, { command: b[1] }, el); }));
       });
@@ -258,9 +340,24 @@
       reportSize();
       return;
     }
-    var grid = node("div", "grid");
-    state.cards.forEach(function (card) { grid.appendChild(cardElement(card)); });
-    root.appendChild(grid);
+    // Den Raum nennt die Karte nur, wenn die Geräte aus mehreren Räumen kommen; Überschriften erst ab zwei Gruppen
+    var rooms = {};
+    state.cards.forEach(function (card) { rooms[card.room] = true; });
+    var showRoom = Object.keys(rooms).length > 1;
+    var order = (state.labels && state.labels.groups) || [];
+    var groups = [];
+    order.forEach(function (g) {
+      var cards = state.cards.filter(function (card) { return (card.group || "sensor") === g[0]; });
+      if (cards.length) { groups.push({ label: g[1], cards: cards }); }
+    });
+    var placed = groups.reduce(function (n, g) { return n + g.cards.length; }, 0);
+    if (placed !== state.cards.length) { groups = [{ label: "", cards: state.cards }]; }
+    groups.forEach(function (g) {
+      if (groups.length > 1) { root.appendChild(node("div", "group", g.label)); }
+      var grid = node("div", "grid");
+      g.cards.forEach(function (card) { grid.appendChild(cardElement(card, showRoom)); });
+      root.appendChild(grid);
+    });
     if (state.more > 0 && state.labels && state.labels.more) {
       root.appendChild(node("p", "note", state.labels.more.replace("%d", String(state.more))));
     }
