@@ -141,7 +141,7 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   13.10.2026): Autarkie teilt den Hausverbrauch über den ganzen Zeitraum in PV direkt, Batterie und Netz, Eigenverbrauch
   die PV in direkt, geladen und eingespeist; die Zahl in der Mitte rechnet `shares()` wie die Textzeile des Modells.
   `show_chart` mit `period=now` ohne Filter gibt es nur mit Leistungsbilanz (`powerRings`, `kind: rings`): Hausleistung
-  auf einer Skala in ganzen kW, dann dieselben Ringe aus den Leistungen. Jeder Balken ist der Hausverbrauch der Bilanz; am nuc lud die Batterie am 11.10.2026 um 14 Uhr
+  auf einer Skala in ganzen kW, dann dieselben Ringe aus den Leistungen. Nach dem ersten Screenshot aus der Claude-App (13.10.2026): Bögen unter 1 % fallen weg (sonst ein Punkt bei „Einspeisung 0 kWh“), unter der Nulllinie wird nur gezeichnet, wenn die Einspeisung mindestens 3 % des höchsten Balkens ausmacht, und die Ringkarten füllen die Breite. Jeder Balken ist der Hausverbrauch der Bilanz; am nuc lud die Batterie am 11.10.2026 um 14 Uhr
   aus dem Netz (Fixture `nuc_2026-10-12_verbrauch.json`, Burkhard 12.10.2026: „verbrauchsdiagramme, also
   stapeldiagramme“). Stufe wie beim Verlauf (`chartLevel`). Verbrauch je Gerät (`deviceChart`): `type=energy` gibt es nur
   bei `show_chart` (kein Gerätetyp, `chart()` nimmt es heraus und setzt `chartByDevice`), oder automatisch, wenn die Treffer

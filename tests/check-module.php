@@ -2776,6 +2776,11 @@ pruefe(is_string($karten) && str_contains($karten, 'ui/initialize') && str_conta
 pruefe(is_string($karten) && str_contains($karten, 'structuredContent.problem'), 'die Karte zeigt die Antwort nur bei einem Problem');
 pruefe(strlen((string)$karten) < 30000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$karten), 'die Seite der Karten lädt nichts nach: ' . strlen((string)$karten) . ' Bytes');
 pruefe(strlen((string)$seite) < 30000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$seite), 'die Seite lädt nichts nach (CSP der Apps) und bleibt klein: ' . strlen((string)$seite) . ' Bytes');
+// Screenshot der Claude-App 13.10.2026: Achse bis -0,5 bei fast keiner Einspeisung, ein grüner Punkt für
+// „Einspeisung 0 kWh“, und rechts blieb ein Drittel frei
+pruefe(is_string($seite) && str_contains($seite, 'if (-low < high * 0.03) { low = 0; }'), 'kaum Einspeisung: kein Bereich unter der Nulllinie');
+pruefe(is_string($seite) && str_contains($seite, 'if (share >= 0.01) {'), 'Bögen unter 1 % fallen weg');
+pruefe(is_string($seite) && str_contains($seite, '.ring svg { max-height: 270px; }') && !str_contains($seite, 'max-width: 320px'), 'die Ringkarten füllen die Breite');
 
 /* --- Vorlagen am Modul (Prompts, Backlog B63) ---------------------------------------------------- */
 
