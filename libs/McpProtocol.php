@@ -278,7 +278,9 @@ final class McpProtocol
             case 'tools/call':
                 $name = $params['name'] ?? null;
                 $arguments = $params['arguments'] ?? [];
-                $tools = $listTools($apps);
+                // Aufrufen lassen sich auch die App-Werkzeuge immer: claude.ai schickt den Aufruf von einer Karte teils
+                // ohne Client und Fähigkeiten (nuc 13.10.2026). Die Liste zeigt sie weiter nur Clients mit Apps.
+                $tools = $listTools(true);
                 $known = array_column($tools, 'name');
                 if (!is_string($name) || !in_array($name, $known, true)) {
                     return self::error($id, -32602, 'Unknown tool: ' . (is_string($name) ? $name : '?') . '. Available: ' . implode(', ', $known));

@@ -2638,10 +2638,10 @@ $inhalt = (string)@file_get_contents($logAktuell);
 pruefe(str_contains($inhalt, ' | Claude-App | get_state | Anthropic/ClaudeAI 1.0.0 | room=Küche | '), 'der Werkzeugaufruf nennt den Client: ' . $inhalt);
 // Ein Werkzeugaufruf, den schon das Protokoll abweist (unbekanntes Werkzeug, Kopfzeilen passen nicht), stand nirgends.
 // Anlass 13.10.2026: Die Karten meldeten „Tool call failed“, im Protokoll war kein Aufruf zu sehen. Die Zeile nennt den
-// Client mit Fähigkeiten, denn control_device gibt es nur für Clients mit Apps.
+// Client mit Fähigkeiten.
 $_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $pid, 'REMOTE_ADDR' => '192.0.2.5', 'HTTP_AUTHORIZATION' => 'Bearer ' . $pToken,
-    'HTTP_MCP_PROTOCOL_VERSION' => '2026-07-28', 'HTTP_MCP_METHOD' => 'tools/call', 'HTTP_MCP_NAME' => 'control_device'];
-HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 4, 'method' => 'tools/call', 'params' => ['name' => 'control_device', 'arguments' => ['device' => '1', 'command' => 'on'],
+    'HTTP_MCP_PROTOCOL_VERSION' => '2026-07-28', 'HTTP_MCP_METHOD' => 'tools/call', 'HTTP_MCP_NAME' => 'switch_all'];
+HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 4, 'method' => 'tools/call', 'params' => ['name' => 'switch_all', 'arguments' => ['device' => '1', 'command' => 'on'],
     '_meta' => ['io.modelcontextprotocol/protocolVersion' => '2026-07-28', 'io.modelcontextprotocol/clientInfo' => ['name' => 'claude-ai', 'version' => '0.1.0'], 'io.modelcontextprotocol/clientCapabilities' => (object)[]]]]);
 ob_start();
 try {
@@ -2651,7 +2651,7 @@ try {
     HomeAgentHarness::$body = '';
 }
 $inhalt = (string)@file_get_contents($logAktuell);
-pruefe(preg_match('/ \| Claude-App \| tools\/call \| claude-ai 0\.1\.0 \| HTTP 200 \| -32602 Unknown tool: control_device/u', $inhalt) === 1, 'abgewiesener Werkzeugaufruf mit Client und Fehler im Protokoll: ' . $inhalt);
+pruefe(preg_match('/ \| Claude-App \| tools\/call \| claude-ai 0\.1\.0 \| HTTP 200 \| -32602 Unknown tool: switch_all/u', $inhalt) === 1, 'abgewiesener Werkzeugaufruf mit Client und Fehler im Protokoll: ' . $inhalt);
 $_SERVER['HTTP_MCP_NAME'] = 'get_state';
 HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 5, 'method' => 'tools/call', 'params' => ['name' => 'control_device', 'arguments' => (object)[],
     '_meta' => ['io.modelcontextprotocol/protocolVersion' => '2026-07-28', 'io.modelcontextprotocol/clientInfo' => ['name' => 'claude-ai', 'version' => '0.1.0']]]]);
@@ -2664,6 +2664,22 @@ try {
 }
 $inhalt = (string)@file_get_contents($logAktuell);
 pruefe(preg_match('/ \| Claude-App \| tools\/call \| claude-ai 0\.1\.0 \| HTTP 400 \| -32020 Header mismatch/u', $inhalt) === 1, 'Kopfzeile passt nicht: HTTP 400 im Protokoll: ' . $inhalt);
+// Gemessen am nuc 13.10.2026 12:59: claude.ai schickt den Aufruf von der Karte ohne Client und ohne Fähigkeiten
+// („tools/call | ? | -32602 Unknown tool: control_device“); um 10:29 kam er noch als „claude-ai 0.1.0“. Die App-Werkzeuge
+// stehen weiter nur in der Liste für Clients mit Apps, aufrufen lassen sie sich aber immer (die Rechte des Zugangs gelten).
+$_SERVER['HTTP_MCP_NAME'] = 'control_device';
+HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 6, 'method' => 'tools/call', 'params' => ['name' => 'control_device', 'arguments' => ['device' => '1', 'command' => 'on'],
+    '_meta' => ['io.modelcontextprotocol/protocolVersion' => '2026-07-28']]]);
+ob_start();
+try {
+    $pHook->invoke($p);
+    $ausgabe = (string)ob_get_contents();
+} finally {
+    ob_end_clean();
+    HomeAgentHarness::$body = '';
+}
+$inhalt = (string)@file_get_contents($logAktuell);
+pruefe(!str_contains($ausgabe, 'Unknown tool') && preg_match('/ \| Claude-App \| control_device \| device=1 command=on \| /u', $inhalt) === 1, 'Aufruf von der Karte ohne Client und Fähigkeiten erreicht control_device: ' . substr($ausgabe, 0, 200) . ' / ' . substr($inhalt, -300));
 // Werkzeugliste je Zugang (Burkhard 12.10.2026): holt der Assistent die Liste, merkt sich das Modul ihren Fingerabdruck;
 // ändert sich danach die Freigabeliste so, dass sich die Werkzeuge ändern, zeigt die Spalte „veraltet“.
 $listeHolen = static function () use ($pHook, $p, $pid, $pToken): void {

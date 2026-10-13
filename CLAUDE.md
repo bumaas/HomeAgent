@@ -156,7 +156,7 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   Zeitraum, `DeviceIndex::cards`) liefert die Zeilen von `get_state` und je Gerät eine Karte (`cardOf`: Zustandstext,
   `controls` aus `abilitiesOf`: `switch`, `percent`, `cover` mit `stop`, `setpoint` mit Bereich, `playback`), höchstens
   `CARDS_MAX`. Seite `ui://homeagent/devices` (`HomeAgent/devices.html`). Bedient wird über `control_device`
-  (`_meta.ui.visibility: ["app"]`, der Host zeigt es dem Modell nicht; nur ohne „Nur abfragen“): Kartenschlüssel
+  (`_meta.ui.visibility: ["app"]`, der Host zeigt es dem Modell nicht; nur ohne „Nur abfragen“; aufrufen lassen sich die App-Werkzeuge auch ohne angemeldete Apps, denn claude.ai schickte den Aufruf von der Karte am 13.10.2026 ohne Client und Fähigkeiten, Ergebnis „Tool call failed“): Kartenschlüssel
   (`cardKey`, alle Variablen des Geräts, weil Thermostat und Raumfühler eine teilen) und Befehl, intern `setState` mit
   `onlyKey` in `find()`, also dieselbe Rückmeldung; zurück kommt die neue Karte und `problem` wie in „Was nicht geklappt hat“; die Karte zeigt die Antwort nur bei einem Problem, sonst den neuen Zustand (Burkhard 12.10.2026). Die Seite meldet die letzten fünf
   Bedienungen über `ui/update-model-context` (jede Meldung ersetzt die vorige). Am nuc 12.10.2026: Karte in 69 ms,
