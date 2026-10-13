@@ -2785,6 +2785,10 @@ $kartenUri = 'ui://homeagent/devices/' . substr(hash_file('sha256', dirname(__DI
 pruefe(isset($mit['show_chart']) && ($mit['show_chart']['_meta']['ui']['resourceUri'] ?? null) === $chartUri, 'mit Apps: show_chart mit Verweis auf die Seite des Diagramms samt Prüfsumme: ' . json_encode($mit['show_chart']['_meta'] ?? array_keys($mit)));
 pruefe(($mit['show_chart']['annotations']['readOnlyHint'] ?? null) === true && !isset($mit['show_chart']['inputSchema']['properties']['active_only']), 'liest nur, ohne active_only: ' . json_encode($mit['show_chart']['inputSchema']['properties'] ?? null));
 pruefe(!in_array('now', $mit['show_chart']['inputSchema']['properties']['period']['enum'] ?? ['now'], true), 'period ohne now');
+// Kosten in Euro (B72, 13.10.2026): das Feld costs gibt es nur mit Strompreis in der Energiebilanz
+pruefe(!isset($mit['show_chart']['inputSchema']['properties']['costs']), 'ohne Strompreis kein costs in show_chart');
+$formular = (string)file_get_contents(dirname(__DIR__) . '/HomeAgent/form.json');
+pruefe(str_contains($formular, '"name": "PriceVariableID"') && str_contains($formular, '"name": "FeedInTariff"') && str_contains($formular, 'PriceVariableID (electricity price'), 'Formular und Hinweistext nennen Strompreis und Einspeisevergütung');
 // Heatmap (B71, 13.10.2026)
 pruefe(($mit['show_chart']['inputSchema']['properties']['heatmap']['type'] ?? '') === 'boolean' && str_contains($mit['show_chart']['description'] ?? '', 'heatmap=true'), 'show_chart bietet heatmap an: ' . json_encode($mit['show_chart']['inputSchema']['properties']['heatmap'] ?? null));
 // Punktwolke (B70, 13.10.2026)

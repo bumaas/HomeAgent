@@ -282,6 +282,14 @@ and self-consumption follows: "Self-sufficiency 84 %, self-consumed solar 51 %."
 answer lists only the five largest consumers and sums up the rest ("5 more device(s) together
 25.6 kWh."); asked for a room, all devices follow in the order of the list.
 
+If you enter the **electricity price** in the energy balance (an archived variable in ct/kWh or €/kWh, for a dynamic
+tariff for example the current price from the Tibber module) and the feed-in tariff, the house consumption also names
+the costs: "Costs 38.21 € for 122.7 kWh grid import (paid on average 31.1 ct/kWh, average price 35.4 ct/kWh). Feed-in
+60.47 €. Without solar and battery it would have been 259.20 €." Each hour counts grid import times the hourly mean
+price. These are working costs only, without base fee; against the supplier's bill they differ by a few percent,
+because your own meter measures slightly differently and the archive only knows hourly means. In charts `costs`
+shows the house consumption in euros, as stacked bars, as heatmap and with a comparison.
+
 With `period=now`, **get_state** reports the power right now in W, built like the consumption: the
 current value of each device with power, plus the total. For the whole house the module calculates the
 house power from the five power fields of the energy balance, for example "House power 1548 W (all

@@ -267,6 +267,14 @@ Weitere Regeln, die nicht offensichtlich sind:
   Werktag gegen Wochenende (Zähler je Tag summiert). `cap` ist das 95. Perzentil für die Farbskala: im September am nuc
   reichte der Hausverbrauch bis 9,5 kWh je Stunde, fast alle Kästchen waren sonst blass. Test `check-heatmap.php`
   (Fixture kompakt, Zähler im September, Temperatur ab August).
+- **Kosten in Euro** (B72, Burkhard 13.10.2026): Properties `PriceVariableID` (archivierte Variable in ct/kWh oder €/kWh,
+  Einheit aus dem Suffix, ohne Suffix gelten Werte über 2 als Cent) und `FeedInTariff` (ct/kWh), an den Index über
+  `setTariff`; nur mit Bilanz. `hourlyCosts` rechnet je Stunde Netzbezug × Stundenmittel, Einspeisung × Vergütung und
+  Hausverbrauch × Preis (ohne PV und Batterie), `costLine` hängt die Zeile an den Hausverbrauch von get_state, show_chart
+  mit `costs=true` zeichnet den Stapel in Euro (`costChart`, auch mit Vergleich) bzw. die Heatmap der Kosten; nur fürs
+  ganze Haus, ohne Grundgebühr. Am Tibber-Preis (`act_price` = API `total`, brutto) gegen die Rechnung September 2026
+  geprüft: Archiv 38,21 € gegen Rechnung 37,23 € (1,4 % Menge vom eigenen Zähler, 1,2 % Preis aus Stundenmitteln).
+  Test `check-kosten.php`.
 - **Verlauf statt Verbrauch** (`DeviceIndex::history`), wenn nach einem Typ aus `HISTORY_TYPES` gefragt
   wird oder kein Treffer einen Zähler hat, nie fürs ganze Haus. Stufe aus dem Zeitraum (heute und
   gestern stündlich, Wochen und Monate täglich, Jahre monatlich; `from`/`to` bis 2 Tage stündlich, bis

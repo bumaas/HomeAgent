@@ -296,6 +296,14 @@ Summe der Geräte. Mit PV oder Batterie folgt eine Zeile mit Autarkie und Eigenv
 Verbraucher und fasst den Rest zusammen („5 weitere Gerät(e) zusammen 25.6 kWh.“); nach einem Raum
 gefragt, kommen alle Geräte in der Reihenfolge der Liste.
 
+Tragen Sie in der Energiebilanz den **Strompreis** ein (eine archivierte Variable in ct/kWh oder €/kWh, bei einem
+dynamischen Tarif etwa der aktuelle Preis aus dem Tibber-Modul) und die Einspeisevergütung, nennt der Hausverbrauch
+auch die Kosten: „Kosten 38.21 € für 122.7 kWh Netzbezug (im Mittel 31.1 ct/kWh bezahlt, Durchschnittspreis 35.4 ct/kWh).
+Einspeisung 60.47 €. Ohne PV und Batterie wären es 259.20 € gewesen.“ Gerechnet wird je Stunde Netzbezug mal
+Stundenmittel des Preises. Das sind reine Arbeitskosten ohne Grundgebühr; gegen die Abrechnung des Versorgers weicht
+das um wenige Prozent ab, weil der eigene Zähler etwas anders misst und das Archiv nur Stundenmittel kennt. Im
+Diagramm zeigt `costs` den Hausverbrauch in Euro, als Stapel, als Heatmap und mit Vergleich.
+
 Mit `period=now` nennt **get_state** die Leistung jetzt in W, aufgebaut wie der Verbrauch: je Gerät mit
 Leistung der aktuelle Wert, dazu die Summe. Fürs ganze Haus rechnet das Modul die Hausleistung aus den
 fünf Leistungsfeldern der Energiebilanz, etwa „Hausleistung 1548 W (alle Geräte, period=now):

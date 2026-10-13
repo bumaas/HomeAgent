@@ -140,6 +140,9 @@ class HomeAgent extends IPSModuleStrict
         foreach (array_merge(array_values(DeviceIndex::BALANCE), array_values(DeviceIndex::BALANCE_POWER)) as $property) {
             $this->RegisterPropertyInteger($property, 0);
         }
+        // Kosten in Euro (B72): Strompreis als archivierte Variable (ct/kWh oder €/kWh) und Einspeisevergütung in ct/kWh
+        $this->RegisterPropertyInteger('PriceVariableID', 0);
+        $this->RegisterPropertyFloat('FeedInTariff', 0.0);
 
         $this->RegisterHook($this->hookPath());
     }
@@ -1811,6 +1814,7 @@ class HomeAgent extends IPSModuleStrict
                         'period' => ['type' => 'string', 'enum' => array_merge($hasPowerBalance ? [DeviceIndex::NOW] : [], DeviceIndex::PERIODS), 'description' => 'Period of the chart, per hour for today and yesterday, per day for weeks and months, per month for years.'],
                         'from'   => ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD, or a start hour, YYYY-MM-DD HH:MM. Today is ' . date('Y-m-d') . '.'],
                         'to'     => ['type' => 'string', 'description' => 'Last day, inclusive, or the end hour, YYYY-MM-DD HH:MM, exclusive.'],
+                        ...($this->priceVariable() > 0 ? ['costs' => ['type' => 'boolean', 'description' => 'true: the house consumption as costs in euros (grid import times the hourly price, feed-in below), also as heatmap or cumulative. Only without room, floor, type and name.']] : []),
                         'heatmap' => ['type' => 'boolean', 'description' => 'true: one value per hour as a heatmap of one device (without room, type or name the house consumption), a row per day up to 62 days, otherwise per weekday. Without a period: last month.'],
                         'versus'  => ['type' => 'string', 'description' => 'Name of a second device for a scatter chart: it goes on the x axis, the device chosen by room, type or name (without them the house consumption) on the y axis, for example versus=outdoor temperature with name=heat pump. Without a period: last month.'],
                         'compare' => ['type' => 'string', 'enum' => DeviceIndex::COMPARES, 'description' => 'Compare with the previous period (yesterday, last week, last month, last year) or the same period a year before; drawn as a dashed line or as marks on the bars.'],
@@ -2301,7 +2305,9 @@ class HomeAgent extends IPSModuleStrict
 
     private function deviceIndex(string $defaultRoom = ''): DeviceIndex
     {
-        return new DeviceIndex($this->usableDevices(), $this->backend(), $this->roomIndex(), $defaultRoom, $this->usableBalance($this->balance()), $this->usableBalance($this->powerBalance()));
+        $index = new DeviceIndex($this->usableDevices(), $this->backend(), $this->roomIndex(), $defaultRoom, $this->usableBalance($this->balance()), $this->usableBalance($this->powerBalance()));
+        $index->setTariff($this->priceVariable(), (float)@$this->ReadPropertyFloat('FeedInTariff'));
+        return $index;
     }
 
     private function sceneIndex(): SceneIndex
@@ -2343,6 +2349,14 @@ class HomeAgent extends IPSModuleStrict
      * @param array<string, int> $balance
      * @return array<string, int>
      */
+    /** Die Variable des Strompreises, wenn sie existiert und eine Bilanz eingetragen ist; sonst 0 (B72). */
+    private function priceVariable(): int
+    {
+        // Vor dem Neuladen der Bibliothek gibt es die Property bei bestehenden Instanzen noch nicht.
+        $id = (int)@$this->ReadPropertyInteger('PriceVariableID');
+        return $id > 1 && IPS_VariableExists($id) && $this->usableBalance($this->balance()) !== [] ? $id : 0;
+    }
+
     private function usableBalance(array $balance): array
     {
         return array_all($balance, static fn (int $variableId): bool => IPS_VariableExists($variableId)) ? $balance : [];
@@ -2368,7 +2382,7 @@ class HomeAgent extends IPSModuleStrict
         foreach ($this->GetReferenceList() as $reference) {
             $this->UnregisterReference($reference);
         }
-        $variables = array_merge(array_values($this->balance()), array_values($this->powerBalance()));
+        $variables = array_merge(array_values($this->balance()), array_values($this->powerBalance()), [$this->priceVariable()]);
         foreach ($this->deviceList() as $entry) {
             $variables = array_merge($variables, array_values(DeviceIndex::rolesOf($entry)));
         }

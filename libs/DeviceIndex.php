@@ -284,6 +284,13 @@ final class DeviceIndex
     /** Während chart() mit type=energy: Verbrauch je Gerät statt Verlauf bzw. Hausstapel. */
     private bool $chartByDevice = false;
 
+    /** Während chart() mit costs=true: der Hausverbrauch als Kosten in Euro (B72). */
+    private bool $chartCosts = false;
+
+    /** Strompreis (Variable in ct/kWh oder €/kWh, archiviert) und Einspeisevergütung in ct/kWh; 0 = keine (B72). */
+    private int $priceVariable = 0;
+    private float $feedIn = 0.0;
+
     /** So viele Geräte bekommen im Stapeldiagramm einen eigenen Stapel, der Rest heißt „übrige Geräte“. */
     private const CHART_DEVICES = 5;
 
@@ -902,6 +909,10 @@ final class DeviceIndex
                 if ($shares !== null) {
                     $head[] = $shares;
                 }
+                $costs = $this->costLine($from, $to);
+                if ($costs !== null) {
+                    $head[] = $costs;
+                }
                 if ($metered !== []) {
                     $head[] = sprintf($this->t('Of this, %s kWh by %d of %d metered device(s), %s kWh not metered.'), self::formatNumber($total), $withHistory, count($metered), self::formatNumber(max(0.0, $house['total'] - $total)));
                 }
@@ -943,6 +954,10 @@ final class DeviceIndex
      */
     private function houseChart(array $balance, int $level, int $from, int $to, string $title, string $filter): void
     {
+        if ($this->chartCosts) {
+            $this->costChart($level, $from, $to, $title, $filter);
+            return;
+        }
         $values = $this->balanceParts($balance, $level, $from, $to);
         if ($values === null) {
             return;
@@ -3641,6 +3656,19 @@ final class DeviceIndex
      */
     public function chart(array $arguments): array
     {
+        // Kosten in Euro (B72): nur fürs ganze Haus und nur mit Strompreis in der Energiebilanz
+        $costs = ($arguments['costs'] ?? false) === true;
+        unset($arguments['costs']);
+        if ($costs) {
+            if ($this->priceVariable === 0 || $this->balance === []) {
+                return $this->fail($this->t('Costs need an electricity price in the energy balance.'));
+            }
+            foreach (['room', 'floor', 'type', 'name'] as $field) {
+                if (trim((string)($arguments[$field] ?? '')) !== '') {
+                    return $this->fail($this->t('Costs are only available for the whole house, without room, floor, type or name.'));
+                }
+            }
+        }
         // Punktwolke (B70): versus nennt das Gerät der x-Achse; ohne Zeitraum der letzte Monat
         $versus = trim((string)($arguments['versus'] ?? ''));
         unset($arguments['versus']);
@@ -3657,7 +3685,7 @@ final class DeviceIndex
             if (trim((string)($arguments['period'] ?? '')) === '' && trim((string)($arguments['from'] ?? '')) === '') {
                 $arguments['period'] = 'last_month';
             }
-            return $this->heatmap($arguments);
+            return $this->heatmap($arguments, $costs);
         }
         $period = trim((string)($arguments['period'] ?? ''));
         if ($period === self::NOW) {
@@ -3691,6 +3719,7 @@ final class DeviceIndex
             return $this->fail($this->t('A comparison takes one room at a time.'));
         }
         $this->chartByDevice = $byDevice;
+        $this->chartCosts = $costs;
         $this->chart = ['series' => []];
         $texts = [];
         $failures = [];
@@ -3707,6 +3736,7 @@ final class DeviceIndex
         } finally {
             $this->chart = null;
             $this->chartByDevice = false;
+            $this->chartCosts = false;
         }
         if ($texts === []) {
             return $failures[0];
@@ -3738,7 +3768,7 @@ final class DeviceIndex
             self::padTimes($chart, $span[1]);
         }
         if ($compare !== '') {
-            $result['text'] .= "\n" . $this->compareChart($chart, $arguments, $compare, $byDevice);
+            $result['text'] .= "\n" . $this->compareChart($chart, $arguments, $compare, $byDevice, $costs);
         }
         $result['text'] .= "\n" . $this->t('The chart is shown in the chat.');
         return $result + ['structuredContent' => $chart];
@@ -3753,7 +3783,7 @@ final class DeviceIndex
      *
      * @param array<string, mixed> $chart
      */
-    private function compareChart(array &$chart, array $arguments, string $compare, bool $byDevice): string
+    private function compareChart(array &$chart, array $arguments, string $compare, bool $byDevice, bool $costs = false): string
     {
         $kind = (string)($chart['kind'] ?? '');
         if ($kind !== 'history' && $kind !== 'consumption') {
@@ -3767,12 +3797,14 @@ final class DeviceIndex
         $label = date('Y-m-d', $from) . (date('Y-m-d', $from) === date('Y-m-d', $to) ? '' : ' – ' . date('Y-m-d', $to));
         $this->chart = ['series' => []];
         $this->chartByDevice = $byDevice;
+        $this->chartCosts = $costs;
         try {
             $part = $this->getState(['from' => date('Y-m-d', $from), 'to' => date('Y-m-d', $to)] + array_diff_key($arguments, ['period' => 0, 'from' => 0, 'to' => 0]));
             $other = $this->chart;
         } finally {
             $this->chart = null;
             $this->chartByDevice = false;
+            $this->chartCosts = false;
         }
         $head = sprintf($this->t('Compared with %s:'), $label);
         if ($part['isError'] || ($other['kind'] ?? '') !== $kind) {
@@ -3818,7 +3850,7 @@ final class DeviceIndex
                     $sum += $values[$i];
                 }
             }
-            $text .= "\n" . sprintf($this->t('By the same time: %s kWh.'), self::formatNumber($sum));
+            $text .= "\n" . sprintf($this->t('By the same time: %s %s.'), ($chart['unit'] ?? 'kWh') === '€' ? number_format($sum, 2, '.', '') : self::formatNumber($sum), $chart['unit'] ?? 'kWh');
         }
         return $text;
     }
@@ -3926,7 +3958,7 @@ final class DeviceIndex
      * Hausverbrauch. Das Modell bekommt die stärkste und die schwächste Stunde im Mittel und Werktag gegen Wochenende (bei
      * Zählern je Tag summiert, sonst gemittelt), die Seite das Raster.
      */
-    private function heatmap(array $arguments): array
+    private function heatmap(array $arguments, bool $costs = false): array
     {
         if (trim((string)($arguments['compare'] ?? '')) !== '' || str_contains((string)($arguments['room'] ?? ''), ',')) {
             return $this->fail($this->t('A heatmap takes one room and no comparison.'));
@@ -3951,7 +3983,10 @@ final class DeviceIndex
             }
             $filter = $when;
             $series = ['label' => $this->t('house consumption'), 'unit' => 'kWh', 'values' => [], 'sum' => true];
-            foreach ($this->balanceParts($this->balance, 0, $from, $to) ?? [] as $time => $parts) {
+            if ($costs) {
+                $series = ['label' => $this->t('electricity costs'), 'unit' => '€', 'values' => array_map(static fn (array $row): float => $row['import'], $this->hourlyCosts($from, $to)[0] ?? []), 'sum' => true];
+            }
+            foreach ($costs ? [] : $this->balanceParts($this->balance, 0, $from, $to) ?? [] as $time => $parts) {
                 $value = 0.0;
                 foreach (self::BALANCE_TERMS as $key => [$sign]) {
                     $value += $sign * ($parts[$key] ?? 0.0);
@@ -4230,6 +4265,114 @@ final class DeviceIndex
     private static function roughNumber(float $value): string
     {
         return abs($value) >= 1 ? self::formatNumber($value) : (string)round($value, 2);
+    }
+
+    /** Strompreis und Einspeisevergütung (ct/kWh) für die Kosten in Euro (B72); 0 = keine. */
+    public function setTariff(int $priceVariable, float $feedInCent): void
+    {
+        $this->priceVariable = $priceVariable;
+        $this->feedIn = max(0.0, $feedInCent);
+    }
+
+    /**
+     * Mittlerer Strompreis je Stunde in €/kWh aus dem Archiv. Die Einheit kommt aus der Variable (ct oder Cent, € oder EUR),
+     * ohne Angabe gelten Werte über 2 als Cent. Gerechnet wird mit Stundenmitteln, weil das Archiv nicht feiner aggregiert;
+     * an der Tibber-Rechnung September 2026 lagen die Kosten so 2,6 % höher (1,4 % Menge vom SMA Home Manager, 1,2 % Preis).
+     *
+     * @return null|array<int, float>
+     */
+    private function hourlyPrices(int $from, int $to): ?array
+    {
+        $history = $this->priceVariable > 0 ? $this->backend->history($this->priceVariable, 0, $from, $to) : null;
+        if ($history === null || $history['rows'] === []) {
+            return null;
+        }
+        $unit = strtolower($history['unit']);
+        $values = array_column($history['rows'], 'avg', 'time');
+        $cent = str_contains($unit, 'ct') || str_contains($unit, 'cent') || (!str_contains($unit, '€') && !str_contains($unit, 'eur') && array_sum($values) / count($values) > 2);
+        return array_map(static fn (float $v): float => $cent ? $v / 100 : $v, $values);
+    }
+
+    /**
+     * Kosten je Stunde: Netzbezug × Preis, Vergütung der Einspeisung, Hausverbrauch × Preis (ohne PV und Batterie). Stunden
+     * ohne Preis zählen als fehlend. null = kein Preis oder keine Bilanz.
+     *
+     * @return null|array{0: array<int, array{kwh: float, import: float, revenue: float, house: float, price: float}>, 1: int}
+     */
+    private function hourlyCosts(int $from, int $to): ?array
+    {
+        if ($this->priceVariable === 0 || $this->balance === []) {
+            return null;
+        }
+        $parts = $this->balanceParts($this->balance, 0, $from, $to);
+        $prices = $this->hourlyPrices($from, $to);
+        if ($parts === null || $prices === null) {
+            return null;
+        }
+        $rows = [];
+        $missing = 0;
+        foreach ($parts as $time => $part) {
+            if (!isset($prices[$time])) {
+                $missing++;
+                continue;
+            }
+            $price = $prices[$time];
+            $house = 0.0;
+            foreach (self::BALANCE_TERMS as $key => [$sign]) {
+                $house += $sign * ($part[$key] ?? 0.0);
+            }
+            $rows[$time] = ['kwh' => $part['import'] ?? 0.0, 'import' => ($part['import'] ?? 0.0) * $price, 'revenue' => ($part['export'] ?? 0.0) * $this->feedIn / 100,
+                'house' => max(0.0, $house) * $price, 'price' => $price];
+        }
+        return [$rows, $missing];
+    }
+
+    /** Die Kostenzeile beim Hausverbrauch über einen Zeitraum; null ohne Strompreis. */
+    private function costLine(int $from, int $to): ?string
+    {
+        $costs = $this->hourlyCosts($from, $to);
+        if ($costs === null || $costs[0] === []) {
+            return null;
+        }
+        [$rows, $missing] = $costs;
+        $euro = static fn (float $v): string => number_format($v, 2, '.', '');
+        $import = array_sum(array_column($rows, 'import'));
+        $kwh = array_sum(array_column($rows, 'kwh'));
+        $text = sprintf($this->t('Costs %s € for %s kWh grid import (paid on average %s ct/kWh, average price %s ct/kWh).'), $euro($import), self::formatNumber($kwh),
+            self::formatNumber($kwh > 0 ? $import / $kwh * 100 : 0.0), self::formatNumber(array_sum(array_column($rows, 'price')) / count($rows) * 100));
+        if ($this->feedIn > 0) {
+            $text .= ' ' . sprintf($this->t('Feed-in %s €.'), $euro(array_sum(array_column($rows, 'revenue'))));
+        }
+        $text .= ' ' . sprintf($this->t('Without solar and battery it would have been %s €.'), $euro(array_sum(array_column($rows, 'house'))));
+        if ($missing > 0) {
+            $text .= ' ' . sprintf($this->t('No price for %d hour(s).'), $missing);
+        }
+        return $text;
+    }
+
+    /** Kosten als Stapel je Stunde, Tag oder Monat: Netzbezug in Euro, die Vergütung darunter (B72). */
+    private function costChart(int $level, int $from, int $to, string $title, string $filter): void
+    {
+        $bucket = static fn (int $t): int => match ($level) {
+            0       => $t,
+            3       => (int)mktime(0, 0, 0, (int)date('n', $t), 1, (int)date('Y', $t)),
+            default => (int)mktime(0, 0, 0, (int)date('n', $t), (int)date('j', $t), (int)date('Y', $t)),
+        };
+        $grid = $export = [];
+        foreach ($this->hourlyCosts($from, $to)[0] ?? [] as $time => $row) {
+            $b = $bucket($time);
+            $grid[$b] = ($grid[$b] ?? 0.0) + $row['import'];
+            $export[$b] = ($export[$b] ?? 0.0) - $row['revenue'];
+        }
+        ksort($grid);
+        $times = array_keys($grid);
+        $series = [['key' => 'grid', 'name' => $this->t('grid import'), 'values' => array_map(static fn (int $t): float => round($grid[$t], 3), $times)]];
+        if ($this->feedIn > 0) {
+            $series[] = ['key' => 'export', 'name' => $this->t('grid export'), 'values' => array_map(static fn (int $t): float => round($export[$t], 3), $times)];
+        }
+        $per = self::HISTORY_LEVELS[$level][0] ?? 'day';
+        $this->chart = ['kind' => 'consumption', 'title' => $title, 'per' => $per, 'unit' => '€', 'filter' => $filter,
+            'times' => $times, 'series' => $series, 'labels' => ['per' => $this->t($per)]];
     }
 
     /** Einheit eines Zeitraums aus period: Tag, Woche, Monat oder Jahr. */
