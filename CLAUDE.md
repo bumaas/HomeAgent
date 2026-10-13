@@ -239,7 +239,9 @@ Weitere Regeln, die nicht offensichtlich sind:
   (`chartBands`, `structuredContent.bands`: Raum, Name, `from`, `to`, `states` mit `label` und `active`, `sections` als
   `[Zustand, Beginn, Ende]`, alle Abschnitte, auch wenn der Text nur Summen nennt); nur Zustände ergeben `kind: timeline`,
   mit Messwerten bleibt es `history` mit Bändern darunter. Farben: aktiv blau, inaktiv grau, eine Auswahl in der
-  Reihenfolge der Einträge (jeden Tag dieselben). Höchstens `TIMELINE_CHART_MAX` (10) Bänder.
+  Reihenfolge der Einträge (jeden Tag dieselben). Höchstens `TIMELINE_CHART_MAX` (10) Bänder. Mit Bändern haben Linien und Bänder eine
+  gemeinsame Zeitachse (frühester Punkt bis Ende der Bänder) und denselben linken Rand; vorher endeten die Linien bei der
+  letzten vollen Stunde und die Bänder bei jetzt.
 - **Verlauf statt Verbrauch** (`DeviceIndex::history`), wenn nach einem Typ aus `HISTORY_TYPES` gefragt
   wird oder kein Treffer einen Zähler hat, nie fürs ganze Haus. Stufe aus dem Zeitraum (heute und
   gestern stündlich, Wochen und Monate täglich, Jahre monatlich; `from`/`to` bis 2 Tage stündlich, bis

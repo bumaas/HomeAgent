@@ -162,14 +162,14 @@
     return (factor <= 1 ? 1 : factor <= 2 ? 2 : factor <= 5 ? 5 : 10) * power;
   }
 
-  function drawGroup(container, unit, series, data, colorOffset, showBand) {
+  function drawGroup(container, unit, series, data, colorOffset, showBand, range) {
     var W = 640, H = 240, L = 44, R = 10, T = 8, B = 26;
     var times = [], low = Infinity, high = -Infinity;
     series.forEach(function (s) {
       s.points.forEach(function (p) { times.push(p[0]); low = Math.min(low, p[1]); high = Math.max(high, p[3]); });
     });
     if (!times.length) { return; }
-    var t0 = Math.min.apply(null, times), t1 = Math.max.apply(null, times);
+    var t0 = range ? range[0] : Math.min.apply(null, times), t1 = range ? range[1] : Math.max.apply(null, times);
     if (t1 === t0) { t1 = t0 + 3600; }
     if (high === low) { high += 1; low -= 1; }
     var step = niceStep(high - low);
@@ -359,11 +359,13 @@
     if (m === 0) { return "< 1 min"; }
     return h ? h + " h" + (m % 60 ? " " + (m % 60) + " min" : "") : m + " min";
   }
-  function drawBands(container, bands) {
+  function drawBands(container, bands, range) {
     if (!bands || !bands.length) { return; }
-    var W = 640, L = 6, R = 10, rowH = 38, barH = 14, B = 26;
+    // Linker Rand wie bei den Linien (L = 44), damit Bänder und Linien dieselbe Zeitachse haben
+    var W = 640, L = 44, R = 10, rowH = 38, barH = 14, B = 26;
     var t0 = Infinity, t1 = -Infinity;
     bands.forEach(function (b) { t0 = Math.min(t0, b.from); t1 = Math.max(t1, b.to); });
+    if (range) { t0 = range[0]; t1 = range[1]; }
     if (t1 <= t0) { return; }
     var H = bands.length * rowH + B;
     var x = function (t) { return L + (t - t0) / (t1 - t0) * (W - L - R); };
@@ -378,7 +380,7 @@
     });
     bands.forEach(function (b, row) {
       var top = row * rowH;
-      var name = el("text", { x: L, y: top + 12 });
+      var name = el("text", { x: 6, y: top + 12 });
       name.appendChild(el("tspan", { class: "bandname" }, b.room + " · " + b.name));
       b.states.forEach(function (s, i) {
         name.appendChild(el("tspan", { dx: 12, style: "fill: " + stateColor(b, i) }, "■"));
@@ -451,13 +453,21 @@
       if (!groups[s.unit]) { groups[s.unit] = []; order.push(s.unit); }
       groups[s.unit].push(s);
     });
+    // Mit Bändern eine gemeinsame Zeitachse: vom frühesten Punkt bzw. Beginn bis zum Ende der Bänder (bis jetzt), sonst
+    // endeten die Linien bei der letzten vollen Stunde und die Bänder bei jetzt.
+    var range = null;
+    if (data.bands && data.bands.length) {
+      range = [Infinity, -Infinity];
+      data.series.forEach(function (s) { s.points.forEach(function (p) { range[0] = Math.min(range[0], p[0]); range[1] = Math.max(range[1], p[0]); }); });
+      data.bands.forEach(function (b) { range[0] = Math.min(range[0], b.from); range[1] = Math.max(range[1], b.to); });
+    }
     var showBand = bandChoice !== null ? bandChoice : order.every(function (unit) { return groups[unit].length === 1; });
     var offset = 0;
     order.forEach(function (unit) {
-      drawGroup(root, unit, groups[unit], data, offset, showBand);
+      drawGroup(root, unit, groups[unit], data, offset, showBand, range);
       offset += groups[unit].length;
     });
-    drawBands(root, data.bands);
+    drawBands(root, data.bands, range);
     var labels = data.labels || {};
     var controls = document.createElement("div");
     controls.className = "controls";
