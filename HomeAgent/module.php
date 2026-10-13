@@ -1726,6 +1726,9 @@ class HomeAgent extends IPSModuleStrict
         // gab die Summe der Geräte sonst als Hausverbrauch aus (09.10.2026).
         $hasMeters = array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['energy']));
         $hasBalance = $this->usableBalance($this->balance()) !== [];
+        // Teile der Bilanz für show_chart (B74), nur die eingetragenen
+        $usableBalance = $this->usableBalance($this->balance());
+        $parts = array_keys(array_filter(DeviceIndex::PARTS, static fn (string $key): bool => isset($usableBalance[$key])));
         // Die Leistung jetzt (period=now) mit einem Gerät mit Leistung oder der Leistungsbilanz.
         $hasPowerBalance = $this->usableBalance($this->powerBalance()) !== [];
         $hasPower = $hasPowerBalance || array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['power']));
@@ -1821,6 +1824,7 @@ class HomeAgent extends IPSModuleStrict
                         'from'   => ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD, or a start hour, YYYY-MM-DD HH:MM. Today is ' . date('Y-m-d') . '.'],
                         'to'     => ['type' => 'string', 'description' => 'Last day, inclusive, or the end hour, YYYY-MM-DD HH:MM, exclusive.'],
                         ...($this->priceVariable() > 0 ? ['costs' => ['type' => 'boolean', 'description' => 'true: the house consumption as costs in euros (grid import times the hourly price, feed-in below), also as heatmap or cumulative. Only without room, floor, type and name.']] : []),
+                        ...($parts === [] ? [] : ['part' => ['type' => 'string', 'enum' => $parts, 'description' => 'Only this meter of the energy balance instead of the house consumption, for example feed_in for the grid export; with costs=true grid in euros or feed_in as feed-in revenue. Only without room, floor, type and name.']]),
                         'cumulative' => ['type' => 'boolean', 'description' => 'true: consumption (or costs) added up day by day with a projection to the end of the period, with compare also the comparison period. Without a period: this year.'],
                         'heatmap' => ['type' => 'boolean', 'description' => 'true: one value per hour as a heatmap of one device (without room, type or name the house consumption), a row per day up to 62 days, otherwise per weekday. Without a period: last month.'],
                         'versus'  => ['type' => 'string', 'description' => 'Name of a second device for a scatter chart: it goes on the x axis, the device chosen by room, type or name (without them the house consumption) on the y axis, for example versus=outdoor temperature with name=heat pump. Without a period: last month.'],

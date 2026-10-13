@@ -975,6 +975,8 @@ pruefe(!str_contains($m->RunSelfTest(), 'energy balance'), 'archivierter Netzbez
 $mitApps = array_column(json_decode((string)json_encode(oderNull(static fn () => \Closure::bind(fn () => $this->tools(null, true), $m, HomeAgent::class)()) ?? []), true), null, 'name');
 pruefe(isset($mitApps['show_chart']) && str_contains($mitApps['show_chart']['description'] ?? '', 'stacked bars'), 'mit Bilanz: show_chart nennt den Hausverbrauch als Stapel: ' . ($mitApps['show_chart']['description'] ?? json_encode(array_keys($mitApps))));
 pruefe(!isset($mitApps['show_chart']['inputSchema']['properties']['type']), 'ohne Messwert kein Feld type (leere Liste): ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['type'] ?? null));
+// Teil der Bilanz (B74, 13.10.2026): part nennt nur die eingetragenen Zähler
+pruefe(($mitApps['show_chart']['inputSchema']['properties']['part']['enum'] ?? null) === ['grid'], 'show_chart bietet part nur mit den Teilen der Bilanz an: ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['part'] ?? null));
 // Ringe für Autarkie und Eigenverbrauch (Anregung pitti, t/144633, 13.10.2026)
 pruefe(str_contains($mitApps['show_chart']['description'] ?? '', 'with self-sufficiency and self-consumed solar as rings'), 'show_chart nennt die Ringe: ' . ($mitApps['show_chart']['description'] ?? ''));
 pruefe(!in_array('now', $mitApps['show_chart']['inputSchema']['properties']['period']['enum'] ?? ['now'], true), 'ohne Leistungsbilanz kein now im Diagramm');
@@ -2804,6 +2806,7 @@ pruefe(($mit['show_chart']['annotations']['readOnlyHint'] ?? null) === true && !
 pruefe(!in_array('now', $mit['show_chart']['inputSchema']['properties']['period']['enum'] ?? ['now'], true), 'period ohne now');
 // Kosten in Euro (B72, 13.10.2026): das Feld costs gibt es nur mit Strompreis in der Energiebilanz
 pruefe(!isset($mit['show_chart']['inputSchema']['properties']['costs']), 'ohne Strompreis kein costs in show_chart');
+pruefe(!isset($mit['show_chart']['inputSchema']['properties']['part']), 'ohne Bilanz kein part in show_chart');
 $formular = (string)file_get_contents(dirname(__DIR__) . '/HomeAgent/form.json');
 pruefe(str_contains($formular, '"name": "PriceVariableID"') && str_contains($formular, '"name": "FeedInTariff"') && str_contains($formular, 'PriceVariableID (electricity price'), 'Formular und Hinweistext nennen Strompreis und Einspeisevergütung');
 // Summenkurve (B73, 13.10.2026)

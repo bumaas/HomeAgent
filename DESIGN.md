@@ -57,6 +57,7 @@ eigene Ersatzwerte. Das Schema kommt aus `hostContext.theme` und setzt `data-the
 - **Reihen** (Linien, Geräte im Stapel) in fester Folge `COLORS`: #2f81f7, #e5534b, #3fb950, #d29922, #a371f7.
 - **Energie** immer gleich, in Stapeln wie in Ringen (`STACK_COLORS`): Netz #e8603c, PV #f2b705, Batterie #14b8a6,
   Einspeisung #4caf50, übrige Geräte #8c959f, nicht erfasst #d0d7de.
+  Ein einzelner Teil der Bilanz (`part`: `grid`, `feed_in`, `pv`, `battery_charge`, `battery_discharge`) trägt dieselbe Farbe.
 - **Zustände in Bändern:** aktiv (an, offen, erkannt) #2f81f7, inaktiv `--inactive`. Eine Auswahl (Batteriemodus,
   Betriebsart) bekommt `CHOICE_COLORS` in der Reihenfolge ihrer Einträge: #2f81f7, #14b8a6, #d29922, #a371f7, #8c959f.
   Rot und Grün bleiben Bedeutungen vorbehalten („Halten“ in Rot sah nach einem Fehler aus). Die Reihenfolge der

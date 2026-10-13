@@ -285,6 +285,16 @@ Weitere Regeln, die nicht offensichtlich sind:
   Abschnitte bis heute Werte hat, sonst linear. Anlass Burkhard 13.10.2026: linear ergab am nuc für 2026 1632 € Kosten,
   nach dem Vorjahr 2120 € (Ende Dezember 2025 bis 129 kWh am Tag). Ein Jahr mit Kosten braucht am nuc rund 1 s.
   Test `check-summenkurve.php`. Der Hausverbrauch über einen Zeitraum geht seitdem auch ohne freigegebene Geräte (`houseOnly`).
+- **Teil der Bilanz** (B74, Burkhard 13.10.2026, `show_chart` mit `part`, `DeviceIndex::PARTS`): `grid`, `feed_in`, `pv`,
+  `battery_charge`, `battery_discharge`, im Schema nur die eingetragenen Zähler. Nur fürs ganze Haus, nicht mit `versus`;
+  `chartPart` lässt `houseChart` bzw. `costChart` eine Reihe mit dem Schlüssel des Teils zeichnen (Farbe wie im Stapel,
+  `STACK_COLORS` in `chart.html`), `labels.total` benennt die Summenkurve. `costs` nur bei `grid` (Netzbezug × Preis) und
+  `feed_in` (Vergütung, positiv, ohne Saldo-Linie). Die Heatmap nimmt den Zähler je Stunde. Die Summe steht als eigene
+  Zeile unter dem Text des Hausverbrauchs. Trifft `name` kein Gerät, ist aber ein Teil der Bilanz („Einspeisung“,
+  „Netzbezug“, „PV-Ertrag“ …), sagt die Absage `part=…` (`partError`). Anlass: Die Claude-App fragte nach der
+  Einspeisevergütung als Summenkurve gegen das Vorjahr, versuchte `name=Einspeisung` und holte sich danach 22 Monate
+  einzeln über `get_state`, ohne Diagramm. Verworfen: die Zähler der Bilanz als Geräte (Typ `meter`): Ausnahmen in allen
+  Gerätesummen, Unterzähler doppelt, Zähler ohne Freigabe sichtbar (Burkhard: „riskant“). Test `check-teil.php`.
   Bei Kosten liefert `cumulativeOf` die aufaddierte Vergütung als `revenue` und den Saldo im Text (Burkhard 13.10.2026).
 - **Verlauf statt Verbrauch** (`DeviceIndex::history`), wenn nach einem Typ aus `HISTORY_TYPES` gefragt
   wird oder kein Treffer einen Zähler hat, nie fürs ganze Haus. Stufe aus dem Zeitraum (heute und

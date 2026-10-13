@@ -309,6 +309,11 @@ hoch, etwa „Bisher 10239.5 kWh, hochgerechnet 13079.9 kWh für den ganzen Zeit
 Vorjahresdaten linear mit dem bisherigen Mittel. In Euro steht die Vergütung der Einspeisung als grüne Linie daneben, der
 Text nennt den Saldo („Einspeisung 786.59 €, Saldo 491.01 €.“).
 
+Mit `part` zeigt das Diagramm statt des Hausverbrauchs nur einen Zähler der Energiebilanz: `grid` (Netzbezug), `feed_in`
+(Einspeisung), `pv`, `battery_charge` oder `battery_discharge`. Das geht als Balken, Summenkurve, Heatmap und mit
+Vergleich, mit `costs` bei `grid` in Euro und bei `feed_in` als Vergütung. So beantwortet der Assistent etwa „Was habe
+ich dieses Jahr an Einspeisevergütung verdient, und wo lande ich am Jahresende?“ mit einem Diagramm.
+
 Mit `period=now` nennt **get_state** die Leistung jetzt in W, aufgebaut wie der Verbrauch: je Gerät mit
 Leistung der aktuelle Wert, dazu die Summe. Fürs ganze Haus rechnet das Modul die Hausleistung aus den
 fünf Leistungsfeldern der Energiebilanz, etwa „Hausleistung 1548 W (alle Geräte, period=now):

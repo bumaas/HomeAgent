@@ -207,6 +207,9 @@ final class DeviceIndex
     /** Vergleich in show_chart (B69): der Zeitraum davor oder derselbe ein Jahr früher. */
     public const COMPARES = ['previous', 'year_before'];
 
+    /** Teile der Energiebilanz für show_chart (part, B74) und ihr Zähler in der Bilanz. */
+    public const PARTS = ['grid' => 'import', 'feed_in' => 'export', 'pv' => 'solar', 'battery_charge' => 'charge', 'battery_discharge' => 'discharge'];
+
     /** Zeiträume für den Verbrauch („period“ von get_state), in der Reihenfolge des Schemas. */
     public const PERIODS = ['today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year'];
 
@@ -289,6 +292,9 @@ final class DeviceIndex
 
     /** Während chart() mit costs=true: der Hausverbrauch als Kosten in Euro (B72). */
     private bool $chartCosts = false;
+
+    /** Während chart() mit part: nur dieser Zähler der Bilanz (Schlüssel aus PARTS) statt des Hausstapels (B74). */
+    private string $chartPart = '';
 
     /** Strompreis (Variable in ct/kWh oder €/kWh, archiviert) und Einspeisevergütung in ct/kWh; 0 = keine (B72). */
     private int $priceVariable = 0;
@@ -970,6 +976,15 @@ final class DeviceIndex
         }
         $values = $this->balanceParts($balance, $level, $from, $to);
         if ($values === null) {
+            return;
+        }
+        if ($this->chartPart !== '') {
+            $key = self::PARTS[$this->chartPart];
+            $name = $this->t(self::BALANCE_TERMS[$key][1]);
+            [$per] = self::HISTORY_LEVELS[$level];
+            $this->chart = ['kind' => 'consumption', 'title' => $title, 'per' => $per, 'unit' => 'kWh', 'filter' => $filter, 'times' => array_keys($values),
+                'series' => [['key' => $this->chartPart, 'name' => $name, 'values' => array_map(static fn (array $parts): float => round($parts[$key] ?? 0.0, 3), array_values($values))]],
+                'labels' => ['per' => $this->t($per), 'total' => $name]];
             return;
         }
         $stacks = ['grid' => [], 'solar' => [], 'battery' => [], 'export' => []];
@@ -3821,12 +3836,66 @@ final class DeviceIndex
         ]];
     }
 
+    /** Überschrift eines Teils der Bilanz in der Summenzeile (B74). */
+    private const PART_TITLES = ['grid' => 'Grid import', 'feed_in' => 'Grid export', 'pv' => 'Solar production', 'battery_charge' => 'Battery charge', 'battery_discharge' => 'Battery discharge'];
+
+    /**
+     * Prüft part (B74): bekannter Teil, Bilanz mit diesem Zähler, nur fürs ganze Haus, keine Punktwolke. Ohne part: Trifft
+     * ein Name kein Gerät, ist aber ein Teil der Bilanz, kommt der Hinweis auf part. null = in Ordnung.
+     */
+    private function partError(string $part, array $arguments): ?string
+    {
+        $name = trim((string)($arguments['name'] ?? ''));
+        if ($part === '') {
+            if ($name === '' || $this->balance === [] || $this->find('', '', $name) !== []) {
+                return null;
+            }
+            foreach (self::PARTS as $candidate => $key) {
+                if (!isset($this->balance[$key])) {
+                    continue;
+                }
+                $words = [$candidate, $this->t(self::BALANCE_TERMS[$key][1]), $this->t(self::PART_TITLES[$candidate])];
+                if (in_array(mb_strtolower($name), array_map('mb_strtolower', $words), true)) {
+                    $this->problem = 'unknown_name';
+                    return sprintf($this->t('"%s" is part of the energy balance, not a device: use part=%s without name.'), $name, $candidate);
+                }
+            }
+            return null;
+        }
+        if (!isset(self::PARTS[$part])) {
+            return sprintf($this->t('Unknown part "%s". Allowed: %s.'), $part, implode(', ', array_keys(self::PARTS)));
+        }
+        if (!isset($this->balance[self::PARTS[$part]])) {
+            return $this->t('A part needs the energy balance with this meter.');
+        }
+        foreach (['room', 'floor', 'type', 'name'] as $field) {
+            if (trim((string)($arguments[$field] ?? '')) !== '') {
+                return $this->t('A part of the energy balance is only available for the whole house, without room, floor, type or name.');
+            }
+        }
+        if (trim((string)($arguments['versus'] ?? '')) !== '') {
+            return $this->t('A scatter chart takes no part of the energy balance.');
+        }
+        return null;
+    }
+
     /** Diagramm ohne Summenkurve. */
     private function chartOf(array $arguments): array
     {
+        // Teil der Bilanz (B74): nur fürs ganze Haus. Ein Name, der ein Teil der Bilanz ist, bekommt den Hinweis auf part;
+        // die Claude-App holte sich nach name=Einspeisung ohne Treffer 22 Monate einzeln über get_state (13.10.2026).
+        $part = trim((string)($arguments['part'] ?? ''));
+        unset($arguments['part']);
+        $partError = $this->partError($part, $arguments);
+        if ($partError !== null) {
+            return $this->fail($partError);
+        }
         // Kosten in Euro (B72): nur fürs ganze Haus und nur mit Strompreis in der Energiebilanz
         $costs = ($arguments['costs'] ?? false) === true;
         unset($arguments['costs']);
+        if ($costs && $part !== '' && !in_array($part, ['grid', 'feed_in'], true)) {
+            return $this->fail($this->t('Costs are only available for part=grid and part=feed_in.'));
+        }
         if ($costs) {
             if ($this->priceVariable === 0 || $this->balance === []) {
                 return $this->fail($this->t('Costs need an electricity price in the energy balance.'));
@@ -3853,7 +3922,7 @@ final class DeviceIndex
             if (trim((string)($arguments['period'] ?? '')) === '' && trim((string)($arguments['from'] ?? '')) === '') {
                 $arguments['period'] = 'last_month';
             }
-            return $this->heatmap($arguments, $costs);
+            return $this->heatmap($arguments, $costs, $part);
         }
         $period = trim((string)($arguments['period'] ?? ''));
         if ($period === self::NOW) {
@@ -3888,23 +3957,25 @@ final class DeviceIndex
         }
         $this->chartByDevice = $byDevice;
         $this->chartCosts = $costs;
+        $this->chartPart = $part;
         $this->chart = ['series' => []];
         $texts = [];
         $failures = [];
         try {
             foreach (count($rooms) > 1 ? $rooms : [null] as $room) {
-                $part = $this->getState($room === null ? $arguments : ['room' => $room] + $arguments);
-                if ($part['isError']) {
-                    $failures[] = $part;
+                $state = $this->getState($room === null ? $arguments : ['room' => $room] + $arguments);
+                if ($state['isError']) {
+                    $failures[] = $state;
                     continue;
                 }
-                $texts[] = $part['text'];
+                $texts[] = $state['text'];
             }
             $chart = $this->chart;
         } finally {
             $this->chart = null;
             $this->chartByDevice = false;
             $this->chartCosts = false;
+            $this->chartPart = '';
         }
         if ($texts === []) {
             return $failures[0];
@@ -3935,8 +4006,12 @@ final class DeviceIndex
         if ($span !== null && ($chart['kind'] ?? '') === 'consumption') {
             self::padTimes($chart, $span[1]);
         }
+        if ($part !== '') {
+            $sum = array_sum(array_map('floatval', $chart['series'][0]['values'] ?? []));
+            $result['text'] .= "\n" . $this->t(self::PART_TITLES[$part]) . ' ' . (($chart['unit'] ?? '') === '€' ? number_format($sum, 2, '.', '') . ' €.' : self::formatNumber($sum) . ' kWh.');
+        }
         if ($compare !== '') {
-            $result['text'] .= "\n" . $this->compareChart($chart, $arguments, $compare, $byDevice, $costs);
+            $result['text'] .= "\n" . $this->compareChart($chart, $arguments, $compare, $byDevice, $costs, $part);
         }
         $result['text'] .= "\n" . $this->t('The chart is shown in the chat.');
         return $result + ['structuredContent' => $chart];
@@ -3951,7 +4026,7 @@ final class DeviceIndex
      *
      * @param array<string, mixed> $chart
      */
-    private function compareChart(array &$chart, array $arguments, string $compare, bool $byDevice, bool $costs = false): string
+    private function compareChart(array &$chart, array $arguments, string $compare, bool $byDevice, bool $costs = false, string $part = ''): string
     {
         $kind = (string)($chart['kind'] ?? '');
         if ($kind !== 'history' && $kind !== 'consumption') {
@@ -3966,22 +4041,24 @@ final class DeviceIndex
         $this->chart = ['series' => []];
         $this->chartByDevice = $byDevice;
         $this->chartCosts = $costs;
+        $this->chartPart = $part;
         try {
-            $part = $this->getState(['from' => date('Y-m-d', $from), 'to' => date('Y-m-d', $to)] + array_diff_key($arguments, ['period' => 0, 'from' => 0, 'to' => 0]));
+            $state = $this->getState(['from' => date('Y-m-d', $from), 'to' => date('Y-m-d', $to)] + array_diff_key($arguments, ['period' => 0, 'from' => 0, 'to' => 0]));
             $other = $this->chart;
         } finally {
             $this->chart = null;
             $this->chartByDevice = false;
             $this->chartCosts = false;
+            $this->chartPart = '';
         }
         $head = sprintf($this->t('Compared with %s:'), $label);
-        if ($part['isError'] || ($other['kind'] ?? '') !== $kind) {
-            return $head . "\n" . (string)strtok($part['text'], "\n");
+        if ($state['isError'] || ($other['kind'] ?? '') !== $kind) {
+            return $head . "\n" . (string)strtok($state['text'], "\n");
         }
         $offset = $mainFrom - $from;
         $chart['compare'] = ['label' => $label, 'range' => [$from, $to + 1]];
         $chart['labels']['compare'] = $this->t('comparison');
-        $text = $head . "\n" . $part['text'];
+        $text = $head . "\n" . $state['text'];
         if ($kind === 'history') {
             foreach ($chart['series'] as &$series) {
                 foreach ($other['series'] ?? [] as $old) {
@@ -4126,7 +4203,7 @@ final class DeviceIndex
      * Hausverbrauch. Das Modell bekommt die stärkste und die schwächste Stunde im Mittel und Werktag gegen Wochenende (bei
      * Zählern je Tag summiert, sonst gemittelt), die Seite das Raster.
      */
-    private function heatmap(array $arguments, bool $costs = false): array
+    private function heatmap(array $arguments, bool $costs = false, string $part = ''): array
     {
         if (trim((string)($arguments['compare'] ?? '')) !== '' || str_contains((string)($arguments['room'] ?? ''), ',')) {
             return $this->fail($this->t('A heatmap takes one room and no comparison.'));
@@ -4159,7 +4236,13 @@ final class DeviceIndex
                 foreach (self::BALANCE_TERMS as $key => [$sign]) {
                     $value += $sign * ($parts[$key] ?? 0.0);
                 }
-                $series['values'][$time] = max(0.0, $value);
+                $series['values'][$time] = $part === '' ? max(0.0, $value) : ($parts[self::PARTS[$part]] ?? 0.0);
+            }
+            if ($part !== '') {
+                $series['label'] = $this->t(self::BALANCE_TERMS[self::PARTS[$part]][1]);
+                if ($costs) {
+                    $series['values'] = array_map(static fn (array $row): float => $part === 'grid' ? $row['import'] : $row['revenue'], $this->hourlyCosts($from, $to)[0] ?? []);
+                }
             }
         } else {
             $room = $this->effectiveRoom($room, $name, $floor);
@@ -4539,8 +4622,15 @@ final class DeviceIndex
             $series[] = ['key' => 'export', 'name' => $this->t('grid export'), 'values' => array_map(static fn (int $t): float => round($export[$t], 3), $times)];
         }
         $per = self::HISTORY_LEVELS[$level][0] ?? 'day';
+        $labels = ['per' => $this->t($per)];
+        // Teil (B74): Netzbezug oder die Vergütung allein, positiv
+        if ($this->chartPart !== '') {
+            $name = $this->t($this->chartPart === 'grid' ? 'grid import' : 'grid export');
+            $series = [['key' => $this->chartPart, 'name' => $name, 'values' => array_map(fn (int $t): float => $this->chartPart === 'grid' ? round($grid[$t], 3) : round(-$export[$t], 3), $times)]];
+            $labels['total'] = $name;
+        }
         $this->chart = ['kind' => 'consumption', 'title' => $title, 'per' => $per, 'unit' => '€', 'filter' => $filter,
-            'times' => $times, 'series' => $series, 'labels' => ['per' => $this->t($per)]];
+            'times' => $times, 'series' => $series, 'labels' => $labels];
     }
 
     /** Einheit eines Zeitraums aus period: Tag, Woche, Monat oder Jahr. */

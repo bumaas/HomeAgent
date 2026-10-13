@@ -72,7 +72,8 @@
   // Stapel des Hausverbrauchs (kind "consumption"): Netz, PV direkt, Batterie, Einspeisung unter der Nulllinie
   // Verbrauch je Gerät: Geräte in den Farben der Linien, die übrigen grau, „nicht erfasst“ hellgrau
   // Farben wie in den Ringen (Anregung pitti, Forum t/144633): PV gelb, Batterie türkis, Netz orangerot, Einspeisung grün
-  var STACK_COLORS = { grid: "#e8603c", solar: "#f2b705", battery: "#14b8a6", export: "#4caf50", other: "#8c959f", unmetered: "#d0d7de" };
+  var STACK_COLORS = { grid: "#e8603c", solar: "#f2b705", battery: "#14b8a6", export: "#4caf50",
+    feed_in: "#4caf50", pv: "#f2b705", battery_charge: "#14b8a6", battery_discharge: "#14b8a6", other: "#8c959f", unmetered: "#d0d7de" };
   var nextId = 1;
   var pending = {};
   var lang = (navigator.language || "de").slice(0, 2);

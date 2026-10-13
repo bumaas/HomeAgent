@@ -295,6 +295,12 @@ projection follows the course of the same period in the year before, so the expe
 data from the year before it is linear with the mean so far. In euros the feed-in revenue is a green line next to it,
 and the text names the balance ("Feed-in 786.59 €, net 491.01 €.").
 
+With `part` the chart shows a single meter of the energy balance instead of the house consumption: `grid` (grid
+import), `feed_in` (grid export), `pv`, `battery_charge` or `battery_discharge`. This works as bars, cumulative chart,
+heatmap and with a comparison, with `costs` in euros for `grid` and as feed-in revenue for `feed_in`. So the assistant
+answers for example "How much feed-in revenue have I earned this year, and where will I end up by the end of the
+year?" with a chart.
+
 With `period=now`, **get_state** reports the power right now in W, built like the consumption: the
 current value of each device with power, plus the total. For the whole house the module calculates the
 house power from the five power fields of the energy balance, for example "House power 1548 W (all
