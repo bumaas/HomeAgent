@@ -306,7 +306,8 @@ Diagramm zeigt `costs` den Hausverbrauch in Euro, als Stapel, als Heatmap und mi
 (`cumulative`) addiert Verbrauch oder Kosten Tag für Tag auf und rechnet einen laufenden Zeitraum bis zu seinem Ende
 hoch, etwa „Bisher 10239.5 kWh, hochgerechnet 13079.9 kWh für den ganzen Zeitraum. Vergleich zur selben Zeit 9066.1 kWh
 (+13 %).“ Hochgerechnet wird mit dem Verlauf desselben Zeitraums im Vorjahr, so kommt der teure Winter richtig hinein; ohne
-Vorjahresdaten linear mit dem bisherigen Mittel.
+Vorjahresdaten linear mit dem bisherigen Mittel. In Euro steht die Vergütung der Einspeisung als grüne Linie daneben, der
+Text nennt den Saldo („Einspeisung 786.59 €, Saldo 491.01 €.“).
 
 Mit `period=now` nennt **get_state** die Leistung jetzt in W, aufgebaut wie der Verbrauch: je Gerät mit
 Leistung der aktuelle Wert, dazu die Summe. Fürs ganze Haus rechnet das Modul die Hausleistung aus den

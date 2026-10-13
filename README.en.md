@@ -292,7 +292,8 @@ shows the house consumption in euros, as stacked bars, as heatmap and with a com
 (`cumulative`) adds up consumption or costs day by day and projects a running period to its end, for example "So far
 10239.5 kWh, projected 13079.9 kWh for the whole period. Comparison by the same time 9066.1 kWh (+13 %)." The
 projection follows the course of the same period in the year before, so the expensive winter counts properly; without
-data from the year before it is linear with the mean so far.
+data from the year before it is linear with the mean so far. In euros the feed-in revenue is a green line next to it,
+and the text names the balance ("Feed-in 786.59 €, net 491.01 €.").
 
 With `period=now`, **get_state** reports the power right now in W, built like the consumption: the
 current value of each device with power, plus the total. For the whole house the module calculates the

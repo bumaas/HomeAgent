@@ -3774,12 +3774,31 @@ final class DeviceIndex
                 $method = 'linear';
             }
         }
+        // Bei Kosten die Vergütung der Einspeisung als zweite Reihe, aufaddiert, mit dem Saldo im Text (Burkhard 13.10.2026)
+        $revenue = null;
+        $earned = 0.0;
+        foreach ($chart['series'] ?? [] as $s) {
+            if ($unit === '€' && ($s['key'] ?? '') === 'export') {
+                $revenue = [];
+                foreach ($s['values'] as $i => $v) {
+                    if ($running && $times[$i] > $now) {
+                        $revenue[$i] = null;
+                        continue;
+                    }
+                    $earned -= min(0.0, (float)$v);
+                    $revenue[$i] = round($earned, 3);
+                }
+            }
+        }
         $total = $projection === null ? 0.0 : (float)end($projection)[1];
         $lines = [match ($method) {
             'year_before' => sprintf($this->t('So far %s %s, projected %s %s for the whole period (after the course of the year before).'), $format($sum), $unit, $format($total), $unit),
             'linear'      => sprintf($this->t('So far %s %s, projected %s %s for the whole period.'), $format($sum), $unit, $format($total), $unit),
             default       => sprintf($this->t('In total %s %s.'), $format($sum), $unit),
         }];
+        if ($revenue !== null) {
+            $lines[] = sprintf($this->t('Feed-in %s €, net %s €.'), $format($earned), $format($sum - $earned));
+        }
         $compare = null;
         if (isset($chart['compare']['values'])) {
             $running2 = 0.0;
@@ -3797,8 +3816,8 @@ final class DeviceIndex
         $text = preg_replace('/\n[^\n]*$/', '', $result['text']) . "\n" . implode("\n", $lines) . "\n" . $this->t('The chart is shown in the chat.');
         return ['text' => $text, 'isError' => false, 'structuredContent' => [
             'kind'       => 'cumulative', 'title' => $chart['title'] ?? '', 'per' => $chart['per'] ?? 'day', 'unit' => $unit,
-            'range'      => [$from, $end], 'times' => $times, 'values' => $values, 'projection' => $projection, 'projectionMethod' => $method, 'compare' => $compare,
-            'labels'     => ($chart['labels'] ?? []) + ['projection' => $this->t('projection'), 'compare' => $this->t('comparison'), 'total' => $this->t('cumulative')],
+            'range'      => [$from, $end], 'times' => $times, 'values' => $values, 'revenue' => $revenue, 'projection' => $projection, 'projectionMethod' => $method, 'compare' => $compare,
+            'labels'     => ($chart['labels'] ?? []) + ['projection' => $this->t('projection'), 'compare' => $this->t('comparison'), 'total' => $this->t($unit === '€' ? 'grid import' : 'cumulative'), 'revenue' => $this->t('grid export')],
         ]];
     }
 

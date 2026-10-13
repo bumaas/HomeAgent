@@ -650,6 +650,8 @@
     (data.projection || []).forEach(function (p) { high = Math.max(high, p[1]); });
     var cmp = data.compare && data.compare.values ? data.compare.values : [];
     cmp.forEach(function (v) { high = Math.max(high, v); });
+    var revenue = data.revenue || [];
+    revenue.forEach(function (v) { if (v !== null) { high = Math.max(high, v); } });
     if (high <= 0) { high = 1; }
     var ys = niceStep(high), y1 = Math.ceil(high / ys) * ys;
     var x = function (t) { return L + (t - t0) / (t1 - t0) * (W - L - R); };
@@ -672,6 +674,7 @@
     item(COLORS[0], (labels.total || "") + (unit ? " (" + unit + ")" : ""));
     if (data.projection) { item("repeating-linear-gradient(90deg, " + COLORS[0] + " 0 2px, transparent 2px 5px)", labels.projection || "projection"); }
     if (cmp.length) { item("repeating-linear-gradient(90deg, var(--muted) 0 4px, transparent 4px 7px)", compareText(data)); }
+    if (revenue.length) { item(STACK_COLORS.export, labels.revenue || "feed-in"); }
     box.appendChild(legend);
 
     var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
@@ -690,6 +693,12 @@
     if (cmp.length) {
       var cpts = [x(t0) + "," + y(0)].concat(cmp.map(function (c, i) { return x(Math.min(t1, t0 + (i + 1) * step)) + "," + y(c); }));
       svg.appendChild(el("polyline", { points: cpts.join(" "), fill: "none", stroke: "var(--muted)", "stroke-width": 1.5, "stroke-dasharray": "5 4" }));
+    }
+    // Vergütung der Einspeisung als grüne Linie (nur bei Kosten)
+    if (revenue.length) {
+      var rpts = [x(t0) + "," + y(0)];
+      revenue.forEach(function (c, i) { if (c !== null) { rpts.push(x(Math.min(t1, at(i))) + "," + y(c)); } });
+      svg.appendChild(el("polyline", { points: rpts.join(" "), fill: "none", stroke: STACK_COLORS.export, "stroke-width": 2, "stroke-linejoin": "round" }));
     }
     var pts = [x(t0) + "," + y(0)];
     values.forEach(function (c, i) { if (c !== null) { pts.push(x(Math.min(t1, at(i))) + "," + y(c)); } });

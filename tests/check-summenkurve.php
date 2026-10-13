@@ -80,6 +80,14 @@ $r = kurve($kosten, ['cumulative' => true, 'costs' => true, 'period' => 'last_mo
 $d = $r['structuredContent'] ?? [];
 pruefe(!$r['isError'] && ($d['unit'] ?? '') === '€' && abs((($d['values'] ?? []) === [] ? 0 : end($d['values'])) - 38.21) < 0.01 && array_key_exists('projection', $d) && $d['projection'] === null, 'Kosten im September aufaddiert bis 38,21 €, ohne Hochrechnung: ' . json_encode($d['projection'] ?? 'fehlt'));
 pruefe(str_contains($r['text'], 'In total 38.21 €.'), 'abgeschlossener Zeitraum: Summe: ' . $r['text']);
+// Die Vergütung als zweite Linie, im Text mit dem Saldo (Burkhard 13.10.2026: „kann ich mir auch die einspeisevergütung in € anzeigen lassen?“)
+$verg = 0.0;
+foreach ($kosten['variablen'][(string)$kosten['bilanz']['export']]['aggregate']['0'] as $a) {
+    $verg += $a['summe'] * 0.0918;
+}
+$rev = $d['revenue'] ?? [];
+pruefe(count($rev) === 30 && abs((($rev === []) ? 0 : end($rev)) - $verg) < 0.01, 'Vergütung aufaddiert bis ' . round($verg, 2) . ' €: ' . json_encode($rev === [] ? null : end($rev)));
+pruefe(str_contains($r['text'], sprintf('Feed-in %s €, net %s €.', number_format($verg, 2, '.', ''), number_format((float)end($d['values']) - $verg, 2, '.', ''))), 'Text mit Vergütung und Saldo: ' . $r['text']);
 
 // Ohne Werte im Vorjahr (der Mitschnitt beginnt im September 2026) bleibt die Hochrechnung linear
 $r = kurve($verbrauch, ['cumulative' => true, 'period' => 'this_month']);
