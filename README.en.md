@@ -9,7 +9,7 @@ unambiguous answer. It only sees and switches the devices you release.
 
 > **Status:** early preview. Querying, switching, setting brightness, colour temperature, colour, position,
 > heating setpoint and target humidity, operating mode and fan speed of dehumidifiers and ventilation units,
-> stopping blinds, consumption and power, the history of measured values, starting scenes as well as playback
+> stopping blinds, consumption and power, the history of measured values, timelines of states, starting scenes as well as playback
 > and volume of media players work. The device list can be proposed from an Alexa instance. The Claude app can
 > sign in with OAuth. The form shows what did not work, a protocol for troubleshooting can be switched on. So far
 > the module has been tried on three systems.
@@ -304,6 +304,15 @@ matches has a meter; for the whole house it stays with consumption. At most five
 time, otherwise the answer asks for a room or name. If a thermostat reads the same sensor as a
 temperature device, the history comes only once. The measured value must be logged in the archive,
 otherwise the line says "no history archived".
+
+For devices with a state (on/off, open/closed, motion, a selection such as the operating mode of a battery)
+the same periods return a **timeline**: how long each state lasted and, with up to twelve sections, when.
+"When was the front door open today?" is answered with something like
+"Flur | Haustür | door | open 12 min, closed 15 h 36 min" followed by "open 08:32, 09:17-09:18, …". If a
+device also has a meter, consumption and times share one line ("0.2 kWh, on 3 h 31 min, off 12 h 18 min").
+With more than five devices, more than twelve sections or more than two days only the totals with their count
+are given. The state must be logged in the archive; a state without archive is left out and counted. There is
+no timeline for the whole house.
 
 The state query is also available for scripts:
 

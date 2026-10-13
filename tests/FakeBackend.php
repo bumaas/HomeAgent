@@ -316,6 +316,25 @@ final class FakeBackend implements DeviceBackend
     public array $historyRequests = [];
 
     /** Verlauf aus dem Mitschnitt: Zeilen [TimeStamp, Min, Avg, Max] je Stufe, wie das Archiv sie lieferte. */
+    /** Rohwerte aus dem Mitschnitt (`rohwerte`, aufsteigend, der erste darf vor $from liegen). */
+    public function stateSeries(int $variableId, int $from, int $to): ?array
+    {
+        $v = $this->variables[$variableId] ?? null;
+        if ($v === null || ($v['geloggt'] ?? false) !== true || !isset($v['rohwerte'])) {
+            return null;
+        }
+        $start = null;
+        $changes = [];
+        foreach ($v['rohwerte'] as [$time, $value]) {
+            if ($time < $from) {
+                $start = $value;
+            } elseif ($to === 0 || $time <= $to) {
+                $changes[] = [(int)$time, $value];
+            }
+        }
+        return ['start' => $start, 'changes' => $changes];
+    }
+
     public function history(int $variableId, int $level, int $from, int $to): ?array
     {
         $this->historyRequests[] = [$variableId, $level];

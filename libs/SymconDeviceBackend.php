@@ -479,6 +479,30 @@ final class SymconDeviceBackend implements DeviceBackend
         ];
     }
 
+    public function stateSeries(int $variableId, int $from, int $to): ?array
+    {
+        $archives = IPS_GetInstanceListByModuleID(self::ARCHIVE_CONTROL);
+        if ($archives === [] || $variableId <= 0 || !IPS_VariableExists($variableId)) {
+            return null;
+        }
+        $archive = $archives[0];
+        try {
+            if (!AC_GetLoggingStatus($archive, $variableId) || AC_GetAggregationType($archive, $variableId) === self::AGGREGATION_COUNTER) {
+                return null;
+            }
+            // Laut Doku AC_GetLoggedValues: neueste zuerst, höchstens 10000 Datensätze, nur Änderungen. Der Wert davor
+            // ist der neueste bis $from - 1.
+            $before = AC_GetLoggedValues($archive, $variableId, 0, $from - 1, 1);
+            $rows = array_reverse(AC_GetLoggedValues($archive, $variableId, $from, $to, 0));
+        } catch (Throwable) {
+            return null;
+        }
+        return [
+            'start'   => $before === [] ? null : $before[0]['Value'],
+            'changes' => array_map(static fn (array $r): array => [(int)$r['TimeStamp'], $r['Value']], $rows),
+        ];
+    }
+
     public function timestamp(): int
     {
         return time();

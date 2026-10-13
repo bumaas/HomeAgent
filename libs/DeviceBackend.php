@@ -129,6 +129,15 @@ interface DeviceBackend
      */
     public function history(int $variableId, int $level, int $from, int $to): ?array;
 
+    /**
+     * Zustandswechsel aus den Rohwerten des Archivs (Zeitleiste, B69): der letzte Wert vor $from (null = keiner) und
+     * die Änderungen von $from bis $to, aufsteigend. $to = 0 heißt bis jetzt. Das Archiv speichert nur Änderungen.
+     * null = nicht archiviert oder als Zähler aggregiert.
+     *
+     * @return null|array{start: mixed, changes: list<array{0: int, 1: mixed}>}
+     */
+    public function stateSeries(int $variableId, int $from, int $to): ?array;
+
     /** Einheit der Variable aus Profil-Suffix oder Darstellung (etwa W, kW); '' = keine. */
     public function unit(int $variableId): string;
 

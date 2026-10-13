@@ -10,7 +10,7 @@ die Geräte, die Sie freigeben.
 
 > **Stand:** frühe Vorschau. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Farbe, Position,
 > Heizungs-Sollwert und Zielfeuchte, Betriebsart und Lüfterstufe von Luftentfeuchtern und Lüftungen, das
-> Anhalten von Rollläden, Verbrauch und Leistung, der Verlauf von Messwerten, das Starten von Szenen sowie
+> Anhalten von Rollläden, Verbrauch und Leistung, der Verlauf von Messwerten, Zeitleisten von Zuständen, das Starten von Szenen sowie
 > Wiedergabe und Lautstärke von Mediaplayern gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz
 > vorschlagen. Die Claude-App meldet sich auf Wunsch per OAuth an. Was nicht geklappt hat, zeigt das
 > Formular, ein Protokoll zur Fehlersuche lässt sich einschalten. Erprobt ist das Modul bisher auf drei Anlagen.
@@ -318,6 +318,15 @@ Gerät mit Zähler ist; fürs ganze Haus bleibt es beim Verbrauch. Höchstens f�
 einmal, sonst bittet die Antwort um einen Raum oder Namen. Liest ein Thermostat denselben Fühler wie
 ein Temperaturgerät, kommt der Verlauf nur einmal. Der Messwert muss im Archiv geloggt sein, sonst sagt
 die Zeile „kein Verlauf archiviert“.
+
+Für Geräte mit einem Zustand (an/aus, offen/zu, Bewegung, eine Auswahl wie die Betriebsart einer Batterie)
+liefern dieselben Zeiträume eine **Zeitleiste**: wie lange jeder Zustand galt und, bei bis zu zwölf Abschnitten,
+wann. Auf „Wann war die Haustür heute offen?“ antwortet das Modul etwa mit
+„Flur | Haustür | door | offen 12 min, geschlossen 15 h 36 min“ und darunter „offen 08:32, 09:17-09:18, …“.
+Hat ein Gerät auch einen Zähler, stehen Verbrauch und Zeiten in einer Zeile („0.2 kWh, an 3 h 31 min, aus
+12 h 18 min“). Bei mehr als fünf Geräten, mehr als zwölf Abschnitten oder mehr als zwei Tagen stehen nur die
+Summen mit der Anzahl da. Der Zustand muss im Archiv geloggt sein; ein Zustand ohne Archiv wird ausgelassen
+und gezählt. Fürs ganze Haus gibt es keine Zeitleiste.
 
 Die Zustandsabfrage gibt es auch für Skripte:
 

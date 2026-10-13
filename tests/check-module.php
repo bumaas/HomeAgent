@@ -890,6 +890,8 @@ pruefe(($periode['enum'] ?? null) === ['now', 'today', 'yesterday', 'this_week',
 // Modell mit der Summe der Geräte mit Zähler als Hausverbrauch. Die Beschreibung muss die Grenze nennen.
 pruefe(str_contains($periode['description'] ?? '', 'Covers only devices with their own energy meter, not the whole house.'), 'period sagt, dass nur Geräte mit eigenem Zähler zählen: ' . ($periode['description'] ?? ''));
 pruefe(str_contains($werkzeuge['get_state']['description'] ?? '', '"How much did the washing machine use last month?" → name=washing machine, period=last_month'), 'die Beschreibung nennt ein Beispiel für den Verbrauch: ' . ($werkzeuge['get_state']['description'] ?? ''));
+// Zeitleiste (B69, 13.10.2026): period nennt auch „wann und wie lange“ für Geräte mit Zustand
+pruefe(str_contains($periode['description'] ?? '', 'For devices with on/off, open/closed or a selection: when and how long each state lasted (archived states only).'), 'period nennt die Zeitleiste: ' . ($periode['description'] ?? ''));
 // Freie Zeiträume (09.10.2026): from und to neben period, mit dem heutigen Datum für das Modell
 $von = $werkzeuge['get_state']['inputSchema']['properties']['from'] ?? [];
 $bis = $werkzeuge['get_state']['inputSchema']['properties']['to'] ?? [];

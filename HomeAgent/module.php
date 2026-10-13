@@ -1723,6 +1723,8 @@ class HomeAgent extends IPSModuleStrict
         $hasPower = $hasPowerBalance || array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['power']));
         // Verlauf von Messwerten (Temperatur, Feuchte …) über dieselben Zeiträume.
         $hasHistory = array_any($this->usableDevices(), static fn (array $row): bool => DeviceIndex::isMeasured($row));
+        // Zeitleiste für Zustände (B69): ob die Variable archiviert ist, sagt erst die Antwort.
+        $hasTimeline = array_any($this->usableDevices(), static fn (array $row): bool => DeviceIndex::hasTimeline($row));
         // Gerätekarten nur für Clients mit Apps; get_state verweist dann fürs Zeigen darauf (Claude-App 12.10.2026:
         // „Zeig mir die Lichter im Wohnzimmer“ ergab eine Tabelle über get_state).
         $hasCards = $apps && $this->usableDevices() !== [];
@@ -1735,11 +1737,12 @@ class HomeAgent extends IPSModuleStrict
                     ? 'For the whole house (no room, type or name) the first line gives the house consumption from grid, solar and battery.'
                     : 'Covers only devices with their own energy meter, not the whole house.')
             : '';
-        $period = $hasMeters || $hasBalance || $hasPower || $hasHistory ? ['period' => ['type' => 'string', 'enum' => array_merge($hasPower ? [DeviceIndex::NOW] : [], DeviceIndex::PERIODS), 'description' => trim($consumption
+        $period = $hasMeters || $hasBalance || $hasPower || $hasHistory || $hasTimeline ? ['period' => ['type' => 'string', 'enum' => array_merge($hasPower ? [DeviceIndex::NOW] : [], DeviceIndex::PERIODS), 'description' => trim($consumption
             . ($hasPower ? ' "now" gives the current power in W instead.' : '')
-            . ($hasHistory ? ' For measured values such as temperature or humidity: the history per hour, day or month (minimum / average / maximum).' : ''))]] : [];
-        // Freie Zeiträume für Verbrauch und Verlauf; das heutige Datum braucht das Modell für „im Januar“.
-        if ($hasMeters || $hasBalance || $hasHistory) {
+            . ($hasHistory ? ' For measured values such as temperature or humidity: the history per hour, day or month (minimum / average / maximum).' : '')
+            . ($hasTimeline ? ' For devices with on/off, open/closed or a selection: when and how long each state lasted (archived states only).' : ''))]] : [];
+        // Freie Zeiträume für Verbrauch, Verlauf und Zeitleiste; das heutige Datum braucht das Modell für „im Januar“.
+        if ($hasMeters || $hasBalance || $hasHistory || $hasTimeline) {
             $period['from'] = ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD, or a start hour, YYYY-MM-DD HH:MM. Today is ' . date('Y-m-d') . '.'];
             $period['to'] = ['type' => 'string', 'description' => 'Last day, inclusive; without it only the day given in from. With HH:MM the end hour, exclusive; without it a from with time runs until now. At most 48 hours with times.'];
         }

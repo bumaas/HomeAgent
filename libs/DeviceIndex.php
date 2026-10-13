@@ -195,6 +195,12 @@ final class DeviceIndex
     /** Fürs ganze Haus nennt die Antwort nur so viele Geräte, die größten zuerst; der Rest wird zusammengefasst. */
     private const TOP_DEVICES = 5;
 
+    /** Zeitleiste (B69): so viele Abschnitte stehen einzeln da, sonst nur die Summen mit Anzahl. */
+    private const TIMELINE_SECTIONS = 12;
+
+    /** Abschnitte nur, wenn höchstens so viele Geräte eine Zeitleiste haben und der Zeitraum höchstens zwei Tage ist (Tokens). */
+    private const TIMELINE_DETAIL = 5;
+
     /** Zeiträume für den Verbrauch („period“ von get_state), in der Reihenfolge des Schemas. */
     public const PERIODS = ['today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year'];
 
@@ -422,7 +428,7 @@ final class DeviceIndex
             && (($this->chart !== null && !$this->chartByDevice
                     && (array_any($matches, static fn (array $e): bool => self::isMeasured($e)) || !array_any($matches, static fn (array $e): bool => isset($e['roles']['energy']))))
                 || in_array($type, self::HISTORY_TYPES, true)
-                || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy'])) && array_any($matches, static fn (array $e): bool => self::isMeasured($e))))) {
+                || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy'])) && array_any($matches, fn (array $e): bool => self::isMeasured($e) || $this->isTimed($e))))) {
             if ($range !== null) {
                 [, $from, $to] = $range;
                 return $this->history($matches, $rangeLevel, $from, $to, $filter . $rangeLabel);
@@ -538,6 +544,169 @@ final class DeviceIndex
     }
 
     /**
+     * Hat das Gerät einen Zustand mit Wörtern (an/aus, offen/zu, erkannt …)? Dann liefert ein Zeitraum eine Zeitleiste
+     * (B69). Ein Messwert mit Einträgen (Batteriemodus) zählt auch dazu, das weiß aber erst das Backend (isTimed()).
+     *
+     * @param array<string, mixed> $row Zeile der Freigabeliste
+     */
+    public static function hasTimeline(array $row): bool
+    {
+        $roles = is_array($row['roles'] ?? null) ? $row['roles'] : self::rolesOf($row);
+        return isset($roles['state']) && (self::TYPES[(string)($row['Type'] ?? '')] ?? null) !== null;
+    }
+
+    private function isTimed(array $entry): bool
+    {
+        return self::hasTimeline($entry)
+            || ($entry['Type'] === 'measurement' && isset($entry['roles']['state']) && $this->backend->options($entry['roles']['state']) !== null);
+    }
+
+    /**
+     * Zeitleisten der Geräte, deren Zustand archiviert ist; die anderen fallen weg. Abschnitte gibt es nur bei höchstens
+     * TIMELINE_DETAIL Geräten, sonst die Summen mit Anzahl.
+     *
+     * @param list<array<string, mixed>> $entries
+     * @return list<array{entry: array<string, mixed>, summary: string, sections: ?string}>
+     */
+    private function archivedTimelines(array $entries, int $from, int $to): array
+    {
+        $items = [];
+        foreach ($entries as $entry) {
+            $timeline = $this->timelineOf($entry, $from, $to);
+            if ($timeline !== null) {
+                $items[] = ['entry' => $entry] + $timeline;
+            }
+        }
+        if (count($items) > self::TIMELINE_DETAIL) {
+            $items = array_map(static fn (array $item): array => ['entry' => $item['entry'], 'summary' => $item['brief'], 'sections' => null], $items);
+        }
+        return $items;
+    }
+
+    /**
+     * Zeilen der Zeitleiste: Kopfzeile, je Gerät die Summen und, wenn es wenige sind, die Abschnitte.
+     *
+     * @param list<array{entry: array<string, mixed>, summary: string, sections: ?string}> $timed
+     * @return list<string>
+     */
+    private function timelineLines(array $timed, string $filter): array
+    {
+        $lines = [sprintf($this->t('Timeline of %d device(s) (%s).'), count($timed), $filter)];
+        foreach ($timed as $item) {
+            $lines[] = $this->line($item['entry'], $item['summary']);
+            if ($item['sections'] !== null) {
+                $lines[] = $item['sections'];
+            }
+        }
+        return $lines;
+    }
+
+    /**
+     * Zeitleiste eines Zustands aus den Rohwerten des Archivs: Abschnitte vom Wert vor dem Zeitraum bis zum Ende bzw.
+     * bis jetzt, gleiche Zustände zusammengefasst (der Bewegungsmelder schreibt aus und an in derselben Sekunde).
+     * Summen je Zustand, bei Wörtern der aktive zuerst, sonst der längste. Einzeln stehen bei Wörtern nur die aktiven
+     * Abschnitte („an 07:29-07:35, …“), bei einer Auswahl alle; mehr als TIMELINE_SECTIONS ergeben die Anzahl je
+     * Zustand. „brief“ ist die Fassung ohne Abschnitte, für viele Geräte. null = nicht archiviert.
+     *
+     * @return null|array{summary: string, sections: ?string, brief: string}
+     */
+    private function timelineOf(array $entry, int $from, int $to): ?array
+    {
+        $variable = $entry['roles']['state'];
+        $series = $this->backend->stateSeries($variable, $from, $to);
+        if ($series === null) {
+            return null;
+        }
+        $now = $this->backend->timestamp();
+        $untilNow = $to === 0 || $to >= $now;
+        $end = $untilNow ? $now : $to + 1;
+        $words = self::TYPES[$entry['Type']] ?? null;
+        $options = $words === null ? ($this->backend->options($variable) ?? []) : [];
+        $label = function (mixed $value) use ($words, $options, $entry): string {
+            if ($words !== null) {
+                $active = is_bool($value) ? $value !== $entry['Invert'] : ((is_int($value) || is_float($value)) ? $value > 0 : null);
+                return $active === null ? (string)$value : $this->t($active ? $words[0] : $words[1]);
+            }
+            foreach ($options as [$optionValue, $caption]) {
+                if ((string)$optionValue === (string)$value) {
+                    return $caption;
+                }
+            }
+            return is_int($value) || is_float($value) ? self::formatNumber((float)$value) : (string)$value;
+        };
+        $sections = [];
+        $add = static function (string $state, int $begin, int $finish) use (&$sections): void {
+            $last = count($sections) - 1;
+            if ($last >= 0 && $sections[$last][0] === $state) {
+                $sections[$last][2] = $finish;
+            } else {
+                $sections[] = [$state, $begin, $finish];
+            }
+        };
+        $known = $series['start'] !== null;
+        $value = $series['start'];
+        $begin = $from;
+        foreach ($series['changes'] as [$time, $next]) {
+            if ($known && $time > $begin) {
+                $add($label($value), $begin, $time);
+            }
+            $value = $next;
+            $known = true;
+            $begin = max($begin, $time);
+        }
+        if ($known && $end > $begin) {
+            $add($label($value), $begin, $end);
+        }
+        if ($sections === []) {
+            return ['summary' => $this->t('no values in this period'), 'sections' => null, 'brief' => $this->t('no values in this period')];
+        }
+
+        $active = $words === null ? null : $this->t($words[0]);
+        $sums = [];
+        $counts = [];
+        foreach ($sections as [$state, $b, $e]) {
+            $sums[$state] = ($sums[$state] ?? 0) + $e - $b;
+            $counts[$state] = ($counts[$state] ?? 0) + 1;
+        }
+        // Bei Wörtern der aktive Zustand zuerst, sonst der längste; gleich lange in der Reihenfolge des Auftretens.
+        $order = array_keys($sums);
+        usort($order, static fn (string $x, string $y): int => [$y === $active, $sums[$y]] <=> [$x === $active, $sums[$x]]);
+        $listed = $active === null ? $sections : array_values(array_filter($sections, static fn (array $sec): bool => $sec[0] === $active));
+        $show = count($sections) > 1 && $end - $from <= 2 * 86400 && count($listed) <= self::TIMELINE_SECTIONS && $listed !== [];
+        $summarize = fn (bool $withCount): string => implode(', ', array_map(fn (string $state): string => $state . ' ' . self::duration($sums[$state])
+            . ($withCount ? ' (' . sprintf($this->t('%d times'), $counts[$state]) . ')' : ''), $order));
+        $brief = $summarize(count($sections) > 1 && $listed !== []);
+        if (!$show) {
+            return ['summary' => $brief, 'sections' => null, 'brief' => $brief];
+        }
+        $format = date('Y-m-d', $from) === date('Y-m-d', $end - 1) ? 'H:i' : 'd.m. H:i';
+        $parts = [];
+        foreach ($listed as [$state, $b, $e]) {
+            $start = date($format, $b);
+            if ($untilNow && $e === $end) {
+                $span = sprintf($this->t('since %s'), $start);
+            } else {
+                $stop = $format === 'H:i' && date('H:i', $e) === '00:00' && $e > $b ? '24:00' : date($format, $e);
+                $span = $stop === $start ? $start : $start . '-' . $stop;
+            }
+            $parts[] = ($active === null ? $state . ' ' : '') . $span;
+        }
+        return ['summary' => $summarize(false), 'sections' => ($active === null ? '' : $active . ' ') . implode(', ', $parts), 'brief' => $brief];
+    }
+
+    /** Dauer in Stunden und Minuten: „3 h 10 min“, „24 h“, „6 min“, unter einer halben Minute „< 1 min“. */
+    private static function duration(int $seconds): string
+    {
+        $minutes = (int)round($seconds / 60);
+        if ($minutes === 0) {
+            return '< 1 min';
+        }
+        $hours = intdiv($minutes, 60);
+        $rest = $minutes % 60;
+        return $hours === 0 ? $rest . ' min' : $hours . ' h' . ($rest === 0 ? '' : ' ' . $rest . ' min');
+    }
+
+    /**
      * Verlauf der Messwerte je Stunde, Tag oder Monat aus den Aggregaten des Archivs: Minimum, Mittel
      * und Maximum. Geräte ohne Messwert werden ausgelassen und gezählt.
      *
@@ -546,8 +715,23 @@ final class DeviceIndex
      */
     private function history(array $matches, int $level, int $from, int $to, string $filter): array
     {
-        $measured = array_values(array_filter($matches, [self::class, 'isMeasured']));
-        $skipped = count($matches) - count($measured);
+        // Zustände (an/aus, offen/zu, Auswahl wie der Batteriemodus) bekommen eine Zeitleiste statt Minimum, Mittel und
+        // Maximum: „05:00 1 / 1.8 / 2“ sagte niemandem etwas (B69, 13.10.2026).
+        // Ein Zustand ohne Archiv wird wie bisher ausgelassen und gezählt.
+        $candidates = array_values(array_filter($matches, fn (array $e): bool => $this->isTimed($e)));
+        $timed = $this->archivedTimelines($candidates, $from, $to);
+        $measured = array_values(array_filter($matches, fn (array $e): bool => self::isMeasured($e) && !$this->isTimed($e)));
+        $skipped = count($matches) - count($measured) - count($timed);
+        if ($measured === [] && $candidates !== []) {
+            if ($timed === []) {
+                return $this->fail(sprintf($this->t('None of the matching devices measures energy or has an archived state (%s).'), $filter));
+            }
+            $lines = $this->timelineLines($timed, $filter);
+            if ($skipped > 0) {
+                $lines[] = sprintf($this->t('%d device(s) without measured value were left out.'), $skipped);
+            }
+            return ['text' => implode("\n", $lines), 'isError' => false];
+        }
         // Liest ein Thermostat den Raumfühler als Ist-Temperatur, wäre derselbe Verlauf zweimal da (nuc,
         // Gästezimmer): Jede Variable kommt nur einmal, unter dem ersten Gerät der Liste.
         $seen = [];
@@ -607,6 +791,9 @@ final class DeviceIndex
                 $lines[] = date($format, $row['time']) . ' ' . self::formatNumber($row['min']) . ' / ' . self::formatNumber($row['avg']) . ' / ' . self::formatNumber($row['max']);
             }
         }
+        if ($timed !== []) {
+            $lines = array_merge($lines, $this->timelineLines($timed, $filter));
+        }
         if ($skipped > 0) {
             $lines[] = sprintf($this->t('%d device(s) without measured value were left out.'), $skipped);
         }
@@ -625,6 +812,13 @@ final class DeviceIndex
         $total = 0.0;
         $withHistory = 0;
         $rows = [];
+        // Ein Gerät mit Zähler und Zustand bekommt beides in einer Zeile: „wann war das Licht an?“ ist keine Frage nach
+        // dem Verbrauch (Burkhard 13.10.2026). Fürs ganze Haus nicht, das wären zu viele Zeilen.
+        $timed = $wholeHouse ? [] : $this->archivedTimelines(array_values(array_filter($matches, fn (array $e): bool => $this->isTimed($e))), $from, $to);
+        $timeOf = [];
+        foreach ($timed as $item) {
+            $timeOf[self::cardKey($item['entry'])] = ', ' . $item['summary'] . ($item['sections'] === null ? '' : "\n" . $item['sections']);
+        }
         foreach ($metered as $entry) {
             $counter = $this->backend->counterSum($entry['roles']['energy'], $level, $from, $to);
             // Ein Wasser- oder Gaszähler ist kein Energiezähler; vorher stand er als kWh in der Summe.
@@ -639,10 +833,17 @@ final class DeviceIndex
             }
             $total += $kwh;
             $withHistory++;
-            $rows[] = ['line' => $this->line($entry, self::formatNumber($kwh) . ' kWh'), 'value' => $kwh];
+            $rows[] = ['line' => $this->line($entry, self::formatNumber($kwh) . ' kWh') . ($timeOf[self::cardKey($entry)] ?? ''), 'value' => $kwh];
         }
         $lines = $this->rankedLines($rows, $wholeHouse, static fn (float $kwh): string => self::formatNumber($kwh) . ' kWh');
-        $skipped = count($matches) - count($metered);
+        $unmetered = array_values(array_filter($timed, static fn (array $item): bool => !isset($item['entry']['roles']['energy'])));
+        foreach ($unmetered as $item) {
+            $lines[] = $this->line($item['entry'], $item['summary']);
+            if ($item['sections'] !== null) {
+                $lines[] = $item['sections'];
+            }
+        }
+        $skipped = count($matches) - count($metered) - count($unmetered);
         if ($skipped > 0) {
             $lines[] = sprintf($this->t('%d device(s) without energy meter were left out.'), $skipped);
         }

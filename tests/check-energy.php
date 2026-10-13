@@ -119,7 +119,8 @@ $mitWandlicht = array_merge($liste, [['Room' => 'Flur', 'Name' => 'Wandlicht', '
 $r = frage(index($mitWandlicht, $werte), ['room' => 'Flur', 'period' => 'today']);
 pruefe(str_starts_with($r['text'], '0 kWh consumed by 0 of 1 metered device(s) (room=Flur, period=today).') && !str_contains($r['text'], 'Wandlicht') && str_ends_with($r['text'], "\n1 device(s) without energy meter were left out."), 'Gerät ohne Zähler: ausgelassen und gezählt: ' . $r['text']);
 $r = frage(index($mitWandlicht, $werte), ['name' => 'Wandlicht', 'period' => 'today']);
-pruefe($r['isError'] && $r['text'] === 'None of the matching devices measures energy (name=Wandlicht, period=today).', 'nur Geräte ohne Zähler: Absage: ' . $r['text']);
+// Seit der Zeitleiste (B69) nennt die Absage auch den fehlenden archivierten Zustand: Das Wandlicht ist hier nicht archiviert.
+pruefe($r['isError'] && $r['text'] === 'None of the matching devices measures energy or has an archived state (name=Wandlicht, period=today).', 'nur Geräte ohne Zähler: Absage: ' . $r['text']);
 $r = frage(index($mitWandlicht, $werte), ['name' => 'Wandlicht']);
 pruefe(str_contains($r['text'], 'Flur | Wandlicht | light | off') && !str_contains($r['text'], 'Wandlicht | light | off ('), 'ohne Leistungsvariable keine Klammer: ' . $r['text']);
 

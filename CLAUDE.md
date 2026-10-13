@@ -225,6 +225,17 @@ Weitere Regeln, die nicht offensichtlich sind:
   bevor das Gerät ihn übernimmt.
 - **Stopp:** über eine Stoppvariable (Wahrheitswert oder Eintrag „Stop“), sonst über das Modul des
   Geräts (`SymconDeviceBackend::STOP_MODULES`, Homematic und Velux KLF200).
+- **Zeitleiste für Zustände** (B69, Burkhard 13.10.2026: „was hat es mit der Zeitleiste auf sich?“): Zustände (`hasTimeline`:
+  Typ mit Wörtern in `TYPES` und Rolle `state`; dazu `measurement` mit Einträgen, `isTimed`, etwa ein Batteriemodus) bekommen
+  mit Zeitraum Abschnitte aus den Rohwerten (`DeviceBackend::stateSeries`: letzter Wert vor dem Zeitraum, dann die Änderungen;
+  laut Doku `AC_GetLoggedValues` neueste zuerst, höchstens 10000, nur Änderungen). Gleiche Zustände werden zusammengefasst
+  (der Bewegungsmelder schreibt aus und an in derselben Sekunde). Summen je Zustand, bei Wörtern der aktive zuerst, sonst
+  der längste; einzeln bei Wörtern nur die aktiven Abschnitte, bei einer Auswahl alle, bis `TIMELINE_SECTIONS` (12), bis
+  zwei Tage und bis `TIMELINE_DETAIL` (5) Geräte, sonst die Anzahl je Zustand. Ein Gerät mit Zähler bekommt Verbrauch
+  und Zeiten in einer Zeile (Burkhard: Verbrauch auf „wann war das Licht an?“ wäre falsch), nicht fürs ganze Haus. Ein
+  Zustand ohne Archiv wird ausgelassen und gezählt; bleibt nichts, sagt die Absage „misst keine Energie oder hat keinen
+  archivierten Zustand“. Am nuc waren am 13.10.2026 rund 40 von 120 Zuständen archiviert (Türen, Schalter, Präsenz, wenige
+  Lichter). Test `check-zeitleiste.php`. `show_chart` lehnt Zustände noch ab (Bänder kommen im nächsten Schritt).
 - **Verlauf statt Verbrauch** (`DeviceIndex::history`), wenn nach einem Typ aus `HISTORY_TYPES` gefragt
   wird oder kein Treffer einen Zähler hat, nie fürs ganze Haus. Stufe aus dem Zeitraum (heute und
   gestern stündlich, Wochen und Monate täglich, Jahre monatlich; `from`/`to` bis 2 Tage stündlich, bis
