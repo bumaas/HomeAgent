@@ -94,6 +94,8 @@ $r = stapel(['period' => 'this_year']);
 pruefe(($r['structuredContent']['per'] ?? null) === 'month' && count($r['structuredContent']['times'] ?? []) === 12 && ($r['structuredContent']['times'][11] ?? 0) === mktime(0, 0, 0, 12, 1, 2026)
     && array_sum(array_map(static fn (array $s): float => array_sum(array_map('abs', array_slice($s['values'], 10))), $r['structuredContent']['series'] ?? [])) === 0.0, 'dieses Jahr je Monat, alle zwölf Monate, November und Dezember leer: ' . count($r['structuredContent']['times'] ?? []));
 $r = stapel(['period' => 'this_week']);
+// Titelzeile mit Datum: auch der Stapel liefert seinen Zeitraum
+pruefe(($r['structuredContent']['range'] ?? null) === [mktime(0, 0, 0, 10, 12, 2026), mktime(0, 0, 0, 10, 19, 2026)], 'Stapel mit Zeitraum für die Titelzeile: ' . json_encode($r['structuredContent']['range'] ?? null));
 pruefe(($r['structuredContent']['per'] ?? null) === 'day' && count($r['structuredContent']['times'] ?? []) === 7 && ($r['structuredContent']['times'][0] ?? 0) === mktime(0, 0, 0, 10, 12, 2026), 'diese Woche: sieben Tage ab Montag, auch wenn erst Montag ist: ' . json_encode($r['structuredContent']['times'] ?? $r['text']));
 $r = stapel(['from' => '2026-10-05', 'to' => '2026-10-11']);
 pruefe(($r['structuredContent']['per'] ?? null) === 'day' && count($r['structuredContent']['times'] ?? []) === 7, 'freier Zeitraum über eine Woche je Tag: ' . count($r['structuredContent']['times'] ?? []));

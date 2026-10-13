@@ -36,6 +36,7 @@
   .legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
   .legend i.bar { height: 10px; }
   .note { color: var(--muted); margin: 0 0 0 6px; font-size: 12px; }
+  .title { font-weight: 600; margin: 0 0 6px 6px; }
   svg { display: block; width: 100%; height: auto; overflow: visible; }
   svg text { fill: var(--muted); font-size: 11px; }
   .empty { color: var(--muted); padding: 12px 6px; }
@@ -240,7 +241,45 @@
 
   // Vergleich zweier Zeiträume (B69): gestrichelte Linie beim Verlauf, Marke je Balken beim Verbrauch
   function compareText(data) {
-    return ((data.labels && data.labels.compare) || "comparison") + " " + data.compare.label;
+    return ((data.labels && data.labels.compare) || "comparison") + " " + (data.compare.range ? periodText(data.compare.range) : data.compare.label);
+  }
+
+  // Titelzeile mit dem Zeitraum (Burkhard 13.10.2026 in der Claude-App: „mir fehlt im diagramm das datum“), in der Sprache
+  // der App: ein Tag mit Wochentag, ein Monat mit Namen, ein Jahr als Zahl, sonst von–bis; mit Uhrzeit, wenn der Zeitraum
+  // nicht um Mitternacht beginnt oder endet.
+  function dateText(t, opts) { return new Date(t * 1000).toLocaleDateString(lang, opts); }
+  function clockText(d) { return d.toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" }); }
+  function periodText(range) {
+    var a = new Date(range[0] * 1000), e = new Date(range[1] * 1000), b = new Date((range[1] - 1) * 1000);
+    var midnight = function (d) { return d.getHours() === 0 && d.getMinutes() === 0; };
+    var numeric = { day: "2-digit", month: "2-digit", year: "numeric" };
+    if (!midnight(a) || !midnight(e)) {
+      return dateText(range[0], numeric) + ", " + clockText(a) + "–" + (a.toDateString() === b.toDateString() ? "" : dateText(range[1], numeric) + ", ") + clockText(e);
+    }
+    if (a.toDateString() === b.toDateString()) {
+      return dateText(range[0], { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    }
+    if (a.getDate() === 1 && e.getDate() === 1) {
+      var months = (e.getFullYear() - a.getFullYear()) * 12 + e.getMonth() - a.getMonth();
+      if (months === 1) { return dateText(range[0], { month: "long", year: "numeric" }); }
+      if (months === 12 && a.getMonth() === 0) { return String(a.getFullYear()); }
+    }
+    var sameYear = a.getFullYear() === b.getFullYear();
+    return dateText(range[0], sameYear ? { day: "2-digit", month: "2-digit" } : numeric) + "–" + dateText(range[1] - 1, numeric);
+  }
+  function addTitle(container, data) {
+    var text = "";
+    if (data && data.range) {
+      text = periodText(data.range);
+    } else if (data && data.at) {
+      text = dateText(data.at, { day: "2-digit", month: "2-digit", year: "numeric" }) + ", " + clockText(new Date(data.at * 1000));
+    }
+    if (!text) { return; }
+    if (data.compare && data.compare.range) { text += " · " + compareText(data); }
+    var title = document.createElement("div");
+    title.className = "title";
+    title.textContent = text;
+    container.appendChild(title);
   }
   function compareItem(data, style) {
     var item = document.createElement("span");
@@ -548,6 +587,7 @@
     if (data && data.kind === "rings") {
       var only = document.getElementById("root");
       only.textContent = "";
+      addTitle(only, data);
       drawRings(only, data.rings);
       reportSize();
       return;
@@ -555,6 +595,7 @@
     if (data && data.kind === "scatter") {
       var area = document.getElementById("root");
       area.textContent = "";
+      addTitle(area, data);
       drawScatter(area, data);
       reportSize();
       return;
@@ -562,6 +603,7 @@
     if (data && data.kind === "consumption") {
       var target = document.getElementById("root");
       target.textContent = "";
+      addTitle(target, data);
       drawRings(target, data.rings);
       drawBars(target, data);
       var per = document.createElement("p");
@@ -573,6 +615,7 @@
     }
     var root = document.getElementById("root");
     root.textContent = "";
+    addTitle(root, data);
     if (data && (!data.series || !data.series.length) && data.bands && data.bands.length) {
       drawBands(root, data.bands, data.range);
       reportSize();

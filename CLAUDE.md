@@ -240,7 +240,9 @@ Weitere Regeln, die nicht offensichtlich sind:
   mit Messwerten bleibt es `history` mit Bändern darunter. `states` kommen in fester Reihenfolge (bei Wörtern der aktive
   zuerst, bei einer Auswahl die der Einträge), damit die Seite jeden Tag dieselben Farben vergibt. Höchstens
   `TIMELINE_CHART_MAX` (10) Bänder. Die Achse zeigt immer den ganzen Zeitraum (`periodSpan`; Verlauf und Zeitleiste über
-  `range`, Stapel mit leeren Abschnitten bis zum Ende, `padTimes`).
+  `range`, Stapel mit leeren Abschnitten bis zum Ende, `padTimes`). Jede Art liefert ihren Zeitraum (`range`, beim Vergleich
+  `compare.range`, bei „Leistung jetzt“ `at`) für die Titelzeile der Seite (Burkhard 13.10.2026 in der Claude-App: „mir fehlt
+  im diagramm das datum“; der Assistent bot an, das Diagramm selbst zu zeichnen).
 - **Vergleich zweier Zeiträume** (B69, `show_chart` mit `compare`: `previous` oder `year_before`, `DeviceIndex::COMPARES`):
   `compareWindow` bestimmt den Vergleichszeitraum (der davor in der Einheit des Zeitraums, bei from/to gleich viele Tage
   davor; nur ganze Tage), `compareChart` holt dasselbe Diagramm über from/to und legt es um den Abstand verschoben

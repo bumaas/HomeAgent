@@ -120,6 +120,10 @@ Feste Reihenfolge: Rollläden, Licht, Schalter und Steckdosen, Klima, Messwerte,
 
 ### Gemeinsam
 
+- **Titelzeile** über jedem Diagramm mit dem Zeitraum in der Sprache der App, fett: ein Tag mit Wochentag („Montag,
+  12. Oktober 2026“), ein Monat mit Namen, ein Jahr als Zahl, sonst von–bis („01.09.–12.10.2026“), mit Uhrzeit, wenn der
+  Zeitraum nicht um Mitternacht beginnt oder endet; beim Vergleich „· Vergleich <Zeitraum>“, bei „Leistung jetzt“ Datum
+  und Uhrzeit. Die Daten liefern `range`, `compare.range` und `at`.
 - **Zeichenfläche** 640 px breit (skaliert), linker Rand 44 px für die Werteachse, rechter Rand 10 px. Bänder und
   Linien nutzen dieselben Ränder, damit Zeitpunkte untereinander stehen.
 - **Zeitachse über den ganzen Zeitraum** (`range` bzw. aufgefüllte `times`), auch wenn er noch läuft: heute bis

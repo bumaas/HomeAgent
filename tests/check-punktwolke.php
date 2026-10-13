@@ -99,6 +99,7 @@ for ($c = $xs[(int)floor(count($xs) * 0.1)]; $c <= $xs[(int)floor(count($xs) * 0
 $r = wolke(['name' => 'Wärmepumpe', 'versus' => 'Außentemperatur', 'from' => '2026-09-01', 'to' => '2026-10-12']);
 $daten = $r['structuredContent'] ?? [];
 pruefe(!$r['isError'] && ($daten['kind'] ?? '') === 'scatter' && ($daten['per'] ?? '') === 'day', 'Punktwolke je Tag: ' . substr($r['text'], 0, 300));
+pruefe(($daten['range'] ?? null) === [$von, $bis + 1], 'Punktwolke mit Zeitraum für die Titelzeile: ' . json_encode($daten['range'] ?? null));
 pruefe(count($daten['points'] ?? []) === count($p) && count($p) === 42, '42 Tage mit beiden Werten: ' . count($daten['points'] ?? []));
 pruefe(abs(($daten['points'][0][0] ?? 0) - $p[0][0]) < 1e-6 && abs(($daten['points'][0][1] ?? 0) - $p[0][1]) < 1e-6 && ($daten['points'][0][2] ?? 0) === $p[0][2], 'erster Punkt: x Außentemperatur, y Wärmepumpe, Zeitpunkt: ' . json_encode($daten['points'][0] ?? null));
 pruefe(($daten['x']['unit'] ?? '') === '°C' && ($daten['y']['unit'] ?? '') === 'kW' && ($daten['x']['label'] ?? '') === 'Garten · Außentemperatur' && ($daten['y']['label'] ?? '') === 'Keller · Wärmepumpe', 'Achsen mit Name und Einheit: ' . json_encode([$daten['x'] ?? null, $daten['y'] ?? null], JSON_UNESCAPED_UNICODE));

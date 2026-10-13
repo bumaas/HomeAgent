@@ -63,6 +63,7 @@ $daten = $r['structuredContent'] ?? [];
 pruefe(!$r['isError'] && ($daten['kind'] ?? '') === 'consumption', 'Hausverbrauch mit Vergleich: ' . substr($r['text'], 0, 200));
 pruefe($gleich($daten['compare']['values'] ?? [], $summen($gestern['structuredContent'] ?? [])), 'je Stunde die Summe von gestern: ' . json_encode($daten['compare'] ?? null));
 pruefe(($daten['compare']['label'] ?? '') === '2026-10-11', 'Beschriftung des Vergleichs: ' . json_encode($daten['compare']['label'] ?? null));
+pruefe(($daten['compare']['range'] ?? null) === [mktime(0, 0, 0, 10, 11, 2026), mktime(0, 0, 0, 10, 12, 2026)] && ($daten['range'] ?? null) === [mktime(0, 0, 0, 10, 12, 2026), mktime(0, 0, 0, 10, 13, 2026)], 'Zeitraum und Vergleichszeitraum für die Titelzeile: ' . json_encode([$daten['range'] ?? null, $daten['compare']['range'] ?? null]));
 // Heute hat seit dem Layoutvergleich der Diagramme schon ohne Vergleich 24 Stunden, 18 davon mit Werten (bis 17 Uhr)
 $n = 18;
 pruefe(count($heute['structuredContent']['times'] ?? []) === 24 && count($daten['times'] ?? []) === 24 && $daten['times'] === $heute['structuredContent']['times']

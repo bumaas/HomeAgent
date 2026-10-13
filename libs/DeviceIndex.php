@@ -1335,7 +1335,7 @@ final class DeviceIndex
         }
         $lines[] = $this->t('The chart is shown in the chat.');
         return ['text' => implode("\n", $lines), 'isError' => false,
-            'structuredContent' => ['kind' => 'rings', 'title' => (string)strtok($state['text'], "\n"), 'rings' => $rings]];
+            'structuredContent' => ['kind' => 'rings', 'title' => (string)strtok($state['text'], "\n"), 'at' => $this->backend->timestamp(), 'rings' => $rings]];
     }
 
     /**
@@ -3720,7 +3720,9 @@ final class DeviceIndex
         // Die Achse zeigt den ganzen Zeitraum, auch wenn er noch läuft; künftige Abschnitte bleiben leer (Layoutvergleich der
         // Diagramme 13.10.2026: „diese Woche“ am Dienstag ergab zwei sehr breite Balken).
         $span = $this->periodSpan($arguments);
-        if ($span !== null && in_array($chart['kind'] ?? '', ['history', 'timeline'], true)) {
+        // Jede Art trägt ihren Zeitraum, die Seite schreibt ihn als Titelzeile darüber (Burkhard 13.10.2026 in der
+        // Claude-App: „mir fehlt im diagramm das datum“)
+        if ($span !== null && in_array($chart['kind'] ?? '', ['history', 'timeline', 'consumption'], true)) {
             $chart['range'] = $span;
         }
         if ($span !== null && ($chart['kind'] ?? '') === 'consumption') {
@@ -3768,7 +3770,7 @@ final class DeviceIndex
             return $head . "\n" . (string)strtok($part['text'], "\n");
         }
         $offset = $mainFrom - $from;
-        $chart['compare'] = ['label' => $label];
+        $chart['compare'] = ['label' => $label, 'range' => [$from, $to + 1]];
         $chart['labels']['compare'] = $this->t('comparison');
         $text = $head . "\n" . $part['text'];
         if ($kind === 'history') {
@@ -3899,7 +3901,7 @@ final class DeviceIndex
         }
         $lines[] = $this->t('The chart is shown in the chat.');
         return ['text' => implode("\n", $lines), 'isError' => false, 'structuredContent' => [
-            'kind'    => 'scatter', 'title' => $head, 'per' => $per,
+            'kind'    => 'scatter', 'title' => $head, 'per' => $per, 'range' => [$from, $end],
             'x'       => ['label' => $x['label'], 'unit' => $x['unit']],
             'y'       => ['label' => $y['label'], 'unit' => $y['unit']],
             'points'  => $points,

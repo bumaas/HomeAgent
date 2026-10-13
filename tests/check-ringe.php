@@ -116,6 +116,7 @@ pruefe(!isset($r['structuredContent']['rings']), 'Verbrauch eines Raums: keine R
 // Abends am nuc: Bezug 8 W, PV 0, Batterie entladen 1888 W, Haus 1896 W
 $r = diagrammLeistung(['period' => 'now']);
 pruefe(!$r['isError'] && ($r['structuredContent']['kind'] ?? null) === 'rings', 'period=now fürs ganze Haus: nur Ringe: ' . $r['text']);
+pruefe(is_int($r['structuredContent']['at'] ?? null) && $r['structuredContent']['at'] > 1700000000, 'Leistung jetzt mit Zeitpunkt für die Titelzeile: ' . json_encode($r['structuredContent']['at'] ?? null));
 pruefe(array_column($r['structuredContent']['rings'] ?? [], 'key') === ['power', 'autarky'], 'Leistung und Autarkie, ohne PV kein Eigenverbrauch: ' . json_encode(array_column($r['structuredContent']['rings'] ?? [], 'key')));
 pruefe(str_starts_with($r['text'], 'House power 1896 W (all devices, period=now)') && str_contains($r['text'], "\nSelf-sufficiency 100 %.") && str_ends_with($r['text'], "\nThe chart is shown in the chat."), 'das Modell bekommt die Hausleistung, die Autarkie und die Schlusszeile: ' . $r['text']);
 $p = ring($r, 'power');
