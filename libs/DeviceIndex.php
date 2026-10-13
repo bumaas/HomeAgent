@@ -201,6 +201,9 @@ final class DeviceIndex
     /** Abschnitte nur, wenn höchstens so viele Geräte eine Zeitleiste haben und der Zeitraum höchstens zwei Tage ist (Tokens). */
     private const TIMELINE_DETAIL = 5;
 
+    /** Höchstens so viele Bänder in einem Diagramm. */
+    private const TIMELINE_CHART_MAX = 10;
+
     /** Zeiträume für den Verbrauch („period“ von get_state), in der Reihenfolge des Schemas. */
     public const PERIODS = ['today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_year', 'last_year'];
 
@@ -578,9 +581,25 @@ final class DeviceIndex
             }
         }
         if (count($items) > self::TIMELINE_DETAIL) {
-            $items = array_map(static fn (array $item): array => ['entry' => $item['entry'], 'summary' => $item['brief'], 'sections' => null], $items);
+            $items = array_map(static fn (array $item): array => ['summary' => $item['brief'], 'sections' => null] + $item, $items);
         }
         return $items;
+    }
+
+    /**
+     * Bänder fürs Diagramm (show_chart): je Gerät alle Abschnitte, auch wenn der Text nur die Summen nennt. Die Werte gehen
+     * nur an die Seite, nicht ans Modell.
+     *
+     * @param list<array<string, mixed>> $timed Ergebnis von archivedTimelines()
+     */
+    private function chartBands(array $timed): void
+    {
+        if ($this->chart === null) {
+            return;
+        }
+        foreach ($timed as $item) {
+            $this->chart['bands'][] = $item['band'];
+        }
     }
 
     /**
@@ -608,7 +627,9 @@ final class DeviceIndex
      * Abschnitte („an 07:29-07:35, …“), bei einer Auswahl alle; mehr als TIMELINE_SECTIONS ergeben die Anzahl je
      * Zustand. „brief“ ist die Fassung ohne Abschnitte, für viele Geräte. null = nicht archiviert.
      *
-     * @return null|array{summary: string, sections: ?string, brief: string}
+     * „band“ trägt alle Abschnitte fürs Diagramm.
+     *
+     * @return null|array{summary: string, sections: ?string, brief: string, band: array<string, mixed>}
      */
     private function timelineOf(array $entry, int $from, int $to): ?array
     {
@@ -668,6 +689,20 @@ final class DeviceIndex
             $sums[$state] = ($sums[$state] ?? 0) + $e - $b;
             $counts[$state] = ($counts[$state] ?? 0) + 1;
         }
+        // Fürs Band: bei Wörtern der aktive Zustand zuerst, bei einer Auswahl die Reihenfolge der Einträge, damit die Farben
+        // jeden Tag dieselben sind.
+        $present = array_keys($sums);
+        $labels = $words !== null ? [$this->t($words[0]), $this->t($words[1])] : array_column($options, 1);
+        $states = array_values(array_unique(array_merge(array_values(array_intersect($labels, $present)), $present)));
+        $index = array_flip($states);
+        $band = [
+            'room'     => $entry['Room'],
+            'name'     => $entry['Name'],
+            'from'     => $from,
+            'to'       => $end,
+            'states'   => array_map(fn (string $state): array => ['label' => $state, 'active' => $words === null ? null : $state === $this->t($words[0])], $states),
+            'sections' => array_map(static fn (array $sec): array => [$index[$sec[0]], $sec[1], $sec[2]], $sections),
+        ];
         // Bei Wörtern der aktive Zustand zuerst, sonst der längste; gleich lange in der Reihenfolge des Auftretens.
         $order = array_keys($sums);
         usort($order, static fn (string $x, string $y): int => [$y === $active, $sums[$y]] <=> [$x === $active, $sums[$x]]);
@@ -677,7 +712,7 @@ final class DeviceIndex
             . ($withCount ? ' (' . sprintf($this->t('%d times'), $counts[$state]) . ')' : ''), $order));
         $brief = $summarize(count($sections) > 1 && $listed !== []);
         if (!$show) {
-            return ['summary' => $brief, 'sections' => null, 'brief' => $brief];
+            return ['summary' => $brief, 'sections' => null, 'brief' => $brief, 'band' => $band];
         }
         $format = date('Y-m-d', $from) === date('Y-m-d', $end - 1) ? 'H:i' : 'd.m. H:i';
         $parts = [];
@@ -691,7 +726,7 @@ final class DeviceIndex
             }
             $parts[] = ($active === null ? $state . ' ' : '') . $span;
         }
-        return ['summary' => $summarize(false), 'sections' => ($active === null ? '' : $active . ' ') . implode(', ', $parts), 'brief' => $brief];
+        return ['summary' => $summarize(false), 'sections' => ($active === null ? '' : $active . ' ') . implode(', ', $parts), 'brief' => $brief, 'band' => $band];
     }
 
     /** Dauer in Stunden und Minuten: „3 h 10 min“, „24 h“, „6 min“, unter einer halben Minute „< 1 min“. */
@@ -727,6 +762,10 @@ final class DeviceIndex
                 return $this->fail(sprintf($this->t('None of the matching devices measures energy or has an archived state (%s).'), $filter));
             }
             $lines = $this->timelineLines($timed, $filter);
+            if ($this->chart !== null) {
+                $this->chart += ['kind' => 'timeline', 'title' => $lines[0], 'filter' => $filter];
+                $this->chartBands($timed);
+            }
             if ($skipped > 0) {
                 $lines[] = sprintf($this->t('%d device(s) without measured value were left out.'), $skipped);
             }
@@ -793,6 +832,7 @@ final class DeviceIndex
         }
         if ($timed !== []) {
             $lines = array_merge($lines, $this->timelineLines($timed, $filter));
+            $this->chartBands($timed);
         }
         if ($skipped > 0) {
             $lines[] = sprintf($this->t('%d device(s) without measured value were left out.'), $skipped);
@@ -3647,8 +3687,11 @@ final class DeviceIndex
         if (($chart['kind'] ?? '') === 'history' && count($chart['series'] ?? []) > self::HISTORY_MAX) {
             return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s). Give a room or a name, at most %d at a time.'), count($chart['series']), 'room=' . implode(', ', $rooms), self::HISTORY_MAX));
         }
+        if (count($chart['bands'] ?? []) > self::TIMELINE_CHART_MAX) {
+            return $this->fail(sprintf($this->t('Too many devices (%d) for a timeline chart. Give a room or a name, at most %d at a time.'), count($chart['bands']), self::TIMELINE_CHART_MAX));
+        }
         $result = ['text' => implode("\n", array_merge($texts, array_map(static fn (array $failure): string => (string)strtok($failure['text'], "\n"), $failures))), 'isError' => false];
-        if (($chart['series'] ?? []) === []) {
+        if (($chart['series'] ?? []) === [] && ($chart['bands'] ?? []) === []) {
             $this->problem = 'no_match';
             return $this->fail(sprintf($this->t('None of the matching devices has a history for a chart (%s).'), (string)($chart['filter'] ?? '')));
         }

@@ -287,6 +287,7 @@
             "month": "Monat",
             "no values in this period": "keine Werte in diesem Zeitraum",
             "Timeline of %d device(s) (%s).": "Zeitleiste von %d Gerät(en) (%s).",
+            "Too many devices (%d) for a timeline chart. Give a room or a name, at most %d at a time.": "Zu viele Geräte (%d) für ein Zeitleisten-Diagramm. Nenne einen Raum oder Namen, höchstens %d auf einmal.",
             "None of the matching devices measures energy or has an archived state (%s).": "Keines der passenden Geräte misst Energie oder hat einen archivierten Zustand (%s).",
             "%d times": "%d-mal",
             "since %s": "seit %s",

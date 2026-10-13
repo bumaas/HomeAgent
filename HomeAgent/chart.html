@@ -46,6 +46,7 @@
   .ring svg text.part tspan.value { fill: var(--fg); }
   .ring svg text.center { fill: var(--fg); font-size: 26px; font-weight: 700; }
   .ring svg text.sub { font-size: 11px; }
+  svg text tspan.bandname { fill: var(--fg); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -344,6 +345,63 @@
     box.appendChild(svg);
     container.appendChild(box);
   }
+  // Zeitleiste (B69): je Gerät ein Band über derselben Zeitachse, die Abschnitte nach Zustand gefärbt. Bei an/aus,
+  // offen/zu ist der aktive Zustand kräftig und der andere blass, bei einer Auswahl hat jeder Eintrag seine Farbe in
+  // der Reihenfolge der Einträge. Grau dahinter heißt: kein Wert bekannt.
+  function stateColor(band, i) {
+    var state = band.states[i];
+    if (state.active === true) { return COLORS[0]; }
+    if (state.active === false) { return "#afb8c1"; }
+    return COLORS[i % COLORS.length];
+  }
+  function duration(seconds) {
+    var m = Math.round(seconds / 60), h = Math.floor(m / 60);
+    if (m === 0) { return "< 1 min"; }
+    return h ? h + " h" + (m % 60 ? " " + (m % 60) + " min" : "") : m + " min";
+  }
+  function drawBands(container, bands) {
+    if (!bands || !bands.length) { return; }
+    var W = 640, L = 6, R = 10, rowH = 38, barH = 14, B = 26;
+    var t0 = Infinity, t1 = -Infinity;
+    bands.forEach(function (b) { t0 = Math.min(t0, b.from); t1 = Math.max(t1, b.to); });
+    if (t1 <= t0) { return; }
+    var H = bands.length * rowH + B;
+    var x = function (t) { return L + (t - t0) / (t1 - t0) * (W - L - R); };
+    var per = t1 - t0 <= 2 * 86400 ? "hour" : "day";
+    var spansDays = t1 - t0 > 86400;
+    var box = document.createElement("div");
+    box.className = "chart";
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
+    var ticks = timeTicks(t0, t1, per);
+    ticks.forEach(function (t) {
+      svg.appendChild(el("line", { x1: x(t), x2: x(t), y1: 0, y2: H - B, stroke: "var(--grid)", "stroke-width": 1 }));
+    });
+    bands.forEach(function (b, row) {
+      var top = row * rowH;
+      var name = el("text", { x: L, y: top + 12 });
+      name.appendChild(el("tspan", { class: "bandname" }, b.room + " · " + b.name));
+      b.states.forEach(function (s, i) {
+        name.appendChild(el("tspan", { dx: 12, style: "fill: " + stateColor(b, i) }, "■"));
+        name.appendChild(el("tspan", { dx: 4 }, s.label));
+      });
+      svg.appendChild(name);
+      var y = top + 18;
+      svg.appendChild(el("rect", { x: x(b.from), y: y, width: Math.max(0, x(b.to) - x(b.from)), height: barH, fill: "var(--grid)", opacity: 0.35 }));
+      b.sections.forEach(function (sec) {
+        var rect = el("rect", { x: x(sec[1]), y: y, width: Math.max(0.6, x(sec[2]) - x(sec[1])), height: barH, fill: stateColor(b, sec[0]) });
+        rect.appendChild(el("title", {}, b.states[sec[0]].label + ": " + timeLabel(sec[1], "hour", spansDays) + " – " + timeLabel(sec[2], "hour", spansDays) + " (" + duration(sec[2] - sec[1]) + ")"));
+        svg.appendChild(rect);
+      });
+    });
+    ticks.forEach(function (t) {
+      var px = x(t);
+      var anchor = px < L + 20 ? "start" : px > W - R - 20 ? "end" : "middle";
+      svg.appendChild(el("text", { x: px, y: H - 8, "text-anchor": anchor }, timeLabel(t, per, spansDays && per === "hour")));
+    });
+    box.appendChild(svg);
+    container.appendChild(box);
+  }
+
   function drawRings(container, rings) {
     if (!rings || !rings.length) { return; }
     var row = document.createElement("div");
@@ -375,6 +433,11 @@
     }
     var root = document.getElementById("root");
     root.textContent = "";
+    if (data && (!data.series || !data.series.length) && data.bands && data.bands.length) {
+      drawBands(root, data.bands);
+      reportSize();
+      return;
+    }
     if (!data || !data.series || !data.series.length) {
       var empty = document.createElement("div");
       empty.className = "empty";
@@ -394,6 +457,7 @@
       drawGroup(root, unit, groups[unit], data, offset, showBand);
       offset += groups[unit].length;
     });
+    drawBands(root, data.bands);
     var labels = data.labels || {};
     var controls = document.createElement("div");
     controls.className = "controls";

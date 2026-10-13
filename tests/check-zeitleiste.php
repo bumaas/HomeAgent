@@ -24,13 +24,14 @@ $de = json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/local
 /** @var FakeBackend */
 $anlage = null;
 
-function frage(array $argumente, ?array $uebersetzungen = null): array
+function frage(array $argumente, ?array $uebersetzungen = null, string $werkzeug = 'get'): array
 {
     global $anlage, $liste, $werte, $mitschnitt;
     $anlage = new FakeBackend($werte, $uebersetzungen);
     $anlage->jetzt = $mitschnitt['jetzt'];
     try {
-        return (new DeviceIndex($liste, $anlage))->getState($argumente);
+        $index = new DeviceIndex($liste, $anlage);
+        return $werkzeug === 'chart' ? $index->chart($argumente) : $index->getState($argumente);
     } catch (Throwable $e) {
         return ['text' => 'FEHLT: ' . $e->getMessage(), 'isError' => true];
     }
@@ -95,5 +96,30 @@ pruefe($anlage->historyRequests === [[13407, 0]], 'Verlauf nur für den Ladezust
 
 $r = frage(['period' => 'yesterday']);
 pruefe(str_contains($r['text'], 'Keller | Kühlschrank | switch | 0.3 kWh') && !str_contains($r['text'], 'on 6 h'), 'fürs ganze Haus nur der Verbrauch: ' . $r['text']);
+
+/* --- Bänder in show_chart ------------------------------------------------------------------------ */
+
+// Nur Zustände: kind timeline; je Gerät Zustände (aktiv ja/nein) und Abschnitte [Zustand, Beginn, Ende] in Sekunden
+$gestern = strtotime('2026-10-12 00:00');
+$r = frage(['name' => 'Batteriemodus', 'period' => 'yesterday'], null, 'chart');
+$daten = $r['structuredContent'] ?? [];
+$band = $daten['bands'][0] ?? [];
+pruefe(!$r['isError'] && ($daten['kind'] ?? '') === 'timeline' && count($daten['bands'] ?? []) === 1 && ($daten['series'] ?? []) === [], 'Batteriemodus als Zeitleiste: ' . json_encode(array_diff_key($daten, ['bands' => 0]), JSON_UNESCAPED_UNICODE));
+pruefe(($band['room'] ?? '') === 'Dachboden' && ($band['name'] ?? '') === 'Batteriemodus' && ($band['from'] ?? 0) === $gestern && ($band['to'] ?? 0) === $gestern + 86400, 'Band mit Raum, Name und Zeitraum: ' . json_encode(array_diff_key($band, ['sections' => 0]), JSON_UNESCAPED_UNICODE));
+pruefe(($band['states'] ?? []) === [['label' => 'Normal', 'active' => null], ['label' => 'Halten', 'active' => null], ['label' => 'Ladesperre', 'active' => null]], 'Zustände in der Reihenfolge der Einträge, damit die Farben jeden Tag gleich sind: ' . json_encode($band['states'] ?? [], JSON_UNESCAPED_UNICODE));
+pruefe(count($band['sections'] ?? []) === 8 && ($band['sections'][0] ?? []) === [1, $gestern, $gestern + 5 * 3600 + 45 * 60 + 1] && (end($band['sections']) ?: [])[2] === $gestern + 86400, 'acht Abschnitte, der erste „Halten“ bis 05:45:01, der letzte bis Mitternacht: ' . json_encode($band['sections'] ?? []));
+pruefe(str_contains($r['text'], 'Timeline of 1 device(s)') && str_contains($r['text'], 'The chart is shown in the chat.'), 'Text fürs Modell: Zeitleiste und Hinweis: ' . $r['text']);
+// an/aus: der aktive Zustand zuerst und als aktiv markiert
+$r = frage(['name' => 'Haustür', 'period' => 'yesterday'], $de, 'chart');
+pruefe((($r['structuredContent']['bands'][0]['states'] ?? []) === [['label' => 'offen', 'active' => true], ['label' => 'geschlossen', 'active' => false]]) && count($r['structuredContent']['bands'][0]['sections'] ?? []) === 17, 'Tür: offen aktiv, 17 Abschnitte: ' . json_encode($r['structuredContent']['bands'][0] ?? null, JSON_UNESCAPED_UNICODE));
+// alle Abschnitte gehen an die Seite, auch wenn der Text nur Summen nennt (Bewegungsmelder)
+$r = frage(['room' => 'Küche', 'name' => 'Bewegungsmelder', 'period' => 'yesterday'], null, 'chart');
+pruefe(count($r['structuredContent']['bands'][0]['sections'] ?? []) === 343, 'Bewegungsmelder: alle 343 Abschnitte im Band: ' . count($r['structuredContent']['bands'][0]['sections'] ?? []));
+// gemischt: Verlauf des Ladezustands und Band des Batteriemodus in einem Diagramm
+$r = frage(['room' => 'Dachboden', 'period' => 'yesterday'], null, 'chart');
+pruefe(($r['structuredContent']['kind'] ?? '') === 'history' && count($r['structuredContent']['series'] ?? []) === 1 && count($r['structuredContent']['bands'] ?? []) === 1, 'Dachboden: eine Linie, ein Band: ' . json_encode(array_map('count', array_filter($r['structuredContent'] ?? [], 'is_array'))));
+// nichts archiviert: Absage wie bisher
+$r = frage(['room' => 'Bad', 'name' => 'Deckenlicht', 'period' => 'yesterday'], null, 'chart');
+pruefe($r['isError'], 'ohne Archiv kein Diagramm: ' . $r['text']);
 
 ende('Zeitleiste');

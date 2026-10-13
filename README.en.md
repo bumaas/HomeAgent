@@ -450,7 +450,8 @@ as a chart", makes the module draw the history right in the chat: one chart per 
 maximum and a line for the average. With several lines in one chart the band starts hidden, a checkbox below the
 chart shows and hides it. The values only go to the chart, the language model gets minimum and maximum.
 Several rooms can be compared in one chart, for example "Compare the temperature in the guest room and outside
-last week".
+last week". States such as on/off, open/closed or a battery mode appear as bands along the time axis, coloured by
+state, for example with "Show me when the front door was open today".
 The tool is called `show_chart` and appears in the connector settings under "Interactive tools", where it can be
 set to "Always allow". Other assistants do not see it.
 

@@ -469,7 +469,8 @@ als Diagramm“, zeichnet das Modul den Verlauf direkt im Chat: je Einheit ein D
 Maximum und eine Linie für das Mittel. Bei mehreren Linien in einem Diagramm fehlt das Band anfangs, ein Haken unter
 dem Diagramm blendet es ein und aus. Die Werte gehen nur an das Diagramm, das Sprachmodell bekommt Minimum und
 Maximum. Mehrere Räume lassen sich in einem Diagramm vergleichen, etwa „Vergleiche die Temperatur im Gästezimmer
-und draußen in der letzten Woche“. Das Werkzeug heißt `show_chart` und erscheint in den Einstellungen des Connectors unter „Interaktive
+und draußen in der letzten Woche“. Zustände wie an/aus, offen/zu oder ein Batteriemodus erscheinen als Bänder
+über der Zeitachse, gefärbt nach Zustand, etwa bei „Zeig mir, wann die Haustür heute offen war“. Das Werkzeug heißt `show_chart` und erscheint in den Einstellungen des Connectors unter „Interaktive
 Tools“; dort lässt es sich auf „Immer erlauben“ stellen. Andere Assistenten sehen es nicht.
 
 Ist die Energiebilanz eingetragen, zeichnet das Modul auf Wunsch auch den Hausverbrauch, etwa „Zeig mir unseren

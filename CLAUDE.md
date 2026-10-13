@@ -235,7 +235,11 @@ Weitere Regeln, die nicht offensichtlich sind:
   und Zeiten in einer Zeile (Burkhard: Verbrauch auf „wann war das Licht an?“ wäre falsch), nicht fürs ganze Haus. Ein
   Zustand ohne Archiv wird ausgelassen und gezählt; bleibt nichts, sagt die Absage „misst keine Energie oder hat keinen
   archivierten Zustand“. Am nuc waren am 13.10.2026 rund 40 von 120 Zuständen archiviert (Türen, Schalter, Präsenz, wenige
-  Lichter). Test `check-zeitleiste.php`. `show_chart` lehnt Zustände noch ab (Bänder kommen im nächsten Schritt).
+  Lichter). Test `check-zeitleiste.php`. In `show_chart` werden Zustände Bänder
+  (`chartBands`, `structuredContent.bands`: Raum, Name, `from`, `to`, `states` mit `label` und `active`, `sections` als
+  `[Zustand, Beginn, Ende]`, alle Abschnitte, auch wenn der Text nur Summen nennt); nur Zustände ergeben `kind: timeline`,
+  mit Messwerten bleibt es `history` mit Bändern darunter. Farben: aktiv blau, inaktiv grau, eine Auswahl in der
+  Reihenfolge der Einträge (jeden Tag dieselben). Höchstens `TIMELINE_CHART_MAX` (10) Bänder.
 - **Verlauf statt Verbrauch** (`DeviceIndex::history`), wenn nach einem Typ aus `HISTORY_TYPES` gefragt
   wird oder kein Treffer einen Zähler hat, nie fürs ganze Haus. Stufe aus dem Zeitraum (heute und
   gestern stündlich, Wochen und Monate täglich, Jahre monatlich; `from`/`to` bis 2 Tage stündlich, bis

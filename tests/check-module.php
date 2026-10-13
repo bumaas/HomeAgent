@@ -2793,7 +2793,11 @@ pruefe(str_contains($mit['get_state']['description'] ?? '', 'use show_chart') &&
 $nurLicht = json_encode([['Room' => 'Küche', 'Name' => 'Deckenlicht', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $kueche, 'Invert' => false]]);
 IPS_SetProperty($pid, 'Devices', $nurLicht);
 IPS_ApplyChanges($pid);
-pruefe(!isset($werkzeugNamen(true)['show_chart']), 'ohne Gerät mit Verlauf kein show_chart, auch mit Apps');
+// Seit den Bändern (B69) hat auch ein Licht eine Zeitleiste fürs Diagramm
+pruefe(str_contains($werkzeugNamen(true)['show_chart']['description'] ?? '', 'Devices with on/off, open/closed or a selection appear as bands showing when each state lasted.'), 'nur ein Licht: show_chart mit Bändern: ' . json_encode(array_keys($werkzeugNamen(true))));
+IPS_SetProperty($pid, 'Devices', json_encode([['Room' => 'Küche', 'Name' => 'Rollladen', 'Aliases' => '', 'Type' => 'blind', 'LevelVariableID' => $kuecheTemp, 'Invert' => false]]));
+IPS_ApplyChanges($pid);
+pruefe(!isset($werkzeugNamen(true)['show_chart']), 'ohne Gerät mit Verlauf oder Zustand kein show_chart, auch mit Apps');
 // Nur ein Gerät mit Zähler: show_chart mit type=energy für den Verbrauch je Gerät (Burkhard 12.10.2026)
 $lichtZaehler = variable(VARIABLETYPE_FLOAT, 1234.5);
 IPS_SetProperty($pid, 'Devices', json_encode([['Room' => 'Küche', 'Name' => 'Deckenlicht', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $kueche, 'EnergyVariableID' => $lichtZaehler, 'Invert' => false]]));

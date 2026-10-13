@@ -1730,7 +1730,7 @@ class HomeAgent extends IPSModuleStrict
         $hasCards = $apps && $this->usableDevices() !== [];
         // Ebenso fürs Diagramm (Claude-App 12.10.2026: „Hausverbrauch von gestern als Diagramm“ ergab get_state und eine
         // selbst gezeichnete SVG-Datei).
-        $hasChart = $apps && ($hasHistory || $hasMeters || $this->usableBalance($this->balance()) !== []);
+        $hasChart = $apps && ($hasHistory || $hasTimeline || $hasMeters || $this->usableBalance($this->balance()) !== []);
         $consumption = $hasMeters || $hasBalance
             ? 'Energy consumption over this period instead of the state, in kWh; the first line gives the total. '
                 . ($hasBalance
@@ -1780,7 +1780,7 @@ class HomeAgent extends IPSModuleStrict
         // Diagramm als MCP App, nur für Clients, die Apps anmelden, und nur mit einem Gerät, das einen Verlauf haben kann
         // (Leitbild: angeboten wird nur, was es gibt; andere Clients zahlen keine Tokens dafür).
         // Mit der Energiebilanz auch der Hausverbrauch als Stapeldiagramm (Burkhard 12.10.2026).
-        if ($apps && ($hasHistory || $hasBalance || $hasMeters || $hasPowerBalance)) {
+        if ($apps && ($hasHistory || $hasTimeline || $hasBalance || $hasMeters || $hasPowerBalance)) {
             $historyTypes = array_values(array_unique(array_column(array_filter($this->usableDevices(), static fn (array $row): bool => DeviceIndex::isMeasured($row)), 'Type')));
             // Verbrauch je Gerät heißt im Diagramm type=energy; als Gerätetyp gibt es das nicht
             if ($hasMeters) {
@@ -1790,6 +1790,7 @@ class HomeAgent extends IPSModuleStrict
                 'name'        => 'show_chart',
                 'title'       => 'Show chart',
                 'description' => ($hasHistory ? 'Shows the history of measured values (temperature, humidity, air quality and others) as a chart in the chat. ' : '')
+                    . ($hasTimeline ? 'Devices with on/off, open/closed or a selection appear as bands showing when each state lasted. ' : '')
                     . ($hasBalance ? 'Without room, floor, type or name it shows the house consumption as stacked bars (grid, solar used directly, battery, grid export below), with self-sufficiency and self-consumed solar as rings. ' : '')
                     . ($hasPowerBalance ? 'period=now without room, floor, type or name shows the current house power as rings. ' : '')
                     . ($hasMeters ? 'type=energy shows the consumption per device with an energy meter as stacked bars, the largest five first; a room or name with meters and no measured values does the same. ' : '')
