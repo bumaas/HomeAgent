@@ -516,6 +516,8 @@ foreach ([
     'The energy balance uses the properties GridImportVariableID, GridExportVariableID, SolarVariableID, BatteryChargeVariableID and BatteryDischargeVariableID (energy meters archived as counters), the current power the matching GridImportPowerVariableID and so on; each part is optional.' => 'Die Energiebilanz nutzt die Properties GridImportVariableID, GridExportVariableID, SolarVariableID, BatteryChargeVariableID und BatteryDischargeVariableID (als Zähler archivierte Energiezähler), die aktuelle Leistung die passenden GridImportPowerVariableID und so weiter; jeder Teil ist freiwillig.',
     'An access without a token gets one on apply (64 hex characters); a token set by script needs at least 24 characters.'                         => 'Ein Zugang ohne Token bekommt beim Übernehmen eines (64 Hex-Zeichen); ein per Skript gesetztes Token braucht mindestens 24 Zeichen.',
     'Room names are the words the user speaks (Küche, Bad oben), without technical additions.'                                                      => 'Raumnamen sind die Wörter, die der Anwender spricht (Küche, Bad oben), ohne technische Zusätze.',
+    // Raum als Auswahl der Raumliste (B75, Burkhard 13.10.2026)
+    'The Room of a device is a room of the room list or empty; the form names rooms that are missing there.' => 'Der Raum eines Geräts ist ein Raum der Raumliste oder leer; das Formular nennt Räume, die dort fehlen.',
     'The fields of each type (volume, mode, fan and others) are named by HAGT_UIDeviceForm(int $InstanceID, string $Type).'                           => 'Die Felder je Typ (Lautstärke, Modus, Lüfter und andere) nennt HAGT_UIDeviceForm(int $InstanceID, string $Type).',
     'For every blind HAGT_RunSelfTest shows which value counts as open; if open and closed are swapped, set Invert.'                                 => 'Für jeden Rollladen zeigt HAGT_RunSelfTest, welcher Wert als offen gilt; sind offen und geschlossen vertauscht, Invert setzen.',
     // Einrichtungs-Blindtest 12.10.2026 (Backlog B58, B59)
@@ -553,12 +555,14 @@ $formular = json_decode($m->GetConfigurationForm(), true);
 $geraete = array_values(array_filter(flach($formular['elements']), static fn ($e) => ($e['name'] ?? '') === 'Devices'))[0];
 $spalten = array_column($geraete['columns'], 'name');
 pruefe(in_array('StateVariableID', $spalten, true) && in_array('LevelVariableID', $spalten, true) && in_array('ReadOnly', $spalten, true) && !in_array('VariableID', $spalten, true), 'Spalten der Liste im neuen Format: ' . implode(', ', $spalten));
-pruefe(($geraete['form'] ?? null) === "return json_decode(HAGT_UIDeviceForm(\$id, \$Devices['Type'] ?? 'light'), true);", 'die Liste erzeugt ihren Dialog je Zeile über das Modul: ' . json_encode($geraete['form'] ?? null));
+pruefe(($geraete['form'] ?? null) === "return json_decode(HAGT_UIDeviceForm(\$id, \$Devices['Type'] ?? 'light', \$Devices['Room'] ?? ''), true);", 'die Liste erzeugt ihren Dialog je Zeile über das Modul, mit dem Raum der Zeile: ' . json_encode($geraete['form'] ?? null));
+// Raum als Auswahl (B75): keine Hilfsspalte mehr, der Raum der Zeile ist der Wert der Auswahl
+pruefe(!in_array('RoomChoice', $spalten, true), 'keine Spalte RoomChoice: ' . implode(', ', $spalten));
 // Burkhard, 10.10.2026: Endpunkt mit Zugängen, Räume, Geräte, Szenen und Energiebilanz je einzeln aufklappbar
 $oben = $formular['elements'];
 $bereiche = array_values(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel'));
 $inhalt = array_map(static fn (array $b): array => array_values(array_filter(array_column($b['items'], 'name'))), $bereiche);
-pruefe(count($bereiche) === 6 && $inhalt[0] === ['Accesses', 'ConnectHeading', 'PanelClaude', 'PanelHA', 'PanelOther'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['Devices'] && $inhalt[3] === ['Scenes'] && in_array('GridImportVariableID', array_column(flach($bereiche[4]['items']), 'name'), true) && in_array('Problems', array_column(flach($bereiche[5]['items']), 'name'), true), 'sechs Bereiche in dieser Reihenfolge, zuletzt „Was nicht geklappt hat“: ' . json_encode($inhalt));
+pruefe(count($bereiche) === 6 && $inhalt[0] === ['Accesses', 'ConnectHeading', 'PanelClaude', 'PanelHA', 'PanelOther'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['RoomsMissing', 'Devices'] && $inhalt[3] === ['Scenes'] && in_array('GridImportVariableID', array_column(flach($bereiche[4]['items']), 'name'), true) && in_array('Problems', array_column(flach($bereiche[5]['items']), 'name'), true), 'sechs Bereiche in dieser Reihenfolge, zuletzt „Was nicht geklappt hat“: ' . json_encode($inhalt));
 pruefe(array_values(array_filter(array_column(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') !== 'ExpansionPanel'), 'name'))) === [], 'oben steht außer den Bereichen nur Erklärtext, kein Feld: ' . json_encode(array_column($oben, 'name')));
 // Burkhard, 10.10.2026: einheitlich zugeklappt, und jeder Bereich merkt sich seinen Zustand
 $zustand = static fn (): array => array_map(static fn (array $b): bool => ($b['expanded'] ?? false) === true, array_values(array_filter(json_decode($m->GetConfigurationForm(), true)['elements'], static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel')));
@@ -616,7 +620,8 @@ foreach (DeviceIndex::TYPES as $typ => $woerter) {
         $dialogFehler[] = $typ . ': Sichtbarkeit von ReadOnly';
     }
     foreach ($dialog as $element) {
-        foreach (array_merge([$element['caption'] ?? ''], array_column($element['options'] ?? [], 'caption')) as $beschriftung) {
+        // Die Einträge der Raumauswahl sind Räume des Anwenders, kein Text des Moduls
+        foreach (array_merge([$element['caption'] ?? ''], ($element['name'] ?? '') === 'Room' ? [] : array_column($element['options'] ?? [], 'caption')) as $beschriftung) {
             if ($beschriftung !== '' && !isset($de[$beschriftung])) {
                 $ohneUebersetzung[] = $beschriftung;
             }
@@ -657,6 +662,54 @@ pruefe(($felder['blind']['MovingVariableID']['onChange'] ?? '') === 'HAGT_UIDevi
 pruefe(($felder['light']['StateVariableID']['type'] ?? '') === 'SelectVariable' && ($felder['light']['LevelVariableID']['type'] ?? '') === 'SelectVariable', 'Fähigkeiten sind Variablenauswahlen');
 $fremd = json_decode((string)oderNull(static fn () => $m->UIDeviceForm('herd')), true);
 pruefe(is_array($fremd) && $fremd === array_values($felder['light'] ?? []), 'unbekannter Typ: Dialog wie für ein Licht');
+
+// Raum im Gerätedialog als Auswahl (B75, Wunsch doctee t/144611 #16, Burkhard 13.10.2026: nur ein angelegter Raum oder
+// keiner): „-“ und die Räume der Raumliste. Ein Alias wählt seinen Raum vor. Ein Raum, der in der Raumliste fehlt, bleibt
+// als eigener Eintrag stehen (ein Wert ohne Eintrag sperrt das Übernehmen), und das Formular nennt ihn über der Liste.
+$rp = IPS\ObjectManager::registerObject(1);
+IPS\InstanceManager::createInstance($rp, ['ModuleID' => HomeAgentHarness::MODULE_ID, 'ModuleName' => 'HomeAgent', 'ModuleType' => 3, 'Class' => HomeAgentHarness::class]);
+$raumProbe = IPS\InstanceManager::getInstanceInterface($rp);
+IPS_SetProperty($rp, 'Rooms', json_encode([['Name' => 'Küche', 'Aliases' => 'Kochen', 'Floor' => ''], ['Name' => 'Bad oben', 'Aliases' => 'Bad_DG', 'Floor' => '']]));
+IPS_SetProperty($rp, 'Devices', json_encode([
+    ['Room' => 'Wohnzimmer', 'Name' => 'Stehlampe', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 59999, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => 'Bad_DG', 'Name' => 'Spiegel', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 59995, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Ofen', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => 59998, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => 'Küche ', 'Name' => 'Spüle', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => 59997, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => '', 'Name' => 'Ohne Raum', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => 59996, 'LevelVariableID' => 0, 'Invert' => false],
+]));
+IPS_ApplyChanges($rp);
+$raumFeld = static function (string $raum) use ($raumProbe): array {
+    $dialog = json_decode((string)oderNull(static fn () => $raumProbe->UIDeviceForm('light', $raum)), true);
+    return is_array($dialog) ? $dialog : [];
+};
+$raumAuswahl = static fn (string $raum): array => array_column($raumFeld($raum), null, 'name')['Room'] ?? [];
+$auswahl = $raumAuswahl('Küche');
+pruefe(($auswahl['type'] ?? '') === 'Select' && !isset($auswahl['onChange']), 'der Raum ist eine Auswahl: ' . json_encode($auswahl, JSON_UNESCAPED_UNICODE));
+pruefe(array_column($auswahl['options'] ?? [], 'value') === ['', 'Bad oben', 'Küche'] && ($auswahl['options'][0]['caption'] ?? '') === '-', 'Einträge: „-“, dann die Räume der Raumliste sortiert: ' . json_encode($auswahl['options'] ?? [], JSON_UNESCAPED_UNICODE));
+pruefe(($auswahl['value'] ?? null) === 'Küche', 'vorgewählt der Raum der Zeile');
+// Die Konsole füllt den Dialog mit dem Wert der Zeile (Testbox 13.10.2026), eine andere Schreibweise oder ein Alias braucht
+// deshalb einen eigenen Eintrag, sonst sperrt die Konsole das Übernehmen; die Beschriftung nennt den Raum dazu
+$alias = $raumAuswahl('Kochen');
+pruefe(($alias['value'] ?? null) === 'Kochen' && array_column($alias['options'] ?? [], 'caption', 'value')['Kochen'] === 'Kochen (Küche)', 'ein Alias steht als eigener Eintrag mit seinem Raum: ' . json_encode($alias['options'] ?? [], JSON_UNESCAPED_UNICODE));
+$schreibweise = $raumAuswahl('küche ');
+pruefe(($schreibweise['value'] ?? null) === 'küche ' && in_array('küche ', array_column($schreibweise['options'] ?? [], 'value'), true), 'eine andere Schreibweise bleibt wörtlich als Eintrag: ' . json_encode($schreibweise['options'] ?? [], JSON_UNESCAPED_UNICODE));
+pruefe(($raumAuswahl('')['value'] ?? null) === '' && array_column($raumAuswahl('')['options'] ?? [], 'value') === ['', 'Bad oben', 'Küche'], 'ohne Raum steht „-“ da (Burkhard: der Raum darf leer bleiben)');
+$fremdRaum = $raumAuswahl('Wohnzimmer');
+pruefe(($fremdRaum['value'] ?? null) === 'Wohnzimmer' && array_column($fremdRaum['options'] ?? [], 'value') === ['', 'Bad oben', 'Küche', 'Wohnzimmer'] && str_starts_with((string)(end($fremdRaum['options'])['caption'] ?? ''), 'Wohnzimmer ('), 'ein Raum ohne Eintrag in der Raumliste bleibt als eigener Eintrag mit Hinweis: ' . json_encode($fremdRaum['options'] ?? [], JSON_UNESCAPED_UNICODE));
+pruefe(!method_exists($raumProbe, 'UIRoomChosen'), 'UIRoomChosen gibt es nicht mehr');
+$raumFormular = array_column(flach(json_decode($raumProbe->GetConfigurationForm(), true)['elements']), null, 'name');
+pruefe(!in_array('RoomChoice', array_merge(...array_map('array_keys', $raumFormular['Devices']['values'] ?? [[]])), true), 'die Zeilen tragen kein RoomChoice mehr');
+$fehlend = $raumFormular['RoomsMissing'] ?? [];
+pruefe(($fehlend['visible'] ?? false) === true && str_contains((string)($fehlend['caption'] ?? ''), 'Wohnzimmer') && !str_contains((string)($fehlend['caption'] ?? ''), 'Küche') && !str_contains((string)($fehlend['caption'] ?? ''), 'Bad'), 'über der Liste stehen die Räume, die in der Raumliste fehlen: ' . ($fehlend['caption'] ?? '–'));
+// Ein Alias zählt als Raum der Raumliste
+IPS_SetProperty($rp, 'Devices', json_encode([
+    ['Room' => 'Bad_DG', 'Name' => 'Spiegel', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 59995, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => '', 'Name' => 'Ohne Raum', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => 59996, 'LevelVariableID' => 0, 'Invert' => false],
+]));
+IPS_ApplyChanges($rp);
+$raumHinweis = array_column(flach(json_decode($raumProbe->GetConfigurationForm(), true)['elements']), null, 'name')['RoomsMissing'] ?? [];
+pruefe(($raumHinweis['visible'] ?? true) === false, 'fehlt keiner, ist der Hinweis unsichtbar: ' . ($raumHinweis['caption'] ?? ''));
+IPS_DeleteInstance($rp);
 
 $m->formUpdates = [];
 oderNull(static fn () => $m->UIDeviceChanged('blind', 0, 0));

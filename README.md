@@ -168,13 +168,13 @@ gekoppelten Assistenten, ohne Connect sagt er, dass die Anmeldung nicht möglich
 
 ## Räume und Etagen
 
-Der Raum eines Geräts ist freier Text. In der Liste **Räume** können Sie einem Raum weitere
-Bezeichnungen und eine Etage geben. Danach findet „Stube“ das Wohnzimmer, und „alle Lichter im
-Obergeschoss“ trifft jeden Raum dieser Etage. Die Liste ist freiwillig. Ein Raum, der dort fehlt,
-wird weiter über seinen Namen gefunden.
+Räume legen Sie in der Liste **Räume** an, wahlweise mit weiteren Bezeichnungen und einer Etage. Danach
+findet „Stube“ das Wohnzimmer, und „alle Lichter im Obergeschoss“ trifft jeden Raum dieser Etage.
 
-Schreiben Sie den Raum beim Gerät so wie in der Raumliste. Der Selbsttest der Instanz nennt Räume,
-die bei einem Gerät stehen, aber nicht in der Raumliste.
+Im Dialog eines Geräts wählen Sie den Raum aus dieser Liste, bei einem Gerät ohne Raum „-“. Ein neuer
+Raum kommt zuerst in die Raumliste; nach dem Übernehmen steht er in der Auswahl. Räume, die in der
+Raumliste fehlen (etwa per Skript eingetragen), werden weiter über ihren Namen gefunden. Das Formular
+nennt sie über der Geräteliste, der Selbsttest ebenso.
 
 ## Die Freigabeliste
 
@@ -183,7 +183,7 @@ zeigt der Dialog nur die Variablen, die zu diesem Typ gehören.
 
 | Spalte | Bedeutung |
 |---|---|
-| Raum | So, wie Sie den Raum nennen. Groß- und Kleinschreibung und Umlaute sind egal („Küche“ = „kueche“). |
+| Raum | Ein Raum aus der Raumliste oder „-“. In Anfragen sind Groß- und Kleinschreibung und Umlaute egal („Küche“ = „kueche“). |
 | Name, Aliase | Der Name und weitere Bezeichnungen, durch Komma getrennt. Ein Teilwort genügt beim Suchen. Wird ein Gerät über einen Alias gefunden, steht er in der Antwort in Klammern hinter dem Namen. |
 | Typ | Licht, Schalter, Steckdose, Gerät, Rollladen, Thermostat, Mediaplayer, Luftbe-/entfeuchter, Lüftung/Ventilator, Fenster, Tür, Anwesenheit, Wasserleck, Temperatur, Luftfeuchte, Luftqualität oder sonstiger Messwert. |
 | Zustand oder Messwert | Die Variable für an/aus, offen/zu oder erkannt, bei Messwerten der Wert selbst. Beim Thermostat die Ist-Temperatur. |

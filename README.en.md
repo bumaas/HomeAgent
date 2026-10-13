@@ -160,12 +160,13 @@ that sign-in is not available.
 
 ## Rooms and floors
 
-The room of a device is free text. In the list **Rooms** you can give a room further names and a
-floor. After that "lounge" finds the living room, and "all lights upstairs" matches every room of
-that floor. The list is optional. A room that is missing there is still found by its name.
+You create rooms in the list **Rooms**, optionally with further names and a floor. After that
+"lounge" finds the living room, and "all lights upstairs" matches every room of that floor.
 
-Write the room of a device the same way as in the room list. The self-test of the instance names
-rooms that appear with a device but not in the room list.
+In the dialog of a device you choose the room from this list, or "-" for a device without a room. A new
+room goes into the room list first; after applying it appears in the selection. Rooms that are missing
+in the room list (set by a script, for example) are still found by their name. The form names them
+above the device list, and so does the self-test.
 
 ## The release list
 
@@ -174,7 +175,7 @@ then shows only the variables that belong to this type.
 
 | Column | Meaning |
 |---|---|
-| Room | The way you call the room. Case and umlauts do not matter ("Küche" = "kueche"). |
+| Room | A room from the room list or "-". In requests case and umlauts do not matter ("Küche" = "kueche"). |
 | Name, aliases | The name and further names, separated by commas. A partial word is enough when searching. If a device is found through an alias, the answer shows it in brackets after the name. |
 | Type | Light, switch, socket, appliance, blind, thermostat, media player, humidifier, ventilation/fan, window, door, presence, water leak, temperature, humidity, air quality or other measured value. |
 | State or measured value | The variable for on/off, open/closed or detected, for measured values the value itself. For a thermostat the current temperature. |

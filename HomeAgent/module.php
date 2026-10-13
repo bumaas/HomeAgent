@@ -532,11 +532,17 @@ class HomeAgent extends IPSModuleStrict
             if (($element['name'] ?? '') === 'Devices') {
                 // Der Dialog einer Zeile hängt vom Gerätetyp ab und entsteht deshalb bei jedem Öffnen
                 // neu; die Vorlage dafür steht als „form“ der Liste in der form.json.
-                $element['form'] = "return json_decode(HAGT_UIDeviceForm(\$id, \$Devices['Type'] ?? 'light'), true);";
+                $element['form'] = "return json_decode(HAGT_UIDeviceForm(\$id, \$Devices['Type'] ?? 'light', \$Devices['Room'] ?? ''), true);";
                 // Die sichtbaren Spalten zu den Variablen sind Text, den das Modul füllt: der Name der
                 // Variable oder „-“. Eine Variablenauswahl als Spalte zeigte für jedes leere Feld „Kein(e)“.
                 $list = json_decode($this->ReadPropertyString('Devices'), true);
                 $element['values'] = array_map(fn (array $row): array => $this->deviceLabels($row), is_array($list) ? array_values($list) : []);
+            }
+            // Räume der Geräteliste, die in der Raumliste fehlen (B75): Die Auswahl im Dialog bietet nur die Raumliste an
+            if (($element['name'] ?? '') === 'RoomsMissing') {
+                $missing = $this->missingRooms();
+                $element['visible'] = $missing !== [];
+                $element['caption'] = sprintf($this->Translate('These rooms of the device list are missing in the room list: %s. The device dialog only offers rooms of the room list.'), implode(', ', $missing));
             }
 
             // Fehlerhafte Zeilen rot. Die Konsole ergänzt die gespeicherten Zeilen der Reihe nach um
@@ -591,7 +597,7 @@ class HomeAgent extends IPSModuleStrict
      * Nur für das Konfigurationsformular: liefert den Bearbeitungsdialog einer Zeile der
      * Freigabeliste als JSON. Sichtbar sind die Fähigkeiten, die der Gerätetyp haben kann.
      */
-    public function UIDeviceForm(string $Type): string
+    public function UIDeviceForm(string $Type, string $Room = ''): string
     {
         $type = array_key_exists($Type, DeviceIndex::TYPES) ? $Type : array_key_first(DeviceIndex::TYPES);
         $form = json_decode((string)file_get_contents(__DIR__ . '/form.json'), true);
@@ -618,6 +624,20 @@ class HomeAgent extends IPSModuleStrict
             }
             foreach ($element['options'] ?? [] as $index => $option) {
                 $element['options'][$index]['caption'] = $this->Translate($option['caption']);
+            }
+            // Raum als Auswahl (B75, Wunsch doctee t/144611 #16, Burkhard 13.10.2026: ein angelegter Raum oder keiner):
+            // „-“ und die Räume der Raumliste, Raumnamen ohne Übersetzung. Die Konsole füllt das Feld mit dem Wert der
+            // Zeile; steht der nicht wörtlich in der Raumliste (Alias, andere Schreibweise, fehlender Raum), bekommt er
+            // einen eigenen Eintrag: Ein Wert ohne Eintrag ließe die Konsole das Übernehmen ablehnen (loerdy 13.10.2026).
+            if ($name === 'Room') {
+                $rooms = $this->roomIndex()->names();
+                sort($rooms, SORT_STRING | SORT_FLAG_CASE);
+                $element['options'] = array_merge([['caption' => '-', 'value' => '']], array_map(static fn (string $room): array => ['caption' => $room, 'value' => $room], $rooms));
+                $element['value'] = trim($Room) === '' ? '' : $Room;
+                if (!in_array($element['value'], array_column($element['options'], 'value'), true)) {
+                    $listed = $this->roomIndex()->nameOf($Room);
+                    $element['options'][] = ['caption' => $listed !== null ? trim($Room) . ' (' . $listed . ')' : sprintf($this->Translate('%s (not in the room list)'), trim($Room)), 'value' => $Room];
+                }
             }
         }
         unset($element);
@@ -2410,6 +2430,26 @@ class HomeAgent extends IPSModuleStrict
     private function roomIndex(): RoomIndex
     {
         return new RoomIndex($this->listProperty('Rooms'));
+    }
+
+    /**
+     * Räume aus Zeilen der Geräteliste (auch fehlerhafter), die weder als Name noch als Alias in der Raumliste stehen.
+     *
+     * @return list<string>
+     */
+    private function missingRooms(): array
+    {
+        $index = $this->roomIndex();
+        $missing = [];
+        foreach ($this->listProperty('Devices') as $row) {
+            $room = trim((string)($row['Room'] ?? ''));
+            if ($room !== '' && $index->nameOf($room) === null) {
+                $missing[mb_strtolower($room)] ??= $room;
+            }
+        }
+        $missing = array_values($missing);
+        sort($missing, SORT_STRING | SORT_FLAG_CASE);
+        return $missing;
     }
 
     /**

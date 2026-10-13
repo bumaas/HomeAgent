@@ -402,6 +402,14 @@ Weitere Regeln, die nicht offensichtlich sind:
 - Bereiche „Endpunkt und Zugänge“, „Räume“, „Geräte“, „Szenen“ und „Energiebilanz“ als
   `ExpansionPanel`, in „Endpunkt und Zugänge“ dazu drei Unterbereiche (`PanelClaude`, `PanelHA`, `PanelOther`);
   der Zustand aller steht im Attribut `ExpandedPanels` (`UITogglePanel`, Namen in `PANELS`).
+- **Raum im Gerätedialog als Auswahl** (B75, Wunsch doctee 13.10.2026; Burkhard: „nur einen angelegten oder keinen“): Das
+  Dialogfeld `Room` ist ein Select mit „-“ (Wert "") und den Räumen der Raumliste, sortiert. Die Konsole füllt die Felder
+  des Dialogs mit den Werten der Zeile, nicht mit `value` aus dem Formular (Testbox 13.10.2026). Ein Wert, der nicht
+  wörtlich in der Raumliste steht, bekommt deshalb einen eigenen Eintrag, ein Alias als „Bad_DG (Bad oben)“, ein fehlender
+  Raum als „… (nicht in der Raumliste)“; ein Wert ohne Eintrag sperrt das Übernehmen. Fehlende Räume (auch als Alias nicht
+  bekannt) nennt über der Liste das Label `RoomsMissing` (`missingRooms()`), gesperrt wird nichts. Ein neuer Raum braucht
+  erst die Raumliste und Übernehmen. Verworfen: Textfeld plus Hilfsauswahl der benutzten Räume (zwei Felder, unsichtbare
+  Spalte mit `"save": false`). Ladezeit des Dialogs am nuc 0,44 bis 0,52 s, gleich bei 1 und 6 sichtbaren Variablenauswahlen.
 - Der Bearbeitungsdialog einer Geräte-Zeile entsteht je Typ über `UIDeviceForm`; sichtbare Spalten sind
   Textspalten mit dem Namen der Variable, die IDs stehen in unsichtbaren Spalten.
 - „Geräte aus Alexa vorschlagen“ öffnet ein `PopupAlert` mit Haken und bearbeitbarem Raum je Vorschlag;
