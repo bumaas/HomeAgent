@@ -328,6 +328,7 @@
             "Current humidity": "Ist-Feuchte",
             "Target humidity": "Zielfeuchte",
             "Measurements": "Messwerte",
+            "So far %s %s, projected %s %s for the whole period (after the course of the year before).": "Bisher %s %s, hochgerechnet %s %s für den ganzen Zeitraum (nach dem Verlauf des Vorjahres).",
             "So far %s %s, projected %s %s for the whole period.": "Bisher %s %s, hochgerechnet %s %s für den ganzen Zeitraum.",
             "In total %s %s.": "Insgesamt %s %s.",
             "Comparison by the same time %s %s (%s%d %%).": "Vergleich zur selben Zeit %s %s (%s%d %%).",

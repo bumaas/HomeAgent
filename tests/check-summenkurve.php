@@ -81,6 +81,35 @@ $d = $r['structuredContent'] ?? [];
 pruefe(!$r['isError'] && ($d['unit'] ?? '') === '€' && abs((($d['values'] ?? []) === [] ? 0 : end($d['values'])) - 38.21) < 0.01 && array_key_exists('projection', $d) && $d['projection'] === null, 'Kosten im September aufaddiert bis 38,21 €, ohne Hochrechnung: ' . json_encode($d['projection'] ?? 'fehlt'));
 pruefe(str_contains($r['text'], 'In total 38.21 €.'), 'abgeschlossener Zeitraum: Summe: ' . $r['text']);
 
+// Ohne Werte im Vorjahr (der Mitschnitt beginnt im September 2026) bleibt die Hochrechnung linear
+$r = kurve($verbrauch, ['cumulative' => true, 'period' => 'this_month']);
+pruefe(($r['structuredContent']['projectionMethod'] ?? '') === 'linear' && count($r['structuredContent']['projection'] ?? []) === 2, 'ohne Vorjahr linear: ' . json_encode($r['structuredContent']['projectionMethod'] ?? null));
+
+/* --- Hochrechnung mit dem Verlauf des Vorjahres (Mitschnitt mit Tageswerten ab 2025) ---------- */
+
+// Burkhard 13.10.2026: linear unterschätzt über ein Jahr den Winter. Hochgerechnet wird deshalb mit dem Verhältnis „Vorjahr
+// gesamt zu Vorjahr bis zur selben Zeit“ (der heutige Tag anteilig), die Kurve folgt dem Vorjahr.
+$vorjahr = fixture('nuc_2026-10-13_vorjahr.json');
+$j26 = strtotime('2026-01-01 00:00');
+$j25 = strtotime('2025-01-01 00:00');
+$j27 = strtotime('2027-01-01 00:00');
+$jahr26 = array_values($tag($vorjahr, $j26, $j27));
+$jahr25 = array_values($tag($vorjahr, $j25, $j26));
+$letzter = count($jahr26) - 1;
+$heute = strtotime('today', $vorjahr['jetzt']);
+$anteilHeute = ($vorjahr['jetzt'] - $heute) / 86400;
+$summe26 = array_sum($jahr26);
+$bis25 = array_sum(array_slice($jahr25, 0, $letzter)) + $jahr25[$letzter] * $anteilHeute;
+$gesamt25 = array_sum($jahr25);
+$erwartet = $summe26 * $gesamt25 / $bis25;
+$r = kurve($vorjahr, ['cumulative' => true, 'period' => 'this_year']);
+$d = $r['structuredContent'] ?? [];
+$p = $d['projection'] ?? [];
+pruefe(!$r['isError'] && ($d['projectionMethod'] ?? '') === 'year_before' && count($p) > 2, 'Hochrechnung nach dem Vorjahresverlauf: ' . json_encode($d['projectionMethod'] ?? $r['text']));
+pruefe(($p[0][0] ?? 0) === $vorjahr['jetzt'] && abs(($p[0][1] ?? -1) - $summe26) < 0.01 && (end($p) ?: [0])[0] === $j27 && abs((end($p) ?: [0, 0])[1] - $erwartet) < 0.05, 'von jetzt bis Jahresende, Endwert ' . round($erwartet, 1) . ' kWh: ' . json_encode([$p[0] ?? null, end($p)]));
+$linear = $summe26 / (($vorjahr['jetzt'] - $j26) / ($j27 - $j26));
+pruefe(str_contains($r['text'], sprintf('So far %s kWh, projected %s kWh for the whole period (after the course of the year before).', $zahl($summe26), $zahl($erwartet))) && abs($erwartet - $linear) > 50, 'Text nennt die Hochrechnung nach dem Vorjahr (linear wären es ' . round($linear) . ' kWh): ' . $r['text']);
+
 /* --- Absagen ---------------------------------------------------------------------------------- */
 
 // Ein Messwert (Außentemperatur, Mitschnitt der Punktwolke) hat keine Summenkurve

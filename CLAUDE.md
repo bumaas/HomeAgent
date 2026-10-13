@@ -278,9 +278,13 @@ Weitere Regeln, die nicht offensichtlich sind:
 - **Summenkurve** (B73, Burkhard 13.10.2026, `show_chart` mit `cumulative=true`): `chart()` setzt `forceLevel` (bis zwei Tage
   Stunde, sonst Tag; ohne das gäbe ein Jahr nur zwölf Stufen), holt über `chartOf` das Verbrauchsdiagramm (Haus, Gerät mit
   Zähler oder Kosten) samt Vergleich und macht in `cumulativeOf` daraus die Summenkurve: Summe der positiven Teile je
-  Abschnitt, aufaddiert, künftige Abschnitte `null`, Hochrechnung linear mit dem bisherigen Mittel (`projection` von jetzt
-  bis zum Ende), der Vergleich aufaddiert. Ohne Zeitraum das laufende Jahr. Test `check-summenkurve.php`. Die lineare
-  Hochrechnung unterschätzt über ein Jahr den Winter (am nuc Kosten 2026: Januar bis März der größte Teil).
+  Abschnitt, aufaddiert, künftige Abschnitte `null`, der Vergleich aufaddiert. Ohne Zeitraum das laufende Jahr. Hochrechnung
+  (`projection`, Punkte von jetzt bis zum Ende, `projectionMethod`): mit dem Verlauf desselben Zeitraums ein Jahr früher
+  (eigener `chartOf`-Aufruf mit `compare=year_before`, außer er steht schon im Diagramm): Stand × Vorjahr gesamt ÷ Vorjahr bis
+  zur selben Zeit, der laufende Abschnitt anteilig, die Kurve folgt dem Vorjahr; nur wenn das Vorjahr für mindestens 80 % der
+  Abschnitte bis heute Werte hat, sonst linear. Anlass Burkhard 13.10.2026: linear ergab am nuc für 2026 1632 € Kosten,
+  nach dem Vorjahr 2120 € (Ende Dezember 2025 bis 129 kWh am Tag). Ein Jahr mit Kosten braucht am nuc rund 1 s.
+  Test `check-summenkurve.php`. Der Hausverbrauch über einen Zeitraum geht seitdem auch ohne freigegebene Geräte (`houseOnly`).
 - **Verlauf statt Verbrauch** (`DeviceIndex::history`), wenn nach einem Typ aus `HISTORY_TYPES` gefragt
   wird oder kein Treffer einen Zähler hat, nie fürs ganze Haus. Stufe aus dem Zeitraum (heute und
   gestern stündlich, Wochen und Monate täglich, Jahre monatlich; `from`/`to` bis 2 Tage stündlich, bis

@@ -432,7 +432,11 @@ final class DeviceIndex
         $room = $this->effectiveRoom($room, $name, $floor);
         $filter = $this->describeFilter($room, $type, $name, $floor);
         $matches = $this->find($room, $type, $name, $floor);
-        if ($matches === []) {
+        // Ein Haus mit Energiebilanz braucht für den Hausverbrauch über einen Zeitraum keine freigegebenen Geräte (gefunden
+        // am Mitschnitt nur mit Bilanzzählern, 13.10.2026)
+        $houseOnly = $room === '' && $floor === '' && $type === '' && $name === '' && $this->balance !== []
+            && ($range !== null || ($period !== '' && $period !== self::NOW));
+        if ($matches === [] && !$houseOnly) {
             $this->noMatch($room, $name);
             return $this->fail(sprintf($this->t('No released device matches %s.'), $filter) . ' ' . $this->knownRoomsAndTypes());
         }
@@ -3677,12 +3681,23 @@ final class DeviceIndex
             return $this->fail($this->t('A cumulative chart needs a period or from and to.'));
         }
         $this->forceLevel = $span[1] - $span[0] <= 2 * 86400 ? 0 : 1;
+        $basis = null;
         try {
             $result = $this->chartOf($arguments);
+            // Für die Hochrechnung eines laufenden Zeitraums derselbe Zeitraum ein Jahr früher (Burkhard 13.10.2026: linear
+            // unterschätzt über ein Jahr den Winter); mit compare=year_before steht er schon im Diagramm.
+            if (!$result['isError'] && $span[1] > $this->backend->timestamp()) {
+                if (trim((string)($arguments['compare'] ?? '')) === 'year_before') {
+                    $basis = $result['structuredContent']['compare']['values'] ?? null;
+                } else {
+                    $before = $this->chartOf(['compare' => 'year_before'] + $arguments);
+                    $basis = $before['isError'] ? null : ($before['structuredContent']['compare']['values'] ?? null);
+                }
+            }
         } finally {
             $this->forceLevel = null;
         }
-        return $result['isError'] ? $result : $this->cumulativeOf($result, $span);
+        return $result['isError'] ? $result : $this->cumulativeOf($result, $span, $basis);
     }
 
     /**
@@ -3692,8 +3707,9 @@ final class DeviceIndex
      * Vergleich zur selben Zeit.
      *
      * @param array{0: int, 1: int} $span
+     * @param null|list<float> $basis Summe je Abschnitt desselben Zeitraums ein Jahr früher, für die Hochrechnung
      */
-    private function cumulativeOf(array $result, array $span): array
+    private function cumulativeOf(array $result, array $span, ?array $basis = null): array
     {
         $chart = $result['structuredContent'] ?? [];
         if (($chart['kind'] ?? '') !== 'consumption') {
@@ -3726,10 +3742,44 @@ final class DeviceIndex
             $values[$i] = round($sum, 3);
             $last = $i;
         }
-        $projection = $running && $now > $from ? [[$now, round($sum, 3)], [$end, round($sum / (($now - $from) / ($end - $from)), 3)]] : null;
-        $lines = [$running && $projection !== null
-            ? sprintf($this->t('So far %s %s, projected %s %s for the whole period.'), $format($sum), $unit, $format($projection[1][1]), $unit)
-            : sprintf($this->t('In total %s %s.'), $format($sum), $unit)];
+        // Hochrechnung: mit dem Verlauf des Vorjahres, wenn es dort für mindestens 80 % der Abschnitte bis heute Werte gibt
+        // (Stand × Vorjahr gesamt ÷ Vorjahr bis zur selben Zeit, der laufende Abschnitt anteilig; die Kurve folgt dem
+        // Vorjahr), sonst linear mit dem bisherigen Mittel.
+        $projection = null;
+        $method = null;
+        if ($running && $now > $from && $last >= 0) {
+            $step = count($times) > 1 ? $times[1] - $times[0] : 86400;
+            $covered = $basis === null ? 0 : count(array_filter(array_slice($basis, 0, $last + 1), static fn (float $v): bool => $v > 0));
+            if ($basis !== null && $covered >= 0.8 * ($last + 1) && count($basis) >= count($times) - 1) {
+                $before = [];
+                $acc = 0.0;
+                foreach ($basis as $i => $v) {
+                    $acc += $v;
+                    $before[$i] = $acc;
+                }
+                $share = min(1.0, max(0.0, ($now - $times[$last]) / $step));
+                $then = ($before[$last - 1] ?? 0.0) + ($basis[$last] ?? 0.0) * $share;
+                if ($then > 0) {
+                    $factor = $sum / $then;
+                    $projection = [[$now, round($sum, 3)]];
+                    for ($i = $last + 1; $i < count($times) - 1 && $i < count($before); $i++) {
+                        $projection[] = [$times[$i] + $step, round($sum + ($before[$i] - $then) * $factor, 3)];
+                    }
+                    $projection[] = [$end, round($sum + ((float)end($before) - $then) * $factor, 3)];
+                    $method = 'year_before';
+                }
+            }
+            if ($projection === null) {
+                $projection = [[$now, round($sum, 3)], [$end, round($sum / (($now - $from) / ($end - $from)), 3)]];
+                $method = 'linear';
+            }
+        }
+        $total = $projection === null ? 0.0 : (float)end($projection)[1];
+        $lines = [match ($method) {
+            'year_before' => sprintf($this->t('So far %s %s, projected %s %s for the whole period (after the course of the year before).'), $format($sum), $unit, $format($total), $unit),
+            'linear'      => sprintf($this->t('So far %s %s, projected %s %s for the whole period.'), $format($sum), $unit, $format($total), $unit),
+            default       => sprintf($this->t('In total %s %s.'), $format($sum), $unit),
+        }];
         $compare = null;
         if (isset($chart['compare']['values'])) {
             $running2 = 0.0;
@@ -3747,7 +3797,7 @@ final class DeviceIndex
         $text = preg_replace('/\n[^\n]*$/', '', $result['text']) . "\n" . implode("\n", $lines) . "\n" . $this->t('The chart is shown in the chat.');
         return ['text' => $text, 'isError' => false, 'structuredContent' => [
             'kind'       => 'cumulative', 'title' => $chart['title'] ?? '', 'per' => $chart['per'] ?? 'day', 'unit' => $unit,
-            'range'      => [$from, $end], 'times' => $times, 'values' => $values, 'projection' => $projection, 'compare' => $compare,
+            'range'      => [$from, $end], 'times' => $times, 'values' => $values, 'projection' => $projection, 'projectionMethod' => $method, 'compare' => $compare,
             'labels'     => ($chart['labels'] ?? []) + ['projection' => $this->t('projection'), 'compare' => $this->t('comparison'), 'total' => $this->t('cumulative')],
         ]];
     }
