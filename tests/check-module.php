@@ -2363,7 +2363,24 @@ class HomeAgentRustProbe extends HomeAgent
 $probeModul = ['ModuleID' => HomeAgentHarness::MODULE_ID, 'ModuleName' => 'HomeAgent', 'ModuleType' => 3, 'Class' => HomeAgentRustProbe::class];
 $probe = IPS\ObjectManager::registerObject(1);
 IPS\InstanceManager::createInstance($probe, $probeModul);
+// Jede Auswahl muss einen Wert aus ihren Einträgen tragen, sonst lehnt die Konsole das Übernehmen ab („Aktueller Wert
+// "" ist nicht verfügbar“). Ein neuer Zugang hat bis zum Übernehmen kein Token und ist nicht benutzbar; ohne
+// Übernehmen bekommt er nie eins (loerdy im Forum, 13.10.2026).
+$auswahlOhneWert = static function (int $instanz): array {
+    $formular = json_decode(IPS_GetConfigurationForm($instanz), true);
+    $fehler = [];
+    foreach (flach(array_merge($formular['elements'], $formular['actions'] ?? [])) as $e) {
+        if (($e['type'] ?? '') === 'Select' && !in_array($e['value'] ?? null, array_column($e['options'] ?? [], 'value'), true)) {
+            $fehler[] = ($e['name'] ?? '?') . '=' . json_encode($e['value'] ?? null);
+        }
+    }
+    return $fehler;
+};
+$leer = $auswahlOhneWert($probe);
+pruefe($leer === [], 'ohne Zugang trägt jede Auswahl einen ihrer Einträge: ' . implode(', ', $leer));
 IPS_SetProperty($probe, 'Accesses', json_encode([['Name' => 'A', 'Token' => '', 'DefaultRoom' => '', 'ReadOnly' => true, 'InPath' => false]]));
+$leer = $auswahlOhneWert($probe);
+pruefe($leer === [], 'mit einem neuen Zugang ohne Token trägt jede Auswahl einen ihrer Einträge: ' . implode(', ', $leer));
 HomeAgentRustProbe::$abgelehnt = 0;
 IPS_ApplyChanges($probe);
 pruefe(HomeAgentRustProbe::$abgelehnt === 0, 'ApplyChanges ruft sich nicht selbst auf (Rust lehnt das ab): ' . HomeAgentRustProbe::$abgelehnt . ' abgelehnte Aufrufe');

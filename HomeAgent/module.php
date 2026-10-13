@@ -500,6 +500,11 @@ class HomeAgent extends IPSModuleStrict
             if (in_array($name, ['PairingAccess', 'AddressAccess', 'TokenAccess'], true)) {
                 $names = array_values(array_map(static fn (array $access): string => $access['Name'], array_filter($usable, static fn (array $access): bool => $name !== 'AddressAccess' || $access['InPath'])));
                 $element['options'] = array_map(static fn (string $access): array => ['caption' => $access, 'value' => $access], $names);
+                // Ohne benutzbaren Zugang ein leerer Eintrag: Ein Wert, den keine Auswahl kennt, lässt die Konsole das
+                // Übernehmen ablehnen, und ein neuer Zugang bekommt sein Token erst beim Übernehmen (loerdy 13.10.2026)
+                if ($names === []) {
+                    $element['options'] = [['caption' => '-', 'value' => '']];
+                }
                 // Beim Kopplungscode zuerst ein Zugang, an dem schon ein Claude-Connector hängt
                 $paired = $name === 'PairingAccess' ? array_values(array_intersect(array_column($this->oauthClientRows(), 'Access'), $names)) : [];
                 $element['value'] = $paired[0] ?? $names[0] ?? '';

@@ -285,6 +285,7 @@ Weitere Regeln, die nicht offensichtlich sind:
   Abschnitte bis heute Werte hat, sonst linear. Anlass Burkhard 13.10.2026: linear ergab am nuc für 2026 1632 € Kosten,
   nach dem Vorjahr 2120 € (Ende Dezember 2025 bis 129 kWh am Tag). Ein Jahr mit Kosten braucht am nuc rund 1 s.
   Test `check-summenkurve.php`. Der Hausverbrauch über einen Zeitraum geht seitdem auch ohne freigegebene Geräte (`houseOnly`).
+  Bei Kosten liefert `cumulativeOf` die aufaddierte Vergütung als `revenue` und den Saldo im Text (Burkhard 13.10.2026).
 - **Verlauf statt Verbrauch** (`DeviceIndex::history`), wenn nach einem Typ aus `HISTORY_TYPES` gefragt
   wird oder kein Treffer einen Zähler hat, nie fürs ganze Haus. Stufe aus dem Zeitraum (heute und
   gestern stündlich, Wochen und Monate täglich, Jahre monatlich; `from`/`to` bis 2 Tage stündlich, bis
@@ -397,6 +398,10 @@ Weitere Regeln, die nicht offensichtlich sind:
   „Ausgewählte freigeben“ speichert direkt. Ein Knopf in `popup.buttons` zeigt jede Ausgabe rot im
   Popup, außer sie beginnt mit `MESSAGE:`.
 - Fehlerhafte Zeilen sind rot (`rowColor`), die Meldungen stehen oben im Formular.
+- **Jede Auswahl trägt einen Wert aus ihren Einträgen.** Sonst lehnt die Konsole das Übernehmen ab („Aktueller Wert ""
+  ist nicht verfügbar“). Die Auswahlen der Zugänge (`PairingAccess`, `AddressAccess`, `TokenAccess`) bekommen ohne
+  benutzbaren Zugang den Eintrag „-“. Anlass loerdy im Forum (13.10.2026): Ein neuer Zugang hat bis zum Übernehmen kein
+  Token, das Übernehmen scheiterte, und das Token entstand nie.
 - **Bereich „Endpunkt und Zugänge“ für Einsteiger** (build 80, Burkhard 12.10.2026: „für einsteiger wirkt es
   kompliziert“): Die Zugangsliste (3 bis 5 Zeilen hoch, darüber mit Scrollbalken) zeigt Name, Nur abfragen, Standardraum und die
   Textspalte `Connection`
