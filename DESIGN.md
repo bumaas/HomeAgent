@@ -127,7 +127,8 @@ Feste Reihenfolge: Rollläden, Licht, Schalter und Steckdosen, Klima, Messwerte,
 - **Legende** als HTML über der Zeichnung: „Raum · Name“ bzw. Name des Teils, davor die Marke (Strich bei Linien,
   Kästchen bei Balken und Bändern, gestrichelt beim Vergleich). Bänder haben dieselbe Legende, je Band eine Zeile.
 - **Fußzeile** links in `--muted`: Stufe und Einheit („Stunde: kWh“, „Tag: Minimum / Mittel / Maximum“).
-- **Zahlen** nach der Sprache des Clients, eine Nachkommastelle wo nötig; Leistung ab 1000 W in kW.
+- **Zahlen** nach der Sprache des Clients. An der Werteachse so viele Nachkommastellen, wie die Schrittweite braucht
+  (0,025 / 0,5 / 5), sonst Werte unter 1 mit zwei, größere mit einer Nachkommastelle; Leistung ab 1000 W in kW.
 
 ### Arten
 

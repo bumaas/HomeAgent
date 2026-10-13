@@ -113,8 +113,14 @@
     return node;
   }
 
+  // Werte unter 1 mit zwei Nachkommastellen, sonst eine: 0,04 kWh einer Stunde stand vorher als „0“ im Tooltip
   function number(value) {
-    return (Math.round(value * 10) / 10).toLocaleString(lang);
+    return value.toLocaleString(lang, { maximumFractionDigits: Math.abs(value) < 1 ? 2 : 1 });
+  }
+  // Achse mit so vielen Nachkommastellen, wie die Schrittweite braucht (0,025 / 0,5 / 5); vorher „0,1 / 0 / 0 / 0“
+  function axisNumber(value, step) {
+    var digits = (String(Number(step.toFixed(6))).split(".")[1] || "").length;
+    return Number(value.toFixed(digits)).toLocaleString(lang, { minimumFractionDigits: digits, maximumFractionDigits: digits });
   }
 
   function timeLabel(seconds, per, spansDays) {
@@ -200,7 +206,7 @@
     var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
     for (var v = y0; v <= y1 + step / 2; v += step) {
       svg.appendChild(el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "var(--grid)", "stroke-width": 1 }));
-      svg.appendChild(el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, number(v)));
+      svg.appendChild(el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, axisNumber(v, step)));
     }
     var spansDays = (t1 - t0) > 86400;
     timeTicks(t0, t1, data.per).forEach(function (t) {
@@ -291,7 +297,7 @@
     var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
     for (var v = y0; v <= y1 + step / 2; v += step) {
       svg.appendChild(el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "var(--grid)", "stroke-width": Math.abs(v) < step / 2 ? 1.5 : 1 }));
-      svg.appendChild(el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, number(v)));
+      svg.appendChild(el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, axisNumber(v, step)));
     }
     var every = Math.ceil(n / 6);
     var spansDays = data.per === "hour" && (times[n - 1] - times[0]) >= 86400;
