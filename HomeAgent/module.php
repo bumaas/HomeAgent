@@ -1083,6 +1083,7 @@ class HomeAgent extends IPSModuleStrict
         }
         // Die zuletzt ausgelieferte Werkzeugliste dieser Anfrage (mit oder ohne Apps), für die Spalte „Werkzeugliste“
         $served = null;
+        $called = false;
         $response = McpProtocol::handleHttp(
             $_SERVER['REQUEST_METHOD'] ?? 'GET',
             $access !== null,
@@ -1092,7 +1093,10 @@ class HomeAgent extends IPSModuleStrict
                 $served = [$apps, $tools];
                 return $tools;
             },
-            fn (string $name, array $arguments, ?string $client = null): array => $this->callTool($name, $arguments, $access, $client),
+            function (string $name, array $arguments, ?string $client = null) use ($access, &$called): array {
+                $called = true;
+                return $this->callTool($name, $arguments, $access, $client);
+            },
             $this->serverInfo($access),
             self::mcpHeaders($_SERVER),
             fn (string $uri): ?string => $this->readResource($uri),
@@ -1128,6 +1132,11 @@ class HomeAgent extends IPSModuleStrict
             // Werkzeugaufrufe schreibt logged(); hier nur Anmeldung, Werkzeugliste und Ähnliches
             if (!in_array('tools/call', $response['methods'] ?? [], true)) {
                 $this->writeLog((string)$access['Name'], implode(', ', $response['methods'] ?? []), $viaOAuth ? 'OAuth' : '', (string)($response['client'] ?? ''), 'HTTP ' . $response['status']);
+            } elseif (!$called) {
+                // Schon das Protokoll hat den Aufruf abgewiesen (unbekanntes Werkzeug, Kopfzeilen); sonst stünde er nirgends
+                $error = json_decode((string)($response['body'] ?? ''), true)['error'] ?? [];
+                $this->writeLog((string)$access['Name'], 'tools/call', (string)($response['client'] ?? ''), 'HTTP ' . $response['status'],
+                    mb_substr(trim(($error['code'] ?? '') . ' ' . ($error['message'] ?? '')), 0, 300));
             }
         }
         $this->send($response);

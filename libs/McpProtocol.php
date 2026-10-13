@@ -133,7 +133,8 @@ final class McpProtocol
 
     private static function clientLabel(mixed $message): ?string
     {
-        if (!is_array($message) || array_is_list($message) || !in_array($message['method'] ?? null, ['initialize', 'server/discover'], true)) {
+        // Auch beim Werkzeugaufruf: Weist ihn schon das Protokoll ab, nennt nur diese Zeile den Client (13.10.2026)
+        if (!is_array($message) || array_is_list($message) || !in_array($message['method'] ?? null, ['initialize', 'server/discover', 'tools/call'], true)) {
             return null;
         }
         $params = is_array($message['params'] ?? null) ? $message['params'] : [];
