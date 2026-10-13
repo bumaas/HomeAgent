@@ -2844,9 +2844,15 @@ pruefe(is_string($karten) && str_contains($karten, 'ui/initialize') && str_conta
 // Auswahl für Modus und Lüfterstufe auf den Karten (13.10.2026)
 pruefe(is_string($karten) && str_contains($karten, 'c.options') && str_contains($karten, 'node("select"'), 'die Seite zeichnet eine Auswahl je Eintrag in controls.options');
 pruefe(is_string($karten) && str_contains($karten, 'structuredContent.problem'), 'die Karte zeigt die Antwort nur bei einem Problem');
-pruefe(strlen((string)$karten) < 30000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$karten), 'die Seite der Karten lädt nichts nach: ' . strlen((string)$karten) . ' Bytes');
-// 50000 seit der Heatmap (B71, 40,8 KB; vorher 40000 mit der Punktwolke); die Seite geht an die App, nicht ans Sprachmodell
-pruefe(strlen((string)$seite) < 50000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$seite), 'die Seite lädt nichts nach (CSP der Apps) und bleibt klein: ' . strlen((string)$seite) . ' Bytes');
+// Die Seiten der Apps laden nichts nach (CSP der Apps): kein Skript oder Stylesheet von außen, kein @import, keine Bilder
+// über http(s), kein fetch oder XMLHttpRequest. Das ist die eigentliche Regel. Die Größe ist nur eine Bremse gegen eine
+// versehentlich eingebettete Bibliothek (Burkhard 13.10.2026, Weg 1): Die Grenze wuchs vorher mit jeder Diagrammart
+// (20, 30, 40, 50 KB) und hatte damit ihren Zweck verloren. Die Seiten gehen an die App, nicht ans Sprachmodell.
+$nachladen = '/<script[^>]+src=|<link[^>]+href=["\']https?:|@import|url\(\s*["\']?https?:|\bfetch\s*\(|XMLHttpRequest/i';
+foreach (['Karten' => $karten, 'Diagramme' => $seite] as $was => $html) {
+    pruefe(is_string($html) && !preg_match($nachladen, $html), 'die Seite der ' . $was . ' lädt nichts nach');
+    pruefe(strlen((string)$html) < 100000, 'die Seite der ' . $was . ' bettet keine Bibliothek ein (unter 100 KB): ' . strlen((string)$html) . ' Bytes');
+}
 // Screenshot der Claude-App 13.10.2026: Achse bis -0,5 bei fast keiner Einspeisung, ein grüner Punkt für
 // „Einspeisung 0 kWh“, und rechts blieb ein Drittel frei
 pruefe(is_string($seite) && str_contains($seite, 'if (-low < high * 0.03) { low = 0; }'), 'kaum Einspeisung: kein Bereich unter der Nulllinie');

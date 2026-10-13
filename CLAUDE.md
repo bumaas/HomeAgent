@@ -425,7 +425,9 @@ Weitere Regeln, die nicht offensichtlich sind:
 Aufbau der Karten, Bedienelemente, Achsen, Legenden, Ringe). Jede Änderung an `devices.html` oder `chart.html` hält sich
 daran oder ändert zuerst das Regelwerk (Burkhard 13.10.2026). Vor dem Commit hell und dunkel mit echten Daten rendern
 (`dev/showcase.php`, `dev/devices_render.php`, `dev/chart_render2.php`; `dev/` ist nicht im Repo) und neue Abweichungen
-unter „Bekannte Abweichungen“ eintragen.
+unter „Bekannte Abweichungen“ eintragen. Die Prüfung der Seiten in `check-module.php` verbietet jedes Nachladen (Skript,
+Stylesheet, `@import`, Bilder über http, `fetch`); die Größe ist nur eine Bremse bei 100 KB gegen eine eingebettete Bibliothek.
+Vorher wuchs die Grenze mit jeder Diagrammart mit (20 bis 50 KB) und prüfte nichts mehr (Burkhard 13.10.2026).
 
 ## Entwickeln und Testen
 

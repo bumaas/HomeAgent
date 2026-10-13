@@ -19,8 +19,10 @@ Die Gestaltung folgt den Entwürfen von pitti aus dem Symcon-Forum (Karten, Ring
   `structuredContent`. Die Seite formatiert nur Zahlen und Zeiten nach der Sprache des Clients.
 - **Hell und dunkel sind gleichwertig.** Jede Farbe, die vom Hintergrund abhängt, ist ein Token mit Wert für beide
   Schemata. Feste Grautöne sind ein Fehler (Layoutvergleich: „geschlossen“ leuchtete im dunklen Modus heller als „offen“).
-- **Keine fremden Bibliotheken.** Die CSP der Apps erlaubt nichts Fremdes. Gezeichnet wird mit HTML, CSS und SVG. Jede
-  Seite bleibt unter 50 KB (Test in `check-module.php`); sie geht an die App, nicht ans Sprachmodell.
+- **Keine fremden Bibliotheken.** Die CSP der Apps erlaubt nichts Fremdes. Gezeichnet wird mit HTML, CSS und SVG. Geprüft
+  wird, dass keine Seite etwas nachlädt (Skript, Stylesheet, `@import`, Bilder über http, `fetch`), in `check-module.php`.
+  Die Größe ist dort nur eine Bremse gegen eine eingebettete Bibliothek (unter 100 KB); die Seiten gehen an die App, nicht
+  ans Sprachmodell, und kosten keine Tokens.
 
 ## Farben
 
