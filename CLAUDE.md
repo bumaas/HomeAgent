@@ -410,6 +410,14 @@ Weitere Regeln, die nicht offensichtlich sind:
   `LogState`, nach einem Neustart aus der Datei. Leere Felder fallen in der Zeile weg (`initialize` ohne Argumente). Bei `initialize` und `server/discover` steht der Client mit Name, Version und Fähigkeiten in der Zeile (`McpProtocol::clientLabel`, B63). Ein Werkzeugaufruf nach 2026-07-28 nennt Name und Version des Clients (`McpProtocol::callerOf`, drittes Argument von `$callTool`): Ein Chat in der Claude-App lief am 12.10.2026 über „claude-code“ ohne Apps, zu sehen war das vorher nur am `server/discover` Sekunden davor. Weist schon das Protokoll einen Werkzeugaufruf ab (unbekanntes Werkzeug, Kopfzeilen passen nicht), steht er mit Client, Status und Fehler als `tools/call` im Protokoll (13.10.2026: Die Karten meldeten „Tool call failed“, im Protokoll war nichts zu sehen). Eine `Origin`-Kopfzeile kommt als eigene Zeile mit Absender hinein. **Origin-Prüfung** (MCP, DNS-Rebinding, build 107): Eine `Origin` muss auf den Host der Anfrage oder die Connect-Adresse zeigen (`originAllowed`), sonst 403 vor der Anmeldung, kein Fehlversuch; die OAuth-Pfade sind ausgenommen. Gemessen am nuc 12.10.2026: Claude Code, Home Assistant und die Claude-App über claude.ai schicken keine `Origin`. Die Claude-App spricht seitdem 2026-07-28 (`server/discover`). Herunterladen über den Button-Parameter `download` (Data-URL, beide
   Dateien, die alte zuerst). Tokens, Adressen und Kopplungscodes übergibt kein Aufrufer.
 
+## Gestaltung der MCP Apps
+
+**`DESIGN.md` ist das Regelwerk für Gerätekarten und Diagramme** (Farben je Art und Zustand, Tokens für hell und dunkel,
+Aufbau der Karten, Bedienelemente, Achsen, Legenden, Ringe). Jede Änderung an `devices.html` oder `chart.html` hält sich
+daran oder ändert zuerst das Regelwerk (Burkhard 13.10.2026). Vor dem Commit hell und dunkel mit echten Daten rendern
+(`dev/showcase.php`, `dev/devices_render.php`, `dev/chart_render2.php`; `dev/` ist nicht im Repo) und neue Abweichungen
+unter „Bekannte Abweichungen“ eintragen.
+
 ## Entwickeln und Testen
 
 - **Tests zuerst, mit Rot/Grün-Nachweis.** Jeder Fix und jede Funktion bekommt Prüfungen, die vor dem
