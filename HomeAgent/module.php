@@ -1694,7 +1694,8 @@ class HomeAgent extends IPSModuleStrict
         $hasMeters = array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['energy']));
         $hasBalance = $this->usableBalance($this->balance()) !== [];
         // Die Leistung jetzt (period=now) mit einem Gerät mit Leistung oder der Leistungsbilanz.
-        $hasPower = $this->usableBalance($this->powerBalance()) !== [] || array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['power']));
+        $hasPowerBalance = $this->usableBalance($this->powerBalance()) !== [];
+        $hasPower = $hasPowerBalance || array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['power']));
         // Verlauf von Messwerten (Temperatur, Feuchte …) über dieselben Zeiträume.
         $hasHistory = array_any($this->usableDevices(), static fn (array $row): bool => DeviceIndex::isMeasured($row));
         // Gerätekarten nur für Clients mit Apps; get_state verweist dann fürs Zeigen darauf (Claude-App 12.10.2026:
@@ -1751,7 +1752,7 @@ class HomeAgent extends IPSModuleStrict
         // Diagramm als MCP App, nur für Clients, die Apps anmelden, und nur mit einem Gerät, das einen Verlauf haben kann
         // (Leitbild: angeboten wird nur, was es gibt; andere Clients zahlen keine Tokens dafür).
         // Mit der Energiebilanz auch der Hausverbrauch als Stapeldiagramm (Burkhard 12.10.2026).
-        if ($apps && ($hasHistory || $hasBalance || $hasMeters)) {
+        if ($apps && ($hasHistory || $hasBalance || $hasMeters || $hasPowerBalance)) {
             $historyTypes = array_values(array_unique(array_column(array_filter($this->usableDevices(), static fn (array $row): bool => DeviceIndex::isMeasured($row)), 'Type')));
             // Verbrauch je Gerät heißt im Diagramm type=energy; als Gerätetyp gibt es das nicht
             if ($hasMeters) {
@@ -1761,7 +1762,8 @@ class HomeAgent extends IPSModuleStrict
                 'name'        => 'show_chart',
                 'title'       => 'Show chart',
                 'description' => ($hasHistory ? 'Shows the history of measured values (temperature, humidity, air quality and others) as a chart in the chat. ' : '')
-                    . ($hasBalance ? 'Without room, floor, type or name it shows the house consumption as stacked bars (grid, solar used directly, battery, grid export below). ' : '')
+                    . ($hasBalance ? 'Without room, floor, type or name it shows the house consumption as stacked bars (grid, solar used directly, battery, grid export below), with self-sufficiency and self-consumed solar as rings. ' : '')
+                    . ($hasPowerBalance ? 'period=now without room, floor, type or name shows the current house power as rings. ' : '')
                     . ($hasMeters ? 'type=energy shows the consumption per device with an energy meter as stacked bars, the largest five first; a room or name with meters and no measured values does the same. ' : '')
                     . 'Use it when the user asks for a chart, diagram, graph or curve; for numbers alone use get_state. Without a period: today. '
                     . 'The answer gives only a summary, the values themselves go to the chart. '
@@ -1775,7 +1777,7 @@ class HomeAgent extends IPSModuleStrict
                         'type'   => ['type' => 'string', 'enum' => $historyTypes, 'description' => 'Type of measured value' . ($hasMeters ? ', or energy for the consumption per device' : '') . '. Empty = all measured values that match.'],
                     ]) + [
                         'name'   => ['type' => 'string', 'description' => 'Device name or alias, a partial word is enough.'],
-                        'period' => ['type' => 'string', 'enum' => DeviceIndex::PERIODS, 'description' => 'Period of the chart, per hour for today and yesterday, per day for weeks and months, per month for years.'],
+                        'period' => ['type' => 'string', 'enum' => array_merge($hasPowerBalance ? [DeviceIndex::NOW] : [], DeviceIndex::PERIODS), 'description' => 'Period of the chart, per hour for today and yesterday, per day for weeks and months, per month for years.'],
                         'from'   => ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD, or a start hour, YYYY-MM-DD HH:MM. Today is ' . date('Y-m-d') . '.'],
                         'to'     => ['type' => 'string', 'description' => 'Last day, inclusive, or the end hour, YYYY-MM-DD HH:MM, exclusive.'],
                     ],

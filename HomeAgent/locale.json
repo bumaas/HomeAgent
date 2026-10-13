@@ -520,7 +520,11 @@
             "Tool list": "Werkzeugliste",
             "not fetched yet": "noch nicht geholt",
             "current, fetched %s": "aktuell, geholt %s",
-            "outdated, fetched %s": "veraltet, geholt %s"
+            "outdated, fetched %s": "veraltet, geholt %s",
+            "Self-sufficiency": "Autarkie",
+            "Self-consumption": "Eigenverbrauch",
+            "Current power": "Aktuelle Leistung",
+            "house": "Haus"
         }
     }
 }

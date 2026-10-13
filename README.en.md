@@ -442,7 +442,10 @@ set to "Always allow". Other assistants do not see it.
 With the energy balance filled in, the module also draws the house consumption on request, for example "Show me
 our electricity consumption this month as a chart": one bar per hour, day or month made of grid, solar used
 directly and battery, with the grid export below. Each bar adds up to the house consumption of the balance; when
-the battery charges from the grid, that counts as grid.
+the battery charges from the grid, that counts as grid. Above it are two rings: self-sufficiency splits the house
+consumption into solar used directly, battery and grid, self-consumption splits the solar production into used
+directly, charged into the battery and exported. "Show me the power right now as a chart" draws the same rings from
+the power values of the balance, plus a ring with the house power from solar, battery and grid.
 
 Consumption per device works the same way, for example "Which devices used the most in September? As a chart":
 the five largest devices with a meter stacked, the rest as "other devices", and for the whole house also "not

@@ -711,6 +711,58 @@ final class DeviceIndex
         [$per] = self::HISTORY_LEVELS[$level];
         $this->chart = ['kind' => 'consumption', 'title' => $title, 'per' => $per, 'unit' => 'kWh', 'filter' => $filter,
             'times' => array_keys($values), 'series' => $series, 'labels' => ['per' => $this->t($per)]];
+        $totals = [];
+        foreach ($values as $parts) {
+            foreach ($parts as $key => $kwh) {
+                $totals[$key] = ($totals[$key] ?? 0.0) + $kwh;
+            }
+        }
+        $rings = $this->shareRings($totals, 'kWh');
+        if ($rings !== []) {
+            $this->chart['rings'] = $rings;
+        }
+    }
+
+    /**
+     * Ringe für Autarkie und Eigenverbrauch (Anregung pitti, Forum t/144633, Burkhard 13.10.2026). Autarkie teilt den
+     * Hausverbrauch in PV direkt (PV − Einspeisung − Batterie geladen, nicht unter 0), Batterie (entladen) und Netz,
+     * Eigenverbrauch teilt die PV in direkt, in die Batterie geladen und eingespeist. Die Zahl in der Mitte rechnet
+     * selfSufficiency(), damit Bild und Text des Modells übereinstimmen. Ein Ring fehlt, wenn sich seine Zahl nicht
+     * rechnen lässt. Gilt für kWh über einen Zeitraum wie für W jetzt.
+     *
+     * @param array<string, float> $values Teile der Bilanz je Schlüssel
+     * @return list<array<string, mixed>>
+     */
+    private function shareRings(array $values, string $unit): array
+    {
+        $house = 0.0;
+        foreach (self::BALANCE_TERMS as $key => [$sign]) {
+            $house += $sign * ($values[$key] ?? 0.0);
+        }
+        $house = max(0.0, $house);
+        $shares = $this->shares($values, $house);
+        $solar = $values['solar'] ?? 0.0;
+        $export = $values['export'] ?? 0.0;
+        $direct = max(0.0, $solar - $export - ($values['charge'] ?? 0.0));
+        $rings = [];
+        if ($shares['autarky'] !== null) {
+            $battery = min(max(0.0, $house - $direct), $values['discharge'] ?? 0.0);
+            $rings[] = ['key' => 'autarky', 'title' => $this->t('Self-sufficiency'), 'label' => $this->t('Self-sufficiency'),
+                'share' => $shares['autarky'], 'unit' => $unit, 'total' => round($house, 3), 'parts' => [
+                    ['key' => 'solar', 'name' => $this->t('solar (used directly)'), 'value' => round(min($house, $direct), 3)],
+                    ['key' => 'battery', 'name' => $this->t('battery'), 'value' => round($battery, 3)],
+                    ['key' => 'grid', 'name' => $this->t('grid'), 'value' => round($values['import'] ?? 0.0, 3)],
+                ]];
+        }
+        if ($shares['solar'] !== null) {
+            $rings[] = ['key' => 'self_use', 'title' => $this->t('Self-consumption'), 'label' => $this->t('Self-consumption'),
+                'share' => $shares['solar'], 'unit' => $unit, 'total' => round($solar, 3), 'parts' => [
+                    ['key' => 'solar', 'name' => $this->t('solar (used directly)'), 'value' => round($direct, 3)],
+                    ['key' => 'battery', 'name' => $this->t('battery'), 'value' => round(max(0.0, $solar - $export - $direct), 3)],
+                    ['key' => 'export', 'name' => $this->t('grid export'), 'value' => round($export, 3)],
+                ]];
+        }
+        return $rings;
     }
 
     /**
@@ -849,17 +901,30 @@ final class DeviceIndex
      */
     private function selfSufficiency(array $values, float $house): ?string
     {
-        $percent = static fn (float $share): int => (int)round(max(0.0, min(1.0, $share)) * 100);
-        $autarky = isset($values['import']) && (isset($values['solar']) || isset($values['discharge'])) && $house > 0
-            ? $percent(1 - $values['import'] / $house) : null;
-        $solar = isset($values['solar'], $values['export']) && $values['solar'] > 0
-            ? $percent(($values['solar'] - $values['export']) / $values['solar']) : null;
+        ['autarky' => $autarky, 'solar' => $solar] = $this->shares($values, $house);
         return match (true) {
             $autarky !== null && $solar !== null => sprintf($this->t('Self-sufficiency %d %%, self-consumed solar %d %%.'), $autarky, $solar),
             $autarky !== null                    => sprintf($this->t('Self-sufficiency %d %%.'), $autarky),
             $solar !== null                      => sprintf($this->t('Self-consumed solar %d %%.'), $solar),
             default                              => null,
         };
+    }
+
+    /**
+     * Autarkie und Eigenverbrauch in ganzen Prozent, je null, wenn sie sich nicht rechnen lassen.
+     *
+     * @param array<string, float> $values
+     * @return array{autarky: ?int, solar: ?int}
+     */
+    private function shares(array $values, float $house): array
+    {
+        $percent = static fn (float $share): int => (int)round(max(0.0, min(1.0, $share)) * 100);
+        return [
+            'autarky' => isset($values['import']) && (isset($values['solar']) || isset($values['discharge'])) && $house > 0
+                ? $percent(1 - $values['import'] / $house) : null,
+            'solar'   => isset($values['solar'], $values['export']) && $values['solar'] > 0
+                ? $percent(($values['solar'] - $values['export']) / $values['solar']) : null,
+        ];
     }
 
     /**
@@ -973,7 +1038,41 @@ final class DeviceIndex
                 $parts[] = $this->t($word) . ' ' . self::formatWatts($values[$key]);
             }
         }
-        return ['total' => $total, 'parts' => $parts];
+        return ['total' => $total, 'parts' => $parts, 'values' => $values];
+    }
+
+    /**
+     * show_chart mit period=now fürs ganze Haus: Ringe aus den Leistungen der Bilanz, zuerst die Hausleistung aus PV,
+     * Batterie (entladen) und Netz auf einer Skala in ganzen kW, dann Autarkie und Eigenverbrauch wie über einen
+     * Zeitraum. Das Modell bekommt die Antwort von get_state und die Prozentzahlen.
+     *
+     * @return array{text: string, isError: bool, structuredContent?: array<string, mixed>}
+     */
+    private function powerRings(array $arguments): array
+    {
+        $state = $this->getState($arguments);
+        $house = $this->housePower($this->powerBalance, '');
+        if ($state['isError'] || is_string($house)) {
+            return $state['isError'] ? $state : $this->fail((string)strtok($state['text'], "\n"));
+        }
+        $values = $house['values'];
+        $total = max(0.0, $house['total']);
+        $largest = max($total, $values['solar'] ?? 0.0, $values['discharge'] ?? 0.0, $values['import'] ?? 0.0);
+        $rings = [['key' => 'power', 'title' => $this->t('Current power'), 'label' => $this->t('house'), 'unit' => 'W',
+            'total' => round($total, 1), 'max' => max(1000.0, ceil($largest / 1000) * 1000), 'parts' => [
+                ['key' => 'solar', 'name' => $this->t('solar'), 'value' => round($values['solar'] ?? 0.0, 1)],
+                ['key' => 'battery', 'name' => $this->t('battery discharge'), 'value' => round($values['discharge'] ?? 0.0, 1)],
+                ['key' => 'grid', 'name' => $this->t('grid import'), 'value' => round($values['import'] ?? 0.0, 1)],
+            ]]];
+        $rings = array_merge($rings, $this->shareRings($values, 'W'));
+        $lines = [$state['text']];
+        $shares = $this->selfSufficiency($values, $total);
+        if ($shares !== null) {
+            $lines[] = $shares;
+        }
+        $lines[] = $this->t('The chart is shown in the chat.');
+        return ['text' => implode("\n", $lines), 'isError' => false,
+            'structuredContent' => ['kind' => 'rings', 'title' => (string)strtok($state['text'], "\n"), 'rings' => $rings]];
     }
 
     /**
@@ -3263,6 +3362,10 @@ final class DeviceIndex
     {
         $period = trim((string)($arguments['period'] ?? ''));
         if ($period === self::NOW) {
+            $filtered = array_filter(['room', 'floor', 'type', 'name'], static fn (string $field): bool => trim((string)($arguments[$field] ?? '')) !== '');
+            if ($filtered === [] && $this->powerBalance !== []) {
+                return $this->powerRings($arguments);
+            }
             return $this->fail($this->t('A chart needs a period or from and to, now has no history.'));
         }
         if ($period === '' && trim((string)($arguments['from'] ?? '')) === '') {

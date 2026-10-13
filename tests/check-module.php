@@ -973,6 +973,9 @@ pruefe(!str_contains($m->RunSelfTest(), 'energy balance'), 'archivierter Netzbez
 $mitApps = array_column(json_decode((string)json_encode(oderNull(static fn () => \Closure::bind(fn () => $this->tools(null, true), $m, HomeAgent::class)()) ?? []), true), null, 'name');
 pruefe(isset($mitApps['show_chart']) && str_contains($mitApps['show_chart']['description'] ?? '', 'stacked bars'), 'mit Bilanz: show_chart nennt den Hausverbrauch als Stapel: ' . ($mitApps['show_chart']['description'] ?? json_encode(array_keys($mitApps))));
 pruefe(!isset($mitApps['show_chart']['inputSchema']['properties']['type']), 'ohne Messwert kein Feld type (leere Liste): ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['type'] ?? null));
+// Ringe für Autarkie und Eigenverbrauch (Anregung pitti, t/144633, 13.10.2026)
+pruefe(str_contains($mitApps['show_chart']['description'] ?? '', 'with self-sufficiency and self-consumed solar as rings'), 'show_chart nennt die Ringe: ' . ($mitApps['show_chart']['description'] ?? ''));
+pruefe(!in_array('now', $mitApps['show_chart']['inputSchema']['properties']['period']['enum'] ?? ['now'], true), 'ohne Leistungsbilanz kein now im Diagramm');
 $setzeBilanz(['GridImportVariableID' => $zaehler, 'SolarVariableID' => $leistung]);
 pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: solar production POWER is not archived as a counter, so there is no house consumption'), 'Selbsttest: Bilanzzähler nicht als Zähler archiviert: ' . $m->RunSelfTest());
 $setzeBilanz(['GridImportVariableID' => $zaehler, 'BatteryChargeVariableID' => 59995]);
@@ -997,6 +1000,14 @@ $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () =
 $periode = $werkzeuge['get_state']['inputSchema']['properties']['period'] ?? [];
 pruefe(($periode['enum'][0] ?? null) === 'now' && str_contains($periode['description'] ?? '', '"now" gives the current power in W instead.'), 'mit einem Gerät mit Leistung bietet period „now“ an: ' . json_encode($periode));
 pruefe(str_contains($werkzeuge['get_state']['description'] ?? '', '"How much power are we using right now?" → period=now.'), 'die Beschreibung nennt ein Beispiel: ' . ($werkzeuge['get_state']['description'] ?? ''));
+// Mit Leistungsbilanz zeigt show_chart mit period=now die Hausleistung als Ringe (13.10.2026)
+IPS_SetProperty($iid, 'GridImportPowerVariableID', $leistung);
+IPS_ApplyChanges($iid);
+$mitApps = array_column(json_decode((string)json_encode(oderNull(static fn () => \Closure::bind(fn () => $this->tools(null, true), $m, HomeAgent::class)()) ?? []), true), null, 'name');
+pruefe(($mitApps['show_chart']['inputSchema']['properties']['period']['enum'][0] ?? null) === 'now', 'mit Leistungsbilanz: show_chart bietet now an: ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['period'] ?? null));
+pruefe(str_contains($mitApps['show_chart']['description'] ?? '', 'period=now without room, floor, type or name shows the current house power as rings.'), 'show_chart erklärt now: ' . ($mitApps['show_chart']['description'] ?? json_encode(array_keys($mitApps))));
+IPS_SetProperty($iid, 'GridImportPowerVariableID', 0);
+IPS_ApplyChanges($iid);
 foreach ($leistungFelder as $feld) {
     try {
         IPS_SetProperty($iid, $feld, $feld === 'GridImportPowerVariableID' ? $zaehler : 0);
@@ -2764,7 +2775,7 @@ $karten = oderNull(static fn () => \Closure::bind(fn () => $this->readResource('
 pruefe(is_string($karten) && str_contains($karten, 'ui/initialize') && str_contains($karten, '"control_device"') && str_contains($karten, 'ui/update-model-context'), 'die Seite der Karten bedient über control_device und sagt dem Modell, was geschah');
 pruefe(is_string($karten) && str_contains($karten, 'structuredContent.problem'), 'die Karte zeigt die Antwort nur bei einem Problem');
 pruefe(strlen((string)$karten) < 30000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$karten), 'die Seite der Karten lädt nichts nach: ' . strlen((string)$karten) . ' Bytes');
-pruefe(strlen((string)$seite) < 20000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$seite), 'die Seite lädt nichts nach (CSP der Apps) und bleibt klein: ' . strlen((string)$seite) . ' Bytes');
+pruefe(strlen((string)$seite) < 30000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$seite), 'die Seite lädt nichts nach (CSP der Apps) und bleibt klein: ' . strlen((string)$seite) . ' Bytes');
 
 /* --- Vorlagen am Modul (Prompts, Backlog B63) ---------------------------------------------------- */
 

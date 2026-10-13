@@ -137,7 +137,11 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   immer gewollt“). Mit Energiebilanz gibt es `show_chart` auch ohne Messwert: ohne Raum, Etage, Typ und Name kommt der
   Hausverbrauch als Stapel (`kind: consumption`, `houseChart`, Werte aus `DeviceBackend::counterSeries`): Netz, PV direkt
   = PV − Einspeisung − Batterie geladen (gekappt auf 0 und den Hausverbrauch), Batterie entladen, der Rest Netz, die
-  Einspeisung negativ. Jeder Balken ist der Hausverbrauch der Bilanz; am nuc lud die Batterie am 11.10.2026 um 14 Uhr
+  Einspeisung negativ. Dazu die Ringe Autarkie und Eigenverbrauch (`rings`, `shareRings`, Anregung pitti im Forum,
+  13.10.2026): Autarkie teilt den Hausverbrauch über den ganzen Zeitraum in PV direkt, Batterie und Netz, Eigenverbrauch
+  die PV in direkt, geladen und eingespeist; die Zahl in der Mitte rechnet `shares()` wie die Textzeile des Modells.
+  `show_chart` mit `period=now` ohne Filter gibt es nur mit Leistungsbilanz (`powerRings`, `kind: rings`): Hausleistung
+  auf einer Skala in ganzen kW, dann dieselben Ringe aus den Leistungen. Jeder Balken ist der Hausverbrauch der Bilanz; am nuc lud die Batterie am 11.10.2026 um 14 Uhr
   aus dem Netz (Fixture `nuc_2026-10-12_verbrauch.json`, Burkhard 12.10.2026: „verbrauchsdiagramme, also
   stapeldiagramme“). Stufe wie beim Verlauf (`chartLevel`). Verbrauch je Gerät (`deviceChart`): `type=energy` gibt es nur
   bei `show_chart` (kein Gerätetyp, `chart()` nimmt es heraus und setzt `chartByDevice`), oder automatisch, wenn die Treffer

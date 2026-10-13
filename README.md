@@ -460,7 +460,10 @@ Tools“; dort lässt es sich auf „Immer erlauben“ stellen. Andere Assistent
 Ist die Energiebilanz eingetragen, zeichnet das Modul auf Wunsch auch den Hausverbrauch, etwa „Zeig mir unseren
 Stromverbrauch in diesem Monat als Diagramm“: je Stunde, Tag oder Monat ein Balken aus Netz, PV direkt und Batterie,
 die Einspeisung darunter. Zusammen ergibt jeder Balken den Hausverbrauch der Bilanz; lädt die Batterie aus dem
-Netz, zählt das als Netz.
+Netz, zählt das als Netz. Darüber stehen zwei Ringe: Die Autarkie teilt den Hausverbrauch in PV direkt, Batterie und
+Netz, der Eigenverbrauch teilt den PV-Ertrag in direkt verbraucht, in die Batterie geladen und eingespeist. Mit
+„Zeig mir die Leistung jetzt als Diagramm“ kommen dieselben Ringe aus den Leistungen der Bilanz, dazu ein Ring mit
+der Hausleistung aus PV, Batterie und Netz.
 
 Ebenso geht der Verbrauch je Gerät, etwa „Welche Geräte haben im September am meisten verbraucht? Als Diagramm“:
 die fünf größten Geräte mit Zähler übereinander, der Rest als „übrige Geräte“, fürs ganze Haus dazu „nicht
