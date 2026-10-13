@@ -38,7 +38,7 @@
   .group:first-child { margin-top: 2px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
   .card { --tone: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-  .card.lit { border-color: color-mix(in srgb, var(--tone) 30%, var(--border)); background: linear-gradient(180deg, color-mix(in srgb, var(--tone) 4%, var(--bg)), color-mix(in srgb, var(--tone) 14%, var(--bg))); }
+  /* Kein Hintergrundverlauf auf aktiven Karten: pitti hat sich dagegen entschieden, er passt nicht zur Kachel-Visu (PN #12) */
   .card.busy { opacity: 0.55; pointer-events: none; }
   .t-cover { --tone: #5b6cf0; } .t-light { --tone: #e8a800; } .t-power { --tone: #12b886; } .t-climate { --tone: #1c9fe0; }
   .t-opening { --tone: #7b8794; } .t-sensor { --tone: #f08c00; } .t-media { --tone: #9c5de6; }
@@ -71,14 +71,16 @@
   .buttons { display: flex; gap: 3px; }
   .row .label { color: var(--muted); font-size: 12px; min-width: 72px; }
   .row select { flex: 1; min-width: 0; font: inherit; font-size: 12px; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
-  /* Balken: zugleich Schieberegler, der Griff erscheint erst unter dem Zeiger */
+  /* Balken: zugleich Schieberegler mit rundem Griff (pitti, PN #12); ausgeschaltet grau, reine Anzeige ohne Griff */
   .bar { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; margin: 2px 0; border-radius: 3px; cursor: pointer;
     background: linear-gradient(90deg, var(--tone) 0, var(--tone) var(--fill), color-mix(in srgb, var(--muted) 18%, transparent) var(--fill)); }
   .bar.static { cursor: default; }
-  .bar::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--tone); border: 2px solid var(--bg); opacity: 0; transition: opacity 0.15s; }
-  .bar::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--tone); border: 2px solid var(--bg); opacity: 0; }
-  .bar:not(.static):hover::-webkit-slider-thumb, .bar:focus::-webkit-slider-thumb, .bar:active::-webkit-slider-thumb { opacity: 1; }
-  .bar:not(.static):hover::-moz-range-thumb, .bar:focus::-moz-range-thumb { opacity: 1; }
+  .bar::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--tone); border: 2px solid var(--bg); box-shadow: 0 0 0 1px color-mix(in srgb, var(--tone) 35%, transparent); }
+  .bar::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--tone); border: 2px solid var(--bg); box-shadow: 0 0 0 1px color-mix(in srgb, var(--tone) 35%, transparent); }
+  .card:not(.lit) .bar::-webkit-slider-thumb { background: #b8bfc6; box-shadow: 0 0 0 1px #d0d7de; }
+  .card:not(.lit) .bar::-moz-range-thumb { background: #b8bfc6; box-shadow: 0 0 0 1px #d0d7de; }
+  .bar.static::-webkit-slider-thumb { opacity: 0; }
+  .bar.static::-moz-range-thumb { opacity: 0; }
   .switch { position: relative; width: 34px; height: 20px; flex: none; }
   .switch input { opacity: 0; width: 0; height: 0; }
   .switch span { position: absolute; inset: 0; background: color-mix(in srgb, var(--muted) 25%, transparent); border-radius: 10px; cursor: pointer; transition: background 0.15s; }
