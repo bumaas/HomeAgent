@@ -2729,7 +2729,11 @@ IPS_ApplyChanges($pid);
 $zugangP = ['Name' => 'Claude-App', 'Token' => $pToken, 'DefaultRoom' => '', 'ReadOnly' => true, 'InPath' => true];
 $werkzeugNamen = static fn (bool $apps): array => array_column(oderNull(static fn () => \Closure::bind(fn () => $this->tools($zugangP, $apps), $p, HomeAgent::class)()) ?? [], null, 'name');
 $mit = $werkzeugNamen(true);
-pruefe(isset($mit['show_chart']) && ($mit['show_chart']['_meta']['ui']['resourceUri'] ?? null) === 'ui://homeagent/chart', 'mit Apps: show_chart mit Verweis auf die Seite des Diagramms: ' . json_encode(array_keys($mit)));
+// Die Adresse der Seite trägt einen Teil ihres SHA-256: claude.ai nahm am 13.10.2026 eine Seite aus dem Zwischenspeicher,
+// die über eine halbe Stunde alt war (kein resources/read trotz ttlMs 300000). Eine geänderte Seite hat so eine neue Adresse.
+$chartUri = 'ui://homeagent/chart/' . substr(hash_file('sha256', dirname(__DIR__) . '/HomeAgent/chart.html'), 0, 8);
+$kartenUri = 'ui://homeagent/devices/' . substr(hash_file('sha256', dirname(__DIR__) . '/HomeAgent/devices.html'), 0, 8);
+pruefe(isset($mit['show_chart']) && ($mit['show_chart']['_meta']['ui']['resourceUri'] ?? null) === $chartUri, 'mit Apps: show_chart mit Verweis auf die Seite des Diagramms samt Prüfsumme: ' . json_encode($mit['show_chart']['_meta'] ?? array_keys($mit)));
 pruefe(($mit['show_chart']['annotations']['readOnlyHint'] ?? null) === true && !isset($mit['show_chart']['inputSchema']['properties']['active_only']), 'liest nur, ohne active_only: ' . json_encode($mit['show_chart']['inputSchema']['properties'] ?? null));
 pruefe(!in_array('now', $mit['show_chart']['inputSchema']['properties']['period']['enum'] ?? ['now'], true), 'period ohne now');
 pruefe(str_contains($mit['show_chart']['inputSchema']['properties']['room']['description'] ?? '', 'several rooms separated by commas'), 'room nimmt mehrere Räume für einen Vergleich: ' . ($mit['show_chart']['inputSchema']['properties']['room']['description'] ?? ''));
@@ -2753,6 +2757,9 @@ $seite = oderNull(static fn () => \Closure::bind(fn () => $this->readResource('u
 pruefe(is_string($seite) && str_starts_with(ltrim($seite), '<!DOCTYPE html>') && str_contains($seite, 'ui/initialize') && str_contains($seite, 'ui/notifications/tool-result'), 'die Seite des Diagramms meldet sich beim Client an und nimmt das Ergebnis entgegen');
 pruefe(is_string($seite) && str_contains($seite, 'labels.band') && str_contains($seite, 'type="checkbox"') === false && str_contains($seite, '"checkbox"'), 'die Seite hat einen Schalter für das Band mit der Beschriftung vom Modul');
 pruefe(oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/anderes'), $p, HomeAgent::class)()) === null, 'andere Ressourcen gibt es nicht');
+pruefe(oderNull(static fn () => \Closure::bind(fn () => $this->readResource($chartUri), $p, HomeAgent::class)()) === $seite, 'die Adresse mit Prüfsumme liefert die Seite');
+pruefe(oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/chart/0123abcd'), $p, HomeAgent::class)()) === $seite, 'eine ältere Prüfsumme aus einer zwischengespeicherten Werkzeugliste liefert die heutige Seite');
+pruefe(oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/chart/x'), $p, HomeAgent::class)()) === null, 'eine Adresse ohne gültige Prüfsumme gibt es nicht');
 
 /* --- Gerätekarten (MCP App, Burkhard 12.10.2026) ------------------------------------------------- */
 
@@ -2760,9 +2767,9 @@ pruefe(oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui:
 // Seite (_meta.ui.visibility ["app"]: der Host zeigt es dem Modell nicht).
 $zugangS = ['Name' => 'Claude-App schalten', 'Token' => $pToken, 'DefaultRoom' => '', 'ReadOnly' => false, 'InPath' => true];
 $schalten = array_column(oderNull(static fn () => \Closure::bind(fn () => $this->tools($zugangS, true), $p, HomeAgent::class)()) ?? [], null, 'name');
-pruefe(isset($schalten['show_devices']) && ($schalten['show_devices']['_meta']['ui']['resourceUri'] ?? null) === 'ui://homeagent/devices', 'show_devices mit der Seite der Karten: ' . json_encode(array_keys($schalten)));
+pruefe(isset($schalten['show_devices']) && ($schalten['show_devices']['_meta']['ui']['resourceUri'] ?? null) === $kartenUri, 'show_devices mit der Seite der Karten samt Prüfsumme: ' . json_encode($schalten['show_devices']['_meta'] ?? array_keys($schalten)));
 pruefe(isset($schalten['show_devices']['inputSchema']['properties']['room'], $schalten['show_devices']['inputSchema']['properties']['active_only']) && !isset($schalten['show_devices']['inputSchema']['properties']['period']), 'show_devices filtert wie get_state, ohne Zeitraum: ' . json_encode(array_keys($schalten['show_devices']['inputSchema']['properties'] ?? [])));
-pruefe(($schalten['control_device']['_meta']['ui']['visibility'] ?? null) === ['app'] && ($schalten['control_device']['_meta']['ui']['resourceUri'] ?? null) === 'ui://homeagent/devices', 'control_device nur für die Seite: ' . json_encode($schalten['control_device']['_meta'] ?? null));
+pruefe(($schalten['control_device']['_meta']['ui']['visibility'] ?? null) === ['app'] && ($schalten['control_device']['_meta']['ui']['resourceUri'] ?? null) === $kartenUri, 'control_device nur für die Seite: ' . json_encode($schalten['control_device']['_meta'] ?? null));
 pruefe(($schalten['control_device']['inputSchema']['required'] ?? null) === ['device'] && in_array('on', $schalten['control_device']['inputSchema']['properties']['command']['enum'] ?? [], true), 'control_device braucht den Schlüssel der Karte: ' . json_encode($schalten['control_device']['inputSchema'] ?? null));
 $lesen = $werkzeugNamen(true);
 pruefe(isset($lesen['show_devices']) && !isset($lesen['control_device']), 'Nur-Lese-Zugang: Karten ja, Bedienen nein: ' . json_encode(array_keys($lesen)));
@@ -2772,6 +2779,7 @@ pruefe(!isset($werkzeugNamen(false)['show_devices']), 'ohne Apps keine Karten');
 pruefe(str_contains($schalten['get_state']['description'] ?? '', 'use show_devices') && !str_contains($werkzeugNamen(false)['get_state']['description'] ?? 'show_devices', 'show_devices'), 'mit Apps verweist get_state fürs Zeigen auf die Karten, ohne Apps nicht: ' . ($schalten['get_state']['description'] ?? ''));
 pruefe(str_contains($schalten['show_devices']['description'] ?? '', '"show me'), 'show_devices nennt „show me“: ' . ($schalten['show_devices']['description'] ?? ''));
 $karten = oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/devices'), $p, HomeAgent::class)());
+pruefe(is_string($karten) && oderNull(static fn () => \Closure::bind(fn () => $this->readResource($kartenUri), $p, HomeAgent::class)()) === $karten, 'die Karten auch unter der Adresse mit Prüfsumme');
 pruefe(is_string($karten) && str_contains($karten, 'ui/initialize') && str_contains($karten, '"control_device"') && str_contains($karten, 'ui/update-model-context'), 'die Seite der Karten bedient über control_device und sagt dem Modell, was geschah');
 pruefe(is_string($karten) && str_contains($karten, 'structuredContent.problem'), 'die Karte zeigt die Antwort nur bei einem Problem');
 pruefe(strlen((string)$karten) < 30000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$karten), 'die Seite der Karten lädt nichts nach: ' . strlen((string)$karten) . ' Bytes');

@@ -920,10 +920,26 @@ class HomeAgent extends IPSModuleStrict
         return static fn (?string $name): ?array => $name === null ? $catalog->list() : $catalog->get($name);
     }
 
-    /** Seite einer MCP App (ui://), null = gibt es nicht: das Diagramm von show_chart und die Gerätekarten. */
+    /**
+     * Adresse einer Seite mit den ersten acht Zeichen ihres SHA-256 (ui://homeagent/chart/1a2b3c4d). claude.ai nahm am
+     * 13.10.2026 eine über eine halbe Stunde alte Seite aus dem Zwischenspeicher, ohne resources/read, trotz ttlMs 300000.
+     * Eine geänderte Seite hat so eine neue Adresse, sobald der Client die Werkzeugliste neu holt.
+     */
+    private function resourceUri(string $base): string
+    {
+        $file = [self::CHART_URI => 'chart.html', self::DEVICES_URI => 'devices.html'][$base];
+        $hash = hash_file('sha256', __DIR__ . '/' . $file);
+        return $hash === false ? $base : $base . '/' . substr($hash, 0, 8);
+    }
+
+    /**
+     * Seite einer MCP App (ui://), null = gibt es nicht: das Diagramm von show_chart und die Gerätekarten. Mit
+     * Prüfsumme oder ohne, auch einer älteren aus einer zwischengespeicherten Werkzeugliste: es gibt nur die heutige Seite.
+     */
     private function readResource(string $uri): ?string
     {
-        $file = [self::CHART_URI => 'chart.html', self::DEVICES_URI => 'devices.html'][$uri] ?? null;
+        $base = preg_replace('#/[0-9a-f]{8}$#', '', $uri);
+        $file = [self::CHART_URI => 'chart.html', self::DEVICES_URI => 'devices.html'][$base] ?? null;
         if ($file === null) {
             return null;
         }
@@ -1784,7 +1800,7 @@ class HomeAgent extends IPSModuleStrict
                     'additionalProperties' => false,
                 ],
                 'annotations' => ['readOnlyHint' => true, 'openWorldHint' => false],
-                '_meta'       => ['ui' => ['resourceUri' => self::CHART_URI]],
+                '_meta'       => ['ui' => ['resourceUri' => $this->resourceUri(self::CHART_URI)]],
             ];
         }
 
@@ -1808,7 +1824,7 @@ class HomeAgent extends IPSModuleStrict
                     'additionalProperties' => false,
                 ],
                 'annotations' => ['readOnlyHint' => true, 'openWorldHint' => false],
-                '_meta'       => ['ui' => ['resourceUri' => self::DEVICES_URI]],
+                '_meta'       => ['ui' => ['resourceUri' => $this->resourceUri(self::DEVICES_URI)]],
             ];
         }
 
@@ -1836,7 +1852,7 @@ class HomeAgent extends IPSModuleStrict
                     'additionalProperties' => false,
                 ],
                 'annotations' => ['readOnlyHint' => false, 'idempotentHint' => true, 'openWorldHint' => false],
-                '_meta'       => ['ui' => ['resourceUri' => self::DEVICES_URI, 'visibility' => ['app']]],
+                '_meta'       => ['ui' => ['resourceUri' => $this->resourceUri(self::DEVICES_URI), 'visibility' => ['app']]],
             ];
         }
 

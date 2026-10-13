@@ -128,7 +128,7 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   bekommen es immer: claude.ai holt die Liste für den Chat als „Anthropic/Toolbox“ ohne Apps-Fähigkeit (nuc, 12.10.2026,
   danach stand in claude.ai nur „Get state“). claude.ai erneuert die Werkzeugliste erst, wenn der Connector neu
   hinzugefügt wird; ein Neustart der App oder `ttlMs` reichen nicht. Das Werkzeug trägt `_meta.ui.resourceUri`
-  `ui://homeagent/chart`, die Seite liefert `resources/read` aus `HomeAgent/chart.html` (ohne Bibliotheken, die CSP der
+  `ui://homeagent/chart/<8 Zeichen SHA-256 der Seite>` (`resourceUri`: claude.ai nahm am 13.10.2026 eine über eine halbe Stunde alte Seite aus dem Zwischenspeicher, ohne `resources/read`, trotz `ttlMs`; eine geänderte Seite bekommt so eine neue Adresse, sobald der Client die Werkzeugliste neu holt; `readResource` liefert auch zu alten Prüfsummen und ohne Prüfsumme die heutige Seite, bei den Karten ebenso), die Seite liefert `resources/read` aus `HomeAgent/chart.html` (ohne Bibliotheken, die CSP der
   Apps erlaubt nichts Fremdes; Handshake `ui/initialize`, Werte über `ui/notifications/tool-result`). `DeviceIndex::chart()`
   gibt dem Modell nur Kopfzeile und Minimum/Maximum, die Werte stehen in `structuredContent`. `room` darf mehrere Räume mit Komma
   enthalten (Vergleich in einem Diagramm, höchstens `HISTORY_MAX` Reihen insgesamt; ein unbekannter Raum steht im Text, die
