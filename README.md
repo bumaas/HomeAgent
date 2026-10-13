@@ -253,7 +253,8 @@ Bereichs, heißt er Sonder-Sollwert: Manche Homematic-Thermostate nutzen 100 fü
 
 Ein Klimagerät tragen Sie als Thermostat ein, dazu Modus und Lüfterstufe. Die Zeile lautet dann etwa
 „Soll 24 °C (derzeit 20.0 °C), Aus, Lüfter Auto“, und der Assistent stellt beides per Name wie beim
-Luftentfeuchter. Ein und aus geht über den Modus. Beide Variablen brauchen eine Aktion und eine Auswahl in der
+Luftentfeuchter. „Schalte das Klimagerät aus“ stellt den Modus auf Aus, eingeschaltet wird über einen Modus wie
+Kühlen oder Heizen. Beide Variablen brauchen eine Aktion und eine Auswahl in der
 Darstellung oder im Profil.
 
 Ein Luftentfeuchter meldet sich mit „an (51 %, Soll 55 %, Smart, Lüfter Niedrig)“ oder „aus“ und zählt als

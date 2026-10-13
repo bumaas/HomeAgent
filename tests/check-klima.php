@@ -49,7 +49,7 @@ $buero = ['room' => 'Büro'];
 /* --- Typ und Angebot ------------------------------------------------------------------------------ */
 
 pruefe((DeviceIndex::TYPE_ROLES['thermostat']['roles'] ?? null) === ['state', 'setpoint', 'mode', 'fan'] && (DeviceIndex::TYPE_ROLES['thermostat']['required'] ?? null) === ['setpoint'], 'Thermostat mit Modus und Lüfterstufe, Pflicht bleibt der Sollwert: ' . json_encode(DeviceIndex::TYPE_ROLES['thermostat'] ?? null));
-pruefe(DeviceIndex::abilitiesOf($liste[0]) === ['temperature', 'mode', 'fan_speed'], 'versteht temperature, mode, fan_speed: ' . json_encode(DeviceIndex::abilitiesOf($liste[0])));
+pruefe(DeviceIndex::abilitiesOf($liste[0]) === ['temperature', 'mode', 'fan_speed', 'off'], 'versteht temperature, mode, fan_speed und off (über den Modus): ' . json_encode(DeviceIndex::abilitiesOf($liste[0])));
 $ohne = array_diff_key($liste[0], ['ModeVariableID' => 0, 'FanVariableID' => 0]);
 pruefe(DeviceIndex::abilitiesOf($ohne) === ['temperature'], 'ein Thermostat ohne Modus bleibt, wie er war: ' . json_encode(DeviceIndex::abilitiesOf($ohne)));
 
@@ -73,10 +73,28 @@ pruefe($gesendet(32329) === [] && str_contains($r['text'], '"Kühlen" is a mode,
 $r = rufe($werte, 'set', $buero + ['temperature' => 22]);
 pruefe(!$r['isError'] && $gesendet(20547) === [22.0], 'Solltemperatur geht weiter: ' . $r['text']);
 
+/* --- Ausschalten über den Modus (Burkhard 13.10.2026) --------------------------------------------- */
+
+// Ausgangszustand „Nur Lüfter“ wie im Mitschnitt nach dem ersten Befehl; „off“ kam dort nach 1,5 s zurück.
+$laeuft = $werte;
+$laeuft['53427']['wert'] = 'fan_only';
+$laeuft['53427']['formatiert'] = 'Nur Lüfter';
+$r = rufe($laeuft, 'set', $buero + ['command' => 'off'], $de);
+pruefe(!$r['isError'] && $gesendet(53427) === ['off'] && str_starts_with($r['text'], '1 von 1 Geräten sind jetzt aus'), 'command=off setzt den Modus „Aus“, bestätigt: ' . $r['text']);
+pruefe($gesendet(43761) === [] && $gesendet(19646) === [], 'die Ist-Temperatur (Rolle state) wird nicht geschaltet: ' . json_encode($anlage->requests));
+$r = rufe($werte, 'set', $buero + ['command' => 'off'], $de);
+pruefe(!$r['isError'] && $gesendet(53427) === [] && str_contains($r['text'], 'stand schon auf Aus'), 'steht schon auf Aus: nichts gesendet: ' . $r['text']);
+$r = rufe($laeuft, 'set', $buero + ['command' => 'on']);
+pruefe($r['isError'] && $anlage->requests === [] && str_contains($r['text'], 'mode'), 'command=on bleibt eine Absage, sie nennt mode (Heizen, Kühlen oder Auto ist nicht eindeutig): ' . $r['text']);
+$ohneAus = $laeuft;
+$ohneAus['53427']['optionen'] = array_values(array_filter($laeuft['53427']['optionen'], static fn (array $o): bool => $o[0] !== 'off'));
+$r = rufe($ohneAus, 'set', $buero + ['command' => 'off']);
+pruefe($anlage->requests === [] && str_contains($r['text'], 'unknown entry "off"'), 'ohne Eintrag „off“ geht nichts hinaus, die Zeile nennt die Einträge (angenommener Fall): ' . $r['text']);
+
 /* --- Karte ---------------------------------------------------------------------------------------- */
 
 $r = rufe($werte, 'karten', $buero, $de);
 $karte = $r['structuredContent']['cards'][0] ?? [];
-pruefe(($karte['controls']['setpoint']['field'] ?? null) === 'temperature' && array_column($karte['controls']['options'] ?? [], 'value') === ['Aus', 'Auto'] && count($karte['controls']['options'][0]['entries'] ?? []) === 6, 'Karte: Sollwert, Auswahl Modus und Lüfterstufe: ' . json_encode($karte['controls'] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($karte['controls']['setpoint']['field'] ?? null) === 'temperature' && array_column($karte['controls']['options'] ?? [], 'value') === ['Aus', 'Auto'] && count($karte['controls']['options'][0]['entries'] ?? []) === 6 && !isset($karte['controls']['switch']), 'Karte (ohne Schalter, Aus steht in der Auswahl): Sollwert, Auswahl Modus und Lüfterstufe: ' . json_encode($karte['controls'] ?? null, JSON_UNESCAPED_UNICODE));
 
 ende('Klimagerät');

@@ -1423,9 +1423,15 @@ final class DeviceIndex
         // hat, geht auf 100 % bzw. 0 %.
         $on = $command === 'on';
         $word = $this->t($on ? 'on' : 'off');
+        // Ein Klimagerät geht über den Modus aus; seine Rolle „state“ ist die Ist-Temperatur (Burkhard 13.10.2026).
+        $climate = array_filter($understand, static fn (array $e): bool => $e['Type'] === 'thermostat');
+        $understand = array_diff_key($understand, $climate);
+        $result = $climate === [] ? null : $this->runOption($climate, 'mode', 'off');
         $withState = array_filter($understand, static fn (array $e): bool => isset($e['roles']['state']));
         $levelOnly = array_diff_key($understand, $withState);
-        $result = $withState === [] ? null : $this->runSwitch($withState, $on);
+        if ($withState !== []) {
+            $result = self::mergeResults($result, $this->runSwitch($withState, $on));
+        }
         if ($levelOnly !== []) {
             // Ein Licht ohne Schalter mit Farbe (RGBW-Leiste) leuchtet mit Stufe 0 weiter, solange die
             // Farbe nicht schwarz ist; „aus“ setzt sie deshalb mit auf 0. Erst nach der Stufe: Das
@@ -1522,9 +1528,9 @@ final class DeviceIndex
             return ($row['StopVia'] ?? '') !== '' ? ['open', 'close', 'stop', 'percent'] : ['open', 'close', 'percent'];
         }
         // Ein Thermostat stellt man auf eine Temperatur; ein Klimagerät hat dazu Modus und Lüfterstufe per Name
-        // (B19). Ein und aus geht dort über den Modus („Aus“).
+        // (B19). „off“ setzt dort den Modus „off“; „on“ gibt es nicht, Heizen, Kühlen und Auto wären alle möglich.
         if ($type === 'thermostat') {
-            return isset($roles['setpoint']) ? array_merge(['temperature'], isset($roles['mode']) ? ['mode'] : [], isset($roles['fan']) ? ['fan_speed'] : []) : [];
+            return isset($roles['setpoint']) ? array_merge(['temperature'], isset($roles['mode']) ? ['mode'] : [], isset($roles['fan']) ? ['fan_speed'] : [], isset($roles['mode']) ? ['off'] : []) : [];
         }
         // Ein Luftentfeuchter schaltet und stellt seine Zielfeuchte; eine Lüftung schaltet, Modus und Lüfterstufe
         // gehen bei beiden per Name.

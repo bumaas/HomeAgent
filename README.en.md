@@ -242,7 +242,8 @@ special setpoint: some Homematic thermostats use 100 for "valve fully open".
 
 Add an air conditioner as a thermostat together with mode and fan speed. Its line then reads like
 "setpoint 24 °C (currently 20.0 °C), Aus, fan Auto", and the assistant sets both by name as with the
-dehumidifier. On and off go through the mode. Both variables need an action and a selection in the
+dehumidifier. "Turn off the air conditioner" sets the mode to off; to turn it on, choose a mode such as cool or
+heat. Both variables need an action and a selection in the
 presentation or the profile.
 
 A dehumidifier reports "on (51 %, setpoint 55 %, Smart, fan Niedrig)" or "off" and counts as active while it runs. Ventilation reports the same way without humidity: "on (Nacht, fan niedrig)".
