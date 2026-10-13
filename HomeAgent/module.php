@@ -1797,6 +1797,7 @@ class HomeAgent extends IPSModuleStrict
                     . ($hasBalance ? 'Without room, floor, type or name it shows the house consumption as stacked bars (grid, solar used directly, battery, grid export below), with self-sufficiency and self-consumed solar as rings. ' : '')
                     . ($hasPowerBalance ? 'period=now without room, floor, type or name shows the current house power as rings. ' : '')
                     . ($hasMeters ? 'type=energy shows the consumption per device with an energy meter as stacked bars, the largest five first; a room or name with meters and no measured values does the same. ' : '')
+                    . 'cumulative=true answers where consumption stands in the month or year, with a projection. '
                     . 'heatmap=true shows when in the day something happens, for example consumption per hour over a month. '
                     . 'versus gives a scatter chart with the relation in words, for example heat pump power against outdoor temperature. '
                     . 'Use it when the user asks for a chart, diagram, graph or curve; for numbers alone use get_state. Without a period: today. '
@@ -1815,6 +1816,7 @@ class HomeAgent extends IPSModuleStrict
                         'from'   => ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD, or a start hour, YYYY-MM-DD HH:MM. Today is ' . date('Y-m-d') . '.'],
                         'to'     => ['type' => 'string', 'description' => 'Last day, inclusive, or the end hour, YYYY-MM-DD HH:MM, exclusive.'],
                         ...($this->priceVariable() > 0 ? ['costs' => ['type' => 'boolean', 'description' => 'true: the house consumption as costs in euros (grid import times the hourly price, feed-in below), also as heatmap or cumulative. Only without room, floor, type and name.']] : []),
+                        'cumulative' => ['type' => 'boolean', 'description' => 'true: consumption (or costs) added up day by day with a projection to the end of the period, with compare also the comparison period. Without a period: this year.'],
                         'heatmap' => ['type' => 'boolean', 'description' => 'true: one value per hour as a heatmap of one device (without room, type or name the house consumption), a row per day up to 62 days, otherwise per weekday. Without a period: last month.'],
                         'versus'  => ['type' => 'string', 'description' => 'Name of a second device for a scatter chart: it goes on the x axis, the device chosen by room, type or name (without them the house consumption) on the y axis, for example versus=outdoor temperature with name=heat pump. Without a period: last month.'],
                         'compare' => ['type' => 'string', 'enum' => DeviceIndex::COMPARES, 'description' => 'Compare with the previous period (yesterday, last week, last month, last year) or the same period a year before; drawn as a dashed line or as marks on the bars.'],

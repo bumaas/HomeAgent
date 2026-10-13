@@ -302,7 +302,10 @@ auch die Kosten: „Kosten 38.21 € für 122.7 kWh Netzbezug (im Mittel 31.1 ct
 Einspeisung 60.47 €. Ohne PV und Batterie wären es 259.20 € gewesen.“ Gerechnet wird je Stunde Netzbezug mal
 Stundenmittel des Preises. Das sind reine Arbeitskosten ohne Grundgebühr; gegen die Abrechnung des Versorgers weicht
 das um wenige Prozent ab, weil der eigene Zähler etwas anders misst und das Archiv nur Stundenmittel kennt. Im
-Diagramm zeigt `costs` den Hausverbrauch in Euro, als Stapel, als Heatmap und mit Vergleich.
+Diagramm zeigt `costs` den Hausverbrauch in Euro, als Stapel, als Heatmap und mit Vergleich. Eine Summenkurve
+(`cumulative`) addiert Verbrauch oder Kosten Tag für Tag auf und rechnet einen laufenden Zeitraum bis zu seinem Ende
+hoch, etwa „Bisher 10239.5 kWh, hochgerechnet 13079.9 kWh für den ganzen Zeitraum. Vergleich zur selben Zeit 9066.1 kWh
+(+13 %).“ Die Hochrechnung ist linear; über ein Jahr unterschätzt sie den Winter.
 
 Mit `period=now` nennt **get_state** die Leistung jetzt in W, aufgebaut wie der Verbrauch: je Gerät mit
 Leistung der aktuelle Wert, dazu die Summe. Fürs ganze Haus rechnet das Modul die Hausleistung aus den

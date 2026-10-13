@@ -288,7 +288,10 @@ the costs: "Costs 38.21 € for 122.7 kWh grid import (paid on average 31.1 ct/k
 60.47 €. Without solar and battery it would have been 259.20 €." Each hour counts grid import times the hourly mean
 price. These are working costs only, without base fee; against the supplier's bill they differ by a few percent,
 because your own meter measures slightly differently and the archive only knows hourly means. In charts `costs`
-shows the house consumption in euros, as stacked bars, as heatmap and with a comparison.
+shows the house consumption in euros, as stacked bars, as heatmap and with a comparison. A cumulative chart
+(`cumulative`) adds up consumption or costs day by day and projects a running period to its end, for example "So far
+10239.5 kWh, projected 13079.9 kWh for the whole period. Comparison by the same time 9066.1 kWh (+13 %)." The
+projection is linear; over a year it underestimates the winter.
 
 With `period=now`, **get_state** reports the power right now in W, built like the consumption: the
 current value of each device with power, plus the total. For the whole house the module calculates the

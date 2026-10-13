@@ -155,6 +155,9 @@ Feste Reihenfolge: Rollläden, Licht, Schalter und Steckdosen, Klima, Messwerte,
   Leistung von `--bg` nach Blau (#2f81f7), die Skala endet beim 95. Perzentil (`cap`), damit einzelne Spitzen nicht alles
   blass machen; Temperatur von Blau über `--heat-mid` (hell #f2f4f7, dunkel #3a3f46) nach Rot über die volle Spanne. Darunter
   die Farbskala mit Minimum und Maximum bzw. „≥ cap“. Tooltip mit Tag, Stunde und Wert.
+- **Summenkurve:** der aufaddierte Verbrauch bzw. die Kosten als blaue Linie ab 0 über den ganzen Zeitraum, die
+  Hochrechnung gepunktet in derselben Farbe bis zum Ende mit einem Punkt, der Vergleichszeitraum gestrichelt in `--muted`.
+  Legende „aufaddiert (Einheit)“, Hochrechnung, Vergleich; Achse über ein Jahr in Monaten.
 - **Ringe:** drei Viertel eines Kreises, von oben im Uhrzeigersinn, innen kleiner; Teile links neben dem Anfang ihres
   Bogens, Skala außen (Prozent oder ganze kW), die Zahl groß in der Mitte. Bögen unter 1 % entfallen. Die Teile heißen
   in allen Ringen gleich kurz: PV bzw. PV direkt, Batterie, Netz, Einspeisung. Ringkarten füllen die Breite.

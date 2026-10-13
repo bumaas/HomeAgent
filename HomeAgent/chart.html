@@ -636,6 +636,85 @@
     container.appendChild(box);
   }
 
+  // Summenkurve (B73): aufaddierter Verbrauch bzw. Kosten als Linie über den ganzen Zeitraum, die Hochrechnung gepunktet
+  // bis zum Ende, der Vergleichszeitraum gestrichelt in derselben Farbe
+  function drawCumulative(container, data) {
+    var W = 640, H = 240, L = 44, R = 10, T = 8, B = 26;
+    var times = data.times || [], values = data.values || [];
+    if (!times.length || !data.range) { return; }
+    var t0 = data.range[0], t1 = data.range[1];
+    var step = times.length > 1 ? times[1] - times[0] : 3600;
+    var at = function (i) { return times[i] + step; };
+    var high = 0;
+    values.forEach(function (v) { if (v !== null) { high = Math.max(high, v); } });
+    if (data.projection) { high = Math.max(high, data.projection[1][1]); }
+    var cmp = data.compare && data.compare.values ? data.compare.values : [];
+    cmp.forEach(function (v) { high = Math.max(high, v); });
+    if (high <= 0) { high = 1; }
+    var ys = niceStep(high), y1 = Math.ceil(high / ys) * ys;
+    var x = function (t) { return L + (t - t0) / (t1 - t0) * (W - L - R); };
+    var y = function (v) { return T + (y1 - v) / y1 * (H - T - B); };
+    var unit = data.unit || "";
+    var labels = data.labels || {};
+
+    var box = document.createElement("div");
+    box.className = "chart";
+    var legend = document.createElement("div");
+    legend.className = "legend";
+    var item = function (style, text) {
+      var span = document.createElement("span");
+      var mark = document.createElement("i");
+      mark.style.background = style;
+      span.appendChild(mark);
+      span.appendChild(document.createTextNode(text));
+      legend.appendChild(span);
+    };
+    item(COLORS[0], (labels.total || "") + (unit ? " (" + unit + ")" : ""));
+    if (data.projection) { item("repeating-linear-gradient(90deg, " + COLORS[0] + " 0 2px, transparent 2px 5px)", labels.projection || "projection"); }
+    if (cmp.length) { item("repeating-linear-gradient(90deg, var(--muted) 0 4px, transparent 4px 7px)", compareText(data)); }
+    box.appendChild(legend);
+
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
+    for (var v = 0; v <= y1 + ys / 2; v += ys) {
+      svg.appendChild(el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "var(--grid)", "stroke-width": 1 }));
+      svg.appendChild(el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, axisNumber(v, ys)));
+    }
+    var per = data.per === "hour" ? "hour" : "day";
+    var spansDays = t1 - t0 > 86400;
+    timeTicks(t0, t1, t1 - t0 > 100 * 86400 ? "month" : per).forEach(function (t) {
+      var px = x(t);
+      var anchor = px < L + 20 ? "start" : px > W - R - 20 ? "end" : "middle";
+      svg.appendChild(el("line", { x1: px, x2: px, y1: H - B, y2: H - B + 4, stroke: "var(--grid)", "stroke-width": 1 }));
+      svg.appendChild(el("text", { x: px, y: H - 8, "text-anchor": anchor }, timeLabel(t, t1 - t0 > 100 * 86400 ? "month" : per, spansDays && per === "hour")));
+    });
+    if (cmp.length) {
+      var cpts = [x(t0) + "," + y(0)].concat(cmp.map(function (c, i) { return x(Math.min(t1, t0 + (i + 1) * step)) + "," + y(c); }));
+      svg.appendChild(el("polyline", { points: cpts.join(" "), fill: "none", stroke: "var(--muted)", "stroke-width": 1.5, "stroke-dasharray": "5 4" }));
+    }
+    var pts = [x(t0) + "," + y(0)];
+    values.forEach(function (c, i) { if (c !== null) { pts.push(x(Math.min(t1, at(i))) + "," + y(c)); } });
+    svg.appendChild(el("polyline", { points: pts.join(" "), fill: "none", stroke: COLORS[0], "stroke-width": 2, "stroke-linejoin": "round" }));
+    if (data.projection) {
+      var p = data.projection;
+      svg.appendChild(el("line", { x1: x(p[0][0]), y1: y(p[0][1]), x2: x(p[1][0]), y2: y(p[1][1]), stroke: COLORS[0], "stroke-width": 2, "stroke-dasharray": "2 3" }));
+      var end = el("circle", { cx: x(p[1][0]), cy: y(p[1][1]), r: 3.5, fill: COLORS[0] });
+      end.appendChild(el("title", {}, (labels.projection || "") + ": " + number(p[1][1]) + " " + unit));
+      svg.appendChild(end);
+    }
+    values.forEach(function (c, i) {
+      if (c === null) { return; }
+      var hit = el("circle", { cx: x(Math.min(t1, at(i))), cy: y(c), r: 5, fill: "transparent" });
+      hit.appendChild(el("title", {}, timeLabel(times[i], per, true) + ": " + number(c) + " " + unit));
+      svg.appendChild(hit);
+    });
+    box.appendChild(svg);
+    var note = document.createElement("p");
+    note.className = "note";
+    note.textContent = (labels.per ? labels.per + ": " : "") + unit;
+    box.appendChild(note);
+    container.appendChild(box);
+  }
+
   function drawRings(container, rings) {
     if (!rings || !rings.length) { return; }
     var row = document.createElement("div");
@@ -651,6 +730,14 @@
       only.textContent = "";
       addTitle(only, data);
       drawRings(only, data.rings);
+      reportSize();
+      return;
+    }
+    if (data && data.kind === "cumulative") {
+      var line = document.getElementById("root");
+      line.textContent = "";
+      addTitle(line, data);
+      drawCumulative(line, data);
       reportSize();
       return;
     }

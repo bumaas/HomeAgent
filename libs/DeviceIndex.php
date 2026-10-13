@@ -284,6 +284,9 @@ final class DeviceIndex
     /** Während chart() mit type=energy: Verbrauch je Gerät statt Verlauf bzw. Hausstapel. */
     private bool $chartByDevice = false;
 
+    /** Während chart() mit cumulative=true: fester Raster (0 Stunde, 1 Tag) statt der Stufe aus dem Zeitraum (B73). */
+    private ?int $forceLevel = null;
+
     /** Während chart() mit costs=true: der Hausverbrauch als Kosten in Euro (B72). */
     private bool $chartCosts = false;
 
@@ -933,6 +936,9 @@ final class DeviceIndex
      */
     private function chartLevel(string $period, int $from, int $to): int
     {
+        if ($this->forceLevel !== null) {
+            return $this->forceLevel;
+        }
         if ($period === '') {
             $span = ($to === 0 ? $this->backend->timestamp() : $to) - $from;
             return $span <= 2 * 86400 ? 0 : ($span <= 100 * 86400 ? 1 : 3);
@@ -3655,6 +3661,99 @@ final class DeviceIndex
      * @return array{text: string, isError: bool, structuredContent?: array<string, mixed>}
      */
     public function chart(array $arguments): array
+    {
+        // Summenkurve (B73): dasselbe Verbrauchsdiagramm je Tag (bis zwei Tage je Stunde), aufaddiert; ohne Zeitraum das
+        // laufende Jahr
+        $cumulative = ($arguments['cumulative'] ?? false) === true;
+        unset($arguments['cumulative']);
+        if (!$cumulative) {
+            return $this->chartOf($arguments);
+        }
+        if (trim((string)($arguments['period'] ?? '')) === '' && trim((string)($arguments['from'] ?? '')) === '') {
+            $arguments['period'] = 'this_year';
+        }
+        $span = trim((string)($arguments['period'] ?? '')) === self::NOW ? null : $this->periodSpan($arguments);
+        if ($span === null) {
+            return $this->fail($this->t('A cumulative chart needs a period or from and to.'));
+        }
+        $this->forceLevel = $span[1] - $span[0] <= 2 * 86400 ? 0 : 1;
+        try {
+            $result = $this->chartOf($arguments);
+        } finally {
+            $this->forceLevel = null;
+        }
+        return $result['isError'] ? $result : $this->cumulativeOf($result, $span);
+    }
+
+    /**
+     * Macht aus einem Verbrauchsdiagramm die Summenkurve: Summe je Abschnitt (alle positiven Teile, wie die Marke des
+     * Vergleichs), aufaddiert, künftige Abschnitte leer. Läuft der Zeitraum noch, rechnet das Modul mit dem bisherigen
+     * Mittel bis zum Ende hoch; ein Vergleich wird ebenso aufaddiert. Das Modell bekommt Stand, Hochrechnung und den
+     * Vergleich zur selben Zeit.
+     *
+     * @param array{0: int, 1: int} $span
+     */
+    private function cumulativeOf(array $result, array $span): array
+    {
+        $chart = $result['structuredContent'] ?? [];
+        if (($chart['kind'] ?? '') !== 'consumption') {
+            return $this->fail($this->t('A cumulative chart needs a meter or the house consumption.'));
+        }
+        [$from, $end] = $span;
+        $now = $this->backend->timestamp();
+        $running = $end > $now;
+        $unit = (string)($chart['unit'] ?? 'kWh');
+        $format = static fn (float $v): string => $unit === '€' ? number_format($v, 2, '.', '') : self::formatNumber($v);
+        $totals = static function (array $series, int $count): array {
+            $sums = array_fill(0, $count, 0.0);
+            foreach ($series as $s) {
+                foreach ($s['values'] as $i => $v) {
+                    $sums[$i] += max(0.0, (float)$v);
+                }
+            }
+            return $sums;
+        };
+        $times = $chart['times'] ?? [];
+        $values = [];
+        $sum = 0.0;
+        $last = -1;
+        foreach ($totals($chart['series'] ?? [], count($times)) as $i => $v) {
+            if ($running && $times[$i] > $now) {
+                $values[$i] = null;
+                continue;
+            }
+            $sum += $v;
+            $values[$i] = round($sum, 3);
+            $last = $i;
+        }
+        $projection = $running && $now > $from ? [[$now, round($sum, 3)], [$end, round($sum / (($now - $from) / ($end - $from)), 3)]] : null;
+        $lines = [$running && $projection !== null
+            ? sprintf($this->t('So far %s %s, projected %s %s for the whole period.'), $format($sum), $unit, $format($projection[1][1]), $unit)
+            : sprintf($this->t('In total %s %s.'), $format($sum), $unit)];
+        $compare = null;
+        if (isset($chart['compare']['values'])) {
+            $running2 = 0.0;
+            $cumulated = array_map(static function (float $v) use (&$running2): float {
+                $running2 += $v;
+                return round($running2, 3);
+            }, $chart['compare']['values']);
+            $compare = ['label' => $chart['compare']['label'] ?? '', 'range' => $chart['compare']['range'] ?? null, 'values' => $cumulated];
+            $then = $cumulated[min($last, count($cumulated) - 1)] ?? null;
+            if ($then !== null && $then > 0) {
+                $change = (int)round(($sum - $then) / $then * 100);
+                $lines[] = sprintf($this->t('Comparison by the same time %s %s (%s%d %%).'), $format($then), $unit, $change >= 0 ? '+' : '', $change);
+            }
+        }
+        $text = preg_replace('/\n[^\n]*$/', '', $result['text']) . "\n" . implode("\n", $lines) . "\n" . $this->t('The chart is shown in the chat.');
+        return ['text' => $text, 'isError' => false, 'structuredContent' => [
+            'kind'       => 'cumulative', 'title' => $chart['title'] ?? '', 'per' => $chart['per'] ?? 'day', 'unit' => $unit,
+            'range'      => [$from, $end], 'times' => $times, 'values' => $values, 'projection' => $projection, 'compare' => $compare,
+            'labels'     => ($chart['labels'] ?? []) + ['projection' => $this->t('projection'), 'compare' => $this->t('comparison'), 'total' => $this->t('cumulative')],
+        ]];
+    }
+
+    /** Diagramm ohne Summenkurve. */
+    private function chartOf(array $arguments): array
     {
         // Kosten in Euro (B72): nur fürs ganze Haus und nur mit Strompreis in der Energiebilanz
         $costs = ($arguments['costs'] ?? false) === true;

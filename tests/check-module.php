@@ -2789,6 +2789,8 @@ pruefe(!in_array('now', $mit['show_chart']['inputSchema']['properties']['period'
 pruefe(!isset($mit['show_chart']['inputSchema']['properties']['costs']), 'ohne Strompreis kein costs in show_chart');
 $formular = (string)file_get_contents(dirname(__DIR__) . '/HomeAgent/form.json');
 pruefe(str_contains($formular, '"name": "PriceVariableID"') && str_contains($formular, '"name": "FeedInTariff"') && str_contains($formular, 'PriceVariableID (electricity price'), 'Formular und Hinweistext nennen Strompreis und Einspeisevergütung');
+// Summenkurve (B73, 13.10.2026)
+pruefe(($mit['show_chart']['inputSchema']['properties']['cumulative']['type'] ?? '') === 'boolean' && str_contains($mit['show_chart']['description'] ?? '', 'cumulative=true'), 'show_chart bietet cumulative an');
 // Heatmap (B71, 13.10.2026)
 pruefe(($mit['show_chart']['inputSchema']['properties']['heatmap']['type'] ?? '') === 'boolean' && str_contains($mit['show_chart']['description'] ?? '', 'heatmap=true'), 'show_chart bietet heatmap an: ' . json_encode($mit['show_chart']['inputSchema']['properties']['heatmap'] ?? null));
 // Punktwolke (B70, 13.10.2026)

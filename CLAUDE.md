@@ -275,6 +275,12 @@ Weitere Regeln, die nicht offensichtlich sind:
   ganze Haus, ohne Grundgebühr. Am Tibber-Preis (`act_price` = API `total`, brutto) gegen die Rechnung September 2026
   geprüft: Archiv 38,21 € gegen Rechnung 37,23 € (1,4 % Menge vom eigenen Zähler, 1,2 % Preis aus Stundenmitteln).
   Test `check-kosten.php`.
+- **Summenkurve** (B73, Burkhard 13.10.2026, `show_chart` mit `cumulative=true`): `chart()` setzt `forceLevel` (bis zwei Tage
+  Stunde, sonst Tag; ohne das gäbe ein Jahr nur zwölf Stufen), holt über `chartOf` das Verbrauchsdiagramm (Haus, Gerät mit
+  Zähler oder Kosten) samt Vergleich und macht in `cumulativeOf` daraus die Summenkurve: Summe der positiven Teile je
+  Abschnitt, aufaddiert, künftige Abschnitte `null`, Hochrechnung linear mit dem bisherigen Mittel (`projection` von jetzt
+  bis zum Ende), der Vergleich aufaddiert. Ohne Zeitraum das laufende Jahr. Test `check-summenkurve.php`. Die lineare
+  Hochrechnung unterschätzt über ein Jahr den Winter (am nuc Kosten 2026: Januar bis März der größte Teil).
 - **Verlauf statt Verbrauch** (`DeviceIndex::history`), wenn nach einem Typ aus `HISTORY_TYPES` gefragt
   wird oder kein Treffer einen Zähler hat, nie fürs ganze Haus. Stufe aus dem Zeitraum (heute und
   gestern stündlich, Wochen und Monate täglich, Jahre monatlich; `from`/`to` bis 2 Tage stündlich, bis
