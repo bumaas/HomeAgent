@@ -159,7 +159,10 @@ Feste Reihenfolge: Rollläden, Licht, Schalter und Steckdosen, Klima, Messwerte,
 - **Summenkurve:** der aufaddierte Verbrauch bzw. die Kosten als blaue Linie ab 0 über den ganzen Zeitraum, die
   Hochrechnung gepunktet in derselben Farbe bis zum Ende mit einem Punkt (nach dem Vorjahresverlauf als Kurve), der Vergleichszeitraum gestrichelt in `--muted`.
   Legende „aufaddiert (Einheit)“, bei Kosten „Netzbezug (€)“, Hochrechnung, Vergleich; bei Kosten die Vergütung der
-  Einspeisung als grüne Linie (Farbe der Einspeisung, #4caf50); Achse über ein Jahr in Monaten.
+  Einspeisung als grüne Linie (Farbe der Einspeisung, #4caf50); Achse über ein Jahr in Monaten. Tooltip je Abschnitt über
+  die ganze Höhe wie beim Stapel: Datum, Stand bzw. danach die Hochrechnung, Vergütung und Vergleich an derselben Stelle.
+- **Tooltip im Verlauf:** je Punkt das Mittel, Minimum und Maximum nur bei eingeschaltetem Band, dazu der Vergleich an
+  derselben Stelle; Vergleichspunkte ohne eigenen Punkt (nach heute) haben einen eigenen Tooltip (Burkhard 13.10.2026).
 - **Ringe:** drei Viertel eines Kreises, von oben im Uhrzeigersinn, innen kleiner; Teile links neben dem Anfang ihres
   Bogens, Skala außen (Prozent oder ganze kW), die Zahl groß in der Mitte. Bögen unter 1 % entfallen. Die Teile heißen
   in allen Ringen gleich kurz: PV bzw. PV direkt, Batterie, Netz, Einspeisung. Ringkarten füllen die Breite.

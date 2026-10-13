@@ -235,9 +235,22 @@
         svg.appendChild(el("polyline", { points: s.compare.map(function (p) { return x(p[0]) + "," + y(p[2]); }).join(" "), fill: "none", stroke: color, "stroke-width": 1.5, "stroke-dasharray": "5 4", opacity: 0.75, "stroke-linejoin": "round" }));
       }
       svg.appendChild(el("polyline", { points: s.points.map(function (p) { return x(p[0]) + "," + y(p[2]); }).join(" "), fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round" }));
+      // Tooltip je Punkt: Mittel, mit Band auch Minimum und Maximum, dazu der Vergleich zur selben Stelle; Vergleichspunkte
+      // ohne eigenen Punkt (etwa nach heute) bekommen einen eigenen Tooltip
+      var valueText = function (p) { return (showBand ? number(p[1]) + " / " + number(p[2]) + " / " + number(p[3]) : number(p[2])) + (unit ? " " + unit : ""); };
+      var before = {};
+      (s.compare || []).forEach(function (p) { before[p[0]] = p; });
       s.points.forEach(function (p) {
         var dot = el("circle", { cx: x(p[0]), cy: y(p[2]), r: 6, fill: "transparent" });
-        dot.appendChild(el("title", {}, timeLabel(p[0], data.per, true) + ": " + number(p[1]) + " / " + number(p[2]) + " / " + number(p[3]) + (unit ? " " + unit : "")));
+        var tip = [timeLabel(p[0], data.per, true) + ": " + valueText(p)];
+        if (before[p[0]]) { tip.push(compareText(data) + ": " + valueText(before[p[0]])); delete before[p[0]]; }
+        dot.appendChild(el("title", {}, tip.join("\n")));
+        svg.appendChild(dot);
+      });
+      Object.keys(before).forEach(function (key) {
+        var p = before[key];
+        var dot = el("circle", { cx: x(p[0]), cy: y(p[2]), r: 6, fill: "transparent" });
+        dot.appendChild(el("title", {}, timeLabel(p[0], data.per, true) + "\n" + compareText(data) + ": " + valueText(p)));
         svg.appendChild(dot);
       });
     });
@@ -708,14 +721,31 @@
       // Linear zwei Punkte, nach dem Vorjahresverlauf je Abschnitt einer
       var p = data.projection, q = p[p.length - 1];
       svg.appendChild(el("polyline", { points: p.map(function (a) { return x(a[0]) + "," + y(a[1]); }).join(" "), fill: "none", stroke: COLORS[0], "stroke-width": 2, "stroke-dasharray": "2 3", "stroke-linejoin": "round" }));
-      var end = el("circle", { cx: x(q[0]), cy: y(q[1]), r: 3.5, fill: COLORS[0] });
-      end.appendChild(el("title", {}, (labels.projection || "") + ": " + number(q[1]) + " " + unit));
-      svg.appendChild(end);
+      svg.appendChild(el("circle", { cx: x(q[0]), cy: y(q[1]), r: 3.5, fill: COLORS[0] }));
     }
-    values.forEach(function (c, i) {
-      if (c === null) { return; }
-      var hit = el("circle", { cx: x(Math.min(t1, at(i))), cy: y(c), r: 5, fill: "transparent" });
-      hit.appendChild(el("title", {}, timeLabel(times[i], per, true) + ": " + number(c) + " " + unit));
+    // Tooltip je Abschnitt über die ganze Höhe wie beim Stapel: Stand bzw. Hochrechnung, Vergütung und Vergleich an
+    // derselben Stelle; man muss keine dünne Linie treffen
+    var projected = function (t) {
+      var p = data.projection;
+      if (!p || t <= p[0][0]) { return null; }
+      for (var k = 1; k < p.length; k++) {
+        if (t <= p[k][0]) { return p[k - 1][1] + (p[k][1] - p[k - 1][1]) * (t - p[k - 1][0]) / (p[k][0] - p[k - 1][0]); }
+      }
+      return p[p.length - 1][1];
+    };
+    times.forEach(function (t, i) {
+      var tip = [timeLabel(t, per, true)];
+      var a = x(t), b = x(Math.min(t1, at(i)));
+      if (values[i] !== null && values[i] !== undefined) {
+        tip.push((labels.total || "") + ": " + number(values[i]) + " " + unit);
+      } else if (projected(at(i)) !== null) {
+        tip.push((labels.projection || "") + ": " + number(projected(Math.min(t1, at(i)))) + " " + unit);
+      }
+      if (revenue[i] !== null && revenue[i] !== undefined) { tip.push((labels.revenue || "") + ": " + number(revenue[i]) + " " + unit); }
+      if (cmp[i] !== undefined) { tip.push(compareText(data) + ": " + number(cmp[i]) + " " + unit); }
+      if (tip.length === 1) { return; }
+      var hit = el("rect", { x: a, y: T, width: Math.max(1, b - a), height: H - T - B, fill: "transparent" });
+      hit.appendChild(el("title", {}, tip.join("\n")));
       svg.appendChild(hit);
     });
     box.appendChild(svg);
