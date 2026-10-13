@@ -3650,6 +3650,15 @@ final class DeviceIndex
             }
             return $this->scatter($arguments, $versus);
         }
+        // Heatmap (B71): ein Wert je Stunde als Raster; ohne Zeitraum der letzte Monat
+        $heatmap = ($arguments['heatmap'] ?? false) === true;
+        unset($arguments['heatmap']);
+        if ($heatmap) {
+            if (trim((string)($arguments['period'] ?? '')) === '' && trim((string)($arguments['from'] ?? '')) === '') {
+                $arguments['period'] = 'last_month';
+            }
+            return $this->heatmap($arguments);
+        }
         $period = trim((string)($arguments['period'] ?? ''));
         if ($period === self::NOW) {
             $filtered = array_filter(['room', 'floor', 'type', 'name'], static fn (string $field): bool => trim((string)($arguments[$field] ?? '')) !== '');
@@ -3911,6 +3920,154 @@ final class DeviceIndex
         ]];
     }
 
+    /**
+     * Heatmap (B71, Burkhard 13.10.2026): ein Wert je Stunde als Raster, bis 62 Tage eine Zeile je Tag, darüber sieben Zeilen
+     * Montag bis Sonntag mit dem Mittel je Wochentag und Stunde. Ein Gerät wie bei der Punktwolke, ohne Filter der
+     * Hausverbrauch. Das Modell bekommt die stärkste und die schwächste Stunde im Mittel und Werktag gegen Wochenende (bei
+     * Zählern je Tag summiert, sonst gemittelt), die Seite das Raster.
+     */
+    private function heatmap(array $arguments): array
+    {
+        if (trim((string)($arguments['compare'] ?? '')) !== '' || str_contains((string)($arguments['room'] ?? ''), ',')) {
+            return $this->fail($this->t('A heatmap takes one room and no comparison.'));
+        }
+        $period = trim((string)($arguments['period'] ?? ''));
+        $span = $period === self::NOW ? null : $this->periodSpan($arguments);
+        if ($span === null) {
+            return $this->fail($this->t('A heatmap needs a period or from and to.'));
+        }
+        [$from, $end] = $span;
+        $to = $end > $this->backend->timestamp() ? 0 : $end - 1;
+        $room = trim((string)($arguments['room'] ?? ''));
+        $floor = trim((string)($arguments['floor'] ?? ''));
+        $type = trim((string)($arguments['type'] ?? ''));
+        $name = trim((string)($arguments['name'] ?? ''));
+        $fromText = trim((string)($arguments['from'] ?? ''));
+        $toText = trim((string)($arguments['to'] ?? ''));
+        $when = $period !== '' ? 'period=' . $period : 'from=' . $fromText . ($toText === '' ? '' : ', to=' . $toText);
+        if ($room === '' && $floor === '' && $type === '' && $name === '') {
+            if ($this->balance === []) {
+                return $this->fail($this->t('A heatmap needs room, type or name, or an energy balance for the house.'));
+            }
+            $filter = $when;
+            $series = ['label' => $this->t('house consumption'), 'unit' => 'kWh', 'values' => [], 'sum' => true];
+            foreach ($this->balanceParts($this->balance, 0, $from, $to) ?? [] as $time => $parts) {
+                $value = 0.0;
+                foreach (self::BALANCE_TERMS as $key => [$sign]) {
+                    $value += $sign * ($parts[$key] ?? 0.0);
+                }
+                $series['values'][$time] = max(0.0, $value);
+            }
+        } else {
+            $room = $this->effectiveRoom($room, $name, $floor);
+            $filter = $this->describeFilter($room, $type, $name, $floor) . ', ' . $when;
+            $matches = $this->find($room, $type, $name, $floor);
+            if ($matches === []) {
+                $this->noMatch($room, $name);
+                return $this->fail(sprintf($this->t('No released device matches %s.'), $this->describeFilter($room, $type, $name, $floor)));
+            }
+            if (count($matches) > 1) {
+                $this->problem = 'ambiguous';
+                return $this->fail(sprintf($this->t('A heatmap needs exactly one device; %s matches %d: %s.'), $this->describeFilter($room, $type, $name, $floor), count($matches),
+                    implode(', ', array_map(static fn (array $e): string => $e['Room'] . ' · ' . $e['Name'], $matches))));
+            }
+            $series = $this->valueSeries($matches[0], 0, $from, $to);
+            if ($series === null) {
+                return $this->fail(sprintf($this->t('%s has no values for a heatmap (only measured values, meters and power).'), $matches[0]['Room'] . ' · ' . $matches[0]['Name']));
+            }
+        }
+
+        $dayCount = (int)round(($end - $from) / 86400);
+        $mode = $dayCount <= 62 ? 'days' : 'weekdays';
+        $rows = [];
+        if ($mode === 'days') {
+            for ($day = $from; $day < $end; $day = (int)strtotime('+1 day', $day)) {
+                $rows[] = $day;
+            }
+        } else {
+            $rows = [1, 2, 3, 4, 5, 6, 7];
+        }
+        $rowOf = $mode === 'days' ? array_flip(array_map(static fn (int $day): string => date('Y-m-d', $day), $rows)) : null;
+        // Je Kästchen Summe und Anzahl: ein Zähler summiert die doppelte Stunde der Zeitumstellung, sonst gilt das Mittel;
+        // im Wochenprofil ist jedes Kästchen ein Mittel.
+        $sums = $counts = [];
+        $hours = array_fill(0, 24, []);
+        $daily = [];
+        foreach ($series['values'] as $time => $value) {
+            $row = $mode === 'days' ? ($rowOf[date('Y-m-d', $time)] ?? null) : (int)date('N', $time) - 1;
+            if ($row === null) {
+                continue;
+            }
+            $hour = (int)date('G', $time);
+            $sums[$row][$hour] = ($sums[$row][$hour] ?? 0.0) + $value;
+            $counts[$row][$hour] = ($counts[$row][$hour] ?? 0) + 1;
+            $hours[$hour][] = $value;
+            $daily[date('Y-m-d', $time)][] = $value;
+        }
+        $cells = [];
+        $all = [];
+        foreach (array_keys($rows) as $row) {
+            $line = [];
+            for ($hour = 0; $hour < 24; $hour++) {
+                if (!isset($sums[$row][$hour])) {
+                    $line[] = null;
+                    continue;
+                }
+                $value = $mode === 'days' && $series['sum'] ? $sums[$row][$hour] : $sums[$row][$hour] / $counts[$row][$hour];
+                $line[] = round($value, 6);
+                $all[] = $value;
+            }
+            $cells[] = $line;
+        }
+
+        $head = $mode === 'days'
+            ? sprintf($this->t('Heatmap of %s (%s) per hour (%s): %d days.'), $series['label'], $series['unit'], $filter, count($rows))
+            : sprintf($this->t('Heatmap of %s (%s) per weekday and hour (%s): average over %d days.'), $series['label'], $series['unit'], $filter, $dayCount);
+        $lines = [$head];
+        $profile = [];
+        foreach ($hours as $hour => $values) {
+            if ($values !== []) {
+                $profile[$hour] = array_sum($values) / count($values);
+            }
+        }
+        if ($profile !== []) {
+            $high = array_keys($profile, max($profile))[0];
+            $low = array_keys($profile, min($profile))[0];
+            $hourText = static fn (int $h): string => sprintf('%02d:00–%02d:00', $h, ($h + 1) % 24);
+            $lines[] = sprintf($this->t('On average highest at %s (%s %s), lowest at %s (%s %s).'), $hourText($high), self::roughNumber($profile[$high]), $series['unit'], $hourText($low), self::roughNumber($profile[$low]), $series['unit']);
+            // Werktag gegen Wochenende: Zähler je Tag summiert, sonst das Mittel aller Werte
+            $weekday = $weekend = [];
+            foreach ($daily as $day => $values) {
+                $part = $series['sum'] ? [array_sum($values)] : $values;
+                if ((int)date('N', (int)strtotime($day)) >= 6) {
+                    $weekend = array_merge($weekend, $part);
+                } else {
+                    $weekday = array_merge($weekday, $part);
+                }
+            }
+            if ($weekday !== [] && $weekend !== []) {
+                $lines[] = sprintf($this->t($series['sum'] ? 'Per day on weekdays %s %s, at weekends %s %s.' : 'On weekdays %s %s on average, at weekends %s %s.'),
+                    self::roughNumber(array_sum($weekday) / count($weekday)), $series['unit'], self::roughNumber(array_sum($weekend) / count($weekend)), $series['unit']);
+            }
+        }
+        $lines[] = $this->t('The chart is shown in the chat.');
+        return ['text' => implode("\n", $lines), 'isError' => false, 'structuredContent' => [
+            'kind'   => 'heatmap', 'title' => $head, 'mode' => $mode, 'range' => [$from, $end],
+            'label'  => $series['label'], 'unit' => $series['unit'], 'rows' => $rows, 'cells' => $cells,
+            'min'    => $all === [] ? null : min($all), 'max' => $all === [] ? null : max($all),
+            'scale'  => $series['unit'] === '°C' ? 'diverging' : 'sequential',
+            // Farbskala bis zum 95. Perzentil, sonst ließen einzelne Spitzen fast alle Kästchen weiß (Hausverbrauch am nuc)
+            'cap'    => $all === [] ? null : self::percentile($all, 0.95),
+        ]];
+    }
+
+    /** Wert beim Anteil $share der sortierten Werte (0,95 = 95. Perzentil), ohne Zwischenwerte. */
+    private static function percentile(array $values, float $share): float
+    {
+        sort($values);
+        return (float)$values[(int)floor($share * (count($values) - 1))];
+    }
+
     /** Absage, wenn eine Achse mehr als ein Gerät trifft, mit den Kandidaten. */
     private function scatterAmbiguous(string $filter, array $matches): array
     {
@@ -3938,7 +4095,7 @@ final class DeviceIndex
             foreach ($history['rows'] as $row) {
                 $values[$row['time']] = $row['avg'];
             }
-            return ['label' => $label, 'unit' => trim($history['unit']), 'values' => $values];
+            return ['label' => $label, 'unit' => trim($history['unit']), 'values' => $values, 'sum' => false];
         };
         if (self::isMeasured($entry) && !$this->isTimed($entry)) {
             return $average($roles['state']);
@@ -3952,7 +4109,7 @@ final class DeviceIndex
             foreach ($series['rows'] as $row) {
                 $values[$row['time']] = (float)self::kilowattHours(['sum' => $row['sum'], 'unit' => $series['unit']]);
             }
-            return ['label' => $label, 'unit' => 'kWh', 'values' => $values];
+            return ['label' => $label, 'unit' => 'kWh', 'values' => $values, 'sum' => true];
         }
         if (isset($roles['power'])) {
             return $average($roles['power']);

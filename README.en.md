@@ -459,7 +459,10 @@ comparison. A scatter chart shows how two values relate, for example "heat pump 
 September": one point per day (per hour up to two days), the mean per temperature class and a trend line. If
 consumption only rises below a limit, the module finds this heating limit itself and the assistant gets the relation
 in words ("below about 16 °C about 0.06 kW more per degree colder, explains 84 %"). The y axis takes a measured
-value, a meter or a power, without a device the house consumption.
+value, a meter or a power, without a device the house consumption. A heatmap shows when in the day something
+happens, for example "house consumption in September as a heatmap": one cell per hour, one row per day, beyond 62
+days one row per weekday with the mean. The assistant gets the strongest and the weakest hour and the difference
+between weekdays and weekends.
 Each chart shows its period above it, for example "Monday, 12 October 2026" or "September 2026". The tool is called `show_chart` and appears in the connector settings under "Interactive tools", where it can be
 set to "Always allow". Other assistants do not see it.
 

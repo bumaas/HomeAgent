@@ -479,7 +479,9 @@ Wärmepumpe gegen die Außentemperatur im September“: ein Punkt je Tag (bis zw
 je Temperaturklasse und eine Trendlinie. Steigt der Verbrauch erst unterhalb einer Grenze, findet das Modul diese
 Heizgrenze selbst, und der Assistent bekommt den Zusammenhang in Worten („unter etwa 16 °C je Grad kälter rund
 0,06 kW mehr, erklärt 84 %“). Auf der y-Achse steht ein Messwert, ein Zähler oder eine Leistung, ohne Gerät der
-Hausverbrauch. Über jedem Diagramm steht der Zeitraum, etwa „Montag, 12. Oktober 2026“ oder „September 2026“. Das Werkzeug heißt `show_chart` und erscheint in den Einstellungen des Connectors unter „Interaktive
+Hausverbrauch. Eine Heatmap zeigt, wann am Tag etwas passiert, etwa „Hausverbrauch im September als Heatmap“: ein
+Kästchen je Stunde, eine Zeile je Tag, bei mehr als 62 Tagen eine Zeile je Wochentag mit dem Mittel. Der Assistent
+bekommt die stärkste und die schwächste Stunde und den Unterschied zwischen Werktag und Wochenende. Über jedem Diagramm steht der Zeitraum, etwa „Montag, 12. Oktober 2026“ oder „September 2026“. Das Werkzeug heißt `show_chart` und erscheint in den Einstellungen des Connectors unter „Interaktive
 Tools“; dort lässt es sich auf „Immer erlauben“ stellen. Andere Assistenten sehen es nicht.
 
 Ist die Energiebilanz eingetragen, zeichnet das Modul auf Wunsch auch den Hausverbrauch, etwa „Zeig mir unseren

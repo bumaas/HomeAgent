@@ -11,6 +11,7 @@
     --muted: var(--color-text-secondary, #656d76);
     --grid: var(--color-border-tertiary, #d8dee4);
     --inactive: #afb8c1;
+    --heat-mid: #f2f4f7;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -19,6 +20,7 @@
       --muted: var(--color-text-secondary, #9198a1);
       --grid: var(--color-border-tertiary, #3d444d);
       --inactive: #545d68;
+      --heat-mid: #3a3f46;
     }
   }
   :root[data-theme="dark"] {
@@ -27,6 +29,7 @@
     --muted: var(--color-text-secondary, #9198a1);
     --grid: var(--color-border-tertiary, #3d444d);
     --inactive: #545d68;
+    --heat-mid: #3a3f46;
   }
   html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); overflow: hidden; }
   body { font: 13px/1.4 var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif); padding: 8px 4px 4px; }
@@ -37,6 +40,8 @@
   .legend i.bar { height: 10px; }
   .note { color: var(--muted); margin: 0 0 0 6px; font-size: 12px; }
   .title { font-weight: 600; margin: 0 0 6px 6px; }
+  .scale { display: flex; align-items: center; gap: 6px; margin: 4px 0 0 6px; color: var(--muted); font-size: 12px; }
+  .scale i { display: inline-block; width: 160px; height: 8px; border-radius: 4px; }
   svg { display: block; width: 100%; height: auto; overflow: visible; }
   svg text { fill: var(--muted); font-size: 11px; }
   .empty { color: var(--muted); padding: 12px 6px; }
@@ -574,6 +579,63 @@
     container.appendChild(box);
   }
 
+  // Heatmap (B71): Stunden nach rechts, Tage bzw. Wochentage nach unten. Verbrauch und Leistung von blass nach Blau,
+  // Temperatur von Blau über eine neutrale Mitte nach Rot. Leere Kästchen haben keinen Wert.
+  function heatColor(data, v) {
+    var f = data.max > data.min ? (v - data.min) / (data.max - data.min) : 0.5;
+    if (data.scale === "diverging") {
+      return f < 0.5
+        ? "color-mix(in srgb, " + COLORS[0] + " " + Math.round((0.5 - f) * 200) + "%, var(--heat-mid))"
+        : "color-mix(in srgb, " + COLORS[1] + " " + Math.round((f - 0.5) * 200) + "%, var(--heat-mid))";
+    }
+    var top = data.cap !== undefined && data.cap !== null && data.cap > data.min ? data.cap : data.max;
+    var g = top > data.min ? Math.min(1, (v - data.min) / (top - data.min)) : 0.5;
+    return "color-mix(in srgb, " + COLORS[0] + " " + Math.round(6 + g * 94) + "%, var(--bg))";
+  }
+  function drawHeatmap(container, data) {
+    var rows = data.rows || [], cells = data.cells || [];
+    if (!rows.length || data.min === null) { return; }
+    var W = 640, L = 70, R = 10, T = 16, cellH = data.mode === "days" ? 12 : 24;
+    var cellW = (W - L - R) / 24, H = T + rows.length * cellH;
+    var monday = new Date(2024, 0, 1);
+    var rowLabel = function (row) {
+      if (data.mode === "days") { return dateText(row, { weekday: "short", day: "2-digit", month: "2-digit" }); }
+      return new Date(monday.getTime() + (row - 1) * 86400000).toLocaleDateString(lang, { weekday: "long" });
+    };
+    var box = document.createElement("div");
+    box.className = "chart";
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
+    for (var h = 0; h < 24; h += 3) {
+      svg.appendChild(el("text", { x: L + (h + 0.5) * cellW, y: T - 4, "text-anchor": "middle" }, (h < 10 ? "0" : "") + h));
+    }
+    rows.forEach(function (row, i) {
+      var y = T + i * cellH;
+      if (data.mode === "weekdays" || i % 2 === 0) {
+        svg.appendChild(el("text", { x: L - 6, y: y + cellH / 2 + 4, "text-anchor": "end" }, rowLabel(row)));
+      }
+      (cells[i] || []).forEach(function (v, hour) {
+        if (v === null) { return; }
+        var rect = el("rect", { x: L + hour * cellW + 0.5, y: y + 0.5, width: cellW - 1, height: cellH - 1, rx: 2, fill: heatColor(data, v) });
+        rect.appendChild(el("title", {}, rowLabel(row) + ", " + (hour < 10 ? "0" : "") + hour + ":00: " + number(v) + " " + data.unit));
+        svg.appendChild(rect);
+      });
+    });
+    box.appendChild(svg);
+    var scale = document.createElement("div");
+    scale.className = "scale";
+    var bar = document.createElement("i");
+    var stops = [];
+    var end = data.scale !== "diverging" && data.cap !== undefined && data.cap !== null && data.cap > data.min ? data.cap : data.max;
+    for (var k = 0; k <= 4; k++) { stops.push(heatColor(data, data.min + (end - data.min) * k / 4)); }
+    bar.style.background = "linear-gradient(90deg, " + stops.join(", ") + ")";
+    scale.appendChild(document.createTextNode(number(data.min) + " " + data.unit));
+    scale.appendChild(bar);
+    var capped = data.scale !== "diverging" && data.cap !== undefined && data.cap !== null && data.cap < data.max;
+    scale.appendChild(document.createTextNode((capped ? "≥ " + number(data.cap) : number(data.max)) + " " + data.unit));
+    box.appendChild(scale);
+    container.appendChild(box);
+  }
+
   function drawRings(container, rings) {
     if (!rings || !rings.length) { return; }
     var row = document.createElement("div");
@@ -589,6 +651,14 @@
       only.textContent = "";
       addTitle(only, data);
       drawRings(only, data.rings);
+      reportSize();
+      return;
+    }
+    if (data && data.kind === "heatmap") {
+      var grid = document.getElementById("root");
+      grid.textContent = "";
+      addTitle(grid, data);
+      drawHeatmap(grid, data);
       reportSize();
       return;
     }

@@ -2785,6 +2785,8 @@ $kartenUri = 'ui://homeagent/devices/' . substr(hash_file('sha256', dirname(__DI
 pruefe(isset($mit['show_chart']) && ($mit['show_chart']['_meta']['ui']['resourceUri'] ?? null) === $chartUri, 'mit Apps: show_chart mit Verweis auf die Seite des Diagramms samt Prüfsumme: ' . json_encode($mit['show_chart']['_meta'] ?? array_keys($mit)));
 pruefe(($mit['show_chart']['annotations']['readOnlyHint'] ?? null) === true && !isset($mit['show_chart']['inputSchema']['properties']['active_only']), 'liest nur, ohne active_only: ' . json_encode($mit['show_chart']['inputSchema']['properties'] ?? null));
 pruefe(!in_array('now', $mit['show_chart']['inputSchema']['properties']['period']['enum'] ?? ['now'], true), 'period ohne now');
+// Heatmap (B71, 13.10.2026)
+pruefe(($mit['show_chart']['inputSchema']['properties']['heatmap']['type'] ?? '') === 'boolean' && str_contains($mit['show_chart']['description'] ?? '', 'heatmap=true'), 'show_chart bietet heatmap an: ' . json_encode($mit['show_chart']['inputSchema']['properties']['heatmap'] ?? null));
 // Punktwolke (B70, 13.10.2026)
 pruefe(isset($mit['show_chart']['inputSchema']['properties']['versus']) && str_contains($mit['show_chart']['description'] ?? '', 'versus gives a scatter chart'), 'show_chart bietet versus für die Punktwolke an: ' . json_encode($mit['show_chart']['inputSchema']['properties']['versus'] ?? null));
 // Vergleich zweier Zeiträume (B69, 13.10.2026)
@@ -2843,8 +2845,8 @@ pruefe(is_string($karten) && str_contains($karten, 'ui/initialize') && str_conta
 pruefe(is_string($karten) && str_contains($karten, 'c.options') && str_contains($karten, 'node("select"'), 'die Seite zeichnet eine Auswahl je Eintrag in controls.options');
 pruefe(is_string($karten) && str_contains($karten, 'structuredContent.problem'), 'die Karte zeigt die Antwort nur bei einem Problem');
 pruefe(strlen((string)$karten) < 30000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$karten), 'die Seite der Karten lädt nichts nach: ' . strlen((string)$karten) . ' Bytes');
-// 40000 seit der Punktwolke (B70, 34,5 KB); die Seite geht an die App, nicht ans Sprachmodell
-pruefe(strlen((string)$seite) < 40000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$seite), 'die Seite lädt nichts nach (CSP der Apps) und bleibt klein: ' . strlen((string)$seite) . ' Bytes');
+// 50000 seit der Heatmap (B71, 40,8 KB; vorher 40000 mit der Punktwolke); die Seite geht an die App, nicht ans Sprachmodell
+pruefe(strlen((string)$seite) < 50000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$seite), 'die Seite lädt nichts nach (CSP der Apps) und bleibt klein: ' . strlen((string)$seite) . ' Bytes');
 // Screenshot der Claude-App 13.10.2026: Achse bis -0,5 bei fast keiner Einspeisung, ein grüner Punkt für
 // „Einspeisung 0 kWh“, und rechts blieb ein Drittel frei
 pruefe(is_string($seite) && str_contains($seite, 'if (-low < high * 0.03) { low = 0; }'), 'kaum Einspeisung: kein Bereich unter der Nulllinie');

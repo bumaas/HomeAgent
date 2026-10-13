@@ -260,6 +260,13 @@ Weitere Regeln, die nicht offensichtlich sind:
   mindestens 5 Prozentpunkten mehr; quadratisch bewusst nicht (die Parabel stieg über 20 °C wieder an). Unter 10
   Punkten kein Modell, unter 10 % „kein klarer Zusammenhang“. Klassenmittel je runder Breite über einem Zwölftel der
   Spanne (`scatterClasses`). Test `check-punktwolke.php` rechnet die Kennzahlen selbst aus der Fixture nach.
+- **Heatmap** (B71, Burkhard 13.10.2026, `show_chart` mit `heatmap=true`, `DeviceIndex::heatmap`): ein Gerät wie bei der
+  Punktwolke (`valueSeries`, je Stunde), ohne Filter der Hausverbrauch; bis 62 Tage eine Zeile je Tag (`rows` mit dem
+  Tagesbeginn), darüber `mode: weekdays` mit sieben Zeilen und dem Mittel je Wochentag und Stunde. Zähler werden in einem
+  Kästchen summiert (doppelte Stunde der Zeitumstellung), sonst gemittelt. Text: stärkste und schwächste Stunde im Mittel,
+  Werktag gegen Wochenende (Zähler je Tag summiert). `cap` ist das 95. Perzentil für die Farbskala: im September am nuc
+  reichte der Hausverbrauch bis 9,5 kWh je Stunde, fast alle Kästchen waren sonst blass. Test `check-heatmap.php`
+  (Fixture kompakt, Zähler im September, Temperatur ab August).
 - **Verlauf statt Verbrauch** (`DeviceIndex::history`), wenn nach einem Typ aus `HISTORY_TYPES` gefragt
   wird oder kein Treffer einen Zähler hat, nie fürs ganze Haus. Stufe aus dem Zeitraum (heute und
   gestern stündlich, Wochen und Monate täglich, Jahre monatlich; `from`/`to` bis 2 Tage stündlich, bis
