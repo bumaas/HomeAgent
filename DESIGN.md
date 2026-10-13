@@ -19,7 +19,8 @@ Die Gestaltung folgt den Entwürfen von pitti aus dem Symcon-Forum (Karten, Ring
   `structuredContent`. Die Seite formatiert nur Zahlen und Zeiten nach der Sprache des Clients.
 - **Hell und dunkel sind gleichwertig.** Jede Farbe, die vom Hintergrund abhängt, ist ein Token mit Wert für beide
   Schemata. Feste Grautöne sind ein Fehler (Layoutvergleich: „geschlossen“ leuchtete im dunklen Modus heller als „offen“).
-- **Keine fremden Bibliotheken.** Die CSP der Apps erlaubt nichts Fremdes. Gezeichnet wird mit HTML, CSS und SVG.
+- **Keine fremden Bibliotheken.** Die CSP der Apps erlaubt nichts Fremdes. Gezeichnet wird mit HTML, CSS und SVG. Jede
+  Seite bleibt unter 40 KB (Test in `check-module.php`); sie geht an die App, nicht ans Sprachmodell.
 
 ## Farben
 
@@ -138,6 +139,11 @@ Feste Reihenfolge: Rollläden, Licht, Schalter und Steckdosen, Klima, Messwerte,
   aber erst ab 3 % des höchsten Balkens. Vergleich als Marke je Balken.
 - **Zeitleiste (Bänder):** je Gerät ein Streifen von 14 px, Abschnitte in der Farbe ihres Zustands, dahinter eine
   blasse Fläche für die Zeit mit bekanntem Wert. Tooltip mit Zustand, von, bis und Dauer.
+- **Punktwolke:** je Abschnitt ein Punkt (blau, halbtransparent, Radius 3), beide Achsen als Zahlen mit runden Schritten,
+  die Einheit der x-Achse unten rechts. Darüber die Klassenmittel als Linie in `--fg` mit kleinen Punkten und die
+  Modellkurve gestrichelt in Gelb (`SCATTER_TREND` #d29922, Knickpunkt als eigene Stützstelle). Legende „y (Einheit)
+  gegen x (Einheit)“, Klassenmittel, Trend; Fußzeile mit Raster und Anzahl der Punkte. Tooltip mit Zeitpunkt und
+  beiden Werten.
 - **Ringe:** drei Viertel eines Kreises, von oben im Uhrzeigersinn, innen kleiner; Teile links neben dem Anfang ihres
   Bogens, Skala außen (Prozent oder ganze kW), die Zahl groß in der Mitte. Bögen unter 1 % entfallen. Die Teile heißen
   in allen Ringen gleich kurz: PV bzw. PV direkt, Batterie, Netz, Einspeisung. Ringkarten füllen die Breite.

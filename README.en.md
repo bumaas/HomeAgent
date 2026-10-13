@@ -455,7 +455,11 @@ state, for example with "Show me when the front door was open today". Two period
 "house consumption today compared with yesterday" or "temperature in the guest room this month against the same
 month last year": a dashed line for a history, a mark on each bar for consumption. While the period is still
 running, the answer also gives the consumption of the comparison period up to the same time. Timelines have no
-comparison.
+comparison. A scatter chart shows how two values relate, for example "heat pump power against outdoor temperature in
+September": one point per day (per hour up to two days), the mean per temperature class and a trend line. If
+consumption only rises below a limit, the module finds this heating limit itself and the assistant gets the relation
+in words ("below about 16 °C about 0.06 kW more per degree colder, explains 84 %"). The y axis takes a measured
+value, a meter or a power, without a device the house consumption.
 The tool is called `show_chart` and appears in the connector settings under "Interactive tools", where it can be
 set to "Always allow". Other assistants do not see it.
 

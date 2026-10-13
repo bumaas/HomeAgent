@@ -3641,6 +3641,15 @@ final class DeviceIndex
      */
     public function chart(array $arguments): array
     {
+        // Punktwolke (B70): versus nennt das Gerät der x-Achse; ohne Zeitraum der letzte Monat
+        $versus = trim((string)($arguments['versus'] ?? ''));
+        unset($arguments['versus']);
+        if ($versus !== '') {
+            if (trim((string)($arguments['period'] ?? '')) === '' && trim((string)($arguments['from'] ?? '')) === '') {
+                $arguments['period'] = 'last_month';
+            }
+            return $this->scatter($arguments, $versus);
+        }
         $period = trim((string)($arguments['period'] ?? ''));
         if ($period === self::NOW) {
             $filtered = array_filter(['room', 'floor', 'type', 'name'], static fn (string $field): bool => trim((string)($arguments[$field] ?? '')) !== '');
@@ -3801,6 +3810,267 @@ final class DeviceIndex
             $text .= "\n" . sprintf($this->t('By the same time: %s kWh.'), self::formatNumber($sum));
         }
         return $text;
+    }
+
+    /**
+     * Punktwolke (B70, Burkhard 13.10.2026): je Abschnitt ein Punkt aus dem Wert des Geräts „versus“ (x) und dem Wert des
+     * Geräts der übrigen Filter (y), ohne Filter dem Hausverbrauch der Bilanz. Abschnitte bis zwei Tage je Stunde, bis 400
+     * Tage je Tag, sonst je Monat; stündlich ist eine Wärmepumpe kaum vorherzusagen (am nuc erklärte kein Modell mehr als
+     * 13 %), je Tag erklärte der Knick 84 %. Das Modell bekommt den Zusammenhang in Worten, die Seite Punkte, Klassenmittel
+     * und die Modellkurve.
+     */
+    private function scatter(array $arguments, string $versus): array
+    {
+        if (trim((string)($arguments['compare'] ?? '')) !== '' || str_contains((string)($arguments['room'] ?? ''), ',')) {
+            return $this->fail($this->t('A scatter chart takes one room and no comparison.'));
+        }
+        $period = trim((string)($arguments['period'] ?? ''));
+        $span = $period === self::NOW ? null : $this->periodSpan($arguments);
+        if ($span === null) {
+            return $this->fail($this->t('A scatter chart needs a period or from and to.'));
+        }
+        [$from, $end] = $span;
+        $to = $end > $this->backend->timestamp() ? 0 : $end - 1;
+        $level = $end - $from <= 2 * 86400 ? 0 : ($end - $from <= 400 * 86400 ? 1 : 3);
+        $room = trim((string)($arguments['room'] ?? ''));
+        $floor = trim((string)($arguments['floor'] ?? ''));
+        $type = trim((string)($arguments['type'] ?? ''));
+        $name = trim((string)($arguments['name'] ?? ''));
+        $fromText = trim((string)($arguments['from'] ?? ''));
+        $toText = trim((string)($arguments['to'] ?? ''));
+        $when = $period !== '' ? ', period=' . $period : ', from=' . $fromText . ($toText === '' ? '' : ', to=' . $toText);
+
+        $xMatches = $this->find('', '', $versus, '');
+        if ($xMatches === []) {
+            $this->noMatch('', $versus);
+            return $this->fail(sprintf($this->t('No released device matches %s.'), 'versus=' . $versus));
+        }
+        if (count($xMatches) > 1) {
+            return $this->scatterAmbiguous('versus=' . $versus, $xMatches);
+        }
+        if ($room === '' && $floor === '' && $type === '' && $name === '') {
+            if ($this->balance === []) {
+                return $this->fail($this->t('A scatter chart needs room, type or name for the y axis, or an energy balance for the house.'));
+            }
+            $filter = 'versus=' . $versus;
+            $y = ['label' => $this->t('house consumption'), 'unit' => 'kWh', 'values' => []];
+            foreach ($this->balanceParts($this->balance, $level, $from, $to) ?? [] as $time => $parts) {
+                $sum = 0.0;
+                foreach (self::BALANCE_TERMS as $key => [$sign]) {
+                    $sum += $sign * ($parts[$key] ?? 0.0);
+                }
+                $y['values'][$time] = max(0.0, $sum);
+            }
+        } else {
+            $room = $this->effectiveRoom($room, $name, $floor);
+            $filter = $this->describeFilter($room, $type, $name, $floor) . ', versus=' . $versus;
+            $yMatches = $this->find($room, $type, $name, $floor);
+            if ($yMatches === []) {
+                $this->noMatch($room, $name);
+                return $this->fail(sprintf($this->t('No released device matches %s.'), $this->describeFilter($room, $type, $name, $floor)));
+            }
+            if (count($yMatches) > 1) {
+                return $this->scatterAmbiguous($this->describeFilter($room, $type, $name, $floor), $yMatches);
+            }
+            $y = $this->valueSeries($yMatches[0], $level, $from, $to);
+            if ($y === null) {
+                return $this->fail(sprintf($this->t('%s has no values for a scatter chart (only measured values, meters and power).'), $yMatches[0]['Room'] . ' · ' . $yMatches[0]['Name']));
+            }
+        }
+        $x = $this->valueSeries($xMatches[0], $level, $from, $to);
+        if ($x === null) {
+            return $this->fail(sprintf($this->t('%s has no values for a scatter chart (only measured values, meters and power).'), $xMatches[0]['Room'] . ' · ' . $xMatches[0]['Name']));
+        }
+
+        $points = [];
+        foreach ($y['values'] as $time => $value) {
+            if (isset($x['values'][$time])) {
+                $points[] = [round($x['values'][$time], 6), round($value, 6), $time];
+            }
+        }
+        $per = self::HISTORY_LEVELS[$level][0];
+        $head = sprintf($this->t('Scatter chart of %s (%s) against %s (%s) (%s), per %s: %d points.'), $y['label'], $y['unit'], $x['label'], $x['unit'], $filter . $when, $this->t($per), count($points));
+        $model = self::scatterModel($points);
+        $lines = [$head, $this->scatterSentence($model, $x, $y, count($points))];
+        if ($points !== []) {
+            $xs = array_column($points, 0);
+            $ys = array_column($points, 1);
+            $lines[] = sprintf($this->t('%s from %s to %s %s, %s from %s to %s %s.'), $x['label'], self::roughNumber(min($xs)), self::roughNumber(max($xs)), $x['unit'], $y['label'], self::roughNumber(min($ys)), self::roughNumber(max($ys)), $y['unit']);
+        }
+        $lines[] = $this->t('The chart is shown in the chat.');
+        return ['text' => implode("\n", $lines), 'isError' => false, 'structuredContent' => [
+            'kind'    => 'scatter', 'title' => $head, 'per' => $per,
+            'x'       => ['label' => $x['label'], 'unit' => $x['unit']],
+            'y'       => ['label' => $y['label'], 'unit' => $y['unit']],
+            'points'  => $points,
+            'classes' => self::scatterClasses($points),
+            'model'   => $model,
+            'labels'  => ['per' => $this->t($per), 'classes' => $this->t('class mean'), 'model' => $this->t('trend'), 'versus' => $this->t('against')],
+        ]];
+    }
+
+    /** Absage, wenn eine Achse mehr als ein Gerät trifft, mit den Kandidaten. */
+    private function scatterAmbiguous(string $filter, array $matches): array
+    {
+        $this->problem = 'ambiguous';
+        $names = array_map(static fn (array $e): string => $e['Room'] . ' · ' . $e['Name'], $matches);
+        return $this->fail(sprintf($this->t('A scatter chart needs exactly one device per axis; %s matches %d: %s.'), $filter, count($matches), implode(', ', $names)));
+    }
+
+    /**
+     * Wertereihe eines Geräts für die Punktwolke: Messwert (Mittel des Abschnitts), sonst Zähler (Verbrauch in kWh), sonst
+     * Leistung (Mittel). Zustände wie an/aus haben keine. null = keine Werte.
+     *
+     * @return null|array{label: string, unit: string, values: array<int, float>}
+     */
+    private function valueSeries(array $entry, int $level, int $from, int $to): ?array
+    {
+        $roles = $entry['roles'];
+        $label = $entry['Room'] . ' · ' . $entry['Name'];
+        $average = function (int $variable) use ($label, $level, $from, $to): ?array {
+            $history = $this->backend->history($variable, $level, $from, $to);
+            if ($history === null) {
+                return null;
+            }
+            $values = [];
+            foreach ($history['rows'] as $row) {
+                $values[$row['time']] = $row['avg'];
+            }
+            return ['label' => $label, 'unit' => trim($history['unit']), 'values' => $values];
+        };
+        if (self::isMeasured($entry) && !$this->isTimed($entry)) {
+            return $average($roles['state']);
+        }
+        if (isset($roles['energy'])) {
+            $series = $this->backend->counterSeries($roles['energy'], $level, $from, $to);
+            if ($series === null || !self::isEnergyUnit($series['unit'])) {
+                return null;
+            }
+            $values = [];
+            foreach ($series['rows'] as $row) {
+                $values[$row['time']] = (float)self::kilowattHours(['sum' => $row['sum'], 'unit' => $series['unit']]);
+            }
+            return ['label' => $label, 'unit' => 'kWh', 'values' => $values];
+        }
+        if (isset($roles['power'])) {
+            return $average($roles['power']);
+        }
+        return null;
+    }
+
+    /**
+     * Zusammenhang der Punkte: linear (y = a + b·x) und mit Knick (y = a + b·max(0, c − x) bzw. max(0, x − c)), c im Raster
+     * eines Hundertstels der Spanne zwischen dem 10. und 90. Perzentil. Der Knick gilt, wenn er mindestens 5 Prozentpunkte
+     * mehr erklärt. Unter 10 Punkten oder ohne Streuung in x gibt es kein Modell.
+     *
+     * @param list<array{0: float, 1: float, 2: int}> $points
+     * @return array{type: string, a?: float, b?: float, c?: float, r2?: float}
+     */
+    private static function scatterModel(array $points): array
+    {
+        if (count($points) < 10) {
+            return ['type' => 'none'];
+        }
+        $fit = static function (array $q): ?array {
+            $n = count($q);
+            $mx = array_sum(array_column($q, 0)) / $n;
+            $my = array_sum(array_column($q, 1)) / $n;
+            $sxy = $sxx = 0.0;
+            foreach ($q as [$x, $y]) {
+                $sxy += ($x - $mx) * ($y - $my);
+                $sxx += ($x - $mx) ** 2;
+            }
+            return $sxx > 0 ? [$my - $sxy / $sxx * $mx, $sxy / $sxx] : null;
+        };
+        $explained = static function (callable $f) use ($points): float {
+            $my = array_sum(array_column($points, 1)) / count($points);
+            $sse = $sst = 0.0;
+            foreach ($points as [$x, $y]) {
+                $sse += ($y - $f($x)) ** 2;
+                $sst += ($y - $my) ** 2;
+            }
+            return $sst > 0 ? 1 - $sse / $sst : 0.0;
+        };
+        $line = $fit($points);
+        if ($line === null) {
+            return ['type' => 'none'];
+        }
+        [$a, $b] = $line;
+        $best = ['type' => 'linear', 'a' => $a, 'b' => $b, 'r2' => $explained(static fn (float $x): float => $a + $b * $x)];
+        $xs = array_column($points, 0);
+        sort($xs);
+        $step = ($xs[count($xs) - 1] - $xs[0]) / 100;
+        $knee = null;
+        foreach (['knee_below' => -1, 'knee_above' => 1] as $type => $sign) {
+            for ($c = $xs[(int)floor(count($xs) * 0.1)]; $c <= $xs[(int)floor(count($xs) * 0.9)] + 1e-9; $c += $step) {
+                $part = $fit(array_map(static fn (array $p): array => [max(0.0, $sign * ($p[0] - $c)), $p[1]], $points));
+                if ($part === null) {
+                    continue;
+                }
+                [$ka, $kb] = $part;
+                $r2 = $explained(static fn (float $x): float => $ka + $kb * max(0.0, $sign * ($x - $c)));
+                if ($knee === null || $r2 > $knee['r2']) {
+                    $knee = ['type' => $type, 'a' => $ka, 'b' => $kb, 'c' => $c, 'r2' => $r2];
+                }
+            }
+        }
+        return $knee !== null && $knee['r2'] >= $best['r2'] + 0.05 ? $knee : $best;
+    }
+
+    /** Der Zusammenhang in Worten fürs Modell. */
+    private function scatterSentence(array $model, array $x, array $y, int $count): string
+    {
+        if ($model['type'] === 'none') {
+            return sprintf($this->t('Too few points for a relation (%d).'), $count);
+        }
+        $share = (int)round($model['r2'] * 100);
+        if ($model['r2'] < 0.1) {
+            return sprintf($this->t('No clear relation between the two (explains %d %%).'), $share);
+        }
+        return match ($model['type']) {
+            'knee_below' => sprintf($this->t('Below about %s %s, %s rises by about %s %s per %s lower; above it stays at about %s %s (explains %d %%).'),
+                self::roughNumber($model['c']), $x['unit'], $y['label'], self::roughNumber($model['b']), $y['unit'], $x['unit'], self::roughNumber($model['a']), $y['unit'], $share),
+            'knee_above' => sprintf($this->t('Above about %s %s, %s rises by about %s %s per %s higher; below it stays at about %s %s (explains %d %%).'),
+                self::roughNumber($model['c']), $x['unit'], $y['label'], self::roughNumber($model['b']), $y['unit'], $x['unit'], self::roughNumber($model['a']), $y['unit'], $share),
+            default => sprintf($this->t('Per %s more, %s changes by about %s %s (explains %d %%).'), $x['unit'], $y['label'], self::roughNumber($model['b']), $y['unit'], $share),
+        };
+    }
+
+    /**
+     * Klassenmittel: y gemittelt je Klasse von x, Breite die nächste runde Zahl (1, 2, 5 × 10ⁿ) über einem Zwölftel der
+     * Spanne. Je Klasse [von, bis, Mittel, Anzahl].
+     *
+     * @return list<array{0: float, 1: float, 2: float, 3: int}>
+     */
+    private static function scatterClasses(array $points): array
+    {
+        if ($points === []) {
+            return [];
+        }
+        $xs = array_column($points, 0);
+        $raw = (max($xs) - min($xs)) / 12;
+        $width = 1.0;
+        if ($raw > 0) {
+            $power = 10 ** floor(log10($raw));
+            $width = (float)($raw <= $power ? $power : ($raw <= 2 * $power ? 2 * $power : ($raw <= 5 * $power ? 5 * $power : 10 * $power)));
+        }
+        $groups = [];
+        foreach ($points as [$x, $y]) {
+            $start = floor($x / $width) * $width;
+            $groups[(string)$start][] = $y;
+        }
+        $classes = [];
+        foreach ($groups as $start => $ys) {
+            $classes[] = [(float)$start, (float)$start + $width, round(array_sum($ys) / count($ys), 6), count($ys)];
+        }
+        usort($classes, static fn (array $p, array $q): int => $p[0] <=> $q[0]);
+        return $classes;
+    }
+
+    /** Zahl für Sätze: ab 1 eine Nachkommastelle, darunter zwei. */
+    private static function roughNumber(float $value): string
+    {
+        return abs($value) >= 1 ? self::formatNumber($value) : (string)round($value, 2);
     }
 
     /** Einheit eines Zeitraums aus period: Tag, Woche, Monat oder Jahr. */

@@ -60,6 +60,8 @@
   // 2026-01-26). Sie meldet sich mit ui/initialize beim Client an, bekommt mit ui/notifications/tool-result die Werte
   // in structuredContent und zeichnet je Einheit ein Diagramm: Band von Minimum bis Maximum, Linie für das Mittel.
   var COLORS = ["#2f81f7", "#e5534b", "#3fb950", "#d29922", "#a371f7"];
+  // Modellkurve der Punktwolke: gestrichelt in Gelb, neben den blauen Punkten und den Klassenmitteln in Textfarbe
+  var SCATTER_TREND = "#d29922";
   var CHOICE_COLORS = ["#2f81f7", "#14b8a6", "#d29922", "#a371f7", "#8c959f"];
   // Stapel des Hausverbrauchs (kind "consumption"): Netz, PV direkt, Batterie, Einspeisung unter der Nulllinie
   // Verbrauch je Gerät: Geräte in den Farben der Linien, die übrigen grau, „nicht erfasst“ hellgrau
@@ -452,6 +454,87 @@
     box.appendChild(axis);
     container.appendChild(box);
   }
+  // Punktwolke (B70): je Abschnitt ein Punkt, dazu die Klassenmittel als Linie und die Modellkurve gestrichelt
+  function modelValue(model, x) {
+    if (model.type === "knee_below") { return model.a + model.b * Math.max(0, model.c - x); }
+    if (model.type === "knee_above") { return model.a + model.b * Math.max(0, x - model.c); }
+    return model.a + model.b * x;
+  }
+  function drawScatter(container, data) {
+    var W = 640, H = 300, L = 44, R = 10, T = 8, B = 30;
+    var pts = data.points || [];
+    if (!pts.length) { return; }
+    var xs = pts.map(function (p) { return p[0]; }), ys = pts.map(function (p) { return p[1]; });
+    var xl = Math.min.apply(null, xs), xh = Math.max.apply(null, xs), yl = Math.min.apply(null, ys), yh = Math.max.apply(null, ys);
+    if (xh === xl) { xh += 1; xl -= 1; }
+    if (yh === yl) { yh += 1; yl -= 1; }
+    var sx = niceStep(xh - xl), sy = niceStep(yh - yl);
+    var x0 = Math.floor(xl / sx) * sx, x1 = Math.ceil(xh / sx) * sx, y0 = Math.floor(yl / sy) * sy, y1 = Math.ceil(yh / sy) * sy;
+    var x = function (v) { return L + (v - x0) / (x1 - x0) * (W - L - R); };
+    var y = function (v) { return T + (y1 - v) / (y1 - y0) * (H - T - B); };
+    var model = data.model || { type: "none" };
+
+    var box = document.createElement("div");
+    box.className = "chart";
+    var legend = document.createElement("div");
+    legend.className = "legend";
+    var items = [[COLORS[0], "dot", data.y.label + " (" + data.y.unit + ") " + (data.labels.versus || "/") + " " + data.x.label + " (" + data.x.unit + ")"]];
+    if ((data.classes || []).length > 1) { items.push(["var(--fg)", "line", data.labels.classes]); }
+    if (model.type !== "none") { items.push([SCATTER_TREND, "dashed", data.labels.model]); }
+    items.forEach(function (it) {
+      var item = document.createElement("span");
+      var mark = document.createElement("i");
+      if (it[1] === "dot") { mark.style.cssText = "width:8px;height:8px;border-radius:50%;background:" + it[0]; }
+      else if (it[1] === "dashed") { mark.style.background = "repeating-linear-gradient(90deg, " + it[0] + " 0 4px, transparent 4px 7px)"; }
+      else { mark.style.background = it[0]; }
+      item.appendChild(mark);
+      item.appendChild(document.createTextNode(it[2]));
+      legend.appendChild(item);
+    });
+    box.appendChild(legend);
+
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
+    for (var v = y0; v <= y1 + sy / 2; v += sy) {
+      svg.appendChild(el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "var(--grid)", "stroke-width": 1 }));
+      svg.appendChild(el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, axisNumber(v, sy)));
+    }
+    for (var u = x0; u <= x1 + sx / 2; u += sx) {
+      var px = x(u);
+      svg.appendChild(el("line", { x1: px, x2: px, y1: T, y2: H - B, stroke: "var(--grid)", "stroke-width": 1, opacity: 0.5 }));
+      svg.appendChild(el("text", { x: px, y: H - B + 16, "text-anchor": px < L + 20 ? "start" : px > W - R - 20 ? "end" : "middle" }, axisNumber(u, sx)));
+    }
+    svg.appendChild(el("text", { x: W - R, y: H - 2, "text-anchor": "end" }, data.x.unit));
+    pts.forEach(function (p) {
+      var dot = el("circle", { cx: x(p[0]), cy: y(p[1]), r: 3, fill: COLORS[0], "fill-opacity": 0.45 });
+      dot.appendChild(el("title", {}, timeLabel(p[2], data.per, true) + ": " + number(p[0]) + " " + data.x.unit + " / " + number(p[1]) + " " + data.y.unit));
+      svg.appendChild(dot);
+    });
+    var classes = data.classes || [];
+    if (classes.length > 1) {
+      svg.appendChild(el("polyline", { points: classes.map(function (c) { return x((c[0] + c[1]) / 2) + "," + y(c[2]); }).join(" "), fill: "none", stroke: "var(--fg)", "stroke-width": 1.5, "stroke-linejoin": "round" }));
+      classes.forEach(function (c) {
+        var mark = el("circle", { cx: x((c[0] + c[1]) / 2), cy: y(c[2]), r: 2.5, fill: "var(--fg)" });
+        mark.appendChild(el("title", {}, number(c[0]) + "–" + number(c[1]) + " " + data.x.unit + ": " + number(c[2]) + " " + data.y.unit + " (" + c[3] + ")"));
+        svg.appendChild(mark);
+      });
+    }
+    if (model.type !== "none") {
+      // Stützstellen gleichmäßig, dazu der Knick selbst, sonst wird die Ecke abgerundet
+      var xvals = [];
+      for (var i = 0; i <= 80; i++) { xvals.push(xl + (xh - xl) * i / 80); }
+      if (model.c !== undefined && model.c > xl && model.c < xh) { xvals.push(model.c); }
+      xvals.sort(function (p, q) { return p - q; });
+      var curve = xvals.map(function (xv) { return x(xv) + "," + y(Math.max(y0, Math.min(y1, modelValue(model, xv)))); });
+      svg.appendChild(el("polyline", { points: curve.join(" "), fill: "none", stroke: SCATTER_TREND, "stroke-width": 2, "stroke-dasharray": "6 4" }));
+    }
+    box.appendChild(svg);
+    var note = document.createElement("p");
+    note.className = "note";
+    note.textContent = (data.labels.per ? data.labels.per + ": " : "") + pts.length;
+    box.appendChild(note);
+    container.appendChild(box);
+  }
+
   function drawRings(container, rings) {
     if (!rings || !rings.length) { return; }
     var row = document.createElement("div");
@@ -466,6 +549,13 @@
       var only = document.getElementById("root");
       only.textContent = "";
       drawRings(only, data.rings);
+      reportSize();
+      return;
+    }
+    if (data && data.kind === "scatter") {
+      var area = document.getElementById("root");
+      area.textContent = "";
+      drawScatter(area, data);
       reportSize();
       return;
     }

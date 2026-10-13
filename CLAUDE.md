@@ -248,6 +248,16 @@ Weitere Regeln, die nicht offensichtlich sind:
   nach Position (reicht der Vergleich weiter, etwa gestern gegen heute, kommen Balken ohne Werte dazu). Das Modell bekommt
   den Text des Vergleichszeitraums wie aus get_state und, solange der Zeitraum läuft, den Verbrauch bis zur selben Zeit.
   Nur ein Raum, keine Zeitleiste. Test `check-vergleich.php` (Orakel: das Diagramm des Vergleichszeitraums selbst).
+- **Punktwolke** (B70, Burkhard 13.10.2026, `show_chart` mit `versus`, `DeviceIndex::scatter`): `versus` ist das Gerät der
+  x-Achse, die übrigen Filter das der y-Achse, ohne Filter der Hausverbrauch der Bilanz; jede Achse genau ein Gerät, sonst
+  Absage mit Kandidaten. Werte je Abschnitt aus `valueSeries`: Messwert (Mittel), sonst Zähler (kWh), sonst Leistung
+  (Mittel); Zustände haben keine. Raster bis zwei Tage je Stunde, bis 400 Tage je Tag, sonst Monat, ohne Zeitraum der
+  letzte Monat: am nuc erklärte stündlich kein Modell mehr als 13 % (die Wärmepumpe taktet), je Tag der Knick 84 %, die
+  Gerade 63 %. `scatterModel` rechnet linear und mit Knick (`knee_below`/`knee_above`, c im Raster eines Hundertstels der
+  Spanne zwischen 10. und 90. Perzentil, rund 100 Grenzen × Punkte, wenige Millisekunden) und nimmt den Knick bei
+  mindestens 5 Prozentpunkten mehr; quadratisch bewusst nicht (die Parabel stieg über 20 °C wieder an). Unter 10
+  Punkten kein Modell, unter 10 % „kein klarer Zusammenhang“. Klassenmittel je runder Breite über einem Zwölftel der
+  Spanne (`scatterClasses`). Test `check-punktwolke.php` rechnet die Kennzahlen selbst aus der Fixture nach.
 - **Verlauf statt Verbrauch** (`DeviceIndex::history`), wenn nach einem Typ aus `HISTORY_TYPES` gefragt
   wird oder kein Treffer einen Zähler hat, nie fürs ganze Haus. Stufe aus dem Zeitraum (heute und
   gestern stündlich, Wochen und Monate täglich, Jahre monatlich; `from`/`to` bis 2 Tage stündlich, bis

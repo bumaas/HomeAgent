@@ -1794,6 +1794,7 @@ class HomeAgent extends IPSModuleStrict
                     . ($hasBalance ? 'Without room, floor, type or name it shows the house consumption as stacked bars (grid, solar used directly, battery, grid export below), with self-sufficiency and self-consumed solar as rings. ' : '')
                     . ($hasPowerBalance ? 'period=now without room, floor, type or name shows the current house power as rings. ' : '')
                     . ($hasMeters ? 'type=energy shows the consumption per device with an energy meter as stacked bars, the largest five first; a room or name with meters and no measured values does the same. ' : '')
+                    . 'versus gives a scatter chart with the relation in words, for example heat pump power against outdoor temperature. '
                     . 'Use it when the user asks for a chart, diagram, graph or curve; for numbers alone use get_state. Without a period: today. '
                     . 'The answer gives only a summary, the values themselves go to the chart. '
                     . ($hasHistory ? 'Example: "Show me the temperature in the guest room over the last 30 days" → room=Gast, type=temperature, from=' . date('Y-m-d', strtotime('-29 days')) . ', to=' . date('Y-m-d') . '.' : '')
@@ -1809,6 +1810,7 @@ class HomeAgent extends IPSModuleStrict
                         'period' => ['type' => 'string', 'enum' => array_merge($hasPowerBalance ? [DeviceIndex::NOW] : [], DeviceIndex::PERIODS), 'description' => 'Period of the chart, per hour for today and yesterday, per day for weeks and months, per month for years.'],
                         'from'   => ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD, or a start hour, YYYY-MM-DD HH:MM. Today is ' . date('Y-m-d') . '.'],
                         'to'     => ['type' => 'string', 'description' => 'Last day, inclusive, or the end hour, YYYY-MM-DD HH:MM, exclusive.'],
+                        'versus'  => ['type' => 'string', 'description' => 'Name of a second device for a scatter chart: it goes on the x axis, the device chosen by room, type or name (without them the house consumption) on the y axis, for example versus=outdoor temperature with name=heat pump. Without a period: last month.'],
                         'compare' => ['type' => 'string', 'enum' => DeviceIndex::COMPARES, 'description' => 'Compare with the previous period (yesterday, last week, last month, last year) or the same period a year before; drawn as a dashed line or as marks on the bars.'],
                     ],
                     'additionalProperties' => false,

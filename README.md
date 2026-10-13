@@ -474,7 +474,12 @@ und draußen in der letzten Woche“. Zustände wie an/aus, offen/zu oder ein Ba
 lassen sich vergleichen, etwa „Hausverbrauch heute im Vergleich zu gestern“ oder „Temperatur im Gästezimmer diesen
 Monat gegen denselben Monat im Vorjahr“: beim Verlauf als gestrichelte Linie, beim Verbrauch als Marke je Balken.
 Läuft der Zeitraum noch, nennt die Antwort dazu den Verbrauch des Vergleichszeitraums bis zur selben Zeit. Für
-Zeitleisten gibt es keinen Vergleich. Das Werkzeug heißt `show_chart` und erscheint in den Einstellungen des Connectors unter „Interaktive
+Zeitleisten gibt es keinen Vergleich. Eine Punktwolke zeigt, wie zwei Werte zusammenhängen, etwa „Leistung der
+Wärmepumpe gegen die Außentemperatur im September“: ein Punkt je Tag (bis zwei Tage je Stunde), dazu der Mittelwert
+je Temperaturklasse und eine Trendlinie. Steigt der Verbrauch erst unterhalb einer Grenze, findet das Modul diese
+Heizgrenze selbst, und der Assistent bekommt den Zusammenhang in Worten („unter etwa 16 °C je Grad kälter rund
+0,06 kW mehr, erklärt 84 %“). Auf der y-Achse steht ein Messwert, ein Zähler oder eine Leistung, ohne Gerät der
+Hausverbrauch. Das Werkzeug heißt `show_chart` und erscheint in den Einstellungen des Connectors unter „Interaktive
 Tools“; dort lässt es sich auf „Immer erlauben“ stellen. Andere Assistenten sehen es nicht.
 
 Ist die Energiebilanz eingetragen, zeichnet das Modul auf Wunsch auch den Hausverbrauch, etwa „Zeig mir unseren
