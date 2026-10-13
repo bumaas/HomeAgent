@@ -122,4 +122,11 @@ pruefe(($r['structuredContent']['kind'] ?? '') === 'history' && count($r['struct
 $r = frage(['room' => 'Bad', 'name' => 'Deckenlicht', 'period' => 'yesterday'], null, 'chart');
 pruefe($r['isError'], 'ohne Archiv kein Diagramm: ' . $r['text']);
 
+/* --- Karten: Messwerte bilden eine eigene Gruppe (Layoutvergleich 13.10.2026) -------------------- */
+
+$anlage = new FakeBackend($werte);
+$anlage->jetzt = $mitschnitt['jetzt'];
+$karten = (new DeviceIndex($liste, $anlage))->cards(['room' => 'Dachboden'], false)['structuredContent']['cards'] ?? [];
+pruefe(array_column($karten, 'group', 'name') === ['Batteriemodus' => 'measure', 'Batterie Ladezustand' => 'measure'], 'Batteriemodus und Ladezustand stehen unter Messwerte, nicht unter Klima: ' . json_encode(array_column($karten, 'group', 'name'), JSON_UNESCAPED_UNICODE));
+
 ende('Zeitleiste');

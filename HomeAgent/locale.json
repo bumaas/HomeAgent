@@ -328,6 +328,7 @@
             "Ventilation/fan": "Lüftung/Ventilator",
             "Current humidity": "Ist-Feuchte",
             "Target humidity": "Zielfeuchte",
+            "Measurements": "Messwerte",
             "Now: %s": "Jetzt: %s",
             "Monday": "Montag",
             "Tuesday": "Dienstag",

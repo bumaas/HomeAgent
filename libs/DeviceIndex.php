@@ -273,12 +273,12 @@ final class DeviceIndex
     private const CARD_GROUPS = [
         'blind' => 'cover', 'light' => 'light', 'switch' => 'power', 'socket' => 'power', 'appliance' => 'power',
         'thermostat' => 'climate', 'humidifier' => 'climate', 'fan' => 'climate', 'temperature' => 'climate',
-        'humidity' => 'climate', 'air_quality' => 'climate', 'measurement' => 'climate', 'window' => 'opening',
+        'humidity' => 'climate', 'air_quality' => 'climate', 'measurement' => 'measure', 'window' => 'opening',
         'door' => 'opening', 'presence' => 'sensor', 'water_leak' => 'sensor', 'media' => 'media',
     ];
     private const CARD_GROUP_LABELS = [
         'cover' => 'Blinds', 'light' => 'Lights', 'power' => 'Switches and sockets', 'climate' => 'Climate',
-        'opening' => 'Windows and doors', 'sensor' => 'Sensors', 'media' => 'Media',
+        'measure' => 'Measurements', 'opening' => 'Windows and doors', 'sensor' => 'Sensors', 'media' => 'Media',
     ];
 
     /** Während chart() mit type=energy: Verbrauch je Gerät statt Verlauf bzw. Hausstapel. */
@@ -3957,8 +3957,17 @@ final class DeviceIndex
                 default                                                                            => null,
             };
         }
+        // Ein Klimagerät im Modus „off“ ist aus, sonst an; die Karte färbt danach (Layoutvergleich 13.10.2026: „AUS“ stand
+        // blau da). Nur für die Karte, get_state zählt Thermostate weiter nicht bei active_only.
+        $active = $state['active'];
+        if ($entry['Type'] === 'thermostat' && isset($entry['roles']['mode'])) {
+            $current = $this->backend->read($entry['roles']['mode']);
+            if ($current !== null) {
+                $active = self::normalize((string)$current['value']) !== 'off' && !in_array(self::normalize($current['formatted']), ['off', self::normalize($this->t('off'))], true);
+            }
+        }
         return ['key' => self::cardKey($entry), 'room' => $entry['Room'], 'name' => $entry['Name'], 'type' => $entry['Type'],
-            'group' => self::CARD_GROUPS[$entry['Type']] ?? 'sensor', 'text' => $state['text'], 'active' => $state['active'],
+            'group' => self::CARD_GROUPS[$entry['Type']] ?? 'sensor', 'text' => $state['text'], 'active' => $active,
             'figure' => $figure, 'status' => $status, 'moving' => $moving, 'controls' => $controls];
     }
 
@@ -4071,7 +4080,9 @@ final class DeviceIndex
         $range = $this->backend->setpointRange($variable);
         return ['field' => $field, 'value' => is_int($value) || is_float($value) ? (float)$value : null,
             'min' => $range['min'] ?? null, 'max' => $range['max'] ?? null, 'step' => $range === null || $range['step'] <= 0 ? null : $range['step'],
-            'unit' => $this->temperatureUnit($variable, (string)$entry['Type'])];
+            'unit' => $this->temperatureUnit($variable, (string)$entry['Type']),
+            // Beschriftet wie Modus und Lüfterstufe (Layoutvergleich 13.10.2026: „24 °C“ unter „21,0 °C“ ohne Hinweis)
+            'label' => $this->t($field === 'humidity' ? 'Target humidity' : 'Setpoint')];
     }
 
     /** Kein Treffer: Liegt es am Raum, am Namen oder an der Kombination? */

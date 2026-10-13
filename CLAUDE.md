@@ -168,7 +168,11 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   eingeschalteten Lichts, Öffnungsgrad, Messwert, Ist-Temperatur bzw. Ist-Feuchte, sonst Leistung; Mediaplayer vorerst
   ohne) und `status` (`cardStatus`: der Zustandstext ohne den Hauptwert, null bei reinen Messwerten). Die Seite färbt, was
   an ist, Rollläden und Klima immer (Symbol, Text, Balken; ohne Hintergrundverlauf, pitti PN #12: passt nicht zur
-  Kachel-Visu), der Regler hat immer einen runden Griff, ausgeschaltet grau; der Balken ist zugleich Schieberegler, der Raum steht nur bei mehreren Räumen da.
+  Kachel-Visu), der Regler hat immer einen runden Griff, ausgeschaltet Balken und Griff grau; Layoutvergleich 13.10.2026:
+  jede Karte behält ihre Höhe (`align-items: start`, ohne Hauptwert ein unsichtbares Zeichen in der Höhe einer Zahl),
+  der Sollwert ist beschriftet wie Modus und Lüfterstufe (`controls.setpoint.label`), die Auswahlliste sieht aus wie die
+  Knöpfe, ein Klimagerät im Modus „off“ ist auf der Karte nicht aktiv (nur `cardOf`), Messwerte (`measurement`) bilden die
+  Gruppe „Messwerte“ (`measure`) statt Klima; der Balken ist zugleich Schieberegler, der Raum steht nur bei mehreren Räumen da.
   Zweiter Entwurf (PN #11, #12): Name oben, darunter Symbol und Bedienung, kurze Zustände in Großbuchstaben, „aktuell“ bei
   Messwerten (`labels.current`), Schild „zu“ am geschlossenen Fenster (`labels.shut`), Auswahl bis fünf kurze Einträge als
   Knopfleiste, Mediaplayer mit Tasten oben, Titel und Lautstärke (`figure` und `controls.volume`, `cardVolume`).

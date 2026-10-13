@@ -36,12 +36,13 @@
   /* Gestaltung nach pitti (Forum, 13.10.2026): Gruppen je Art, Symbol, Farbe nach Zustand, Wert groß rechts, Balken. */
   .group { color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin: 10px 2px 6px; }
   .group:first-child { margin-top: 2px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+  /* Jede Karte behält ihre Höhe: gestreckt neben dem Luftentfeuchter stand der Wert einer Temperatur weit unten */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; align-items: start; }
   .card { --tone: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
   /* Kein Hintergrundverlauf auf aktiven Karten: pitti hat sich dagegen entschieden, er passt nicht zur Kachel-Visu (PN #12) */
   .card.busy { opacity: 0.55; pointer-events: none; }
   .t-cover { --tone: #5b6cf0; } .t-light { --tone: #e8a800; } .t-power { --tone: #12b886; } .t-climate { --tone: #1c9fe0; }
-  .t-opening { --tone: #7b8794; } .t-sensor { --tone: #f08c00; } .t-media { --tone: #9c5de6; }
+  .t-opening { --tone: #7b8794; } .t-sensor { --tone: #f08c00; } .t-media { --tone: #9c5de6; } .t-measure { --tone: #0f9f8f; }
   .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; }
   .badge { font-size: 10px; color: var(--muted); background: color-mix(in srgb, var(--muted) 12%, transparent); border-radius: 4px; padding: 2px 5px; }
   .status.short { text-transform: uppercase; letter-spacing: 0.06em; font-size: 10.5px; font-weight: 600; }
@@ -51,7 +52,7 @@
   .seg { display: flex; gap: 3px; }
   .seg button { flex: 1; padding: 4px 4px; }
   .seg button.on { color: var(--tone); background: color-mix(in srgb, var(--tone) 22%, transparent); font-weight: 600; }
-  .choice select { font: inherit; font-size: 12px; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
+  .choice select { font: inherit; font-size: 12px; color: var(--fg); background: color-mix(in srgb, var(--muted) 12%, transparent); border: 0; border-radius: 5px; padding: 4px 8px; cursor: pointer; }
   .icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex: none; color: var(--muted); background: color-mix(in srgb, var(--muted) 12%, transparent); }
   .lit .icon { color: var(--tone); background: color-mix(in srgb, var(--tone) 16%, transparent); }
   .icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
@@ -77,8 +78,8 @@
   .bar.static { cursor: default; }
   .bar::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--tone); border: 2px solid var(--bg); box-shadow: 0 0 0 1px color-mix(in srgb, var(--tone) 35%, transparent); }
   .bar::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--tone); border: 2px solid var(--bg); box-shadow: 0 0 0 1px color-mix(in srgb, var(--tone) 35%, transparent); }
-  .card:not(.lit) .bar::-webkit-slider-thumb { background: #b8bfc6; box-shadow: 0 0 0 1px #d0d7de; }
-  .card:not(.lit) .bar::-moz-range-thumb { background: #b8bfc6; box-shadow: 0 0 0 1px #d0d7de; }
+  /* Nicht aktiv: Balken und Griff grau (vorher war der Balken eines angehaltenen Players lila, der Griff grau) */
+  .card:not(.lit) .bar { --tone: #b8bfc6; }
   .bar.static::-webkit-slider-thumb { opacity: 0; }
   .bar.static::-moz-range-thumb { opacity: 0; }
   .switch { position: relative; width: 34px; height: 20px; flex: none; }
@@ -311,7 +312,7 @@
     var group = card.group || "sensor";
     var labels = (state && state.labels) || {};
     // Farbig ist, was an ist; Rollläden und Klimawerte haben keinen Aus-Zustand und sind es immer
-    var lit = card.active === true || (card.active === null && (group === "cover" || group === "climate"));
+    var lit = card.active === true || (card.active === null && (group === "cover" || group === "climate" || group === "measure"));
     var el = node("div", "card t-" + group + (lit ? " lit" : ""));
     var c = card.controls || {};
 
@@ -362,6 +363,9 @@
     if (card.figure) {
       figure.textContent = localNumber(card.figure.value);
       figure.appendChild(node("small", "", card.figure.unit));
+    } else {
+      // Ohne Hauptwert die Höhe einer Zahl, damit einfache Karten einer Zeile gleich hoch bleiben
+      figure.textContent = "\u200b";
     }
     row.appendChild(figure);
     el.appendChild(row);
@@ -390,7 +394,10 @@
       setRow.appendChild(button("−", "lower", function () { change(-1); }));
       setRow.appendChild(setValue);
       setRow.appendChild(button("+", "raise", function () { change(1); }));
-      el.appendChild(setRow);
+      var setBox = node("div", "choice");
+      if (sp.label) { setBox.appendChild(node("div", "caption", sp.label)); }
+      setBox.appendChild(setRow);
+      el.appendChild(setBox);
     }
     // Auswahl (Modus, Lüfterstufe): gesendet wird die Beschriftung, das Modul sucht den Wert dazu
     (c.options || []).forEach(function (choice) { el.appendChild(choiceElement(card, choice, el)); });

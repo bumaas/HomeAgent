@@ -93,6 +93,16 @@ pruefe($anlage->requests === [] && str_contains($r['text'], 'unknown entry "off"
 
 /* --- Karte ---------------------------------------------------------------------------------------- */
 
+// Ein Klimagerät im Modus Aus ist nicht aktiv, die Karte wird grau wie jedes ausgeschaltete Gerät (Layoutvergleich
+// 13.10.2026: „AUS“ stand blau da). In einem anderen Modus ist es aktiv.
+$r = rufe($werte, 'karten', $buero, $de);
+pruefe(($r['structuredContent']['cards'][0]['active'] ?? 'fehlt') === false, 'Modus Aus: Karte nicht aktiv: ' . json_encode($r['structuredContent']['cards'][0]['active'] ?? 'fehlt'));
+$laeuft = $werte;
+$laeuft['53427']['wert'] = 'fan_only';
+$laeuft['53427']['formatiert'] = 'Nur Lüfter';
+$r = rufe($laeuft, 'karten', $buero, $de);
+pruefe(($r['structuredContent']['cards'][0]['active'] ?? 'fehlt') === true, 'Modus Nur Lüfter: Karte aktiv: ' . json_encode($r['structuredContent']['cards'][0]['active'] ?? 'fehlt'));
+
 $r = rufe($werte, 'karten', $buero, $de);
 $karte = $r['structuredContent']['cards'][0] ?? [];
 pruefe(($karte['controls']['setpoint']['field'] ?? null) === 'temperature' && array_column($karte['controls']['options'] ?? [], 'value') === ['Aus', 'Auto'] && count($karte['controls']['options'][0]['entries'] ?? []) === 6 && !isset($karte['controls']['switch']), 'Karte (ohne Schalter, Aus steht in der Auswahl): Sollwert, Auswahl Modus und Lüfterstufe: ' . json_encode($karte['controls'] ?? null, JSON_UNESCAPED_UNICODE));

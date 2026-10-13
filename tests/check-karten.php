@@ -77,7 +77,7 @@ pruefe($r['isError'] && !isset($r['structuredContent']), 'kein Treffer: Fehler w
 [$idx] = anlage($thermo);
 $r = rufe(static fn () => $idx->cards(['room' => 'Wintergarten'], false));
 $heizung = karte($r, 'Heizung');
-pruefe(($heizung['controls']['setpoint'] ?? null) === ['field' => 'temperature', 'value' => 21.0, 'min' => 6.0, 'max' => 30.0, 'step' => 0.5, 'unit' => '°C'], 'Thermostat Wintergarten: Sollwert 21 °C von 6 bis 30 in 0,5: ' . json_encode($heizung['controls'] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($heizung['controls']['setpoint'] ?? null) === ['field' => 'temperature', 'value' => 21.0, 'min' => 6.0, 'max' => 30.0, 'step' => 0.5, 'unit' => '°C', 'label' => 'Setpoint'], 'Thermostat Wintergarten: Sollwert 21 °C von 6 bis 30 in 0,5: ' . json_encode($heizung['controls'] ?? null, JSON_UNESCAPED_UNICODE));
 $r = rufe(static fn () => $idx->cards(['room' => 'Gast'], false));
 pruefe((karte($r, 'Heizung')['key'] ?? 1) !== (karte($r, 'Temperatur')['key'] ?? 1), 'Thermostat und Fühler mit derselben Variable haben verschiedene Schlüssel: ' . json_encode(array_column($r['structuredContent']['cards'] ?? [], 'key')));
 pruefe(!isset(karte($r, 'Temperatur')['controls']['switch']) && (karte($r, 'Temperatur')['controls'] ?? null) === [], 'ein Messwert hat keine Bedienelemente');
@@ -132,7 +132,7 @@ pruefe(($k['controls']['options'] ?? null) === [
     ['field' => 'mode', 'label' => 'Modus', 'value' => 'Smart', 'entries' => ['Setzen', 'Smart', 'Kontinuierlich', 'Entfeuchten']],
     ['field' => 'fan_speed', 'label' => 'Lüfterstufe', 'value' => 'Niedrig', 'entries' => ['Niedrig', 'Medium', 'Hoch']],
 ], 'Entfeuchter: Auswahl für Modus und Lüfterstufe mit den Beschriftungen und dem aktuellen Eintrag: ' . json_encode($k['controls']['options'] ?? null, JSON_UNESCAPED_UNICODE));
-pruefe(($k['controls']['switch'] ?? null) === true && ($k['controls']['setpoint']['field'] ?? null) === 'humidity', 'Schalter und Zielfeuchte bleiben: ' . json_encode(array_keys($k['controls'] ?? [])));
+pruefe(($k['controls']['switch'] ?? null) === true && ($k['controls']['setpoint']['field'] ?? null) === 'humidity' && ($k['controls']['setpoint']['label'] ?? null) === 'Zielfeuchte', 'Schalter und Zielfeuchte bleiben, der Sollwert ist beschriftet wie Modus und Lüfterstufe: ' . json_encode(array_keys($k['controls'] ?? [])));
 
 [$idx] = anlage($lueftung);
 $k = karte(rufe(static fn () => $idx->cards(['room' => 'Büro'], false)), 'Lüftung');
@@ -177,7 +177,7 @@ $lampe = karte($r, 'Testlampe');
 pruefe(($lampe['group'] ?? null) === 'light' && array_key_exists('figure', $lampe) && $lampe['figure'] === null && ($lampe['status'] ?? null) === 'aus', 'Testlampe aus: Gruppe Licht, kein Hauptwert (die Stufe 100 % gilt erst eingeschaltet), Zustand „aus“: ' . json_encode($lampe, JSON_UNESCAPED_UNICODE));
 $rollo = karte($r, 'Rollladen');
 pruefe(($rollo['group'] ?? null) === 'cover' && ($rollo['figure'] ?? null) === ['value' => '100', 'unit' => '%'] && ($rollo['status'] ?? null) === 'offen', 'Rollladen: Gruppe Rollläden, 100 %, offen: ' . json_encode($rollo, JSON_UNESCAPED_UNICODE));
-pruefe(array_column($r['structuredContent']['labels']['groups'] ?? [], 0) === ['cover', 'light', 'power', 'climate', 'opening', 'sensor', 'media']
+pruefe(array_column($r['structuredContent']['labels']['groups'] ?? [], 0) === ['cover', 'light', 'power', 'climate', 'measure', 'opening', 'sensor', 'media']
     && ($r['structuredContent']['labels']['groups'][0][1] ?? null) === 'Rollläden', 'Überschriften der Gruppen in fester Reihenfolge, übersetzt: ' . json_encode($r['structuredContent']['labels']['groups'] ?? null, JSON_UNESCAPED_UNICODE));
 
 [$idx, $b] = anlage($fx, $de);
