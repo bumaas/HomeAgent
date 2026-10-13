@@ -482,8 +482,8 @@ Lüfterstufe gehen auf den Karten noch nicht.
 **Gute Nacht** prüfen, was noch offen oder an ist, **Energiebericht** nennt Verbrauch, Autarkie und die größten
 Verbraucher von gestern. Welche es gibt, richtet sich nach der Freigabeliste.
 
-Neue Werkzeuge kennt die Claude-App erst, wenn der Connector neu hinzugefügt wird. Ein Neustart der App reicht
-dafür nicht.
+Nach einem Update kann es eine Weile dauern, bis die Claude-App die neuen Werkzeuge kennt. Schneller geht es, wenn
+Sie den Connector neu hinzufügen.
 
 ### Szenen starten
 

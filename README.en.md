@@ -464,7 +464,8 @@ Under "+" → "Connectors" → "Add from …" the Claude app offers ready templa
 night** check what is still open or on, **Energy report** names consumption, self-sufficiency and the largest
 consumers of yesterday. Which ones exist depends on the release list.
 
-The Claude app only learns about new tools when the connector is added again. Restarting the app is not enough.
+After an update it can take a while until the Claude app knows the new tools. It is faster to add the connector
+again.
 
 ### Starting scenes
 
