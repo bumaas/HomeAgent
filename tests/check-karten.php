@@ -118,6 +118,43 @@ $karten = rufe(static fn () => $idx->cards(['room' => 'Gast'], false));
 $r = rufe(static fn () => $idx->controlDevice(['device' => karte($karten, 'Heizung')['key'] ?? '', 'temperature' => 21]));
 pruefe(!$r['isError'] && ($b->requests[0] ?? null) === [10028, 21.0], 'Sollwert über die Karte der Heizung: ' . json_encode($b->requests) . ' / ' . $r['text']);
 
+/* --- Auswahl: Modus und Lüfterstufe ------------------------------------------------------------------ */
+
+// Die Karten konnten Modus und Lüfterstufe nicht stellen (README: „gehen auf den Karten noch nicht“). Jetzt je eine
+// Auswahl mit den Beschriftungen aus der Darstellung bzw. den Profilzuordnungen, gesendet als Name wie bei set_state.
+// Mitschnitte nuc_2026-10-11_entfeuchter.json (Text-Werte aus OPTIONS) und nuc_2026-10-12_lueftung.json (Ganzzahlen).
+$entfeuchter = fixture('nuc_2026-10-11_entfeuchter.json');
+$lueftung = fixture('nuc_2026-10-12_lueftung.json');
+
+[$idx] = anlage($entfeuchter, $de);
+$k = karte(rufe(static fn () => $idx->cards(['name' => 'Luftentfeuchter'], false)), 'Luftentfeuchter');
+pruefe(($k['controls']['options'] ?? null) === [
+    ['field' => 'mode', 'label' => 'Modus', 'value' => 'Smart', 'entries' => ['Setzen', 'Smart', 'Kontinuierlich', 'Entfeuchten']],
+    ['field' => 'fan_speed', 'label' => 'Lüfterstufe', 'value' => 'Niedrig', 'entries' => ['Niedrig', 'Medium', 'Hoch']],
+], 'Entfeuchter: Auswahl für Modus und Lüfterstufe mit den Beschriftungen und dem aktuellen Eintrag: ' . json_encode($k['controls']['options'] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($k['controls']['switch'] ?? null) === true && ($k['controls']['setpoint']['field'] ?? null) === 'humidity', 'Schalter und Zielfeuchte bleiben: ' . json_encode(array_keys($k['controls'] ?? [])));
+
+[$idx] = anlage($lueftung);
+$k = karte(rufe(static fn () => $idx->cards(['room' => 'Büro'], false)), 'Lüftung');
+pruefe(($k['controls']['options'][0]['value'] ?? null) === 'Manuelle Wärmerückgewinnung' && count($k['controls']['options'][0]['entries'] ?? []) === 12
+    && ($k['controls']['options'][1] ?? null) === ['field' => 'fan_speed', 'label' => 'Fan speed', 'value' => 'niedrig', 'entries' => ['niedrig', 'mittel', 'hoch']],
+    'Lüftung: Ganzzahlwerte aus den Profilzuordnungen, angezeigt als Beschriftung: ' . json_encode($k['controls']['options'] ?? null, JSON_UNESCAPED_UNICODE));
+$r = rufe(static fn () => $idx->cards(['room' => 'Büro'], true));
+pruefe((karte($r, 'Lüftung')['controls'] ?? null) === [], 'Nur-Lese-Zugang: keine Auswahl');
+
+[$idx, $b] = anlage($entfeuchter, $de);
+$schluessel = karte(rufe(static fn () => $idx->cards(['name' => 'Luftentfeuchter'], false)), 'Luftentfeuchter')['key'] ?? '';
+$r = rufe(static fn () => $idx->controlDevice(['device' => $schluessel, 'fan_speed' => 'Medium']));
+pruefe(!$r['isError'] && $b->requests === [[28873, 'Medium']] && array_key_exists('problem', $r['structuredContent'] ?? []) && $r['structuredContent']['problem'] === null, 'Lüfterstufe per Karte auf Medium, bestätigt: ' . json_encode($b->requests) . ' / ' . $r['text']);
+pruefe((karte($r, 'Luftentfeuchter')['controls']['options'][1]['value'] ?? null) === 'Medium', 'die neue Karte zeigt Medium: ' . json_encode(karte($r, 'Luftentfeuchter')['controls']['options'] ?? null));
+[$idx, $b] = anlage($entfeuchter, $de);
+$r = rufe(static fn () => $idx->controlDevice(['device' => $schluessel, 'mode' => 'Kontinuierlich']));
+pruefe(!$r['isError'] && $b->requests === [[25833, 'Continuous']], 'Modus per Karte über die Beschriftung, gesendet wird der Wert: ' . json_encode($b->requests) . ' / ' . $r['text']);
+
+[$idx, $b] = anlage($lueftung);
+$schluessel = karte(rufe(static fn () => $idx->cards(['room' => 'Büro'], false)), 'Lüftung')['key'] ?? '';
+$r = rufe(static fn () => $idx->controlDevice(['device' => $schluessel, 'fan_speed' => 'hoch']));
+pruefe(!$r['isError'] && ($b->requests[0] ?? null) === [20833, 3], 'Lüftung: Stufe hoch per Karte, gesendet 3: ' . json_encode($b->requests) . ' / ' . $r['text']);
 /* --- Übersetzung ---------------------------------------------------------------------------------- */
 
 [$idx] = anlage($fx, $de);

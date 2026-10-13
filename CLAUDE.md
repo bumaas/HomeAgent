@@ -160,7 +160,9 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   (`cardKey`, alle Variablen des Geräts, weil Thermostat und Raumfühler eine teilen) und Befehl, intern `setState` mit
   `onlyKey` in `find()`, also dieselbe Rückmeldung; zurück kommt die neue Karte und `problem` wie in „Was nicht geklappt hat“; die Karte zeigt die Antwort nur bei einem Problem, sonst den neuen Zustand (Burkhard 12.10.2026). Die Seite meldet die letzten fünf
   Bedienungen über `ui/update-model-context` (jede Meldung ersetzt die vorige). Am nuc 12.10.2026: Karte in 69 ms,
-  `control_device` 68 ms. Auswahl (Modus, Lüfterstufe) fehlt auf den Karten noch.
+  `control_device` 68 ms. Modus und Lüfterstufe stehen als Auswahl auf der Karte (`controls.options`, `cardChoice`: Beschriftungen aus
+  `DeviceBackend::options()` und der aktuelle Eintrag); die Seite schickt die Beschriftung als `mode` bzw. `fan_speed`, `runOption`
+  sucht den Wert dazu (13.10.2026).
   Mit Karten verweist die Beschreibung von `get_state` fürs Zeigen („show me …“) auf `show_devices` (`$hasCards`): Die
   Claude-App beantwortete „Zeig mir die Lichter im Wohnzimmer“ sonst mit einer Tabelle über `get_state` (12.10.2026).
   Ebenso verweist sie für Diagramme auf `show_chart` (`$hasChart`): „Hausverbrauch von gestern als Diagramm“ ergab

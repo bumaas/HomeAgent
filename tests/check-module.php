@@ -2771,6 +2771,7 @@ pruefe(isset($schalten['show_devices']) && ($schalten['show_devices']['_meta']['
 pruefe(isset($schalten['show_devices']['inputSchema']['properties']['room'], $schalten['show_devices']['inputSchema']['properties']['active_only']) && !isset($schalten['show_devices']['inputSchema']['properties']['period']), 'show_devices filtert wie get_state, ohne Zeitraum: ' . json_encode(array_keys($schalten['show_devices']['inputSchema']['properties'] ?? [])));
 pruefe(($schalten['control_device']['_meta']['ui']['visibility'] ?? null) === ['app'] && ($schalten['control_device']['_meta']['ui']['resourceUri'] ?? null) === $kartenUri, 'control_device nur für die Seite: ' . json_encode($schalten['control_device']['_meta'] ?? null));
 pruefe(($schalten['control_device']['inputSchema']['required'] ?? null) === ['device'] && in_array('on', $schalten['control_device']['inputSchema']['properties']['command']['enum'] ?? [], true), 'control_device braucht den Schlüssel der Karte: ' . json_encode($schalten['control_device']['inputSchema'] ?? null));
+pruefe(($schalten['control_device']['inputSchema']['properties']['mode']['type'] ?? null) === 'string' && ($schalten['control_device']['inputSchema']['properties']['fan_speed']['type'] ?? null) === 'string', 'control_device nimmt mode und fan_speed als Name: ' . json_encode(array_keys($schalten['control_device']['inputSchema']['properties'] ?? [])));
 $lesen = $werkzeugNamen(true);
 pruefe(isset($lesen['show_devices']) && !isset($lesen['control_device']), 'Nur-Lese-Zugang: Karten ja, Bedienen nein: ' . json_encode(array_keys($lesen)));
 pruefe(!isset($werkzeugNamen(false)['show_devices']), 'ohne Apps keine Karten');
@@ -2781,6 +2782,8 @@ pruefe(str_contains($schalten['show_devices']['description'] ?? '', '"show me'),
 $karten = oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/devices'), $p, HomeAgent::class)());
 pruefe(is_string($karten) && oderNull(static fn () => \Closure::bind(fn () => $this->readResource($kartenUri), $p, HomeAgent::class)()) === $karten, 'die Karten auch unter der Adresse mit Prüfsumme');
 pruefe(is_string($karten) && str_contains($karten, 'ui/initialize') && str_contains($karten, '"control_device"') && str_contains($karten, 'ui/update-model-context'), 'die Seite der Karten bedient über control_device und sagt dem Modell, was geschah');
+// Auswahl für Modus und Lüfterstufe auf den Karten (13.10.2026)
+pruefe(is_string($karten) && str_contains($karten, 'c.options') && str_contains($karten, 'node("select"'), 'die Seite zeichnet eine Auswahl je Eintrag in controls.options');
 pruefe(is_string($karten) && str_contains($karten, 'structuredContent.problem'), 'die Karte zeigt die Antwort nur bei einem Problem');
 pruefe(strlen((string)$karten) < 30000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$karten), 'die Seite der Karten lädt nichts nach: ' . strlen((string)$karten) . ' Bytes');
 pruefe(strlen((string)$seite) < 30000 && !preg_match('/<script[^>]+src=|<link[^>]+href=["\']https?:/i', (string)$seite), 'die Seite lädt nichts nach (CSP der Apps) und bleibt klein: ' . strlen((string)$seite) . ' Bytes');

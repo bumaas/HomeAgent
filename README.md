@@ -473,10 +473,9 @@ steht in einem Stundendiagramm mit dem ganzen Tag in einer Stunde.
 
 Mit „Zeig mir die Lichter im Wohnzimmer“ zeigt die Claude-App die Geräte als Karten: Zustand, dazu je nach Gerät
 ein Schalter, ein Schieberegler für Helligkeit oder Öffnungsgrad, Knöpfe für Auf, Stopp und Zu, der Sollwert mit
-Plus und Minus und die Wiedergabe. Ein Tippen auf der Karte schaltet sofort, ohne Umweg über das Sprachmodell, und
+Plus und Minus, die Wiedergabe und eine Auswahl für Betriebsart und Lüfterstufe. Ein Tippen auf der Karte schaltet sofort, ohne Umweg über das Sprachmodell, und
 die Karte zeigt danach den Zustand, den das Gerät zurückgemeldet hat; eine Meldung steht dort nur, wenn etwas nicht geklappt hat. Der Assistent erfährt im weiteren Gespräch, was auf den
-Karten bedient wurde. Bei einem Zugang mit **Nur abfragen** zeigen die Karten nur den Zustand. Betriebsart und
-Lüfterstufe gehen auf den Karten noch nicht.
+Karten bedient wurde. Bei einem Zugang mit **Nur abfragen** zeigen die Karten nur den Zustand.
 
 Über „+“ → „Konnektoren“ → „Von … hinzufügen“ bietet die Claude-App fertige Vorlagen an: **Haus verlassen** und
 **Gute Nacht** prüfen, was noch offen oder an ist, **Energiebericht** nennt Verbrauch, Autarkie und die größten

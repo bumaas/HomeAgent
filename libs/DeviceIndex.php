@@ -3468,7 +3468,7 @@ final class DeviceIndex
         }
         $this->onlyKey = $key;
         try {
-            $result = $this->setState(['name' => $entry['Name']] + array_intersect_key($arguments, array_flip(['command', 'percent', 'temperature', 'humidity'])));
+            $result = $this->setState(['name' => $entry['Name']] + array_intersect_key($arguments, array_flip(['command', 'percent', 'temperature', 'humidity', 'mode', 'fan_speed'])));
         } finally {
             $this->onlyKey = null;
         }
@@ -3510,8 +3510,36 @@ final class DeviceIndex
         if (in_array('play', $abilities, true)) {
             $controls['playback'] = true;
         }
+        foreach (['mode' => ['mode', 'Mode'], 'fan_speed' => ['fan', 'Fan speed']] as $field => [$role, $label]) {
+            $choice = in_array($field, $abilities, true) ? $this->cardChoice($entry['roles'][$role] ?? 0, $field, $label) : null;
+            if ($choice !== null) {
+                $controls['options'][] = $choice;
+            }
+        }
         return ['key' => self::cardKey($entry), 'room' => $entry['Room'], 'name' => $entry['Name'], 'type' => $entry['Type'],
             'text' => $state['text'], 'active' => $state['active'], 'controls' => $controls];
+    }
+
+    /**
+     * Auswahl einer Karte (Modus, Lüfterstufe): die Beschriftungen der Variable und der aktuelle Eintrag. Die Seite
+     * schickt die Beschriftung als Name an control_device, runOption() findet den Wert dazu. Ohne Einträge keine Auswahl.
+     *
+     * @return array{field: string, label: string, value: ?string, entries: array<int, string>}|null
+     */
+    private function cardChoice(int $variable, string $field, string $label): ?array
+    {
+        $options = $variable > 0 ? $this->backend->options($variable) : null;
+        if ($options === null || $options === []) {
+            return null;
+        }
+        $current = $this->backend->read($variable)['value'] ?? null;
+        $value = null;
+        foreach ($options as [$optionValue, $caption]) {
+            if ($current !== null && (string)$optionValue === (string)$current) {
+                $value = (string)$caption;
+            }
+        }
+        return ['field' => $field, 'label' => $this->t($label), 'value' => $value, 'entries' => array_map(static fn (array $o): string => (string)$o[1], $options)];
     }
 
     /** Stufe bzw. Öffnungsgrad in ganzen Prozent; null, wenn Wert oder Bereich unbekannt sind. */

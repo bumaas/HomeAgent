@@ -48,6 +48,8 @@
   .value { min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
   button { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; cursor: pointer; min-width: 32px; }
   button:hover { border-color: var(--accent); }
+  .row .label { color: var(--muted); min-width: 80px; }
+  .row select { flex: 1; min-width: 0; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
   .switch { position: relative; width: 38px; height: 22px; flex: none; }
   .switch input { opacity: 0; width: 0; height: 0; }
   .switch span { position: absolute; inset: 0; background: var(--border); border-radius: 11px; cursor: pointer; transition: background 0.15s; }
@@ -222,6 +224,27 @@
       });
       el.appendChild(play);
     }
+    // Auswahl (Modus, Lüfterstufe): gesendet wird die Beschriftung, das Modul sucht den Wert dazu
+    (c.options || []).forEach(function (choice) {
+      var choiceRow = node("div", "row");
+      choiceRow.appendChild(node("span", "label", choice.label));
+      var select = node("select");
+      select.setAttribute("aria-label", choice.label);
+      if (choice.value === null) { select.appendChild(node("option", null, "–")); }
+      choice.entries.forEach(function (entry) {
+        var option = node("option", null, entry);
+        option.value = entry;
+        option.selected = entry === choice.value;
+        select.appendChild(option);
+      });
+      select.addEventListener("change", function () {
+        var args = {};
+        args[choice.field] = select.value;
+        control(card, args, el);
+      });
+      choiceRow.appendChild(select);
+      el.appendChild(choiceRow);
+    });
     var reply = replies[card.key];
     if (reply) { el.appendChild(node("div", "reply" + (reply.error ? " error" : ""), reply.text)); }
     return el;
