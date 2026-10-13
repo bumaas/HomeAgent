@@ -34,7 +34,7 @@ eigene Ersatzwerte. Das Schema kommt aus `hostContext.theme` und setzt `data-the
 | `--fg` | #1f2328 | #e6edf3 | Text, Hauptwert |
 | `--muted` | #656d76 | #9198a1 | Nebentext, Achsen, Überschriften |
 | `--border` / `--grid` | #d8dee4 | #3d444d | Rahmen, Gitterlinien |
-| `--inactive` | #afb8c1 | #545d68 | inaktiver Zustand in Bändern |
+| `--inactive` | #afb8c1 | #545d68 | inaktiver Zustand: Balken und Griff auf Karten, Bänder im Diagramm |
 
 ### Farbe je Art (Karten, `--tone`)
 
@@ -95,7 +95,7 @@ Jede Karte behält ihre eigene Höhe (`align-items: start`); höher werden nur K
   Modus als „off“. Rollläden, Klima und Messwerte ohne an/aus (`active === null`) gelten als aktiv.
 - Aktiv färbt Symbol (Fläche mit 16 % der Farbe), Zustandstext und Balken in der Farbe der Art; der Schalter ist dann
   ebenfalls in dieser Farbe.
-- Nicht aktiv ist alles grau, Balken und Griff gleichermaßen.
+- Nicht aktiv ist alles grau, Balken und Griff gleichermaßen in `--inactive`.
 - Der Hauptwert bleibt immer `--fg`.
 
 ### Bedienelemente
@@ -159,7 +159,4 @@ Feste Reihenfolge: Rollläden, Licht, Schalter und Steckdosen, Klima, Messwerte,
 
 ## Bekannte Abweichungen
 
-- Das Grau nicht aktiver Balken und Griffe auf den Karten ist fest (#b8bfc6) und im dunklen Modus zu hell. Es soll wie
-  `--inactive` der Diagramme vom Farbschema abhängen.
-- In `devices.html` stehen noch die Regeln `.row .label` und `.row select` aus einer früheren Fassung der Auswahl; sie
-  werden nicht mehr verwendet.
+Keine.

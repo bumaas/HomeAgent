@@ -142,7 +142,7 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   13.10.2026): Autarkie teilt den Hausverbrauch über den ganzen Zeitraum in PV direkt, Batterie und Netz, Eigenverbrauch
   die PV in direkt, geladen und eingespeist; die Zahl in der Mitte rechnet `shares()` wie die Textzeile des Modells.
   `show_chart` mit `period=now` ohne Filter gibt es nur mit Leistungsbilanz (`powerRings`, `kind: rings`): Hausleistung
-  auf einer Skala in ganzen kW, dann dieselben Ringe aus den Leistungen. Nach dem ersten Screenshot aus der Claude-App (13.10.2026): Bögen unter 1 % fallen weg (sonst ein Punkt bei „Einspeisung 0 kWh“), unter der Nulllinie wird nur gezeichnet, wenn die Einspeisung mindestens 3 % des höchsten Balkens ausmacht, und die Ringkarten füllen die Breite. Jeder Balken ist der Hausverbrauch der Bilanz; am nuc lud die Batterie am 11.10.2026 um 14 Uhr
+  auf einer Skala in ganzen kW, dann dieselben Ringe aus den Leistungen. Wie Ringe und Stapel gezeichnet werden, steht in `DESIGN.md`. Jeder Balken ist der Hausverbrauch der Bilanz; am nuc lud die Batterie am 11.10.2026 um 14 Uhr
   aus dem Netz (Fixture `nuc_2026-10-12_verbrauch.json`, Burkhard 12.10.2026: „verbrauchsdiagramme, also
   stapeldiagramme“). Stufe wie beim Verlauf (`chartLevel`). Verbrauch je Gerät (`deviceChart`): `type=energy` gibt es nur
   bei `show_chart` (kein Gerätetyp, `chart()` nimmt es heraus und setzt `chartByDevice`), oder automatisch, wenn die Treffer
@@ -163,19 +163,13 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   `control_device` 68 ms. Modus und Lüfterstufe stehen als Auswahl auf der Karte (`controls.options`, `cardChoice`: Beschriftungen aus
   `DeviceBackend::options()` und der aktuelle Eintrag); die Seite schickt die Beschriftung als `mode` bzw. `fan_speed`, `runOption`
   sucht den Wert dazu (13.10.2026).
-  **Gestaltung nach pitti** (Forum, Entwurf 13.10.2026): Jede Karte trägt `group` (`CARD_GROUPS`, Überschriften in fester
-  Reihenfolge aus `labels.groups`, erst ab zwei Gruppen), `figure` (Hauptwert als Zahl und Einheit, `cardFigure`: Stufe eines
-  eingeschalteten Lichts, Öffnungsgrad, Messwert, Ist-Temperatur bzw. Ist-Feuchte, sonst Leistung; Mediaplayer vorerst
-  ohne) und `status` (`cardStatus`: der Zustandstext ohne den Hauptwert, null bei reinen Messwerten). Die Seite färbt, was
-  an ist, Rollläden und Klima immer (Symbol, Text, Balken; ohne Hintergrundverlauf, pitti PN #12: passt nicht zur
-  Kachel-Visu), der Regler hat immer einen runden Griff, ausgeschaltet Balken und Griff grau; Layoutvergleich 13.10.2026:
-  jede Karte behält ihre Höhe (`align-items: start`, ohne Hauptwert ein unsichtbares Zeichen in der Höhe einer Zahl),
-  der Sollwert ist beschriftet wie Modus und Lüfterstufe (`controls.setpoint.label`), die Auswahlliste sieht aus wie die
-  Knöpfe, ein Klimagerät im Modus „off“ ist auf der Karte nicht aktiv (nur `cardOf`), Messwerte (`measurement`) bilden die
-  Gruppe „Messwerte“ (`measure`) statt Klima; der Balken ist zugleich Schieberegler, der Raum steht nur bei mehreren Räumen da.
-  Zweiter Entwurf (PN #11, #12): Name oben, darunter Symbol und Bedienung, kurze Zustände in Großbuchstaben, „aktuell“ bei
-  Messwerten (`labels.current`), Schild „zu“ am geschlossenen Fenster (`labels.shut`), Auswahl bis fünf kurze Einträge als
-  Knopfleiste, Mediaplayer mit Tasten oben, Titel und Lautstärke (`figure` und `controls.volume`, `cardVolume`).
+  **Daten der Karten** (Gestaltung nach pitti, die Regeln stehen in `DESIGN.md`): Jede Karte trägt `group` (`CARD_GROUPS`,
+  Überschriften in fester Reihenfolge aus `labels.groups`; `measurement` bildet die Gruppe `measure`), `figure` (Hauptwert
+  als Zahl und Einheit, `cardFigure`: Stufe eines eingeschalteten Lichts, Öffnungsgrad, Messwert, Ist-Temperatur bzw.
+  Ist-Feuchte, sonst Leistung; beim Mediaplayer die Lautstärke, `cardVolume` und `controls.volume`), `status` (`cardStatus`:
+  der Zustandstext ohne den Hauptwert, null bei reinen Messwerten) und `active` (ein Klimagerät im Modus „off“ ist nur auf
+  der Karte nicht aktiv, `cardOf`; `get_state` zählt Thermostate bei `active_only` weiter nicht). Beschriftungen kommen aus
+  `labels` (`current` bei Messwerten, `shut` für das Schild am geschlossenen Fenster) und `controls.setpoint.label`.
   Zeigt die Karte Sollwert oder Auswahl selbst, steht links nur der Modus, beim Luftbe-/entfeuchter und der Lüftung an/aus,
   sonst „aktuell“ (Nur-Lese-Zugang behält den ganzen Text); ein Zustand, der mit dem Hauptwert beginnt („90 % offen“), verliert ihn.
   **Nachführen:** `moving` (aus `blindText`) sagt, dass eine Fahrt läuft; `control_device` nur mit dem Schlüssel liefert die
@@ -243,18 +237,14 @@ Weitere Regeln, die nicht offensichtlich sind:
   Lichter). Test `check-zeitleiste.php`. In `show_chart` werden Zustände Bänder
   (`chartBands`, `structuredContent.bands`: Raum, Name, `from`, `to`, `states` mit `label` und `active`, `sections` als
   `[Zustand, Beginn, Ende]`, alle Abschnitte, auch wenn der Text nur Summen nennt); nur Zustände ergeben `kind: timeline`,
-  mit Messwerten bleibt es `history` mit Bändern darunter. Farben: aktiv blau, inaktiv grau, eine Auswahl in der
-  Reihenfolge der Einträge (jeden Tag dieselben). Höchstens `TIMELINE_CHART_MAX` (10) Bänder. Mit Bändern haben Linien und Bänder eine
-  gemeinsame Zeitachse (frühester Punkt bis Ende der Bänder) und denselben linken Rand; vorher endeten die Linien bei der
-  letzten vollen Stunde und die Bänder bei jetzt.
-  Layoutvergleich der Diagramme (13.10.2026): Die Achse zeigt immer den ganzen Zeitraum (`periodSpan`; Verlauf und
-  Zeitleiste über `range`, Stapel mit leeren Abschnitten bis zum Ende, `padTimes`), inaktive Zustände im Grau des
-  Farbschemas (`--inactive`), Bänder mit derselben HTML-Legende wie Linien und Balken, Auswahlen in einer Farbreihe ohne
-  Rot und Grün (`CHOICE_COLORS`), der Leistungsring heißt wie die Ringe daneben „PV, Batterie, Netz“.
+  mit Messwerten bleibt es `history` mit Bändern darunter. `states` kommen in fester Reihenfolge (bei Wörtern der aktive
+  zuerst, bei einer Auswahl die der Einträge), damit die Seite jeden Tag dieselben Farben vergibt. Höchstens
+  `TIMELINE_CHART_MAX` (10) Bänder. Die Achse zeigt immer den ganzen Zeitraum (`periodSpan`; Verlauf und Zeitleiste über
+  `range`, Stapel mit leeren Abschnitten bis zum Ende, `padTimes`).
 - **Vergleich zweier Zeiträume** (B69, `show_chart` mit `compare`: `previous` oder `year_before`, `DeviceIndex::COMPARES`):
   `compareWindow` bestimmt den Vergleichszeitraum (der davor in der Einheit des Zeitraums, bei from/to gleich viele Tage
   davor; nur ganze Tage), `compareChart` holt dasselbe Diagramm über from/to und legt es um den Abstand verschoben
-  darüber: Verlauf je Reihe `compare` (gestrichelt), Verbrauch `compare.values` als Summe der positiven Teile je Balken
+  darüber: Verlauf je Reihe `compare`, Verbrauch `compare.values` als Summe der positiven Teile je Balken
   nach Position (reicht der Vergleich weiter, etwa gestern gegen heute, kommen Balken ohne Werte dazu). Das Modell bekommt
   den Text des Vergleichszeitraums wie aus get_state und, solange der Zeitraum läuft, den Verbrauch bis zur selben Zeit.
   Nur ein Raum, keine Zeitleiste. Test `check-vergleich.php` (Orakel: das Diagramm des Vergleichszeitraums selbst).
