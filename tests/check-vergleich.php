@@ -63,10 +63,11 @@ $daten = $r['structuredContent'] ?? [];
 pruefe(!$r['isError'] && ($daten['kind'] ?? '') === 'consumption', 'Hausverbrauch mit Vergleich: ' . substr($r['text'], 0, 200));
 pruefe($gleich($daten['compare']['values'] ?? [], $summen($gestern['structuredContent'] ?? [])), 'je Stunde die Summe von gestern: ' . json_encode($daten['compare'] ?? null));
 pruefe(($daten['compare']['label'] ?? '') === '2026-10-11', 'Beschriftung des Vergleichs: ' . json_encode($daten['compare']['label'] ?? null));
-$n = count($heute['structuredContent']['times'] ?? []);
-pruefe($n === 18 && count($daten['times'] ?? []) === 24 && array_slice($daten['times'], 0, $n) === $heute['structuredContent']['times']
+// Heute hat seit dem Layoutvergleich der Diagramme schon ohne Vergleich 24 Stunden, 18 davon mit Werten (bis 17 Uhr)
+$n = 18;
+pruefe(count($heute['structuredContent']['times'] ?? []) === 24 && count($daten['times'] ?? []) === 24 && $daten['times'] === $heute['structuredContent']['times']
     && ($daten['times'][23] ?? 0) === strtotime('2026-10-12 23:00'), 'die Achse reicht bis zum Ende des Tages, die Stunden danach ohne Balken: ' . json_encode($daten['times'] ?? null));
-pruefe(array_sum(array_map(static fn (array $s): float => array_sum(array_map('abs', array_slice($s['values'], $n))), $daten['series'] ?? [])) === 0.0 && $gleich($summen(['times' => array_slice($daten['times'], 0, $n), 'series' => $daten['series']]), $summen($heute['structuredContent'])), 'die Balken von heute bleiben, wie sie waren');
+pruefe(array_sum(array_map(static fn (array $s): float => array_sum(array_map('abs', array_slice($s['values'], $n))), $daten['series'] ?? [])) === 0.0 && $gleich($summen(['times' => array_slice($daten['times'], 0, $n), 'series' => $daten['series']]), array_slice($summen($heute['structuredContent']), 0, $n)), 'die Balken von heute bleiben, wie sie waren');
 $kopfGestern = strtok($gestern['text'], "\n");
 pruefe(str_contains($r['text'], "\nCompared with 2026-10-11:\n" . str_replace('period=yesterday', 'from=2026-10-11, to=2026-10-11', $kopfGestern)), 'der Text nennt den Hausverbrauch von gestern: ' . $r['text']);
 $bisJetzt = array_sum(array_slice($daten['compare']['values'] ?? [], 0, $n));

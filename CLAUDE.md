@@ -247,6 +247,10 @@ Weitere Regeln, die nicht offensichtlich sind:
   Reihenfolge der Einträge (jeden Tag dieselben). Höchstens `TIMELINE_CHART_MAX` (10) Bänder. Mit Bändern haben Linien und Bänder eine
   gemeinsame Zeitachse (frühester Punkt bis Ende der Bänder) und denselben linken Rand; vorher endeten die Linien bei der
   letzten vollen Stunde und die Bänder bei jetzt.
+  Layoutvergleich der Diagramme (13.10.2026): Die Achse zeigt immer den ganzen Zeitraum (`periodSpan`; Verlauf und
+  Zeitleiste über `range`, Stapel mit leeren Abschnitten bis zum Ende, `padTimes`), inaktive Zustände im Grau des
+  Farbschemas (`--inactive`), Bänder mit derselben HTML-Legende wie Linien und Balken, Auswahlen in einer Farbreihe ohne
+  Rot und Grün (`CHOICE_COLORS`), der Leistungsring heißt wie die Ringe daneben „PV, Batterie, Netz“.
 - **Vergleich zweier Zeiträume** (B69, `show_chart` mit `compare`: `previous` oder `year_before`, `DeviceIndex::COMPARES`):
   `compareWindow` bestimmt den Vergleichszeitraum (der davor in der Einheit des Zeitraums, bei from/to gleich viele Tage
   davor; nur ganze Tage), `compareChart` holt dasselbe Diagramm über from/to und legt es um den Abstand verschoben

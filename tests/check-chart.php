@@ -36,6 +36,9 @@ $zeilen = explode("\n", $r['text']);
 pruefe(!$r['isError'] && str_starts_with($zeilen[0], 'History of 1 measured value(s) (room=Gast, type=temperature, period=last_week)'), 'Kopfzeile wie beim Verlauf: ' . $zeilen[0]);
 pruefe(str_starts_with($zeilen[1] ?? '', 'Gast | Temperatur | temperature | minimum '), 'Gerätezeile mit Minimum und Maximum: ' . ($zeilen[1] ?? ''));
 pruefe(!array_any($zeilen, static fn (string $z): bool => preg_match('/^\d{4}-\d\d-\d\d /', $z) === 1), 'keine Tabellenzeilen für das Modell: ' . $r['text']);
+// Heute läuft noch: die Achse reicht trotzdem bis Mitternacht (Layoutvergleich der Diagramme 13.10.2026)
+$heute = diagramm(['room' => 'Gast', 'type' => 'temperature', 'period' => 'today']);
+pruefe(($heute['structuredContent']['range'] ?? null) === [mktime(0, 0, 0, 10, 10, 2026), mktime(0, 0, 0, 10, 11, 2026)], 'Verlauf heute: Zeitachse bis Mitternacht: ' . json_encode($heute['structuredContent']['range'] ?? null));
 pruefe(end($zeilen) === 'The chart is shown in the chat.', 'Schlusszeile sagt, dass das Diagramm angezeigt wird: ' . end($zeilen));
 $daten = $r['structuredContent'] ?? [];
 pruefe(($daten['kind'] ?? null) === 'history' && ($daten['per'] ?? null) === 'day', 'Art und Stufe: ' . json_encode(array_intersect_key($daten, ['kind' => 0, 'per' => 0])));

@@ -329,6 +329,7 @@
             "Current humidity": "Ist-Feuchte",
             "Target humidity": "Zielfeuchte",
             "Measurements": "Messwerte",
+            "PV": "PV",
             "Now: %s": "Jetzt: %s",
             "Monday": "Montag",
             "Tuesday": "Dienstag",

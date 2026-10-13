@@ -90,7 +90,11 @@ $daten = $r['structuredContent'] ?? [];
 $summe = array_sum(array_merge(...array_map(static fn (array $s): array => $s['key'] === 'export' ? [] : $s['values'], $daten['series'] ?? [])));
 pruefe(($daten['per'] ?? null) === 'day' && count($daten['times'] ?? []) === 30 && abs($summe - 774.8) < 0.05, 'September je Tag, zusammen 774,8 kWh: ' . ($daten['per'] ?? '') . ' ' . count($daten['times'] ?? []) . ' ' . round($summe, 2));
 $r = stapel(['period' => 'this_year']);
-pruefe(($r['structuredContent']['per'] ?? null) === 'month' && count($r['structuredContent']['times'] ?? []) === 10, 'dieses Jahr je Monat, Januar bis Oktober: ' . count($r['structuredContent']['times'] ?? []));
+// Die Achse zeigt den ganzen Zeitraum, künftige Abschnitte bleiben leer (Layoutvergleich der Diagramme 13.10.2026)
+pruefe(($r['structuredContent']['per'] ?? null) === 'month' && count($r['structuredContent']['times'] ?? []) === 12 && ($r['structuredContent']['times'][11] ?? 0) === mktime(0, 0, 0, 12, 1, 2026)
+    && array_sum(array_map(static fn (array $s): float => array_sum(array_map('abs', array_slice($s['values'], 10))), $r['structuredContent']['series'] ?? [])) === 0.0, 'dieses Jahr je Monat, alle zwölf Monate, November und Dezember leer: ' . count($r['structuredContent']['times'] ?? []));
+$r = stapel(['period' => 'this_week']);
+pruefe(($r['structuredContent']['per'] ?? null) === 'day' && count($r['structuredContent']['times'] ?? []) === 7 && ($r['structuredContent']['times'][0] ?? 0) === mktime(0, 0, 0, 10, 12, 2026), 'diese Woche: sieben Tage ab Montag, auch wenn erst Montag ist: ' . json_encode($r['structuredContent']['times'] ?? $r['text']));
 $r = stapel(['from' => '2026-10-05', 'to' => '2026-10-11']);
 pruefe(($r['structuredContent']['per'] ?? null) === 'day' && count($r['structuredContent']['times'] ?? []) === 7, 'freier Zeitraum über eine Woche je Tag: ' . count($r['structuredContent']['times'] ?? []));
 $r = stapel([]);

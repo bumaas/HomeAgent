@@ -10,6 +10,7 @@
     --fg: var(--color-text-primary, #1f2328);
     --muted: var(--color-text-secondary, #656d76);
     --grid: var(--color-border-tertiary, #d8dee4);
+    --inactive: #afb8c1;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -17,6 +18,7 @@
       --fg: var(--color-text-primary, #e6edf3);
       --muted: var(--color-text-secondary, #9198a1);
       --grid: var(--color-border-tertiary, #3d444d);
+      --inactive: #545d68;
     }
   }
   :root[data-theme="dark"] {
@@ -24,6 +26,7 @@
     --fg: var(--color-text-primary, #e6edf3);
     --muted: var(--color-text-secondary, #9198a1);
     --grid: var(--color-border-tertiary, #3d444d);
+    --inactive: #545d68;
   }
   html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); overflow: hidden; }
   body { font: 13px/1.4 var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif); padding: 8px 4px 4px; }
@@ -46,7 +49,6 @@
   .ring svg text.part tspan.value { fill: var(--fg); }
   .ring svg text.center { fill: var(--fg); font-size: 26px; font-weight: 700; }
   .ring svg text.sub { font-size: 11px; }
-  svg text tspan.bandname { fill: var(--fg); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -58,6 +60,7 @@
   // 2026-01-26). Sie meldet sich mit ui/initialize beim Client an, bekommt mit ui/notifications/tool-result die Werte
   // in structuredContent und zeichnet je Einheit ein Diagramm: Band von Minimum bis Maximum, Linie für das Mittel.
   var COLORS = ["#2f81f7", "#e5534b", "#3fb950", "#d29922", "#a371f7"];
+  var CHOICE_COLORS = ["#2f81f7", "#14b8a6", "#d29922", "#a371f7", "#8c959f"];
   // Stapel des Hausverbrauchs (kind "consumption"): Netz, PV direkt, Batterie, Einspeisung unter der Nulllinie
   // Verbrauch je Gerät: Geräte in den Farben der Linien, die übrigen grau, „nicht erfasst“ hellgrau
   // Farben wie in den Ringen (Anregung pitti, Forum t/144633): PV gelb, Batterie türkis, Netz orangerot, Einspeisung grün
@@ -380,59 +383,69 @@
   function stateColor(band, i) {
     var state = band.states[i];
     if (state.active === true) { return COLORS[0]; }
-    if (state.active === false) { return "#afb8c1"; }
-    return COLORS[i % COLORS.length];
+    // Das Grau folgt dem Farbschema: fest gesetzt leuchtete „geschlossen“ im dunklen Modus heller als „offen“
+    if (state.active === false) { return "var(--inactive)"; }
+    // Eine Auswahl (Batteriemodus) ohne Rot und Grün, die tragen sonst eine Bedeutung („Halten“ sah nach Fehler aus)
+    return CHOICE_COLORS[i % CHOICE_COLORS.length];
   }
   function duration(seconds) {
     var m = Math.round(seconds / 60), h = Math.floor(m / 60);
     if (m === 0) { return "< 1 min"; }
     return h ? h + " h" + (m % 60 ? " " + (m % 60) + " min" : "") : m + " min";
   }
+  // Je Band eine Legende wie bei Linien und Balken, darunter der Streifen; am Ende die Zeitachse. Alle Streifen haben
+  // dieselbe Breite und denselben linken Rand wie die Linien (L = 44).
   function drawBands(container, bands, range) {
     if (!bands || !bands.length) { return; }
-    // Linker Rand wie bei den Linien (L = 44), damit Bänder und Linien dieselbe Zeitachse haben
-    var W = 640, L = 44, R = 10, rowH = 38, barH = 14, B = 26;
+    var W = 640, L = 44, R = 10, barH = 14;
     var t0 = Infinity, t1 = -Infinity;
     bands.forEach(function (b) { t0 = Math.min(t0, b.from); t1 = Math.max(t1, b.to); });
     if (range) { t0 = range[0]; t1 = range[1]; }
     if (t1 <= t0) { return; }
-    var H = bands.length * rowH + B;
     var x = function (t) { return L + (t - t0) / (t1 - t0) * (W - L - R); };
     var per = t1 - t0 <= 2 * 86400 ? "hour" : "day";
     var spansDays = t1 - t0 > 86400;
+    var ticks = timeTicks(t0, t1, per);
     var box = document.createElement("div");
     box.className = "chart";
-    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
-    var ticks = timeTicks(t0, t1, per);
-    ticks.forEach(function (t) {
-      svg.appendChild(el("line", { x1: x(t), x2: x(t), y1: 0, y2: H - B, stroke: "var(--grid)", "stroke-width": 1 }));
-    });
-    bands.forEach(function (b, row) {
-      var top = row * rowH;
-      var name = el("text", { x: 6, y: top + 12 });
-      name.appendChild(el("tspan", { class: "bandname" }, b.room + " · " + b.name));
+    bands.forEach(function (b) {
+      var legend = document.createElement("div");
+      legend.className = "legend";
+      var title = document.createElement("span");
+      title.textContent = b.room + " · " + b.name;
+      legend.appendChild(title);
       b.states.forEach(function (s, i) {
-        name.appendChild(el("tspan", { dx: 12, style: "fill: " + stateColor(b, i) }, "■"));
-        name.appendChild(el("tspan", { dx: 4 }, s.label));
+        var item = document.createElement("span");
+        var mark = document.createElement("i");
+        mark.className = "bar";
+        mark.style.background = stateColor(b, i);
+        item.appendChild(mark);
+        item.appendChild(document.createTextNode(s.label));
+        legend.appendChild(item);
       });
-      svg.appendChild(name);
-      var y = top + 18;
-      svg.appendChild(el("rect", { x: x(b.from), y: y, width: Math.max(0, x(b.to) - x(b.from)), height: barH, fill: "var(--grid)", opacity: 0.35 }));
+      box.appendChild(legend);
+      var svg = el("svg", { viewBox: "0 0 " + W + " " + (barH + 6), role: "img" });
+      ticks.forEach(function (t) {
+        svg.appendChild(el("line", { x1: x(t), x2: x(t), y1: 0, y2: barH + 6, stroke: "var(--grid)", "stroke-width": 1 }));
+      });
+      svg.appendChild(el("rect", { x: x(b.from), y: 3, width: Math.max(0, x(b.to) - x(b.from)), height: barH, fill: "var(--grid)", opacity: 0.35 }));
       b.sections.forEach(function (sec) {
-        var rect = el("rect", { x: x(sec[1]), y: y, width: Math.max(0.6, x(sec[2]) - x(sec[1])), height: barH, fill: stateColor(b, sec[0]) });
+        var rect = el("rect", { x: x(sec[1]), y: 3, width: Math.max(0.6, x(sec[2]) - x(sec[1])), height: barH, fill: stateColor(b, sec[0]) });
         rect.appendChild(el("title", {}, b.states[sec[0]].label + ": " + timeLabel(sec[1], "hour", spansDays) + " – " + timeLabel(sec[2], "hour", spansDays) + " (" + duration(sec[2] - sec[1]) + ")"));
         svg.appendChild(rect);
       });
+      box.appendChild(svg);
     });
+    var axis = el("svg", { viewBox: "0 0 " + W + " 22", role: "img" });
     ticks.forEach(function (t) {
       var px = x(t);
       var anchor = px < L + 20 ? "start" : px > W - R - 20 ? "end" : "middle";
-      svg.appendChild(el("text", { x: px, y: H - 8, "text-anchor": anchor }, timeLabel(t, per, spansDays && per === "hour")));
+      axis.appendChild(el("line", { x1: px, x2: px, y1: 0, y2: 4, stroke: "var(--grid)", "stroke-width": 1 }));
+      axis.appendChild(el("text", { x: px, y: 16, "text-anchor": anchor }, timeLabel(t, per, spansDays && per === "hour")));
     });
-    box.appendChild(svg);
+    box.appendChild(axis);
     container.appendChild(box);
   }
-
   function drawRings(container, rings) {
     if (!rings || !rings.length) { return; }
     var row = document.createElement("div");
@@ -465,7 +478,7 @@
     var root = document.getElementById("root");
     root.textContent = "";
     if (data && (!data.series || !data.series.length) && data.bands && data.bands.length) {
-      drawBands(root, data.bands);
+      drawBands(root, data.bands, data.range);
       reportSize();
       return;
     }
@@ -484,8 +497,9 @@
     });
     // Mit Bändern eine gemeinsame Zeitachse: vom frühesten Punkt bzw. Beginn bis zum Ende der Bänder (bis jetzt), sonst
     // endeten die Linien bei der letzten vollen Stunde und die Bänder bei jetzt.
-    var range = null;
-    if (data.bands && data.bands.length) {
+    // Ganzer Zeitraum aus data.range (bis zu seinem Ende, auch wenn er noch läuft), sonst aus Punkten und Bändern
+    var range = data.range || null;
+    if (!range && data.bands && data.bands.length) {
       range = [Infinity, -Infinity];
       data.series.forEach(function (s) { s.points.forEach(function (p) { range[0] = Math.min(range[0], p[0]); range[1] = Math.max(range[1], p[0]); }); });
       data.bands.forEach(function (b) { range[0] = Math.min(range[0], b.from); range[1] = Math.max(range[1], b.to); });

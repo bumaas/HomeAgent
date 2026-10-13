@@ -1322,9 +1322,10 @@ final class DeviceIndex
         $largest = max($total, $values['solar'] ?? 0.0, $values['discharge'] ?? 0.0, $values['import'] ?? 0.0);
         $rings = [['key' => 'power', 'title' => $this->t('Current power'), 'label' => $this->t('house'), 'unit' => 'W',
             'total' => round($total, 1), 'max' => max(1000.0, ceil($largest / 1000) * 1000), 'parts' => [
-                ['key' => 'solar', 'name' => $this->t('solar'), 'value' => round($values['solar'] ?? 0.0, 1)],
-                ['key' => 'battery', 'name' => $this->t('battery discharge'), 'value' => round($values['discharge'] ?? 0.0, 1)],
-                ['key' => 'grid', 'name' => $this->t('grid import'), 'value' => round($values['import'] ?? 0.0, 1)],
+                // Kurze Namen wie in den Ringen Autarkie und Eigenverbrauch daneben (Layoutvergleich der Diagramme 13.10.2026)
+                ['key' => 'solar', 'name' => $this->t('PV'), 'value' => round($values['solar'] ?? 0.0, 1)],
+                ['key' => 'battery', 'name' => $this->t('battery'), 'value' => round($values['discharge'] ?? 0.0, 1)],
+                ['key' => 'grid', 'name' => $this->t('grid'), 'value' => round($values['import'] ?? 0.0, 1)],
             ]]];
         $rings = array_merge($rings, $this->shareRings($values, 'W'));
         $lines = [$state['text']];
@@ -3707,6 +3708,15 @@ final class DeviceIndex
             return $this->fail(sprintf($this->t('None of the matching devices has a history for a chart (%s).'), (string)($chart['filter'] ?? '')));
         }
         unset($chart['filter']);
+        // Die Achse zeigt den ganzen Zeitraum, auch wenn er noch läuft; künftige Abschnitte bleiben leer (Layoutvergleich der
+        // Diagramme 13.10.2026: „diese Woche“ am Dienstag ergab zwei sehr breite Balken).
+        $span = $this->periodSpan($arguments);
+        if ($span !== null && in_array($chart['kind'] ?? '', ['history', 'timeline'], true)) {
+            $chart['range'] = $span;
+        }
+        if ($span !== null && ($chart['kind'] ?? '') === 'consumption') {
+            self::padTimes($chart, $span[1]);
+        }
         if ($compare !== '') {
             $result['text'] .= "\n" . $this->compareChart($chart, $arguments, $compare, $byDevice);
         }
@@ -3793,6 +3803,68 @@ final class DeviceIndex
         return $text;
     }
 
+    /** Einheit eines Zeitraums aus period: Tag, Woche, Monat oder Jahr. */
+    private static function periodUnit(string $period): string
+    {
+        return match ($period) {
+            'today', 'yesterday'       => 'day',
+            'this_week', 'last_week'   => 'week',
+            'this_month', 'last_month' => 'month',
+            default                    => 'year',
+        };
+    }
+
+    /**
+     * Ganzer Zeitraum eines Diagramms als [Beginn, Ende (ausschließlich)]: bei period bis zu seinem natürlichen Ende, bei
+     * from/to ganze Tage bzw. bis zur Endstunde, ohne to bis jetzt. null = nicht zu bestimmen.
+     *
+     * @return null|array{0: int, 1: int}
+     */
+    private function periodSpan(array $arguments): ?array
+    {
+        $now = $this->backend->timestamp();
+        $period = trim((string)($arguments['period'] ?? ''));
+        if ($period !== '') {
+            if (!in_array($period, self::PERIODS, true)) {
+                return null;
+            }
+            [, $from] = self::periodBounds($period, $now);
+            return [$from, (int)strtotime('+1 ' . self::periodUnit($period), $from)];
+        }
+        $first = self::parseMoment(trim((string)($arguments['from'] ?? '')), false);
+        $toText = trim((string)($arguments['to'] ?? ''));
+        $last = $toText === '' ? null : self::parseMoment($toText, true);
+        if ($first === null || ($toText !== '' && $last === null)) {
+            return null;
+        }
+        if (!$first['hourly'] && !($last['hourly'] ?? false)) {
+            return [$first['time'], (int)strtotime('+1 day', ($last ?? $first)['time'])];
+        }
+        $end = $last === null ? $now : ($last['hourly'] ? $last['time'] : (int)strtotime('+1 day', $last['time']));
+        return [$first['time'], $end];
+    }
+
+    /** Hängt an ein Stapeldiagramm leere Abschnitte bis zum Ende des Zeitraums an. */
+    private static function padTimes(array &$chart, int $end): void
+    {
+        $times = $chart['times'] ?? [];
+        if ($times === []) {
+            return;
+        }
+        $step = match ($chart['per'] ?? '') {
+            'hour'  => '+1 hour',
+            'month' => '+1 month',
+            default => '+1 day',
+        };
+        for ($next = (int)strtotime($step, (int)end($times)); $next < $end; $next = (int)strtotime($step, $next)) {
+            $chart['times'][] = $next;
+            foreach ($chart['series'] as &$series) {
+                $series['values'][] = 0;
+            }
+            unset($series);
+        }
+    }
+
     /**
      * Zeitfenster des Vergleichs: [Beginn, Ende, Beginn des Zeitraums, läuft noch]. „previous“ ist der Zeitraum davor
      * (gestern, letzte Woche, Vormonat, Vorjahr; bei from/to gleich viele Tage davor), „year_before“ derselbe ein Jahr
@@ -3806,12 +3878,7 @@ final class DeviceIndex
         $period = trim((string)($arguments['period'] ?? ''));
         if ($period !== '') {
             [, $from, $to] = self::periodBounds($period, $now);
-            $unit = match ($period) {
-                'today', 'yesterday'         => 'day',
-                'this_week', 'last_week'     => 'week',
-                'this_month', 'last_month'   => 'month',
-                default                      => 'year',
-            };
+            $unit = self::periodUnit($period);
             $end = (int)strtotime('+1 ' . $unit, $from) - 1;
             $running = $to === 0;
         } else {

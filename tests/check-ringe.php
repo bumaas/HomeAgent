@@ -138,5 +138,7 @@ pruefe((ring($r, 'autarky')['title'] ?? null) === 'Autarkie' && (ring($r, 'autar
 pruefe(array_column(ring($r, 'autarky')['parts'] ?? [], 'name') === ['PV direkt', 'Batterie', 'Netz'] && array_column(ring($r, 'self_use')['parts'] ?? [], 'name') === ['PV direkt', 'Batterie', 'Einspeisung'], 'deutsche Teile: ' . json_encode([array_column(ring($r, 'autarky')['parts'] ?? [], 'name'), array_column(ring($r, 'self_use')['parts'] ?? [], 'name')], JSON_UNESCAPED_UNICODE));
 $r = diagrammLeistung(['period' => 'now'], null, $de);
 pruefe((ring($r, 'power')['title'] ?? null) === 'Aktuelle Leistung' && (ring($r, 'power')['label'] ?? null) === 'Haus', 'Leistungsring deutsch: ' . json_encode(ring($r, 'power'), JSON_UNESCAPED_UNICODE));
+// Kurze Namen wie in den Ringen daneben (Layoutvergleich der Diagramme 13.10.2026: dort „PV direkt, Batterie, Netz“)
+pruefe(array_column(ring($r, 'power')['parts'] ?? [], 'name') === ['PV', 'Batterie', 'Netz'], 'Leistungsring: PV, Batterie, Netz: ' . json_encode(array_column(ring($r, 'power')['parts'] ?? [], 'name'), JSON_UNESCAPED_UNICODE));
 
 ende('Ringe');

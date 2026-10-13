@@ -108,6 +108,7 @@ pruefe(!$r['isError'] && ($daten['kind'] ?? '') === 'timeline' && count($daten['
 pruefe(($band['room'] ?? '') === 'Dachboden' && ($band['name'] ?? '') === 'Batteriemodus' && ($band['from'] ?? 0) === $gestern && ($band['to'] ?? 0) === $gestern + 86400, 'Band mit Raum, Name und Zeitraum: ' . json_encode(array_diff_key($band, ['sections' => 0]), JSON_UNESCAPED_UNICODE));
 pruefe(($band['states'] ?? []) === [['label' => 'Normal', 'active' => null], ['label' => 'Halten', 'active' => null], ['label' => 'Ladesperre', 'active' => null]], 'Zustände in der Reihenfolge der Einträge, damit die Farben jeden Tag gleich sind: ' . json_encode($band['states'] ?? [], JSON_UNESCAPED_UNICODE));
 pruefe(count($band['sections'] ?? []) === 8 && ($band['sections'][0] ?? []) === [1, $gestern, $gestern + 5 * 3600 + 45 * 60 + 1] && (end($band['sections']) ?: [])[2] === $gestern + 86400, 'acht Abschnitte, der erste „Halten“ bis 05:45:01, der letzte bis Mitternacht: ' . json_encode($band['sections'] ?? []));
+pruefe(($daten['range'] ?? null) === [$gestern, $gestern + 86400], 'Zeitachse über den ganzen Zeitraum: ' . json_encode($daten['range'] ?? null));
 pruefe(str_contains($r['text'], 'Timeline of 1 device(s)') && str_contains($r['text'], 'The chart is shown in the chat.'), 'Text fürs Modell: Zeitleiste und Hinweis: ' . $r['text']);
 // an/aus: der aktive Zustand zuerst und als aktiv markiert
 $r = frage(['name' => 'Haustür', 'period' => 'yesterday'], $de, 'chart');
