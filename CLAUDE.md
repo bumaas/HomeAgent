@@ -196,7 +196,9 @@ Weitere Regeln, die nicht offensichtlich sind:
 - **Hinweistext für Skripte und KI-Assistenten** (Label im Formular): Ein Agent hat damit allein, ohne weitere
   Doku, eine Instanz eingerichtet (Blindtest 11.10.2026). Was er dort nicht fand (Clients
   mit Token in der Adresse, Connect-Adresse, Token erzeugen, Raumnamen, Felder je Typ, Richtung prüfen),
-  steht seitdem drin; neue Felder und Typen gehören auch dorthin.
+  steht seitdem drin; neue Felder und Typen gehören auch dorthin. Nach dem Prompttest vom 13.10.2026 nennt er die
+  Claude-App mit OAuth und Kopplungscode statt mit dem Token in der Adresse, `show_chart` und `show_devices`, die weiteren
+  Felder von `set_state` und die Properties der Energiebilanz.
 - **Prozent beim Licht rechnet das Modul selbst**; der Anzeigetext von Symcon schneidet ab.
 - **Sollwert:** Bereich und Schrittweite aus Darstellung oder Profil, Sonderwerte mit Text am Rand
   („On“) zählen nicht dazu. Batteriegeräte melden den neuen Sollwert oft schon über die Zentrale,
