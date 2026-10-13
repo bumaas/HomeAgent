@@ -209,7 +209,7 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 | Schalter, Steckdose | Schaltzustand, wahlweise Leistung und Zähler |
 | Gerät | Schaltzustand oder Leistung, wahlweise der Zähler. Ein Gerät nur mit Leistung, etwa eine Wärmepumpe, lässt sich abfragen, aber nicht schalten. |
 | Rollladen | Position, dazu wahlweise Fahrstatus und Stopp |
-| Thermostat | Sollwert, wahlweise die Ist-Temperatur |
+| Thermostat | Sollwert, wahlweise die Ist-Temperatur, Modus und Lüfterstufe (Klimagerät) |
 | Mediaplayer | Ein/Aus, Wiedergabe oder Lautstärke, wahlweise Stumm, Titel und Interpret |
 | Luftbe-/entfeuchter | Ein/Aus oder Zielfeuchte, wahlweise Ist-Feuchte, Modus und Lüfterstufe |
 | Lüftung/Ventilator | Ein/Aus oder Lüfterstufe, wahlweise Modus |
@@ -250,6 +250,11 @@ Ein Thermostat nennt Soll- und Ist-Temperatur, etwa „Soll 21 °C (derzeit 20.6
 Assistent nach `type=temperature`, findet er auch die Thermostate mit Ist-Temperatur; eine eigene
 Temperaturzeile auf derselben Variable brauchen Sie dafür nicht. Steht der Sollwert außerhalb seines
 Bereichs, heißt er Sonder-Sollwert: Manche Homematic-Thermostate nutzen 100 für „Ventil ganz offen“.
+
+Ein Klimagerät tragen Sie als Thermostat ein, dazu Modus und Lüfterstufe. Die Zeile lautet dann etwa
+„Soll 24 °C (derzeit 20.0 °C), Aus, Lüfter Auto“, und der Assistent stellt beides per Name wie beim
+Luftentfeuchter. Ein und aus geht über den Modus. Beide Variablen brauchen eine Aktion und eine Auswahl in der
+Darstellung oder im Profil.
 
 Ein Luftentfeuchter meldet sich mit „an (51 %, Soll 55 %, Smart, Lüfter Niedrig)“ oder „aus“ und zählt als
 aktiv, solange er läuft. Eine Lüftung meldet sich ebenso, nur ohne Feuchte: „an (Nacht, Lüfter niedrig)“.
@@ -529,7 +534,8 @@ nach **Zeilen je Datei** (anfangs 5000) beginnt eine neue Datei, die vorige blei
 sie. Tokens und Kopplungscodes stehen nie darin.
 ## Grenzen
 
-- Farbe als Text und die Betriebsart von Thermostaten (aus, heizen, automatisch) gehen noch nicht.
+- Farbe als Text geht noch nicht. Die Betriebsart eines Thermostats geht nur über eine Variable mit Aktion;
+  bei Homematic-Wandthermostaten hat `CONTROL_MODE` keine.
 - Ein batteriebetriebenes Thermostat übernimmt einen neuen Sollwert oft erst beim nächsten Funkkontakt.
   Die Zentrale meldet ihn trotzdem sofort zurück, „gestellt“ heißt dann „an die Zentrale übergeben“.
 - Bei einem Rollladen, der sich erst am Ziel meldet und keinen Fahrstatus hat, weiß das Modul nach

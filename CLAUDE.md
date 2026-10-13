@@ -264,6 +264,12 @@ Weitere Regeln, die nicht offensichtlich sind:
   die Liste leer, gefunden im Bedienungs-Blindtest 12.10.2026). Die Rollen sind nicht an den Typ gebunden;
   Lüftung, Thermostat-Betriebsart und Radiosender sollen denselben Weg nehmen. Befehle kurz hintereinander
   brauchten am Entfeuchter über 2 s (gemessen 11.10.2026), die Antwort sagt dann „noch nicht bestätigt“.
+- **Klimagerät** (B19, 13.10.2026): Typ `thermostat` mit den wahlweisen Rollen `mode` und `fan`, Felder `mode` und
+  `fan_speed` wie beim Luftentfeuchter (`runOption`), Zeile „Soll 24 °C (derzeit 20.0 °C), Aus, Lüfter Auto“. Ein/Aus geht über
+  den Modus, kein eigener Schaltzustand (die Rolle `state` ist beim Thermostat die Ist-Temperatur). Gemessen an einem
+  Panasonic-Klimagerät über das HomeAssistant-Modul: Modus nach 1,2 bis 1,5 s bestätigt, Lüfterstufe erst nach 2,7 bis 3,2 s
+  (nach der Wartezeit, also „noch nicht bestätigt“); Test `check-klima.php`. Homematic-Wandthermostate haben an
+  `CONTROL_MODE` keine Aktion (Modus über `AUTO_MODE`, `MANU_MODE` …), das geht so nicht.
 - **Lüftung** (Typ `fan`, build 90): `state`, `mode`, `fan`, wahlweise `power`/`energy`; Pflicht Ein/Aus oder
   Lüfterstufe. Zeile und Befehle wie beim Luftbe-/entfeuchter (`humidifierText`, `runOption`), hier mit Ganzzahlwerten aus
   den Profilzuordnungen. Gemessen an einer Ambientika (12.10.2026): `RequestAction` blockiert 2,2 bis 2,4 s, das Modul

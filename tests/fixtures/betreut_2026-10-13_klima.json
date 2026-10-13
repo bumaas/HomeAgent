@@ -1,0 +1,237 @@
+{
+    "_quelle": "13.10.2026 gegen 12:30, Klimagerät (Panasonic über das HomeAssistant-Modul) im Büro einer betreuten Anlage, am nuc gespiegelt, mit Burkhards OK. Ausgangswerte und Darstellung gelesen, dann Lüftermodus Low und zurück, Modus „Nur Lüfter“ und zurück auf „Aus“, alle 100 ms mitgeschnitten (Befehl kehrte nach 1,2 bis 1,5 s zurück). Echt sind Werte, Einträge, Aktionen und Zeiten; die Zeile der Freigabeliste ist angenommen (das Gerät ist nicht freigegeben), ebenso das Verhalten von Einträgen, die nicht gemessen wurden (sie bleiben unverändert).",
+    "variablen": {
+        "19646": {
+            "name": "Büro: Ein/Aus",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true
+        },
+        "53427": {
+            "name": "Büro: Modus",
+            "wert": "off",
+            "formatiert": "Aus",
+            "aktion": true,
+            "optionen": [
+                [
+                    "off",
+                    "Aus"
+                ],
+                [
+                    "heat_cool",
+                    "Heizen/Kühlen"
+                ],
+                [
+                    "cool",
+                    "Kühlen"
+                ],
+                [
+                    "dry",
+                    "Trocknen"
+                ],
+                [
+                    "fan_only",
+                    "Nur Lüfter"
+                ],
+                [
+                    "heat",
+                    "Heizen"
+                ]
+            ],
+            "verhalten": "reaktion",
+            "reaktion": {
+                "fan_only": [
+                    [
+                        1200,
+                        53427,
+                        "fan_only"
+                    ],
+                    [
+                        1400,
+                        19646,
+                        true
+                    ],
+                    [
+                        8000,
+                        33483,
+                        "idle"
+                    ]
+                ],
+                "off": [
+                    [
+                        1500,
+                        53427,
+                        "off"
+                    ],
+                    [
+                        8800,
+                        19646,
+                        false
+                    ],
+                    [
+                        9300,
+                        33483,
+                        "off"
+                    ]
+                ]
+            }
+        },
+        "32329": {
+            "name": "Büro: Lüftermodus",
+            "wert": "Auto",
+            "formatiert": "Auto",
+            "aktion": true,
+            "optionen": [
+                [
+                    "Auto",
+                    "Auto"
+                ],
+                [
+                    "Low",
+                    "Niedrig"
+                ],
+                [
+                    "LowMid",
+                    "Niedrig-Mittel"
+                ],
+                [
+                    "Mid",
+                    "Mitte"
+                ],
+                [
+                    "HighMid",
+                    "Mittel-Hoch"
+                ],
+                [
+                    "High",
+                    "Hoch"
+                ]
+            ],
+            "verhalten": "reaktion",
+            "reaktion": {
+                "Low": [
+                    [
+                        2700,
+                        32329,
+                        "Low"
+                    ]
+                ],
+                "Auto": [
+                    [
+                        3200,
+                        32329,
+                        "Auto"
+                    ]
+                ]
+            }
+        },
+        "20547": {
+            "name": "Büro: Solltemperatur",
+            "wert": 24.0,
+            "formatiert": "24.0 °C",
+            "aktion": true,
+            "einheit": "°C",
+            "sollbereich": {
+                "min": 16,
+                "max": 30,
+                "schritt": 0.5
+            }
+        },
+        "43761": {
+            "name": "Büro: Isttemperatur",
+            "wert": 20.0,
+            "formatiert": "20.0 °C",
+            "aktion": false,
+            "einheit": "°C"
+        },
+        "33483": {
+            "name": "Büro: Aktion",
+            "wert": "off",
+            "formatiert": "Aus",
+            "aktion": false
+        }
+    },
+    "geraete": [
+        {
+            "Room": "Büro",
+            "Name": "Klimagerät",
+            "Aliases": "Klima",
+            "Type": "thermostat",
+            "Invert": false,
+            "StateVariableID": 43761,
+            "SetpointVariableID": 20547,
+            "ModeVariableID": 53427,
+            "FanVariableID": 32329
+        }
+    ],
+    "messung": [
+        {
+            "befehl": "luefter=\"Low\"",
+            "ok": true,
+            "befehl_ms": 1263,
+            "0": [
+                2677,
+                {
+                    "luefter": "Low"
+                }
+            ]
+        },
+        {
+            "befehl": "luefter=\"Auto\"",
+            "ok": true,
+            "befehl_ms": 1320,
+            "0": [
+                3195,
+                {
+                    "luefter": "Auto"
+                }
+            ]
+        },
+        {
+            "befehl": "modus=\"fan_only\"",
+            "ok": true,
+            "befehl_ms": 1197,
+            "0": [
+                1198,
+                {
+                    "modus": "fan_only"
+                }
+            ],
+            "1": [
+                1302,
+                {
+                    "ein": true
+                }
+            ],
+            "2": [
+                7981,
+                {
+                    "aktion": "idle"
+                }
+            ]
+        },
+        {
+            "befehl": "modus=\"off\"",
+            "ok": true,
+            "befehl_ms": 1492,
+            "0": [
+                1492,
+                {
+                    "modus": "off"
+                }
+            ],
+            "1": [
+                8742,
+                {
+                    "ein": false
+                }
+            ],
+            "2": [
+                9247,
+                {
+                    "aktion": "off"
+                }
+            ]
+        }
+    ]
+}

@@ -200,7 +200,7 @@ Which variables a device needs depends on its type:
 | Switch, socket | Switching state, optionally power and energy meter |
 | Appliance | Switching state or power, optionally the energy meter. An appliance with power only, such as a heat pump, can be queried but not switched. |
 | Blind | Position, optionally moving state and stop |
-| Thermostat | Setpoint, optionally the current temperature |
+| Thermostat | Setpoint, optionally the current temperature, mode and fan speed (air conditioner) |
 | Media player | On/off, playback or volume, optionally mute, title and artist |
 | Humidifier | On/off or target humidity, optionally current humidity, mode and fan speed |
 | Ventilation/fan | On/off or fan speed, optionally mode |
@@ -239,6 +239,11 @@ A thermostat reports target and current temperature, for example "setpoint 21 °
 If the assistant asks for `type=temperature`, it also finds thermostats with a current temperature; you
 do not need a separate temperature entry on the same variable. A setpoint outside its range is called a
 special setpoint: some Homematic thermostats use 100 for "valve fully open".
+
+Add an air conditioner as a thermostat together with mode and fan speed. Its line then reads like
+"setpoint 24 °C (currently 20.0 °C), Aus, fan Auto", and the assistant sets both by name as with the
+dehumidifier. On and off go through the mode. Both variables need an action and a selection in the
+presentation or the profile.
 
 A dehumidifier reports "on (51 %, setpoint 55 %, Smart, fan Niedrig)" or "off" and counts as active while it runs. Ventilation reports the same way without humidity: "on (Nacht, fan niedrig)".
 
@@ -508,7 +513,8 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
 **Clear protocol** deletes them. Tokens and pairing codes are never written.
 ## Limits
 
-- Colour as text and the operating mode of thermostats (off, heat, auto) are not supported yet.
+- Colour as text is not supported yet. The operating mode of a thermostat only works through a variable with an
+  action; on Homematic wall thermostats `CONTROL_MODE` has none.
 - A battery-powered thermostat often takes a new setpoint only at its next radio contact. The central
   unit still confirms it right away, so "set" then means "handed over to the central unit".
 - For a blind that reports only on arrival and has no moving state, the module does not know after

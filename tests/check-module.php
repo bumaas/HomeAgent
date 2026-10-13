@@ -1053,6 +1053,9 @@ pruefe(($felder['thermostat']['SetpointVariableID']['visible'] ?? false) === tru
     && ($felder['thermostat']['SetpointVariableID']['type'] ?? '') === 'SelectVariable', 'Thermostat: Feld Sollwert im Dialog');
 pruefe(($felder['thermostat']['StateVariableID']['caption'] ?? '') === 'Current temperature' && ($felder['thermostat']['LevelVariableID']['visible'] ?? true) === false, 'Thermostat: Ist-Temperatur, keine Stufe');
 pruefe(($felder['thermostat']['Invert']['visible'] ?? true) === false && ($felder['thermostat']['ReadOnly']['visible'] ?? false) === true, 'Thermostat: kein „Umgekehrt“, aber „Nur abfragen“');
+// Klimagerät = Thermostat mit Modus und Lüfterstufe (B19, 13.10.2026)
+pruefe(($felder['thermostat']['ModeVariableID']['visible'] ?? false) === true && ($felder['thermostat']['ModeVariableID']['caption'] ?? '') === 'Mode'
+    && ($felder['thermostat']['FanVariableID']['visible'] ?? false) === true && ($felder['thermostat']['FanVariableID']['caption'] ?? '') === 'Fan speed', 'Thermostat: Felder Modus und Lüfterstufe im Dialog');
 pruefe(($felder['light']['SetpointVariableID']['visible'] ?? true) === false, 'beim Licht gibt es keinen Sollwert');
 pruefe(in_array(['caption' => 'Thermostat', 'value' => 'thermostat'], $felder['light']['Type']['options'] ?? [], true), 'Typauswahl mit Thermostat');
 

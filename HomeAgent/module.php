@@ -2779,7 +2779,7 @@ class HomeAgent extends IPSModuleStrict
             $type === 'blind'                                  => ['level' => $this->Translate('Position'), 'moving' => $this->Translate('Moving state'), 'stop' => $this->Translate('Stop')],
             $type === 'window'                                 => ['state' => $this->Translate('Contact'), 'level' => $this->Translate('Drive (opening)'), 'moving' => $this->Translate('Moving state'), 'stop' => $this->Translate('Stop')],
             $type === 'door'                                   => ['state' => $this->Translate('Contact')],
-            $type === 'thermostat'                             => ['state' => $this->Translate('Current temperature'), 'setpoint' => $this->Translate('Setpoint')],
+            $type === 'thermostat'                             => ['state' => $this->Translate('Current temperature'), 'setpoint' => $this->Translate('Setpoint'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed')],
             $type === 'media'                                  => ['state' => $this->Translate('On/off')],
             $type === 'humidifier'                             => ['state' => $this->Translate('On/off'), 'humidity' => $this->Translate('Current humidity'), 'setpoint' => $this->Translate('Target humidity'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed')],
             $type === 'fan'                                    => ['state' => $this->Translate('On/off'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed')],

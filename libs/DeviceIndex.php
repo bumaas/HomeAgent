@@ -125,7 +125,7 @@ final class DeviceIndex
         'socket'      => ['roles' => ['state', 'power', 'energy'], 'required' => ['state']],
         'appliance'   => ['roles' => ['state', 'power', 'energy'], 'required' => ['state', 'power']],
         'blind'       => ['roles' => ['level', 'moving', 'stop'], 'required' => ['level']],
-        'thermostat'  => ['roles' => ['state', 'setpoint'], 'required' => ['setpoint']],
+        'thermostat'  => ['roles' => ['state', 'setpoint', 'mode', 'fan'], 'required' => ['setpoint']],
         'media'       => ['roles' => ['state', 'playback', 'volume', 'mute', 'title', 'artist'], 'required' => ['state', 'playback', 'volume']],
         'humidifier'  => ['roles' => ['state', 'humidity', 'setpoint', 'mode', 'fan', 'power', 'energy'], 'required' => ['state', 'setpoint']],
         'fan'         => ['roles' => ['state', 'mode', 'fan', 'power', 'energy'], 'required' => ['state', 'fan']],
@@ -1503,9 +1503,10 @@ final class DeviceIndex
             }
             return ($row['StopVia'] ?? '') !== '' ? ['open', 'close', 'stop', 'percent'] : ['open', 'close', 'percent'];
         }
-        // Ein Thermostat stellt man auf eine Temperatur; ein- und ausschalten kommt später als Modus.
+        // Ein Thermostat stellt man auf eine Temperatur; ein Klimagerät hat dazu Modus und Lüfterstufe per Name
+        // (B19). Ein und aus geht dort über den Modus („Aus“).
         if ($type === 'thermostat') {
-            return isset($roles['setpoint']) ? ['temperature'] : [];
+            return isset($roles['setpoint']) ? array_merge(['temperature'], isset($roles['mode']) ? ['mode'] : [], isset($roles['fan']) ? ['fan_speed'] : []) : [];
         }
         // Ein Luftentfeuchter schaltet und stellt seine Zielfeuchte; eine Lüftung schaltet, Modus und Lüfterstufe
         // gehen bei beiden per Name.
@@ -2108,12 +2109,21 @@ final class DeviceIndex
         return ['text' => $extras === [] ? '-' : implode(', ', $extras), 'active' => null];
     }
 
-    /** Zustand eines Thermostats: Sollwert, dahinter die Ist-Temperatur. */
+    /** Zustand eines Thermostats: Sollwert, dahinter die Ist-Temperatur; bei einem Klimagerät Modus und Lüfterstufe. */
     private function thermostatText(array $entry): string
     {
+        $roles = $entry['roles'];
         $text = $this->setpointText($entry);
-        $current = isset($entry['roles']['state']) ? $this->backend->read($entry['roles']['state']) : null;
-        return $current === null ? $text : $text . ' (' . sprintf($this->t('currently %s'), $current['formatted']) . ')';
+        $current = isset($roles['state']) ? $this->backend->read($roles['state']) : null;
+        $text = $current === null ? $text : $text . ' (' . sprintf($this->t('currently %s'), $current['formatted']) . ')';
+        if (isset($roles['mode'])) {
+            $text .= ', ' . ($this->backend->read($roles['mode'])['formatted'] ?? sprintf($this->t('not available (variable %d is missing)'), $roles['mode']));
+        }
+        if (isset($roles['fan'])) {
+            $fan = $this->backend->read($roles['fan']);
+            $text .= ', ' . ($fan === null ? sprintf($this->t('not available (variable %d is missing)'), $roles['fan']) : sprintf($this->t('fan %s'), $fan['formatted']));
+        }
+        return $text;
     }
 
     /**
