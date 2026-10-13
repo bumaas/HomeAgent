@@ -171,6 +171,8 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   Zweiter Entwurf (PN #11, #12): Name oben, darunter Symbol und Bedienung, kurze Zustände in Großbuchstaben, „aktuell“ bei
   Messwerten (`labels.current`), Schild „zu“ am geschlossenen Fenster (`labels.shut`), Auswahl bis fünf kurze Einträge als
   Knopfleiste, Mediaplayer mit Tasten oben, Titel und Lautstärke (`figure` und `controls.volume`, `cardVolume`).
+  Zeigt die Karte Sollwert oder Auswahl selbst, steht links nur der Modus, beim Luftbe-/entfeuchter und der Lüftung an/aus,
+  sonst „aktuell“ (Nur-Lese-Zugang behält den ganzen Text); ein Zustand, der mit dem Hauptwert beginnt („90 % offen“), verliert ihn.
   **Nachführen:** `moving` (aus `blindText`) sagt, dass eine Fahrt läuft; `control_device` nur mit dem Schlüssel liefert die
   Karte neu, ohne zu schalten. Die Seite fragt so alle 3 s nach, solange `moving` gilt oder ein Befehl `not_confirmed` war
   (ohne Fahrt zweimal, höchstens 90 s). Anlass Burkhard 13.10.2026: die Karte blieb bei „fährt auf 90 % offen“ stehen.

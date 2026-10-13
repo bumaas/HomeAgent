@@ -3561,9 +3561,23 @@ final class DeviceIndex
             }
         }
         [$figure, $shown] = $this->cardFigure($entry, $state['active']);
+        $status = self::cardStatus($state['text'], $shown);
+        // Zeigt die Karte Sollwert oder Auswahl selbst, steht links nur der Modus bzw. beim Luftbe-/entfeuchter und
+        // der Lüftung an/aus (Burkhard 13.10.2026: „Soll 24 °C, Aus, Lüfter Auto“ stand neben den Reglern).
+        if (isset($controls['setpoint']) || isset($controls['options'])) {
+            $mode = null;
+            foreach ($controls['options'] ?? [] as $choice) {
+                $mode = $choice['field'] === 'mode' ? $choice['value'] : $mode;
+            }
+            $status = match (true) {
+                in_array($entry['Type'], ['humidifier', 'fan'], true) && $state['active'] !== null => $this->t($state['active'] ? 'on' : 'off'),
+                $mode !== null                                                                     => $mode,
+                default                                                                            => null,
+            };
+        }
         return ['key' => self::cardKey($entry), 'room' => $entry['Room'], 'name' => $entry['Name'], 'type' => $entry['Type'],
             'group' => self::CARD_GROUPS[$entry['Type']] ?? 'sensor', 'text' => $state['text'], 'active' => $state['active'],
-            'figure' => $figure, 'status' => self::cardStatus($state['text'], $shown), 'moving' => $moving, 'controls' => $controls];
+            'figure' => $figure, 'status' => $status, 'moving' => $moving, 'controls' => $controls];
     }
 
     /**
@@ -3604,6 +3618,10 @@ final class DeviceIndex
         }
         if ($text === $shown) {
             return null;
+        }
+        // „90 % offen“ beginnt mit dem Hauptwert (Rollladen zwischen offen und zu)
+        if (str_starts_with($text, $shown . ' ')) {
+            $text = substr($text, strlen($shown) + 1);
         }
         return (string)preg_replace_callback('/ \(([^()]*)\)/u', static function (array $m) use ($shown): string {
             // „Lautstärke 64 % = -17.5 dB“ nennt den Wert mitten im Teil

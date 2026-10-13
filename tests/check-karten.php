@@ -197,14 +197,14 @@ $k = karte($r, 'Temperatur');
 pruefe(($k['group'] ?? null) === 'climate' && ($k['figure'] ?? null) === ['value' => '21.7', 'unit' => '°C'] && array_key_exists('status', $k) && $k['status'] === null, 'Messwert: nur der Hauptwert, kein Zustand: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
 $r = rufe(static fn () => $idx->cards(['room' => 'Wintergarten'], false));
 $k = karte($r, 'Heizung');
-pruefe(($k['figure'] ?? null) === ['value' => '20.6', 'unit' => '°C'] && ($k['status'] ?? null) === 'Soll 21 °C', 'Thermostat: Ist-Temperatur groß, links der Sollwert: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
+pruefe(($k['figure'] ?? null) === ['value' => '20.6', 'unit' => '°C'] && array_key_exists('status', $k) && $k['status'] === null, 'Thermostat ohne Modus: Ist-Temperatur groß, der Sollwert steht nur am Regler, links „aktuell“: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
 $k = karte($r, 'Fenster links') ?: karte(rufe(static fn () => $idx->cards(['name' => 'Fenster links'], false)), 'Fenster links');
 pruefe(($k['group'] ?? null) === 'opening' && ($k['status'] ?? null) === 'geschlossen', 'Fenster: Gruppe Fenster und Türen: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
 
 $k = karteVon($klima, 'Klimagerät', $de);
-pruefe(($k['figure'] ?? null) === ['value' => '20.0', 'unit' => '°C'] && ($k['status'] ?? null) === 'Soll 24 °C, Aus, Lüfter Auto', 'Klimagerät: Ist groß, Soll, Modus und Lüfter links: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
+pruefe(($k['figure'] ?? null) === ['value' => '20.0', 'unit' => '°C'] && ($k['status'] ?? null) === 'Aus', 'Klimagerät: Ist groß, links nur der Modus (Soll und Lüfter stehen an der Bedienung): ' . json_encode($k, JSON_UNESCAPED_UNICODE));
 $k = karteVon($entfeuchter, 'Luftentfeuchter', $de);
-pruefe(($k['figure'] ?? null) === ['value' => '51', 'unit' => '%'] && ($k['status'] ?? null) === 'an (Soll 55 %, Smart, Lüfter Niedrig)', 'Luftentfeuchter: Ist-Feuchte groß, der Rest bleibt: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
+pruefe(($k['figure'] ?? null) === ['value' => '51', 'unit' => '%'] && ($k['status'] ?? null) === 'an', 'Luftentfeuchter: Ist-Feuchte groß, links nur an/aus: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
 // Mediaplayer nach pittis zweitem Entwurf (PN #12): Tasten oben, Titel links, Lautstärke groß rechts, darunter ein
 // Lautstärkebalken. Die Lautstärke ist der Hauptwert und als Regler bedienbar (Feld volume wie bei set_state).
 $medien = fixture('nuc_2026-10-10_medien.json');
@@ -230,6 +230,20 @@ pruefe(($r['structuredContent']['cards'][0]['moving'] ?? null) === true, 'nach d
 $b->requests = [];
 $r = rufe(static fn () => $idx->controlDevice(['device' => $schluessel]));
 pruefe(!$r['isError'] && $b->requests === [] && array_key_exists('problem', $r['structuredContent'] ?? []) && $r['structuredContent']['problem'] === null && ($r['structuredContent']['cards'][0]['key'] ?? null) === $schluessel, 'nur der Schlüssel: die Karte neu, nichts geschaltet, kein Problem: ' . json_encode($b->requests) . ' / ' . $r['text']);
+
+// Bedienung zeigt Sollwert und Auswahl schon (Burkhard 13.10.2026, Hardcopy: „Soll 24 °C, Aus, Lüfter Auto“ neben den
+// Reglern). Ein Nur-Lese-Zugang hat keine Bedienung und behält den ganzen Text.
+[$idx] = anlage($klima, $de);
+$k = karte(rufe(static fn () => $idx->cards(['name' => 'Klimagerät'], true)), 'Klimagerät');
+pruefe(($k['status'] ?? null) === 'Soll 24 °C, Aus, Lüfter Auto', 'Nur-Lese-Zugang: Klimagerät mit Soll, Modus und Lüfter: ' . json_encode($k['status'] ?? null, JSON_UNESCAPED_UNICODE));
+[$idx] = anlage($lueftung, $de);
+$k = karte(rufe(static fn () => $idx->cards(['room' => 'Büro'], false)), 'Lüftung');
+pruefe(($k['status'] ?? null) === 'an', 'Lüftung: links nur an/aus: ' . json_encode($k['status'] ?? null, JSON_UNESCAPED_UNICODE));
+
+// Rollladen Terrasse am nuc (Hardcopy 13.10.2026): „90 % OFFEN“ links und 90 % rechts. Der Zustandstext beginnt mit dem
+// Hauptwert, der fällt weg. Text wie auf der Hardcopy.
+$status = (new ReflectionMethod(DeviceIndex::class, 'cardStatus'))->invoke(null, '90 % offen', '90 %');
+pruefe($status === 'offen', 'Zustand „90 % offen“ mit Hauptwert 90 %: links nur „offen“: ' . json_encode($status, JSON_UNESCAPED_UNICODE));
 
 // Texte der Seite (PN #11): „aktuell“ bei Messwerten, „zu“ als Schild am geschlossenen Fenster
 [$idx] = anlage($fx, $de);
