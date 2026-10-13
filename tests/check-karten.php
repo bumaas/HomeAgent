@@ -205,8 +205,36 @@ $k = karteVon($klima, 'Klimagerät', $de);
 pruefe(($k['figure'] ?? null) === ['value' => '20.0', 'unit' => '°C'] && ($k['status'] ?? null) === 'Soll 24 °C, Aus, Lüfter Auto', 'Klimagerät: Ist groß, Soll, Modus und Lüfter links: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
 $k = karteVon($entfeuchter, 'Luftentfeuchter', $de);
 pruefe(($k['figure'] ?? null) === ['value' => '51', 'unit' => '%'] && ($k['status'] ?? null) === 'an (Soll 55 %, Smart, Lüfter Niedrig)', 'Luftentfeuchter: Ist-Feuchte groß, der Rest bleibt: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
-$k = karteVon(fixture('nuc_2026-10-10_medien.json'), 'Echo', $de);
-pruefe(($k['group'] ?? null) === 'media' && array_key_exists('figure', $k) && $k['figure'] === null && ($k['status'] ?? null) === ($k['text'] ?? 1), 'Mediaplayer: vorerst ohne Hauptwert, Zustand = Text: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
+// Mediaplayer nach pittis zweitem Entwurf (PN #12): Tasten oben, Titel links, Lautstärke groß rechts, darunter ein
+// Lautstärkebalken. Die Lautstärke ist der Hauptwert und als Regler bedienbar (Feld volume wie bei set_state).
+$medien = fixture('nuc_2026-10-10_medien.json');
+$k = karteVon($medien, 'Echo', $de);
+pruefe(($k['group'] ?? null) === 'media' && ($k['figure'] ?? null) === ['value' => '37', 'unit' => '%'] && ($k['status'] ?? null) === 'pausiert', 'Mediaplayer: Lautstärke 37 % als Hauptwert, Zustand „pausiert“: ' . json_encode($k, JSON_UNESCAPED_UNICODE));
+pruefe(($k['controls']['volume'] ?? null) === 37 && ($k['controls']['playback'] ?? null) === true, 'Mediaplayer: Lautstärke als Regler und die Wiedergabe: ' . json_encode($k['controls'] ?? null));
+[$idx, $b] = anlage($medien, $de);
+$r = rufe(static fn () => $idx->controlDevice(['device' => $k['key'] ?? '', 'volume' => 40]));
+pruefe(!$r['isError'] && ($b->requests[0] ?? null) === [24835, 40], 'Lautstärke per Karte auf 40 %: ' . json_encode($b->requests) . ' / ' . $r['text']);
+[$idx] = anlage($medien, $de);
+$r = rufe(static fn () => $idx->cards(['name' => 'Echo'], true));
+pruefe(!isset(karte($r, 'Echo')['controls']['volume']) && (karte($r, 'Echo')['figure'] ?? null) === ['value' => '37', 'unit' => '%'], 'Nur-Lese-Zugang: Lautstärke als Wert, nicht als Regler');
+
+// Rollladen nach dem Bedienen (Burkhard 13.10.2026, Hardcopy): Die Karte blieb bei „fährt auf 90 % offen (derzeit
+// offen)“ stehen, denn die Seite holte nach der Antwort nie wieder etwas. Jetzt sagt die Karte mit `moving`, dass eine
+// Fahrt läuft, und control_device nur mit dem Schlüssel liefert die Karte neu, ohne etwas zu schalten.
+[$idx, $b] = anlage($fx, $de);
+$karten = rufe(static fn () => $idx->cards(['room' => 'Testraum'], false));
+pruefe((karte($karten, 'Rollladen')['moving'] ?? null) === false && (karte($karten, 'Testlampe')['moving'] ?? null) === false, 'ruhende Geräte: moving false: ' . json_encode(array_column($karten['structuredContent']['cards'] ?? [], 'moving', 'name')));
+$schluessel = karte($karten, 'Fahrender Rollladen')['key'] ?? '';
+$r = rufe(static fn () => $idx->controlDevice(['device' => $schluessel, 'command' => 'close']));
+pruefe(($r['structuredContent']['cards'][0]['moving'] ?? null) === true, 'nach dem Fahrbefehl: moving true: ' . json_encode($r['structuredContent']['cards'][0] ?? null, JSON_UNESCAPED_UNICODE));
+$b->requests = [];
+$r = rufe(static fn () => $idx->controlDevice(['device' => $schluessel]));
+pruefe(!$r['isError'] && $b->requests === [] && array_key_exists('problem', $r['structuredContent'] ?? []) && $r['structuredContent']['problem'] === null && ($r['structuredContent']['cards'][0]['key'] ?? null) === $schluessel, 'nur der Schlüssel: die Karte neu, nichts geschaltet, kein Problem: ' . json_encode($b->requests) . ' / ' . $r['text']);
+
+// Texte der Seite (PN #11): „aktuell“ bei Messwerten, „zu“ als Schild am geschlossenen Fenster
+[$idx] = anlage($fx, $de);
+$r = rufe(static fn () => $idx->cards(['room' => 'Testraum'], false));
+pruefe(($r['structuredContent']['labels']['current'] ?? null) === 'aktuell' && ($r['structuredContent']['labels']['shut'] ?? null) === 'zu', 'Texte für Messwerte und Fenster, übersetzt: ' . json_encode($r['structuredContent']['labels'] ?? null, JSON_UNESCAPED_UNICODE));
 
 /* --- Übersetzung ---------------------------------------------------------------------------------- */
 

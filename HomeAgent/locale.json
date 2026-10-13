@@ -522,6 +522,8 @@
             "Windows and doors": "Fenster und Türen",
             "Sensors": "Melder",
             "Media": "Medien",
+            "current": "aktuell",
+            "shut": "zu",
             "This device is not on the release list any more, show the devices again.": "Dieses Gerät steht nicht mehr in der Freigabeliste, bitte die Geräte neu anzeigen.",
             "Last used": "Zuletzt benutzt",
             "Tool list": "Werkzeugliste",

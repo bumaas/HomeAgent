@@ -248,6 +248,9 @@ final class DeviceIndex
     /** Während controlDevice(): nur das Gerät mit diesem Kartenschlüssel ist zu finden. */
     private ?string $onlyKey = null;
 
+    /** Hat blindText() zuletzt eine laufende Fahrt gemeldet? Für `moving` der Karte. */
+    private bool $blindMoving = false;
+
     /** Höchstens so viele Karten je Aufruf; die übrigen nennt die Seite nur als Anzahl. */
     private const CARDS_MAX = 30;
 
@@ -2635,10 +2638,12 @@ final class DeviceIndex
             $stopped = $movingVariable > 0 && !$movingNow && $now - $travel['since'] > self::TRAVEL_STALE_MS
                 && $now - $this->backend->updated($movingVariable) > self::TRAVEL_STALE_MS;
             if (!$reached && !$expired && !$stopped) {
+                $this->blindMoving = true;
                 return sprintf($this->t('moving to %s (currently %s)'), $this->levelText($entry, ['value' => $travel['target'], 'formatted' => '']), $current);
             }
             $this->backend->rememberTravel($variable, null);
         }
+        $this->blindMoving = $movingNow;
         return $movingNow ? sprintf($this->t('moving (currently %s)'), $current) : $current;
     }
 
@@ -3469,6 +3474,7 @@ final class DeviceIndex
         $result['text'] .= "\n" . $this->t('The devices are shown as cards in the chat.');
         return $result + ['structuredContent' => ['kind' => 'cards', 'readOnly' => $readOnly, 'cards' => $cards,
             'more' => max(0, count($matches) - self::CARDS_MAX), 'labels' => ['more' => $this->t('%d more device(s) not shown'),
+                'current' => $this->t('current'), 'shut' => $this->t('shut'),
                 'groups' => array_map(fn (string $group): array => [$group, $this->t(self::CARD_GROUP_LABELS[$group])], array_keys(self::CARD_GROUP_LABELS))]]];
     }
 
@@ -3492,9 +3498,16 @@ final class DeviceIndex
             $this->problem = 'unknown_name';
             return $this->fail($this->t('This device is not on the release list any more, show the devices again.'));
         }
+        // Nur der Schlüssel: die Karte neu, ohne etwas zu schalten. Die Seite fragt so nach, solange ein Gerät fährt
+        // oder noch nicht bestätigt ist (Burkhard 13.10.2026: die Karte blieb bei „fährt auf 90 %“ stehen).
+        if (array_intersect_key($arguments, array_flip(['command', 'percent', 'temperature', 'humidity', 'volume', 'mode', 'fan_speed'])) === []) {
+            $card = $this->cardOf($entry, false);
+            return ['text' => $entry['Room'] . ' | ' . $entry['Name'] . ' | ' . $card['text'], 'isError' => false,
+                'structuredContent' => ['kind' => 'cards', 'problem' => null, 'cards' => [$card]]];
+        }
         $this->onlyKey = $key;
         try {
-            $result = $this->setState(['name' => $entry['Name']] + array_intersect_key($arguments, array_flip(['command', 'percent', 'temperature', 'humidity', 'mode', 'fan_speed'])));
+            $result = $this->setState(['name' => $entry['Name']] + array_intersect_key($arguments, array_flip(['command', 'percent', 'temperature', 'humidity', 'volume', 'mode', 'fan_speed'])));
         } finally {
             $this->onlyKey = null;
         }
@@ -3516,7 +3529,9 @@ final class DeviceIndex
      */
     private function cardOf(array $entry, bool $readOnly): array
     {
+        $this->blindMoving = false;
         $state = $this->stateOf($entry);
+        $moving = $this->blindMoving;
         $abilities = $readOnly ? [] : self::abilitiesOf($entry);
         $controls = [];
         if (in_array('on', $abilities, true)) {
@@ -3536,6 +3551,9 @@ final class DeviceIndex
         if (in_array('play', $abilities, true)) {
             $controls['playback'] = true;
         }
+        if (in_array('volume', $abilities, true)) {
+            $controls['volume'] = $this->cardVolume($entry);
+        }
         foreach (['mode' => ['mode', 'Mode'], 'fan_speed' => ['fan', 'Fan speed']] as $field => [$role, $label]) {
             $choice = in_array($field, $abilities, true) ? $this->cardChoice($entry['roles'][$role] ?? 0, $field, $label) : null;
             if ($choice !== null) {
@@ -3545,7 +3563,7 @@ final class DeviceIndex
         [$figure, $shown] = $this->cardFigure($entry, $state['active']);
         return ['key' => self::cardKey($entry), 'room' => $entry['Room'], 'name' => $entry['Name'], 'type' => $entry['Type'],
             'group' => self::CARD_GROUPS[$entry['Type']] ?? 'sensor', 'text' => $state['text'], 'active' => $state['active'],
-            'figure' => $figure, 'status' => self::cardStatus($state['text'], $shown), 'controls' => $controls];
+            'figure' => $figure, 'status' => self::cardStatus($state['text'], $shown), 'moving' => $moving, 'controls' => $controls];
     }
 
     /**
@@ -3557,7 +3575,11 @@ final class DeviceIndex
     private function cardFigure(array $entry, ?bool $active): array
     {
         $roles = $entry['roles'];
-        $percent = in_array($entry['Type'], ['blind', 'window'], true) || ($entry['Type'] === 'light' && $active === true) ? $this->cardPercent($entry) : null;
+        $percent = match (true) {
+            in_array($entry['Type'], ['blind', 'window'], true) || ($entry['Type'] === 'light' && $active === true) => $this->cardPercent($entry),
+            $entry['Type'] === 'media'                                                                           => $this->cardVolume($entry),
+            default                                                                                              => null,
+        };
         if ($percent !== null) {
             return [['value' => (string)$percent, 'unit' => '%'], $percent . ' %'];
         }
@@ -3584,7 +3606,8 @@ final class DeviceIndex
             return null;
         }
         return (string)preg_replace_callback('/ \(([^()]*)\)/u', static function (array $m) use ($shown): string {
-            $parts = array_filter(explode(', ', $m[1]), static fn (string $part): bool => $part !== $shown && !str_ends_with($part, ' ' . $shown));
+            // „Lautstärke 64 % = -17.5 dB“ nennt den Wert mitten im Teil
+            $parts = array_filter(explode(', ', $m[1]), static fn (string $part): bool => $part !== $shown && !str_ends_with($part, ' ' . $shown) && !str_contains($part, ' ' . $shown . ' '));
             return $parts === [] ? '' : ' (' . implode(', ', $parts) . ')';
         }, $text);
     }
@@ -3609,6 +3632,18 @@ final class DeviceIndex
             }
         }
         return ['field' => $field, 'label' => $this->t($label), 'value' => $value, 'entries' => array_map(static fn (array $o): string => (string)$o[1], $options)];
+    }
+
+    /** Lautstärke in ganzen Prozent des Bereichs wie im Zustandstext; null, wenn Wert oder Bereich unbekannt sind. */
+    private function cardVolume(array $entry): ?int
+    {
+        $variable = $entry['roles']['volume'] ?? 0;
+        $value = $variable === 0 ? null : ($this->backend->read($variable)['value'] ?? null);
+        $range = $variable === 0 ? null : $this->backend->range($variable);
+        if ((!is_int($value) && !is_float($value)) || $range === null || $range['max'] <= $range['min']) {
+            return null;
+        }
+        return (int)round(max(0.0, min(100.0, ($value - $range['min']) / ($range['max'] - $range['min']) * 100.0)));
     }
 
     /** Stufe bzw. Öffnungsgrad in ganzen Prozent; null, wenn Wert oder Bereich unbekannt sind. */

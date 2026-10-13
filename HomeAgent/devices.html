@@ -42,7 +42,16 @@
   .card.busy { opacity: 0.55; pointer-events: none; }
   .t-cover { --tone: #5b6cf0; } .t-light { --tone: #e8a800; } .t-power { --tone: #12b886; } .t-climate { --tone: #1c9fe0; }
   .t-opening { --tone: #7b8794; } .t-sensor { --tone: #f08c00; } .t-media { --tone: #9c5de6; }
-  .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-height: 28px; }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; }
+  .badge { font-size: 10px; color: var(--muted); background: color-mix(in srgb, var(--muted) 12%, transparent); border-radius: 4px; padding: 2px 5px; }
+  .status.short { text-transform: uppercase; letter-spacing: 0.06em; font-size: 10.5px; font-weight: 600; }
+  .status.line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .choice { display: flex; flex-direction: column; gap: 4px; }
+  .caption { color: var(--muted); font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+  .seg { display: flex; gap: 3px; }
+  .seg button { flex: 1; padding: 4px 4px; }
+  .seg button.on { color: var(--tone); background: color-mix(in srgb, var(--tone) 22%, transparent); font-weight: 600; }
+  .choice select { font: inherit; font-size: 12px; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
   .icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex: none; color: var(--muted); background: color-mix(in srgb, var(--muted) 12%, transparent); }
   .lit .icon { color: var(--tone); background: color-mix(in srgb, var(--tone) 16%, transparent); }
   .icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
@@ -198,6 +207,9 @@
         delete replies[card.key];
       }
       if (fresh) { replace(fresh); } else { draw(); }
+      if (fresh && (fresh.moving || (result.structuredContent && result.structuredContent.problem === "not_confirmed"))) {
+        watch(card.key, Date.now(), 0);
+      }
       done.push(card.room + " · " + card.name + ": " + text.split("\n")[0]);
       done = done.slice(-5);
       request("ui/update-model-context", { content: [{ type: "text", text: "Operated on the device cards by the user:\n" + done.join("\n") }] }).catch(function () {});
@@ -207,22 +219,115 @@
     });
   }
 
+  // Solange ein Gerät fährt (Velux 30 s, Fensterantrieb 45 s) oder ein Befehl noch nicht bestätigt ist, holt die Seite
+  // die Karte alle drei Sekunden neu: control_device nur mit dem Schlüssel schaltet nichts. Burkhard 13.10.2026: die
+  // Karte blieb bei „fährt auf 90 % offen (derzeit offen)“ stehen. Ohne Fahrt zweimal, höchstens 90 Sekunden.
+  var watches = {};
+  function watch(key, started, round) {
+    if (watches[key]) { clearTimeout(watches[key]); }
+    watches[key] = setTimeout(function () {
+      delete watches[key];
+      request("tools/call", { name: "control_device", arguments: { device: key } }).then(function (result) {
+        var fresh = result && result.structuredContent && result.structuredContent.cards && result.structuredContent.cards[0];
+        if (!fresh) { return; }
+        if (!fresh.moving) { delete replies[key]; }
+        replace(fresh);
+        if ((fresh.moving || round < 1) && Date.now() - started < 90000) { watch(key, started, round + 1); }
+      }, function () {});
+    }, 3000);
+  }
+
   function replace(fresh) {
     if (!state) { return; }
     state.cards = state.cards.map(function (c) { return c.key === fresh.key ? fresh : c; });
     draw();
   }
 
+  // Bis zu fünf kurze Einträge als Knopfleiste, sonst ein Aufklappmenü (pitti, PN #12)
+  function choiceElement(card, choice, el) {
+    var box = node("div", "choice");
+    box.appendChild(node("div", "caption", choice.label));
+    var send = function (entry) {
+      var args = {};
+      args[choice.field] = entry;
+      control(card, args, el);
+    };
+    var short = choice.entries.length <= 5 && choice.entries.join("").length <= 24;
+    if (short) {
+      var seg = node("div", "seg");
+      choice.entries.forEach(function (entry) {
+        var b = button(entry, choice.label + ": " + entry, function () { if (entry !== choice.value) { send(entry); } });
+        if (entry === choice.value) { b.className = "on"; b.setAttribute("aria-pressed", "true"); }
+        seg.appendChild(b);
+      });
+      box.appendChild(seg);
+    } else {
+      var select = node("select");
+      select.setAttribute("aria-label", choice.label);
+      if (choice.value === null) { select.appendChild(node("option", null, "–")); }
+      choice.entries.forEach(function (entry) {
+        var option = node("option", null, entry);
+        option.value = entry;
+        option.selected = entry === choice.value;
+        select.appendChild(option);
+      });
+      select.addEventListener("change", function () { send(select.value); });
+      box.appendChild(select);
+    }
+    return box;
+  }
+
+  // Balken für Stufe, Öffnungsgrad und Lautstärke; bedienbar nur mit Fähigkeit (field), sonst nur Anzeige
+  function barElement(card, value, field, figure, el) {
+    var bar = node("input", "bar" + (field ? "" : " static"));
+    bar.type = "range";
+    bar.min = "0";
+    bar.max = "100";
+    bar.step = "1";
+    bar.value = String(value);
+    bar.style.setProperty("--fill", value + "%");
+    bar.setAttribute("aria-label", card.name);
+    if (!field) {
+      bar.disabled = true;
+      return bar;
+    }
+    bar.addEventListener("input", function () {
+      bar.style.setProperty("--fill", bar.value + "%");
+      figure.textContent = bar.value;
+      figure.appendChild(node("small", "", "%"));
+    });
+    bar.addEventListener("change", function () {
+      var args = {};
+      args[field] = Number(bar.value);
+      control(card, args, el);
+    });
+    return bar;
+  }
+
+  // Aufbau nach pitti (PN #11): Name oben, darunter Symbol und Bedienung, dann Zustand und Wert, dann Balken
   function cardElement(card, showRoom) {
     var group = card.group || "sensor";
+    var labels = (state && state.labels) || {};
     // Farbig ist, was an ist; Rollläden und Klimawerte haben keinen Aus-Zustand und sind es immer
     var lit = card.active === true || (card.active === null && (group === "cover" || group === "climate"));
     var el = node("div", "card t-" + group + (lit ? " lit" : ""));
     var c = card.controls || {};
 
+    var title = node("div");
+    title.appendChild(node("div", "name", card.name));
+    if (showRoom) { title.appendChild(node("div", "room", card.room)); }
+    el.appendChild(title);
+
     var top = node("div", "top");
     top.appendChild(icon(card.type));
-    if (c.switch) {
+    if (c.playback) {
+      var play = node("div", "buttons");
+      var playing = card.active === true;
+      [["⏮", "previous"], playing ? ["⏸", "pause"] : ["▶", "play"], ["⏭", "next"]].forEach(function (b) {
+        play.appendChild(button(b[0], b[1], function () { control(card, { command: b[1] }, el); }));
+      });
+      top.appendChild(play);
+    } else if (c.switch) {
       var label = node("label", "switch");
       var box = node("input");
       box.type = "checkbox";
@@ -238,48 +343,34 @@
       if (c.cover.stop) { cover.appendChild(button("■", "stop", function () { control(card, { command: "stop" }, el); })); }
       cover.appendChild(button("▼", "close", function () { control(card, { command: "close" }, el); }));
       top.appendChild(cover);
+    } else if (group === "opening" && card.active === false && labels.shut) {
+      top.appendChild(node("span", "badge", labels.shut));
     }
     el.appendChild(top);
 
-    var title = node("div");
-    title.appendChild(node("div", "name", card.name));
-    if (showRoom) { title.appendChild(node("div", "room", card.room)); }
-    el.appendChild(title);
-
-    var state = node("div", "state");
+    var row = node("div", "state");
     var status = card.status === undefined ? card.text : card.status;
-    state.appendChild(node("div", "status", status === null ? "" : status));
+    if (status === null) { status = labels.current || ""; }
+    // Kurze Zustände in Großbuchstaben wie bei pitti, lange (Titel, Sollwert mit Modus) normal und Titel einzeilig
+    var statusClass = "status" + (status.length <= 14 ? " short" : "") + (group === "media" ? " line" : "");
+    var statusNode = node("div", statusClass, status);
+    statusNode.title = status;
+    row.appendChild(statusNode);
     var figure = node("div", "figure");
     if (card.figure) {
       figure.textContent = localNumber(card.figure.value);
       figure.appendChild(node("small", "", card.figure.unit));
     }
-    state.appendChild(figure);
-    el.appendChild(state);
+    row.appendChild(figure);
+    el.appendChild(row);
 
-    // Balken für Stufe und Öffnungsgrad; bedienbar ist er nur mit Fähigkeit, ein ausgeschaltetes Licht steht auf 0
-    var percent = c.percent !== undefined ? c.percent : (card.figure && card.figure.unit === "%" && (group === "cover" || group === "light") ? Number(card.figure.value) : undefined);
-    if (percent !== undefined) {
-      var shownPercent = percent === null || (group === "light" && card.active === false) ? 0 : percent;
-      var bar = node("input", "bar" + (c.percent === undefined ? " static" : ""));
-      bar.type = "range";
-      bar.min = "0";
-      bar.max = "100";
-      bar.step = "1";
-      bar.value = String(shownPercent);
-      bar.style.setProperty("--fill", shownPercent + "%");
-      bar.setAttribute("aria-label", card.name);
-      if (c.percent === undefined) {
-        bar.disabled = true;
-      } else {
-        bar.addEventListener("input", function () {
-          bar.style.setProperty("--fill", bar.value + "%");
-          figure.textContent = bar.value;
-          figure.appendChild(node("small", "", "%"));
-        });
-        bar.addEventListener("change", function () { control(card, { percent: Number(bar.value) }, el); });
-      }
-      el.appendChild(bar);
+    if (c.percent !== undefined) {
+      // Ein ausgeschaltetes Licht steht auf 0, auch wenn die Stufe gemerkt ist
+      el.appendChild(barElement(card, c.percent === null || (group === "light" && card.active === false) ? 0 : c.percent, "percent", figure, el));
+    } else if (c.volume !== undefined) {
+      el.appendChild(barElement(card, c.volume === null ? 0 : c.volume, "volume", figure, el));
+    } else if (card.figure && card.figure.unit === "%" && (group === "cover" || group === "light" || group === "media")) {
+      el.appendChild(barElement(card, Number(card.figure.value), null, figure, el));
     }
     if (c.setpoint) {
       var sp = c.setpoint, step = sp.step || 0.5;
@@ -299,39 +390,12 @@
       setRow.appendChild(button("+", "raise", function () { change(1); }));
       el.appendChild(setRow);
     }
-    if (c.playback) {
-      var play = node("div", "buttons");
-      [["⏮", "previous"], ["▶", "play"], ["⏸", "pause"], ["⏭", "next"]].forEach(function (b) {
-        play.appendChild(button(b[0], b[1], function () { control(card, { command: b[1] }, el); }));
-      });
-      el.appendChild(play);
-    }
     // Auswahl (Modus, Lüfterstufe): gesendet wird die Beschriftung, das Modul sucht den Wert dazu
-    (c.options || []).forEach(function (choice) {
-      var choiceRow = node("div", "row");
-      choiceRow.appendChild(node("span", "label", choice.label));
-      var select = node("select");
-      select.setAttribute("aria-label", choice.label);
-      if (choice.value === null) { select.appendChild(node("option", null, "–")); }
-      choice.entries.forEach(function (entry) {
-        var option = node("option", null, entry);
-        option.value = entry;
-        option.selected = entry === choice.value;
-        select.appendChild(option);
-      });
-      select.addEventListener("change", function () {
-        var args = {};
-        args[choice.field] = select.value;
-        control(card, args, el);
-      });
-      choiceRow.appendChild(select);
-      el.appendChild(choiceRow);
-    });
+    (c.options || []).forEach(function (choice) { el.appendChild(choiceElement(card, choice, el)); });
     var reply = replies[card.key];
     if (reply) { el.appendChild(node("div", "reply" + (reply.error ? " error" : ""), reply.text)); }
     return el;
   }
-
   function draw() {
     var root = document.getElementById("root");
     root.textContent = "";

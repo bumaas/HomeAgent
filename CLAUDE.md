@@ -168,6 +168,12 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   eingeschalteten Lichts, Öffnungsgrad, Messwert, Ist-Temperatur bzw. Ist-Feuchte, sonst Leistung; Mediaplayer vorerst
   ohne) und `status` (`cardStatus`: der Zustandstext ohne den Hauptwert, null bei reinen Messwerten). Die Seite färbt, was
   an ist, Rollläden und Klima immer; der Balken ist zugleich Schieberegler, der Raum steht nur bei mehreren Räumen da.
+  Zweiter Entwurf (PN #11, #12): Name oben, darunter Symbol und Bedienung, kurze Zustände in Großbuchstaben, „aktuell“ bei
+  Messwerten (`labels.current`), Schild „zu“ am geschlossenen Fenster (`labels.shut`), Auswahl bis fünf kurze Einträge als
+  Knopfleiste, Mediaplayer mit Tasten oben, Titel und Lautstärke (`figure` und `controls.volume`, `cardVolume`).
+  **Nachführen:** `moving` (aus `blindText`) sagt, dass eine Fahrt läuft; `control_device` nur mit dem Schlüssel liefert die
+  Karte neu, ohne zu schalten. Die Seite fragt so alle 3 s nach, solange `moving` gilt oder ein Befehl `not_confirmed` war
+  (ohne Fahrt zweimal, höchstens 90 s). Anlass Burkhard 13.10.2026: die Karte blieb bei „fährt auf 90 % offen“ stehen.
   Mit Karten verweist die Beschreibung von `get_state` fürs Zeigen („show me …“) auf `show_devices` (`$hasCards`): Die
   Claude-App beantwortete „Zeig mir die Lichter im Wohnzimmer“ sonst mit einer Tabelle über `get_state` (12.10.2026).
   Ebenso verweist sie für Diagramme auf `show_chart` (`$hasChart`): „Hausverbrauch von gestern als Diagramm“ ergab
