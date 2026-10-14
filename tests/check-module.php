@@ -93,6 +93,12 @@ final class HomeAgentHarness extends HomeAgent
         return self::$lanIp;
     }
 
+    /** Rechnername der Anlage, wie gethostname() ihn am nuc liefert. */
+    protected function hostName(): string
+    {
+        return 'nuc';
+    }
+
     protected function connectUrl(): string
     {
         self::$connectCalls++;
@@ -2835,6 +2841,12 @@ pruefe($origin('null')['status'] === 403, 'Origin „null“ (Datei, Sandbox) z�
 $merke = $p->logs();
 $origin('https://boese.example');
 pruefe(!str_contains(implode("\n", array_column(array_slice($p->logs(), count($merke)), 'Message')), 'Rejected sign-in'), 'eine fremde Origin ist kein Fehlversuch beim Anmelden');
+// DNS-Rebinding (Review 14.10.2026): Die Seite des Angreifers lässt ihren Namen auf die Anlage zeigen, Host und Origin
+// sind dann beide dieser Name. Verglichen wird deshalb mit den eigenen Namen der Anlage, nicht mit der Host-Kopfzeile.
+pruefe($origin('http://boese.example:3777', 'boese.example:3777')['status'] === 403, 'Rebinding: Origin gleich Host, aber fremder Name: 403');
+pruefe($origin('http://nuc:3777', 'nuc:3777')['status'] === 200 && $origin('http://nuc.fritz.box:3777', 'nuc.fritz.box:3777')['status'] === 200 && $origin('http://NUC.local:3777', 'nuc.local:3777')['status'] === 200, 'der Rechnername, auch mit .fritz.box und .local, geht durch');
+pruefe($origin('http://nuc.boese.example:3777', 'nuc.boese.example:3777')['status'] === 403, 'der Rechnername vor einer fremden Domain zählt nicht');
+pruefe($origin('http://localhost:3777', 'localhost:3777')['status'] === 200 && $origin('http://192.168.178.86:82', '192.168.178.86:82')['status'] === 200 && $origin('http://[::1]:3777', '[::1]:3777')['status'] === 200, 'localhost, ::1 und die eigene IP auch an einem anderen Port');
 HomeAgentHarness::$connect = '';
 
 /* --- Protokoll 2026-07-28 am Hook (Backlog B62) -------------------------------------------------- */

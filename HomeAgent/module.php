@@ -909,7 +909,14 @@ class HomeAgent extends IPSModuleStrict
         return $headers;
     }
 
-    /** Zeigt eine Origin-Kopfzeile auf diese Anlage, also auf den Host der Anfrage oder auf die Connect-Adresse? */
+    /** Namen im Heimnetz, unter denen der Rechnername der Anlage erreichbar sein kann (Origin-Prüfung). */
+    private const LOCAL_SUFFIXES = ['local', 'fritz.box', 'lan', 'home.arpa', 'home', 'internal'];
+
+    /**
+     * Zeigt eine Origin-Kopfzeile auf diese Anlage? Verglichen wird der Name ohne Port mit den eigenen Namen: IP-Adressen,
+     * localhost, Rechnername (auch mit LOCAL_SUFFIXES) und die Connect-Adresse. Bis build 171 mit der Host-Kopfzeile, die
+     * bei DNS-Rebinding aber denselben fremden Namen trägt wie die Origin (Review 14.10.2026).
+     */
     private function originAllowed(string $origin): bool
     {
         $hostOf = static function (string $url): string {
@@ -917,14 +924,32 @@ class HomeAgent extends IPSModuleStrict
             if (!is_array($parts) || !isset($parts['scheme'], $parts['host'])) {
                 return '';
             }
-            return strtolower($parts['host']) . (isset($parts['port']) ? ':' . $parts['port'] : '');
+            return trim(strtolower($parts['host']), '[]');
         };
         $given = $hostOf($origin);
         if ($given === '') {
             return false;
         }
-        $own = array_filter([strtolower(trim((string)($_SERVER['HTTP_HOST'] ?? ''))), $hostOf($this->connectUrl())]);
-        return in_array($given, $own, true);
+        $own = ['localhost', '127.0.0.1', '::1', $this->localAddress(), $hostOf($this->connectUrl())];
+        if (function_exists('Sys_GetNetworkInfo')) {
+            foreach (Sys_GetNetworkInfo() as $adapter) {
+                $own[] = strtolower((string)($adapter['IP'] ?? ''));
+            }
+        }
+        $name = strtolower(explode('.', $this->hostName())[0]);
+        if ($name !== '') {
+            $own[] = $name;
+            foreach (self::LOCAL_SUFFIXES as $suffix) {
+                $own[] = $name . '.' . $suffix;
+            }
+        }
+        return in_array($given, array_filter($own), true);
+    }
+
+    /** Rechnername der Anlage. */
+    protected function hostName(): string
+    {
+        return (string)gethostname();
     }
 
     /**

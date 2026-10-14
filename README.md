@@ -588,7 +588,7 @@ sie. Tokens und Kopplungscodes stehen nie darin.
   zwingend einen Datenstrom (SSE) verlangen, können sich nicht direkt verbinden. Per OAuth melden sich
   nur Clients mit einem Client ID Metadata Document an, erprobt ist die Claude-App. Für ChatGPT ist
   beides nicht erprobt.
-- Anfragen aus einem Browser mit fremder Herkunft (`Origin`) weist der Endpunkt ab, auch mit richtigem Token.
+- Anfragen aus einem Browser mit fremder Herkunft (`Origin`) weist der Endpunkt ab, auch mit richtigem Token. Als eigen gelten die IP-Adressen der Anlage, `localhost`, ihr Rechnername (auch mit `.local`, `.fritz.box`, `.lan`, `.home.arpa`, `.home` oder `.internal`) und die Connect-Adresse.
 - Tokens und Kopplungscodes sind das einzige Schloss. Über Symcon Connect ist der Endpunkt aus dem
   Internet erreichbar; verwenden Sie deshalb erzeugte Tokens. Abgewiesene Anmeldungen stehen im
   Meldungsprotokoll (die erste einer Minute und danach ihre Anzahl), falsche Kopplungscodes zählen mit.
