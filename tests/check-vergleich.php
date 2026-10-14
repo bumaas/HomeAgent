@@ -137,4 +137,23 @@ pruefe($r['isError'] && $r['text'] === 'A comparison takes one room at a time.',
 $r = diagramm($verlauf, ['room' => 'Gast', 'type' => 'temperature', 'period' => 'today', 'compare' => 'sometime']);
 pruefe($r['isError'] && $r['text'] === 'Unknown compare "sometime". Allowed: previous, year_before.', 'unbekannter Vergleich: ' . $r['text']);
 
+/* --- 29. Februar (Review 14.10.2026) ------------------------------------------------------------- */
+
+// strtotime('-1 year') macht aus dem 29.02.2028 den 01.03.2027, das Ende des Tages aber den 28.02.2027: Der
+// Vergleichszeitraum begann nach seinem Ende. Jetzt ist der Vergleich des 29.02. der 28.02. des Vorjahres und rückt auf den
+// 29.02.; alle anderen Tage gehen um ein Jahr weiter. Geprüft an compareWindow selbst, für 2028 gibt es keine Mitschnitte.
+$fenster = static function (array $argumente, int $jetzt) use ($verbrauch): ?array {
+    $anlage = new FakeBackend($verbrauch['variablen']);
+    $anlage->jetzt = $jetzt;
+    $index = new DeviceIndex($verbrauch['geraete'], $anlage, null, '', $verbrauch['bilanz']);
+    return \Closure::bind(fn () => $this->compareWindow($argumente, 'year_before'), $index, DeviceIndex::class)();
+};
+$schiebe = static fn (?array $f, string $zeit): ?string => $f !== null && is_callable($f[4] ?? null) ? date('Y-m-d H:i', ($f[4])(strtotime($zeit))) : null;
+$f = $fenster(['period' => 'today'], strtotime('2028-02-29 10:00'));
+pruefe(($f[0] ?? 0) === strtotime('2027-02-28 00:00') && ($f[1] ?? 0) === strtotime('2027-03-01 00:00') - 1 && $schiebe($f, '2027-02-28 05:00') === '2028-02-29 05:00', 'heute am 29.02.2028 gegen den 28.02.2027, Stunde auf Stunde: ' . json_encode([date('Y-m-d H:i', $f[0] ?? 0), date('Y-m-d H:i:s', $f[1] ?? 0), $schiebe($f, '2027-02-28 05:00')]));
+$f = $fenster(['from' => '2028-02-29', 'to' => '2028-03-03'], strtotime('2028-03-10 10:00'));
+pruefe(($f[0] ?? 0) === strtotime('2027-02-28 00:00') && ($f[1] ?? 0) === strtotime('2027-03-04 00:00') - 1 && $schiebe($f, '2027-02-28 00:00') === '2028-02-29 00:00' && $schiebe($f, '2027-03-01 00:00') === '2028-03-01 00:00', '29.02. bis 03.03.2028: der 28.02.2027 auf den 29.02., der 01.03. auf den 01.03.: ' . json_encode([$schiebe($f, '2027-02-28 00:00'), $schiebe($f, '2027-03-01 00:00')]));
+$f = $fenster(['period' => 'this_month'], strtotime('2028-02-15 10:00'));
+pruefe(($f[0] ?? 0) === strtotime('2027-02-01 00:00') && $schiebe($f, '2027-02-28 00:00') === '2028-02-28 00:00', 'Februar 2028 gegen Februar 2027: der 28. bleibt der 28., der 29. ohne Vergleich: ' . json_encode($schiebe($f, '2027-02-28 00:00')));
+
 ende('Vergleich');

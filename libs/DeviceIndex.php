@@ -4101,7 +4101,7 @@ final class DeviceIndex
         // schob jeden Wert nach vorn). Ein Abschnitt ohne Vergleich bleibt null.
         $byTime = [];
         foreach ($other['times'] ?? [] as $i => $time) {
-            $at = (int)strtotime($shift, $time);
+            $at = $shift($time);
             $byTime[$at] = $byTime[$at] ?? 0.0;
             foreach ($other['series'] ?? [] as $series) {
                 $byTime[$at] += max(0.0, (float)($series['values'][$i] ?? 0));
@@ -4765,9 +4765,18 @@ final class DeviceIndex
         // Fünftes Element: der Schritt vom Vergleichszeitraum zum Zeitraum nach dem Kalender (strtotime), nicht als feste
         // Sekundenzahl; sonst trifft ein Tag zwischen den Zeitumstellungen zweier Jahre den Balken um eine Stunde daneben.
         if ($compare === 'year_before') {
-            return [(int)strtotime('-1 year', $from), (int)strtotime('-1 year', $end + 1) - 1, $from, $running, '+1 year'];
+            // Beginnt der Zeitraum am 29.02., ist der Vergleich der 28.02. des Vorjahres und rückt auf den 29.02. (Review
+            // 14.10.2026: strtotime machte daraus den 01.03., das Ende des Tages aber den 28.02., Beginn nach dem Ende).
+            $leap = date('m-d', $from) === '02-29';
+            $start = (int)strtotime('-1 year', $from);
+            if ($leap) {
+                $start = (int)strtotime('-1 day', $start);
+            }
+            $shift = static fn (int $time): int => (int)strtotime($leap && date('m-d', $time) === '02-28' ? '+1 year +1 day' : '+1 year', $time);
+            return [$start, (int)strtotime('-1 year', $end + 1) - 1, $from, $running, $shift];
         }
-        return [(int)strtotime('-1 ' . $unit, $from), $from - 1, $from, $running, $period !== '' ? '+1 ' . $unit : '+' . $unit];
+        $step = $period !== '' ? '+1 ' . $unit : '+' . $unit;
+        return [(int)strtotime('-1 ' . $unit, $from), $from - 1, $from, $running, static fn (int $time): int => (int)strtotime($step, $time)];
     }
 
     /**

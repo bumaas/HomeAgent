@@ -255,8 +255,8 @@ Weitere Regeln, die nicht offensichtlich sind:
   `compareWindow` bestimmt den Vergleichszeitraum (der davor in der Einheit des Zeitraums, bei from/to gleich viele Tage
   davor; nur ganze Tage), `compareChart` holt dasselbe Diagramm über from/to und legt es um den Abstand verschoben
   darüber: Verlauf je Reihe `compare`, Verbrauch `compare.values` als Summe der positiven Teile je Balken
-  über die Zeit: Jeder Abschnitt des Vergleichs geht um einen Kalenderschritt (`strtotime`, fünftes Element von
-  `compareWindow`) weiter, ein Balken ohne Vergleich bekommt null; reicht der Vergleich weiter, kommen Balken ohne Werte
+  über die Zeit: Jeder Abschnitt des Vergleichs geht um einen Kalenderschritt (`strtotime`, Funktion im fünften Element
+  von `compareWindow`; beginnt der Zeitraum am 29.02., ist der Vergleich der 28.02. des Vorjahres und rückt auf den 29.02.) weiter, ein Balken ohne Vergleich bekommt null; reicht der Vergleich weiter, kommen Balken ohne Werte
   dazu. Bis build 167 nach Position: Ein Archiv, das erst im Vergleichszeitraum beginnt, schob jeden Wert nach vorn, und
   eine feste Sekundenzahl träfe Tage zwischen den Zeitumstellungen zweier Jahre um eine Stunde daneben (Review 14.10.2026).
   Das Modell bekommt den Text des Vergleichszeitraums wie aus get_state und, solange der Zeitraum läuft, den Verbrauch bis
