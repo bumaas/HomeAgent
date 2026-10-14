@@ -148,8 +148,8 @@ aktiv sein, denn die App erreicht die Anlage aus dem Internet.
 
 1. Im Bereich **Endpunkt und Zugänge** steht unter **Claude-App verbinden** die Adresse für den Connector. Ohne
    aktives Connect steht dort stattdessen ein Hinweis.
-2. In der Claude-App unter „Anpassen“ → „Connectoren“ einen benutzerdefinierten Connector mit dieser
-   Adresse anlegen. Die Vorauswahl „Jetzt anmelden“ und „Claudes veröffentlichte Identität verwenden“
+2. In der Claude-App unter „Konnektoren“ → „Connector hinzufügen“ einen benutzerdefinierten Connector
+   mit dieser Adresse anlegen. Die Vorauswahl „Jetzt anmelden“ und „Claudes veröffentlichte Identität verwenden“
    bleibt stehen.
 3. Den Zugang wählen, den der Assistent nutzen soll, und auf **Kopplungscode erzeugen** klicken. Der
    Code hat sechs Ziffern und gilt zehn Minuten.
@@ -621,7 +621,7 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
 - Unterstützte Protokollversionen: 2026-07-28 (ohne `initialize`, mit `server/discover`; Clients dürfen die
   Werkzeugliste 5 Minuten behalten), dazu 2025-11-25, 2025-06-18 und 2025-03-26.
 - Status 104: noch kein Zugang, der Endpunkt weist alle Anfragen ab. Status 201: Die Raumliste ist
-  fehlerhaft, oder es gibt keinen fehlerfreien Zugang mehr; das Log nennt jeden betroffenen Eintrag, und
+  fehlerhaft, oder es gibt keinen fehlerfreien Zugang mehr; die roten Zeilen im Formular nennen den Fehler, und
   der Endpunkt bleibt bis zur Korrektur geschlossen. In beiden Fällen antwortet er mit HTTP 503
   („nicht bereit“), nicht mit einem Anmeldefehler. Ein fehlerhafter Zugang (Token zu kurz oder doppelt,
   unbekannter Standardraum), ein Gerät oder eine Szene mit fehlender Variable bzw. fehlendem Skript

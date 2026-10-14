@@ -185,6 +185,17 @@ $status104 = array_values(array_filter(json_decode((string)file_get_contents(dir
 $deutsch = json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/locale.json'), true)['translations']['de'][$status104] ?? '';
 pruefe($deutsch === 'Noch kein Zugang: Fügen Sie unter „Endpunkt und Zugänge“ einen Zugang hinzu und klicken Sie auf „Übernehmen“. Das Token erzeugt das Modul selbst.', 'Status 104 auf Deutsch: ' . $deutsch);
 pruefe(str_contains($m->RunSelfTest(), $status104), 'der Selbsttest sagt dasselbe: ' . $m->RunSelfTest());
+// Die übrigen Texte aus Sicht des Anwenders (Burkhard 14.10.2026): Status 201 ohne „das Log“, Home Assistant in der
+// richtigen Reihenfolge, Schritte der Claude-App mit „Sie“ und den Menünamen der App, „Umgekehrt“ ohne „true“
+$deutschVon = static fn (string $englisch): string => json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/locale.json'), true)['translations']['de'][$englisch] ?? '';
+$status201 = array_values(array_filter(json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/form.json'), true)['status'], static fn (array $s): bool => $s['code'] === 201))[0]['caption'] ?? '';
+pruefe($deutschVon($status201) === 'Die Raumliste ist fehlerhaft, oder kein Zugang ist fehlerfrei. Die roten Zeilen im Formular nennen den Fehler.', 'Status 201 auf Deutsch: ' . $deutschVon($status201));
+pruefe($deutschVon('1. In the Claude app open "Connectors" › "Add connector", add a custom connector with this address and sign in: %s') === '1. Öffnen Sie in der Claude-App „Konnektoren“ › „Connector hinzufügen“, legen Sie einen eigenen Connector mit dieser Adresse an und melden Sie sich an: %s'
+    && $deutschVon('2. Create a pairing code for the access') === '2. Erzeugen Sie einen Kopplungscode für den Zugang', 'Schritte der Claude-App mit „Sie“ und den Menünamen der App');
+pruefe(str_starts_with($deutschVon('1. Tick "Token also in the address" for the access and click "Apply". 2. In Home Assistant add the integration "Model Context Protocol" and enter the address that "Show address" gives.'), '1. Setzen Sie beim Zugang „Token auch in der Adresse“'), 'Home Assistant: zuerst der Haken, dann die Integration');
+// ohne den unsichtbaren Hinweis für Skripte, dort beschreibt „true“ die Property
+$alleDeutsch = implode("\n", array_filter(json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/locale.json'), true)['translations']['de'], static fn (string $text): bool => !str_starts_with($text, 'Hinweis für Skripte')));
+pruefe(!str_contains($alleDeutsch, '(true =') && !str_contains($alleDeutsch, 'Zähler, die als Zähler archiviert'), 'kein „true“ in den Beschriftungen, keine doppelte Erklärung der Zähler');
 
 $licht = variable(VARIABLETYPE_BOOLEAN, true);
 $temperatur = variable(VARIABLETYPE_FLOAT, 21.5);
@@ -653,9 +664,9 @@ pruefe($dialogFehler === [] && count($felder) === count(DeviceIndex::TYPES), 'Di
 pruefe($ohneUebersetzung === [] && $felder !== [], 'jede Beschriftung der Dialoge hat eine deutsche Übersetzung, es fehlen: ' . implode(' / ', array_unique($ohneUebersetzung)));
 pruefe(($felder['light']['StateVariableID']['caption'] ?? '') === 'Switching state' && ($felder['light']['LevelVariableID']['caption'] ?? '') === 'Brightness', 'Licht: Schaltzustand und Helligkeit');
 pruefe(($felder['blind']['LevelVariableID']['caption'] ?? '') === 'Position' && ($felder['blind']['Invert']['caption'] ?? '') === 'Reverse direction (if open and closed are swapped)', 'Rollladen: Position, Richtung umkehren');
-pruefe(($felder['window']['StateVariableID']['caption'] ?? '') === 'Contact' && ($felder['window']['Invert']['caption'] ?? '') === 'Inverted (true = closed)', 'Fenster: Kontakt, Umkehr');
+pruefe(($felder['window']['StateVariableID']['caption'] ?? '') === 'Contact' && ($felder['window']['Invert']['caption'] ?? '') === 'Inverted (the variable reports "on" when it is closed)', 'Fenster: Kontakt, Umkehr');
 pruefe(($felder['temperature']['StateVariableID']['caption'] ?? '') === 'Measured value', 'Messwert');
-pruefe(($felder['socket']['Invert']['caption'] ?? '') === 'Inverted (true = off)', 'Steckdose: Umkehr');
+pruefe(($felder['socket']['Invert']['caption'] ?? '') === 'Inverted (the variable reports "on" when the device is off)', 'Steckdose: Umkehr');
 pruefe(array_column($felder['light']['Type']['options'] ?? [], 'value') === array_keys(DeviceIndex::TYPES), 'die Typauswahl nennt alle Typen');
 pruefe(($felder['light']['Type']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID);', 'ein Typwechsel im Dialog ruft das Modul');
 pruefe(($felder['blind']['MovingVariableID']['visible'] ?? false) === true && ($felder['blind']['MovingVariableID']['caption'] ?? '') === 'Moving state' && ($felder['blind']['MovingVariableID']['type'] ?? '') === 'SelectVariable', 'Rollladen: wahlweise ein Fahrstatus');
@@ -1706,7 +1717,7 @@ $setze('Scenes', []);
 $setze('Rooms', [['Name' => '', 'Aliases' => '', 'Floor' => '']]);
 pruefe($status() === 201, 'ein Fehler in der Raumliste schließt weiterhin den Endpunkt: Status ' . $status());
 $formular = json_decode($m->GetConfigurationForm(), true);
-pruefe(str_contains(json_encode($formular), 'The lists have errors, the endpoint stays closed until they are corrected'), 'das Formular sagt dann, dass der Endpunkt zu ist');
+pruefe(str_contains(json_encode($formular), 'The room list has errors or no access is free of errors, the endpoint stays closed until this is corrected'), 'das Formular sagt dann, dass der Endpunkt zu ist');
 $setze('Rooms', []);
 $setze('Devices', $geraeteStart);
 pruefe($status() === IS_ACTIVE, 'Ausgangslage wiederhergestellt');

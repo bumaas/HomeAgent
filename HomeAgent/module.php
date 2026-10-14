@@ -197,7 +197,7 @@ class HomeAgent extends IPSModuleStrict
         $problems = $this->validateLists();
         if ($this->endpointClosed($problems)) {
             $this->SetStatus(self::STATUS_LIST_INVALID);
-            $this->LogMessage($this->Translate('The lists have errors, the endpoint stays closed until they are corrected') . ': ' . implode('; ', array_column($problems, 'text')), KL_ERROR);
+            $this->LogMessage($this->Translate('The room list has errors or no access is free of errors, the endpoint stays closed until this is corrected') . ': ' . implode('; ', array_column($problems, 'text')), KL_ERROR);
             return;
         }
         if ($problems !== []) {
@@ -494,7 +494,7 @@ class HomeAgent extends IPSModuleStrict
                 $element['caption'] = sprintf($this->Translate('Endpoint in the home network: %s'), $this->localEndpoint());
             }
             if ($name === 'ClaudeStep1') {
-                $element['caption'] = sprintf($this->Translate('1. In the Claude app, add a custom connector under Connectors with this address and choose "Sign in now": %s'), $base);
+                $element['caption'] = sprintf($this->Translate('1. In the Claude app open "Connectors" › "Add connector", add a custom connector with this address and sign in: %s'), $base);
             }
             if (in_array($name, ['ClaudeStep1', 'PairingRow', 'ClaudeStep2'], true)) {
                 $element['visible'] = $base !== '';
@@ -597,7 +597,7 @@ class HomeAgent extends IPSModuleStrict
 
         // Die Fehler stehen oben im Formular, nicht nur im Log.
         if ($problems !== []) {
-            $heading = $this->endpointClosed($problems) ? 'The lists have errors, the endpoint stays closed until they are corrected' : 'Faulty entries are disabled until they are corrected';
+            $heading = $this->endpointClosed($problems) ? 'The room list has errors or no access is free of errors, the endpoint stays closed until this is corrected' : 'Faulty entries are disabled until they are corrected';
             $labels = [['type' => 'Label', 'name' => 'ListErrors', 'caption' => $this->Translate($heading) . ':', 'bold' => true, 'color' => self::LABEL_COLOR_ERROR]];
             foreach ($problems as $number => $problem) {
                 $labels[] = ['type' => 'Label', 'name' => 'ListError' . $number, 'caption' => $problem['text'], 'color' => self::LABEL_COLOR_ERROR];
@@ -3020,10 +3020,10 @@ class HomeAgent extends IPSModuleStrict
         // „Umgekehrt“ dreht bei Schaltern und Meldern den Wahrheitswert, beim Rollladen die Skala; ein Messwert hat nichts zu drehen.
         $invert = match (true) {
             $type === 'blind'                                 => $this->Translate('Reverse direction (if open and closed are swapped)'),
-            in_array($type, ['window', 'door'], true)         => $this->Translate('Inverted (true = closed)'),
-            in_array($type, ['presence', 'water_leak'], true) => $this->Translate('Inverted (true = nothing detected)'),
+            in_array($type, ['window', 'door'], true)         => $this->Translate('Inverted (the variable reports "on" when it is closed)'),
+            in_array($type, ['presence', 'water_leak'], true) => $this->Translate('Inverted (the variable reports "on" when nothing is detected)'),
             DeviceIndex::TYPES[$type] === null                => null,
-            default                                           => $this->Translate('Inverted (true = off)'),
+            default                                           => $this->Translate('Inverted (the variable reports "on" when the device is off)'),
         };
         $fields['Invert'] = ['visible' => $invert !== null, 'caption' => $invert ?? $this->Translate('Inverted')];
         // Ein Kippfenster heißt ganz offen „gekippt“.

@@ -142,7 +142,7 @@ active, because the app reaches your system from the internet.
 
 1. Under **Endpoint and accesses**, the address for the connector is shown below **Connect the Claude app**.
    Without an active Connect a note is shown there instead.
-2. In the Claude app, add a custom connector with this address under "Customize" → "Connectors". Keep
+2. In the Claude app, add a custom connector with this address under "Connectors" → "Add connector". Keep
    the preselection: sign in when connecting, and "Use Claude's published identity" as OAuth client.
 3. Choose the access the assistant should use and click **Create pairing code**. The code has six
    digits and is valid for ten minutes.
@@ -599,7 +599,7 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
 - Supported protocol versions: 2026-07-28 (without `initialize`, with `server/discover`; clients may keep the
   tool list for 5 minutes), plus 2025-11-25, 2025-06-18 and 2025-03-26.
 - Status 104: no access yet, the endpoint rejects all requests. Status 201: the room list has
-  errors, or there is no faultless access left; the log names every affected entry, and the endpoint
+  errors, or there is no faultless access left; the red rows in the form name the error, and the endpoint
   stays closed until they are corrected. In both cases it answers with HTTP 503 ("not ready"), not
   with a login error. A faulty access (token too short or used twice, unknown default room), or a
   device or scene whose variable or script is missing, only disables itself; the rest keeps working,
