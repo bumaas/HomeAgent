@@ -1900,6 +1900,7 @@ class HomeAgent extends IPSModuleStrict
                         'percent'     => ['type' => 'number', 'minimum' => 0, 'maximum' => 100],
                         'temperature' => ['type' => 'number'],
                         'humidity'    => ['type' => 'number'],
+                        'volume'      => ['type' => 'number', 'minimum' => 0, 'maximum' => 100],
                         'mode'        => ['type' => 'string'],
                         'fan_speed'   => ['type' => 'string'],
                     ],

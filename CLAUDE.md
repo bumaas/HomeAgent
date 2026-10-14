@@ -155,7 +155,10 @@ Backend. So laufen die Tests mit echten Mitschnitten.
 - **Gerätekarten als MCP App** (B63, Burkhard 12.10.2026): `show_devices` (für das Modell, Filter wie `get_state` ohne
   Zeitraum, `DeviceIndex::cards`) liefert die Zeilen von `get_state` und je Gerät eine Karte (`cardOf`: Zustandstext,
   `controls` aus `abilitiesOf`: `switch`, `percent`, `cover` mit `stop`, `setpoint` mit Bereich, `playback`), höchstens
-  `CARDS_MAX`. Seite `ui://homeagent/devices` (`HomeAgent/devices.html`). Bedient wird über `control_device`
+  `CARDS_MAX`. Die Ziele der Knöpfe „−“ und „+“ rechnet das Modul (`setpoint.lower`/`raise`, `cardSetpoint`), ein
+  Sonderwert außerhalb des Bereichs zählt vom nächsten Rand: Das HM-CC-TC auf 100 („Ventil offen“, Bereich 6 bis 30) fiel
+  vorher bei „+“ auf 6,5 (Review 14.10.2026). Das Schema von `control_device` nennt jedes Feld, das die Karte schickt
+  (`volume` fehlte bei `additionalProperties: false`; das Modul selbst prüft keine Zusatzfelder). Seite `ui://homeagent/devices` (`HomeAgent/devices.html`). Bedient wird über `control_device`
   (`_meta.ui.visibility: ["app"]`, der Host zeigt es dem Modell nicht; nur ohne „Nur abfragen“; aufrufen lassen sich die App-Werkzeuge auch ohne angemeldete Apps, denn claude.ai schickte den Aufruf von der Karte am 13.10.2026 ohne Client und Fähigkeiten, Ergebnis „Tool call failed“): Kartenschlüssel
   (`cardKey`, alle Variablen des Geräts, weil Thermostat und Raumfühler eine teilen) und Befehl, intern `setState` mit
   `onlyKey` in `find()`, also dieselbe Rückmeldung; zurück kommt die neue Karte und `problem` wie in „Was nicht geklappt hat“; die Karte zeigt die Antwort nur bei einem Problem, sonst den neuen Zustand (Burkhard 12.10.2026). Die Seite meldet die letzten fünf

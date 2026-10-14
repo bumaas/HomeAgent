@@ -77,8 +77,14 @@ pruefe($r['isError'] && !isset($r['structuredContent']), 'kein Treffer: Fehler w
 [$idx] = anlage($thermo);
 $r = rufe(static fn () => $idx->cards(['room' => 'Wintergarten'], false));
 $heizung = karte($r, 'Heizung');
-pruefe(($heizung['controls']['setpoint'] ?? null) === ['field' => 'temperature', 'value' => 21.0, 'min' => 6.0, 'max' => 30.0, 'step' => 0.5, 'unit' => '°C', 'label' => 'Setpoint'], 'Thermostat Wintergarten: Sollwert 21 °C von 6 bis 30 in 0,5: ' . json_encode($heizung['controls'] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($heizung['controls']['setpoint'] ?? null) === ['field' => 'temperature', 'value' => 21.0, 'min' => 6.0, 'max' => 30.0, 'step' => 0.5, 'unit' => '°C', 'label' => 'Setpoint', 'lower' => 20.5, 'raise' => 21.5], 'Thermostat Wintergarten: Sollwert 21 °C von 6 bis 30 in 0,5, die Knöpfe stellen 20,5 und 21,5: ' . json_encode($heizung['controls'] ?? null, JSON_UNESCAPED_UNICODE));
 $r = rufe(static fn () => $idx->cards(['room' => 'Gast'], false));
+// Sonderwert (Review 14.10.2026): Das HM-CC-TC Gast steht im Mitschnitt auf 100 („Ventil offen“), Bereich 6 bis 30. Die
+// Karte rechnete von min aus, „+“ schickte 6.5 und „−“ 6. Gerechnet wird jetzt vom nächsten Rand, „+“ ergibt 30.
+$sp = karte($r, 'Heizung')['controls']['setpoint'] ?? [];
+pruefe(($sp['value'] ?? null) === 100.0 && ($sp['raise'] ?? null) === 30.0 && ($sp['lower'] ?? null) === 29.5, 'Sonderwert 100 über dem Bereich: „+“ stellt 30, „−“ 29,5: ' . json_encode($sp, JSON_UNESCAPED_UNICODE));
+$seite = (string)file_get_contents(dirname(__DIR__) . '/HomeAgent/devices.html');
+pruefe(str_contains($seite, 'sp.lower') && str_contains($seite, 'sp.raise') && !str_contains($seite, 'sp.min : 0'), 'die Seite schickt die Zielwerte des Moduls und rechnet nicht selbst von min aus');
 pruefe((karte($r, 'Heizung')['key'] ?? 1) !== (karte($r, 'Temperatur')['key'] ?? 1), 'Thermostat und Fühler mit derselben Variable haben verschiedene Schlüssel: ' . json_encode(array_column($r['structuredContent']['cards'] ?? [], 'key')));
 pruefe(!isset(karte($r, 'Temperatur')['controls']['switch']) && (karte($r, 'Temperatur')['controls'] ?? null) === [], 'ein Messwert hat keine Bedienelemente');
 

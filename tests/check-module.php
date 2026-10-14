@@ -2911,6 +2911,11 @@ pruefe(($schalten['control_device']['_meta']['ui']['visibility'] ?? null) === ['
 pruefe(($schalten['control_device']['inputSchema']['required'] ?? null) === ['device'] && in_array('on', $schalten['control_device']['inputSchema']['properties']['command']['enum'] ?? [], true), 'control_device braucht den Schlüssel der Karte: ' . json_encode($schalten['control_device']['inputSchema'] ?? null));
 pruefe(($schalten['control_device']['inputSchema']['properties']['mode']['type'] ?? null) === 'string' && ($schalten['control_device']['inputSchema']['properties']['fan_speed']['type'] ?? null) === 'string', 'control_device nimmt mode und fan_speed als Name: ' . json_encode(array_keys($schalten['control_device']['inputSchema']['properties'] ?? [])));
 $lesen = $werkzeugNamen(true);
+// Jedes Feld, das die Karte schickt und controlDevice annimmt, steht im Schema (Review 14.10.2026: volume fehlte bei
+// additionalProperties false; ein Host, der Aufrufe der App gegen das Schema prüft, hätte die Lautstärke abgewiesen).
+$felder = array_keys($schalten['control_device']['inputSchema']['properties'] ?? []);
+sort($felder);
+pruefe($felder === ['command', 'device', 'fan_speed', 'humidity', 'mode', 'percent', 'temperature', 'volume'] && ($schalten['control_device']['inputSchema']['properties']['volume']['type'] ?? null) === 'number', 'control_device nennt alle Felder der Karte, auch volume: ' . json_encode($felder));
 pruefe(isset($lesen['show_devices']) && !isset($lesen['control_device']), 'Nur-Lese-Zugang: Karten ja, Bedienen nein: ' . json_encode(array_keys($lesen)));
 pruefe(!isset($werkzeugNamen(false)['show_devices']), 'ohne Apps keine Karten');
 // Claude-App 12.10.2026: „Zeig mir die Lichter im Wohnzimmer“ ergab eine Tabelle über get_state statt der Karten. Mit Apps

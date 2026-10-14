@@ -380,16 +380,15 @@
       el.appendChild(barElement(card, Number(card.figure.value), null, figure, el));
     }
     if (c.setpoint) {
-      var sp = c.setpoint, step = sp.step || 0.5;
+      var sp = c.setpoint;
       var setRow = node("div", "row");
       var setValue = node("span", "value", sp.value === null ? "–" : number(sp.value) + " " + sp.unit);
+      // Die Ziele rechnet das Modul (auch für Sonderwerte außerhalb des Bereichs)
       var change = function (direction) {
-        var base = sp.value === null || (sp.max !== null && sp.value > sp.max) || (sp.min !== null && sp.value < sp.min) ? (sp.min !== null ? sp.min : 0) : sp.value;
-        var target = Math.round((base + direction * step) / step) * step;
-        if (sp.min !== null) { target = Math.max(sp.min, target); }
-        if (sp.max !== null) { target = Math.min(sp.max, target); }
+        var target = direction < 0 ? sp.lower : sp.raise;
+        if (target === null || target === undefined) { return; }
         var args = {};
-        args[sp.field] = Math.round(target * 100) / 100;
+        args[sp.field] = target;
         control(card, args, el);
       };
       setRow.appendChild(button("−", "lower", function () { change(-1); }));

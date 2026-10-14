@@ -4969,17 +4969,37 @@ final class DeviceIndex
         return $percent === null ? null : (int)round(max(0.0, min(100.0, $percent)));
     }
 
-    /** @return null|array{field: string, value: ?float, min: ?float, max: ?float, step: ?float, unit: string} */
+    /** @return null|array{field: string, value: ?float, min: ?float, max: ?float, step: ?float, unit: string, label: string, lower: ?float, raise: ?float} */
     private function cardSetpoint(array $entry, string $field): ?array
     {
         $variable = $entry['roles']['setpoint'] ?? 0;
         $value = $this->backend->read($variable)['value'] ?? null;
+        $value = is_int($value) || is_float($value) ? (float)$value : null;
         $range = $this->backend->setpointRange($variable);
-        return ['field' => $field, 'value' => is_int($value) || is_float($value) ? (float)$value : null,
-            'min' => $range['min'] ?? null, 'max' => $range['max'] ?? null, 'step' => $range === null || $range['step'] <= 0 ? null : $range['step'],
+        $step = $range === null || $range['step'] <= 0 ? null : $range['step'];
+        // Ziele der Knöpfe „−“ und „+“: Ein Sonderwert außerhalb des Bereichs zählt vom nächsten Rand (Review 14.10.2026:
+        // HM-CC-TC auf 100 = Ventil offen, die Seite rechnete von min aus und „+“ schickte 6.5).
+        $base = $value ?? $range['min'] ?? null;
+        if ($base !== null && $range !== null) {
+            $base = max($range['min'], min($range['max'], $base));
+        }
+        $target = static function (int $direction) use ($base, $range, $step): ?float {
+            if ($base === null) {
+                return null;
+            }
+            $raster = $step ?? 0.5;
+            $result = round(($base + $direction * $raster) / $raster) * $raster;
+            if ($range !== null) {
+                $result = max($range['min'], min($range['max'], $result));
+            }
+            return round($result, 2);
+        };
+        return ['field' => $field, 'value' => $value,
+            'min' => $range['min'] ?? null, 'max' => $range['max'] ?? null, 'step' => $step,
             'unit' => $this->temperatureUnit($variable, (string)$entry['Type']),
             // Beschriftet wie Modus und Lüfterstufe (Layoutvergleich 13.10.2026: „24 °C“ unter „21,0 °C“ ohne Hinweis)
-            'label' => $this->t($field === 'humidity' ? 'Target humidity' : 'Setpoint')];
+            'label' => $this->t($field === 'humidity' ? 'Target humidity' : 'Setpoint'),
+            'lower' => $target(-1), 'raise' => $target(1)];
     }
 
     /** Kein Treffer: Liegt es am Raum, am Namen oder an der Kombination? */
