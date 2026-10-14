@@ -3681,6 +3681,17 @@ final class DeviceIndex
      */
     public function chart(array $arguments): array
     {
+        // Die Seite beschriftet Datum und Uhrzeit in der Zeitzone der Anlage; sie rechnet auch die Tagesgrenzen (Review
+        // 14.10.2026: unterwegs standen Achsen und Heatmap-Zeilen in der Zone des Browsers)
+        $result = $this->chartAny($arguments);
+        if (isset($result['structuredContent'])) {
+            $result['structuredContent']['timeZone'] = date_default_timezone_get();
+        }
+        return $result;
+    }
+
+    private function chartAny(array $arguments): array
+    {
         // Summenkurve (B73): dasselbe Verbrauchsdiagramm je Tag (bis zwei Tage je Stunde), aufaddiert; ohne Zeitraum das
         // laufende Jahr
         $cumulative = ($arguments['cumulative'] ?? false) === true;

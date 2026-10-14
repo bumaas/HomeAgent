@@ -168,14 +168,38 @@
     return Number(value.toFixed(digits)).toLocaleString(lang, { minimumFractionDigits: digits, maximumFractionDigits: digits });
   }
 
-  function timeLabel(seconds, per, spansDays) {
-    var d = new Date(seconds * 1000);
-    if (per === "hour") {
-      var hm = d.toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
-      return spansDays ? d.toLocaleDateString(lang, { day: "2-digit", month: "2-digit" }) + " " + hm : hm;
+  // Datum und Uhrzeit in der Zeitzone der Anlage (structuredContent.timeZone), nicht in der des Browsers: Die Tagesgrenzen
+  // rechnet das Modul in der Zeit von Symcon (Review 14.10.2026: unterwegs standen Heatmap-Zeilen auf dem Vortag). wall()
+  // macht aus einem Zeitpunkt ein Date, dessen UTC-Felder die Uhrzeit der Anlage zeigen; unwall() rechnet zurück. Ohne
+  // Angabe gilt wie bisher die Zone des Browsers.
+  var zoneParts = null;
+  function setZone(name) {
+    zoneParts = null;
+    if (!name) { return; }
+    try {
+      zoneParts = new Intl.DateTimeFormat("en-US", { timeZone: name, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
+    } catch (e) { zoneParts = null; }
+  }
+  function offset(ms) {
+    if (zoneParts) {
+      var p = {};
+      zoneParts.formatToParts(new Date(ms)).forEach(function (x) { p[x.type] = x.value; });
+      return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second) - Math.floor(ms / 1000) * 1000;
     }
-    if (per === "month") { return d.toLocaleDateString(lang, { month: "short", year: "2-digit" }); }
-    return d.toLocaleDateString(lang, { day: "2-digit", month: "2-digit" });
+    return -new Date(ms).getTimezoneOffset() * 60000;
+  }
+  function wall(seconds) { return new Date(seconds * 1000 + offset(seconds * 1000)); }
+  function unwall(d) { var ms = d.getTime(); return (ms - offset(ms - offset(ms))) / 1000; }
+  function utc(options) { var o = { timeZone: "UTC" }; Object.keys(options).forEach(function (k) { o[k] = options[k]; }); return o; }
+
+  function timeLabel(seconds, per, spansDays) {
+    var d = wall(seconds);
+    if (per === "hour") {
+      var hm = d.toLocaleTimeString(lang, utc({ hour: "2-digit", minute: "2-digit" }));
+      return spansDays ? d.toLocaleDateString(lang, utc({ day: "2-digit", month: "2-digit" })) + " " + hm : hm;
+    }
+    if (per === "month") { return d.toLocaleDateString(lang, utc({ month: "short", year: "2-digit" })); }
+    return d.toLocaleDateString(lang, utc({ day: "2-digit", month: "2-digit" }));
   }
 
   // Zeitmarken auf runden Zeitpunkten: volle Stunden (1, 2, 3, 4, 6, 12 h), ganze Tage (1, 2, 3, 7, 14) oder
@@ -185,28 +209,28 @@
     if (per === "month") {
       var months = Math.round((t1 - t0) / (30 * 86400)) + 1;
       var stepM = [1, 2, 3, 6, 12].filter(function (s) { return months / s <= 6; })[0] || 12;
-      d = new Date(t0 * 1000);
-      d.setDate(1);
-      d.setHours(0, 0, 0, 0);
-      if (d.getTime() / 1000 < t0) { d.setMonth(d.getMonth() + 1); }
-      while (d.getTime() / 1000 <= t1) { ticks.push(d.getTime() / 1000); d.setMonth(d.getMonth() + stepM); }
+      d = wall(t0);
+      d.setUTCDate(1);
+      d.setUTCHours(0, 0, 0, 0);
+      if (unwall(d) < t0) { d.setUTCMonth(d.getUTCMonth() + 1); }
+      while (unwall(d) <= t1) { ticks.push(unwall(d)); d.setUTCMonth(d.getUTCMonth() + stepM); }
       return ticks;
     }
     var hours = (t1 - t0) / 3600;
     var stepH = [1, 2, 3, 4, 6, 12, 24, 48, 72, 168, 336].filter(function (s) { return hours / s <= 6; })[0] || 336;
-    d = new Date(t0 * 1000);
-    d.setMinutes(0, 0, 0);
+    d = wall(t0);
+    d.setUTCMinutes(0, 0, 0);
     if (stepH >= 24) {
-      d.setHours(0);
+      d.setUTCHours(0);
     } else {
-      d.setHours(Math.floor(d.getHours() / stepH) * stepH);
+      d.setUTCHours(Math.floor(d.getUTCHours() / stepH) * stepH);
     }
-    while (d.getTime() / 1000 < t0) { advance(d, stepH); }
-    while (d.getTime() / 1000 <= t1) { ticks.push(d.getTime() / 1000); advance(d, stepH); }
+    while (unwall(d) < t0) { advance(d, stepH); }
+    while (unwall(d) <= t1) { ticks.push(unwall(d)); advance(d, stepH); }
     return ticks;
   }
   function advance(d, stepH) {
-    if (stepH >= 24) { d.setDate(d.getDate() + stepH / 24); } else { d.setHours(d.getHours() + stepH); }
+    if (stepH >= 24) { d.setUTCDate(d.getUTCDate() + stepH / 24); } else { d.setUTCHours(d.getUTCHours() + stepH); }
   }
 
   function niceStep(range) {
@@ -304,24 +328,25 @@
   // Titelzeile mit dem Zeitraum (Burkhard 13.10.2026 in der Claude-App: „mir fehlt im diagramm das datum“), in der Sprache
   // der App: ein Tag mit Wochentag, ein Monat mit Namen, ein Jahr als Zahl, sonst von–bis; mit Uhrzeit, wenn der Zeitraum
   // nicht um Mitternacht beginnt oder endet.
-  function dateText(t, opts) { return new Date(t * 1000).toLocaleDateString(lang, opts); }
-  function clockText(d) { return d.toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" }); }
+  function dateText(t, opts) { return wall(t).toLocaleDateString(lang, utc(opts)); }
+  function clockText(d) { return d.toLocaleTimeString(lang, utc({ hour: "2-digit", minute: "2-digit" })); }
   function periodText(range) {
-    var a = new Date(range[0] * 1000), e = new Date(range[1] * 1000), b = new Date((range[1] - 1) * 1000);
-    var midnight = function (d) { return d.getHours() === 0 && d.getMinutes() === 0; };
+    var a = wall(range[0]), e = wall(range[1]), b = wall(range[1] - 1);
+    var midnight = function (d) { return d.getUTCHours() === 0 && d.getUTCMinutes() === 0; };
+    var sameDay = function (x, y) { return x.toISOString().slice(0, 10) === y.toISOString().slice(0, 10); };
     var numeric = { day: "2-digit", month: "2-digit", year: "numeric" };
     if (!midnight(a) || !midnight(e)) {
-      return dateText(range[0], numeric) + ", " + clockText(a) + "–" + (a.toDateString() === b.toDateString() ? "" : dateText(range[1], numeric) + ", ") + clockText(e);
+      return dateText(range[0], numeric) + ", " + clockText(a) + "–" + (sameDay(a, b) ? "" : dateText(range[1], numeric) + ", ") + clockText(e);
     }
-    if (a.toDateString() === b.toDateString()) {
+    if (sameDay(a, b)) {
       return dateText(range[0], { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     }
-    if (a.getDate() === 1 && e.getDate() === 1) {
-      var months = (e.getFullYear() - a.getFullYear()) * 12 + e.getMonth() - a.getMonth();
+    if (a.getUTCDate() === 1 && e.getUTCDate() === 1) {
+      var months = (e.getUTCFullYear() - a.getUTCFullYear()) * 12 + e.getUTCMonth() - a.getUTCMonth();
       if (months === 1) { return dateText(range[0], { month: "long", year: "numeric" }); }
-      if (months === 12 && a.getMonth() === 0) { return String(a.getFullYear()); }
+      if (months === 12 && a.getUTCMonth() === 0) { return String(a.getUTCFullYear()); }
     }
-    var sameYear = a.getFullYear() === b.getFullYear();
+    var sameYear = a.getUTCFullYear() === b.getUTCFullYear();
     return dateText(range[0], sameYear ? { day: "2-digit", month: "2-digit" } : numeric) + "–" + dateText(range[1] - 1, numeric);
   }
   function addTitle(container, data) {
@@ -329,7 +354,7 @@
     if (data && data.range) {
       text = periodText(data.range);
     } else if (data && data.at) {
-      text = dateText(data.at, { day: "2-digit", month: "2-digit", year: "numeric" }) + ", " + clockText(new Date(data.at * 1000));
+      text = dateText(data.at, { day: "2-digit", month: "2-digit", year: "numeric" }) + ", " + clockText(wall(data.at));
     }
     if (!text) { return; }
     if (data.compare && data.compare.range) { text += " · " + compareText(data); }
@@ -805,6 +830,7 @@
   function render(data) {
     lastData = data;
     axisScale();
+    setZone(data && data.timeZone);
     if (data && data.kind === "rings") {
       var only = document.getElementById("root");
       only.textContent = "";

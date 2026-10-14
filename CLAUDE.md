@@ -250,7 +250,11 @@ Weitere Regeln, die nicht offensichtlich sind:
   `TIMELINE_CHART_MAX` (10) Bänder. Die Achse zeigt immer den ganzen Zeitraum (`periodSpan`; Verlauf und Zeitleiste über
   `range`, Stapel mit leeren Abschnitten bis zum Ende, `padTimes`). Jede Art liefert ihren Zeitraum (`range`, beim Vergleich
   `compare.range`, bei „Leistung jetzt“ `at`) für die Titelzeile der Seite (Burkhard 13.10.2026 in der Claude-App: „mir fehlt
-  im diagramm das datum“; der Assistent bot an, das Diagramm selbst zu zeichnen).
+  im diagramm das datum“; der Assistent bot an, das Diagramm selbst zu zeichnen). Dazu nennt jedes Diagramm die Zeitzone
+  der Anlage (`timeZone`, `DeviceIndex::chart`), und `chart.html` beschriftet Titel, Achsen und Heatmap-Zeilen darin
+  (`wall`/`unwall`, nur UTC-Methoden auf diesen Daten); vorher in der Zone des Browsers, unterwegs stand eine Heatmap-Zeile
+  auf dem Vortag (Review 14.10.2026). Geprüft mit einem Chrome-Prüfstand, der per CDP die Zone auf America/New_York stellt
+  (nicht im Repo): vorher 4 von 6 Prüfungen rot, danach 6 grün.
 - **Vergleich zweier Zeiträume** (B69, `show_chart` mit `compare`: `previous` oder `year_before`, `DeviceIndex::COMPARES`):
   `compareWindow` bestimmt den Vergleichszeitraum (der davor in der Einheit des Zeitraums, bei from/to gleich viele Tage
   davor; nur ganze Tage), `compareChart` holt dasselbe Diagramm über from/to und legt es um den Abstand verschoben

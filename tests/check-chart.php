@@ -86,4 +86,11 @@ $anlage->jetzt = $mitschnitt['jetzt'];
 $r = (new DeviceIndex($mitschnitt['geraete'], $anlage))->getState(['room' => 'Gast', 'type' => 'temperature', 'period' => 'last_week']);
 pruefe(count(explode("\n", $r['text'])) === 9 && !isset($r['structuredContent']), 'get_state liefert weiter die Tabelle und keine Daten fürs Diagramm');
 
+// Zeitzone der Anlage für die Seite (Review 14.10.2026): Achsen, Titel und Heatmap-Zeilen standen in der Zeitzone des
+// Browsers, die Tagesgrenzen rechnet das Modul aber in der von Symcon
+$r = diagramm(['room' => 'Gast', 'type' => 'temperature', 'period' => 'last_week']);
+pruefe(($r['structuredContent']['timeZone'] ?? null) === 'Europe/Berlin', 'das Diagramm nennt die Zeitzone der Anlage: ' . json_encode($r['structuredContent']['timeZone'] ?? null));
+$seite = (string)file_get_contents(dirname(__DIR__) . '/HomeAgent/chart.html');
+pruefe(str_contains($seite, 'data.timeZone') && !preg_match('/\.(getHours|setHours|getDate|setDate|getMonth|setMonth|getFullYear|getMinutes|setMinutes)\(/', $seite), 'die Seite rechnet Datum und Uhrzeit in dieser Zone, nicht mit den Ortszeit-Methoden des Browsers');
+
 ende('Diagramm');
