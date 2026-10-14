@@ -19,6 +19,15 @@ final class HomeAgentHarness extends HomeAgent
     /** @var list<string> */
     public static array $hooks = [];
 
+    /** Wie oft die Listen ganz geprüft wurden (findProblems). */
+    public static int $problemChecks = 0;
+
+    protected function findProblems(): array
+    {
+        self::$problemChecks++;
+        return parent::findProblems();
+    }
+
     protected function RegisterHook(string $HookPath): bool
     {
         self::$hooks[] = $HookPath; // der Stub hat hier nur einen leeren Rumpf
@@ -2916,6 +2925,12 @@ pruefe($origin('http://nuc:3777', 'nuc:3777')['status'] === 200 && $origin('http
 pruefe($origin('http://nuc.boese.example:3777', 'nuc.boese.example:3777')['status'] === 403, 'der Rechnername vor einer fremden Domain zählt nicht');
 pruefe($origin('http://localhost:3777', 'localhost:3777')['status'] === 200 && $origin('http://192.168.178.86:82', '192.168.178.86:82')['status'] === 200 && $origin('http://[::1]:3777', '[::1]:3777')['status'] === 200, 'localhost, ::1 und die eigene IP auch an einem anderen Port');
 HomeAgentHarness::$connect = '';
+
+// Formular (Review 14.10.2026): Die Spalte „Werkzeugliste“ baut je Zugang die Werkzeugliste, und jede prüfte die Listen
+// erneut (über 30 volle Prüfungen bei vier Zugängen; am nuc 523 bis 542 ms je Öffnen). Jetzt einmal je Formular.
+HomeAgentHarness::$problemChecks = 0;
+$p->GetConfigurationForm();
+pruefe(HomeAgentHarness::$problemChecks === 1, 'das Formular prüft die Listen einmal: ' . HomeAgentHarness::$problemChecks . '-mal');
 
 /* --- Protokoll 2026-07-28 am Hook (Backlog B62) -------------------------------------------------- */
 

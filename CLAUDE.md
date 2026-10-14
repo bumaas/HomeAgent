@@ -52,7 +52,7 @@ Backend. So laufen die Tests mit echten Mitschnitten.
 - **Ein fehlerhafter Eintrag sperrt nur sich selbst**: Zugang (`usableAccesses()`), Gerät
   (`usableDevices()`), Szene (`usableScenes()`), Energiebilanz als Ganzes (`usableBalance()`). Geprüft wird
   bei jedem Aufruf, eine gelöschte Variable sperrt ihr Gerät also sofort, ohne Übernehmen. Eine Anfrage
-  prüft nur einmal (`checkedOnce` in Hook und Selbsttest), und Beschriftungen entstehen nur für fehlerhafte
+  prüft nur einmal (`checkedOnce` in Hook, Selbsttest und Formular; im Formular erst seit build 175, vorher prüfte die Spalte „Werkzeugliste“ je Zugang erneut, am nuc 523 bis 542 ms je Öffnen, danach 172 bis 260 ms), und Beschriftungen entstehen nur für fehlerhafte
   Zeilen: vorher übersetzte jede der rund zehn Prüfungen je Anfrage über 20 Texte je Gerät, `get_state`
   brauchte am nuc (152 Geräte) 4,5 bis 6,2 s, danach rund 45 ms (build 72). Warnung im Log,
   Überschrift im Formular „Fehlerhafte Einträge sind gesperrt“. Status 104 ohne Zugang mit Token, 201 bei

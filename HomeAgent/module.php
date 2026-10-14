@@ -468,6 +468,13 @@ class HomeAgent extends IPSModuleStrict
 
     public function GetConfigurationForm(): string
     {
+        // Einmal prüfen für das ganze Formular: Die Spalte „Werkzeugliste“ baut je Zugang die Werkzeugliste, und jede
+        // prüfte die Listen erneut (Review 14.10.2026: über 30 volle Prüfungen bei vier Zugängen)
+        return $this->checkedOnce(fn (): string => $this->configurationForm());
+    }
+
+    private function configurationForm(): string
+    {
         $form = json_decode((string)file_get_contents(__DIR__ . '/form.json'), true);
         $problems = $this->validateLists();
         $failedRows = ['Accesses' => [], 'Rooms' => [], 'Devices' => [], 'Scenes' => []];
@@ -2852,7 +2859,7 @@ class HomeAgent extends IPSModuleStrict
      *
      * @return list<array{list: string, index: int, text: string}>
      */
-    private function findProblems(): array
+    protected function findProblems(): array
     {
         $list = $this->deviceList();
         $rooms = $this->roomIndex();
