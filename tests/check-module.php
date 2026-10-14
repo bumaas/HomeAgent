@@ -3089,6 +3089,12 @@ pruefe(is_string($seite) && str_contains($seite, 'if (share >= 0.01) {'), 'Böge
 // Die Schrift in der Zeichnung wächst deshalb mit der Verkleinerung (--k, höchstens 1,6), Ringe behalten ihre Größen
 pruefe(is_string($seite) && str_contains($seite, 'svg text { fill: var(--muted); font-size: calc(11px * var(--k, 1)); }'), 'die Schrift der Achsen wächst mit der Verkleinerung der Zeichnung');
 pruefe(is_string($seite) && str_contains($seite, 'function axisScale(') && str_contains($seite, 'Math.min(1.6, Math.max(1, 640 / width))') && str_contains($seite, 'window.addEventListener("resize", axisScale)') && str_contains($seite, "lastData = data;\n    axisScale();"), 'der Faktor folgt der Breite, auch nach dem Drehen');
+// pitti 14.10.2026: Die Ersatzwerte folgen den Theme-Farben der Kachel-Visu (Inhalt #000000/#ffffff, Karte #ffffff/#333438).
+foreach (['chart.html', 'devices.html'] as $datei) {
+    $quelle = (string)file_get_contents(dirname(__DIR__) . '/HomeAgent/' . $datei);
+    pruefe(str_contains($quelle, '--fg: var(--color-text-primary, #000000);') && substr_count($quelle, '--fg: var(--color-text-primary, #ffffff);') === 2, "$datei: Textfarbe wie das Theme der Kachel-Visu");
+    pruefe(substr_count($quelle, '--bg: var(--color-background-primary, #333438);') === 2 && !str_contains($quelle, '#1e1e1e'), "$datei: dunkler Hintergrund wie die Karte im Theme der Kachel-Visu");
+}
 pruefe(is_string($seite) && str_contains($seite, 'function smoothPath(') && str_contains($seite, 'Math.min(Math.abs(s0), Math.abs(s1), 0.5 * Math.abs(p1))'), 'die Seite hat eine monotone Kurve');
 pruefe(is_string($seite) && substr_count($seite, 'el("path", { d: smoothPath(') >= 2 && str_contains($seite, 'smoothPath(top, true) + " L" + smoothPath(bottom, false)'), 'Mittel, Vergleich und Band im Verlauf werden als Kurve gezeichnet');
 pruefe(is_string($seite) && str_contains($seite, '.ring svg { max-height: 270px; }') && !str_contains($seite, 'max-width: 320px'), 'die Ringkarten füllen die Breite');

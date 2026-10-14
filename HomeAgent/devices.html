@@ -8,7 +8,7 @@
   :root {
     --bg: var(--color-background-primary, #ffffff);
     --card: var(--color-background-secondary, #f6f8fa);
-    --fg: var(--color-text-primary, #1f2328);
+    --fg: var(--color-text-primary, #000000);
     --muted: var(--color-text-secondary, #656d76);
     --border: var(--color-border-tertiary, #d8dee4);
     --accent: #2f81f7;
@@ -18,18 +18,18 @@
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: var(--color-background-primary, #1e1e1e);
+      --bg: var(--color-background-primary, #333438);
       --card: var(--color-background-secondary, #262626);
-      --fg: var(--color-text-primary, #e6edf3);
+      --fg: var(--color-text-primary, #ffffff);
       --muted: var(--color-text-secondary, #9198a1);
       --border: var(--color-border-tertiary, #3d444d);
       --inactive: #545d68;
     }
   }
   :root[data-theme="dark"] {
-    --bg: var(--color-background-primary, #1e1e1e);
+    --bg: var(--color-background-primary, #333438);
     --card: var(--color-background-secondary, #262626);
-    --fg: var(--color-text-primary, #e6edf3);
+    --fg: var(--color-text-primary, #ffffff);
     --muted: var(--color-text-secondary, #9198a1);
     --border: var(--color-border-tertiary, #3d444d);
     --inactive: #545d68;
