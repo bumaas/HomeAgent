@@ -464,7 +464,8 @@ Weitere Regeln, die nicht offensichtlich sind:
 
 **`DESIGN.md` ist das Regelwerk für Gerätekarten und Diagramme** (Farben je Art und Zustand, Tokens für hell und dunkel,
 Aufbau der Karten, Bedienelemente, Achsen, Legenden, Ringe; Linien und Band des Verlaufs als monotone Kurve
-`smoothPath`, die nie über einen Messwert hinausschießt). Jede Änderung an `devices.html` oder `chart.html` hält sich
+`smoothPath`, die nie über einen Messwert hinausschießt; die Schrift der Zeichnungen wächst auf schmalen Bildschirmen
+mit, `axisScale`). Jede Änderung an `devices.html` oder `chart.html` hält sich
 daran oder ändert zuerst das Regelwerk (Burkhard 13.10.2026). Vor dem Commit hell und dunkel mit echten Daten rendern
 (`dev/showcase.php`, `dev/devices_render.php`, `dev/chart_render2.php`; `dev/` ist nicht im Repo) und neue Abweichungen
 unter „Bekannte Abweichungen“ eintragen. Tooltips (SVG-`title`) zeigt kein Screenshot; ihre Texte liest man aus der

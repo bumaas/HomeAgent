@@ -2938,6 +2938,10 @@ pruefe(is_string($seite) && str_contains($seite, 'if (-low < high * 0.03) { low 
 pruefe(is_string($seite) && str_contains($seite, 'if (share >= 0.01) {'), 'Bögen unter 1 % fallen weg');
 // Burkhard 14.10.2026 auf dem iPhone: „der verlauf der linien und des bandes könnte etwas weicher sein“. Monotone Kurve
 // (Steffen), die zwischen zwei Punkten nie über sie hinausschießt: Minimum und Maximum bleiben echte Werte
+// Hardcopy iPhone 14.10.2026: Die Zeichnung (640 breit) wird auf rund 380 px verkleinert, die Achsen standen bei 6 bis 7 px.
+// Die Schrift in der Zeichnung wächst deshalb mit der Verkleinerung (--k, höchstens 1,6), Ringe behalten ihre Größen
+pruefe(is_string($seite) && str_contains($seite, 'svg text { fill: var(--muted); font-size: calc(11px * var(--k, 1)); }'), 'die Schrift der Achsen wächst mit der Verkleinerung der Zeichnung');
+pruefe(is_string($seite) && str_contains($seite, 'function axisScale(') && str_contains($seite, 'Math.min(1.6, Math.max(1, 640 / width))') && str_contains($seite, 'window.addEventListener("resize", axisScale)') && str_contains($seite, "lastData = data;\n    axisScale();"), 'der Faktor folgt der Breite, auch nach dem Drehen');
 pruefe(is_string($seite) && str_contains($seite, 'function smoothPath(') && str_contains($seite, 'Math.min(Math.abs(s0), Math.abs(s1), 0.5 * Math.abs(p1))'), 'die Seite hat eine monotone Kurve');
 pruefe(is_string($seite) && substr_count($seite, 'el("path", { d: smoothPath(') >= 2 && str_contains($seite, 'smoothPath(top, true) + " L" + smoothPath(bottom, false)'), 'Mittel, Vergleich und Band im Verlauf werden als Kurve gezeichnet');
 pruefe(is_string($seite) && str_contains($seite, '.ring svg { max-height: 270px; }') && !str_contains($seite, 'max-width: 320px'), 'die Ringkarten füllen die Breite');

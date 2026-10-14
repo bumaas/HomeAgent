@@ -71,7 +71,9 @@ eigene Ersatzwerte. Das Schema kommt aus `hostContext.theme` und setzt `data-the
 - **Überschriften in Großbuchstaben** (Gruppen, Beschriftungen von Bedienelementen, kurze Zustände): 10,5 bis 11 px,
   fett 600, Laufweite 0,06 em, Farbe `--muted` bzw. die Farbe der Art.
 - **Hauptwert:** 20 px, 500, Ziffern gleicher Breite (`tabular-nums`), Einheit klein (12 px) in `--muted` daneben.
-- **Achsen und Nebentext:** 11 bis 12 px in `--muted`.
+- **Achsen und Nebentext:** 11 bis 12 px in `--muted`. Die Zeichnungen sind 640 breit und werden auf schmalen
+  Bildschirmen verkleinert; die Schrift darin wächst mit (`--k` = 640 / Breite, 1 bis 1,6), damit sie auch auf dem
+  iPhone rund 11 px bleibt (Hardcopy 14.10.2026: 6 bis 7 px). Ringe haben eigene Größen.
 - Abstände in Schritten von 2 bis 4 px, Karten mit 12 px Innenabstand, 8 px Lücke, Radius 10 px; Knöpfe und Listen
   Radius 5 px, Symbolfläche 28 px mit Radius 7 px.
 
