@@ -39,6 +39,19 @@ eigene Ersatzwerte. Das Schema kommt aus `hostContext.theme` und setzt `data-the
 | `--border` / `--grid` | #d8dee4 | #3d444d | Rahmen, Gitterlinien |
 | `--inactive` | #afb8c1 | #545d68 | inaktiver Zustand: Balken und Griff auf Karten, Bänder im Diagramm |
 
+### Bezug zur Kachel-Visu
+
+Die Farben richten sich nach den vordefinierten Themes der Kachel-Visu von Symcon (Hinweis pitti, 14.10.2026):
+
+| Theme-Variable | Hell | Dunkel | bei uns |
+|---|---|---|---|
+| `--accent-color` | #00cdab | #00cdab | Akzent, noch nicht benutzt |
+| `--content-color` | #000000 | #ffffff | `--fg` |
+| `--card-color` | #ffffff | #333438 | `--bg` der Karten |
+
+In der Claude-App gelten zuerst die Farben des Hosts. Die Theme-Werte sind das Ziel für unsere Ersatzwerte, und eine neue
+Farbe ohne eigene Bedeutung (etwa Fokus oder gewählter Eintrag) nimmt den Akzent, statt einen eigenen Ton zu erfinden.
+
 ### Farbe je Art (Karten, `--tone`)
 
 | Gruppe | Farbe | Arten |
@@ -189,4 +202,5 @@ Feste Reihenfolge: Rollläden, Licht, Schalter und Steckdosen, Klima, Messwerte,
 
 ## Bekannte Abweichungen
 
-Keine.
+- **Ersatzwerte gegen die Theme-Farben** (14.10.2026): `--fg` hell #1f2328 statt #000000, dunkel #e6edf3 statt #ffffff;
+  `--bg` dunkel #1e1e1e statt #333438. Angleichen steht aus, vorher hell und dunkel rendern.
