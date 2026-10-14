@@ -91,6 +91,9 @@ class HomeAgent extends IPSModuleStrict
     private const LOG_LINE_MAX = 2000;
     private const LOG_SHOW_LINES = 200;
 
+    /** Anzeige und Download nehmen von jeder Protokolldatei höchstens so viele Bytes vom Ende. */
+    private const LOG_TAIL_BYTES = 3 * 1048576;
+
     private const LABEL_COLOR_ERROR = 0xC00000;
 
     /** Kopfzeilen der Anmeldeseiten: nicht einbetten, nichts nachladen, nichts zwischenspeichern. */
@@ -2294,9 +2297,20 @@ class HomeAgent extends IPSModuleStrict
             if (!is_file($current)) {
                 $state = ['started' => (int)$now, 'lines' => 0];
             } elseif (!is_array($state)) {
-                // Nach einem Neustart: Beginn und Zeilen aus der Datei
-                $lines = (array)file($current, FILE_IGNORE_NEW_LINES);
-                $state = ['started' => (int)(strtotime(substr((string)($lines[0] ?? ''), 0, 19)) ?: filemtime($current)), 'lines' => count($lines)];
+                // Nach einem Neustart: Beginn aus der ersten Zeile, Zeilen gezählt, ohne die Datei ganz einzulesen (Review
+                // 14.10.2026: file() brauchte das Doppelte der Datei und sprengte bei großen Dateien das memory_limit)
+                $first = '';
+                $count = 0;
+                $handle = @fopen($current, 'rb');
+                if ($handle !== false) {
+                    $first = (string)fgets($handle);
+                    rewind($handle);
+                    while (!feof($handle)) {
+                        $count += substr_count((string)fread($handle, 65536), "\n");
+                    }
+                    fclose($handle);
+                }
+                $state = ['started' => (int)(strtotime(substr($first, 0, 19)) ?: filemtime($current)), 'lines' => $count];
             }
             $max = max(self::LOG_MIN_LINES, $this->ReadPropertyInteger('LogLines'));
             if ((int)$state['lines'] >= $max || (int)$state['started'] <= (int)$now - self::LOG_ROTATE_SECONDS) {
@@ -2311,14 +2325,29 @@ class HomeAgent extends IPSModuleStrict
         }
     }
 
-    /** Inhalt beider Protokolldateien, die vorige zuerst. */
-    private function logText(): string
+    /**
+     * Inhalt beider Protokolldateien, die vorige zuerst, von jeder höchstens die letzten $tail Bytes in ganzen Zeilen.
+     * Anzeige und Download lasen beide Dateien ganz (Review 14.10.2026: der Download brauchte rund das 3,8-Fache beider
+     * Dateien, mit 5000 vollen Zeilen mehr als die 64 MB der SymBox).
+     */
+    private function logText(int $tail = self::LOG_TAIL_BYTES): string
     {
         $text = '';
         foreach ([$this->logFile(true), $this->logFile()] as $file) {
-            if (is_file($file)) {
-                $text .= (string)file_get_contents($file);
+            $size = is_file($file) ? (int)filesize($file) : 0;
+            if ($size === 0) {
+                continue;
             }
+            $handle = @fopen($file, 'rb');
+            if ($handle === false) {
+                continue;
+            }
+            if ($size > $tail) {
+                fseek($handle, -$tail, SEEK_END);
+                fgets($handle);
+            }
+            $text .= (string)stream_get_contents($handle);
+            fclose($handle);
         }
         return $text;
     }
@@ -2326,7 +2355,7 @@ class HomeAgent extends IPSModuleStrict
     /** Nur für das Formular: die letzten Zeilen des Protokolls, neueste zuerst, im Fenster „Protokoll“. */
     public function UIShowLog(): void
     {
-        $lines = array_reverse(array_slice(array_values(array_filter(explode("\n", $this->logText()), static fn (string $line): bool => $line !== '')), -self::LOG_SHOW_LINES));
+        $lines = array_reverse(array_slice(array_values(array_filter(explode("\n", $this->logText(self::LOG_SHOW_LINES * self::LOG_LINE_MAX * 2)), static fn (string $line): bool => $line !== '')), -self::LOG_SHOW_LINES));
         $this->UpdateFormField('LogView', 'values', (string)json_encode(array_map(static fn (string $line): array => ['Line' => $line], $lines)));
         $this->UpdateFormField('LogPopup', 'visible', true);
     }

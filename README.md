@@ -571,7 +571,7 @@ schreibt das Modul jede Anfrage als Zeile in eine Datei im Log-Verzeichnis von S
 (`homeagent_<InstanzID>.log`): Zeit, Zugang, Werkzeug, Argumente, Dauer und Antwort. Nach 24 Stunden oder
 nach **Zeilen je Datei** (anfangs 5000) beginnt eine neue Datei, die vorige bleibt als
 `homeagent_<InstanzID>.old.log`. So liegen ein bis zwei Tage vor. **Protokoll anzeigen** zeigt die letzten
-200 Zeilen, **Protokoll herunterladen** lädt beide Dateien als eine herunter, **Protokoll leeren** löscht
+200 Zeilen, **Protokoll herunterladen** lädt beide Dateien als eine herunter (von jeder höchstens die letzten 3 MB), **Protokoll leeren** löscht
 sie. Tokens und Kopplungscodes stehen nie darin.
 ## Grenzen
 

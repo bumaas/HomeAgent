@@ -552,7 +552,7 @@ For troubleshooting there is a **protocol** below, switched off at first. With *
 writes every request as a line into a file in the log directory of Symcon (`homeagent_<InstanceID>.log`):
 time, access, tool, arguments, duration and answer. After 24 hours or after **Lines per file** (5000 at first)
 a new file starts, the previous one stays as `homeagent_<InstanceID>.old.log`. So one to two days are
-available. **Show protocol** shows the last 200 lines, **Download protocol** downloads both files as one,
+available. **Show protocol** shows the last 200 lines, **Download protocol** downloads both files as one (at most the last 3 MB of each),
 **Clear protocol** deletes them. Tokens and pairing codes are never written.
 ## Limits
 

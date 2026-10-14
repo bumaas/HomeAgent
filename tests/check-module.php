@@ -2725,6 +2725,40 @@ pruefe($sichtbar && count($werte) === 3 && ($werte[0]['Line'] ?? '') === end($ne
 oderNull(static fn () => $p->UIClearLog());
 pruefe(!file_exists($logAktuell) && !file_exists($logAlt), 'Protokoll leeren löscht beide Dateien');
 pruefe(oderNull(static fn () => $p->UIDownloadLog()) === 'The protocol is empty.', 'leeres Protokoll: Hinweis statt Download');
+
+// Große Protokolldateien (Review 14.10.2026): Nach einem Neustart las writeLog die Datei mit file() ganz ein, Anzeige und
+// Download beide Dateien ganz. Gemessen: file() braucht rund das Doppelte der Datei, der Download rund das 3,8-Fache beider;
+// bei 30000 vollen Zeilen sprengte das die 128 MB am nuc, der Download mit 5000 Zeilen schon die 64 MB der SymBox.
+// Angenommen ist der Inhalt: 20 MB gleichartige Zeilen, wie sie LogLines = 100000 erlaubt hätte.
+$grosseDatei = static function (string $datei, int $megabyte): void {
+    $zeile = date('Y-m-d H:i:s') . '.000 | Claude Code | get_state | room=Küche | ' . str_repeat('x', 900) . "\n";
+    $h = fopen($datei, 'wb');
+    for ($i = 0, $n = (int)($megabyte * 1048576 / strlen($zeile)); $i < $n; $i++) {
+        fwrite($h, $zeile);
+    }
+    fclose($h);
+};
+$grosseDatei($logAktuell, 20);
+(new ReflectionMethod($p, 'SetBuffer'))->invoke($p, 'LogState', '');
+$vorher = memory_get_usage();
+memory_reset_peak_usage();
+$ruf('get_state', ['room' => 'Küche']);
+$spitze = memory_get_peak_usage() - $vorher;
+pruefe($spitze < 8 * 1048576, 'nach einem Neustart liest writeLog eine Datei von 20 MB nicht ganz ein: ' . round($spitze / 1048576, 1) . ' MB');
+pruefe(file_exists($logAlt) && filesize($logAlt) > 19 * 1048576 && filesize($logAktuell) < 1048576, 'gewechselt wie bisher, die große Datei ist jetzt die alte: ' . round(filesize($logAlt) / 1048576) . ' MB');
+$vorher = memory_get_usage();
+memory_reset_peak_usage();
+$daten = (string)oderNull(static fn () => $p->UIDownloadLog());
+$spitze = memory_get_peak_usage() - $vorher;
+$text = str_starts_with($daten, $praefix) ? (string)base64_decode(substr($daten, strlen($praefix))) : '';
+pruefe($spitze < 30 * 1048576 && strlen($text) <= 3 * 1048576 + filesize($logAktuell) && str_ends_with($text, (string)file_get_contents($logAktuell)) && str_starts_with($text, date('Y')), 'Download: vom alten Teil nur die letzten 3 MB, ganze Zeilen, der neue ganz: ' . round($spitze / 1048576, 1) . ' MB Spitze, ' . round(strlen($text) / 1048576, 1) . ' MB Text');
+unset($daten, $text);
+$vorher = memory_get_usage();
+memory_reset_peak_usage();
+oderNull(static fn () => $p->UIShowLog());
+$spitze = memory_get_peak_usage() - $vorher;
+pruefe($spitze < 20 * 1048576, 'Anzeigen liest nicht beide Dateien ganz: ' . round($spitze / 1048576, 1) . ' MB');
+oderNull(static fn () => $p->UIClearLog());
 // Nach 2026-07-28 trägt jede Anfrage den Client; die Zeile nennt ihn mit Name und Version (Burkhard 12.10.2026)
 $_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $pid, 'REMOTE_ADDR' => '192.0.2.5', 'HTTP_AUTHORIZATION' => 'Bearer ' . $pToken,
     'HTTP_MCP_PROTOCOL_VERSION' => '2026-07-28', 'HTTP_MCP_METHOD' => 'tools/call', 'HTTP_MCP_NAME' => 'get_state'];
