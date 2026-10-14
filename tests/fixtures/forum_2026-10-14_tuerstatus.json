@@ -1,0 +1,11 @@
+{
+  "quelle": "Forum, Vorstellungsthema Home Agent, Beitrag #27 vom 14.10.2026: Fenstergriffe über Matter, Zustand als Ganzzahl in einer Wertanzeige. Echt sind die Einträge (Wert und Beschriftung) und die Antwort der Claude-App auf „Sind Fenster geöffnet?“: Fenster Wohnzimmer und Terrassentür „offen (Geschlossen)“. Angenommen sind Variablen-IDs, Raum- und Gerätenamen der Freigabeliste und dass die Darstellung die Einträge als OPTIONS führt. Die Einträge sind die Aufzählung DoorState des Matter-Clusters DoorLock.",
+  "geraete": [
+    {"Room": "Wohnzimmer", "Name": "Fenster Wohnzimmer", "Aliases": "", "Type": "window", "Invert": false, "ReadOnly": false, "StateVariableID": 10001},
+    {"Room": "Wohnzimmer", "Name": "Terrassentür", "Aliases": "", "Type": "window", "Invert": false, "ReadOnly": false, "StateVariableID": 10002}
+  ],
+  "variablen": {
+    "10001": {"name": "Türstatus", "wert": 1, "aktion": false, "optionen": [[0, "Geöffnet"], [1, "Geschlossen"], [2, "Blockiert"], [3, "Gewaltsam geöffnet"], [4, "Unbekannter Fehler"], [5, "Angelehnt"]]},
+    "10002": {"name": "Türstatus", "wert": 1, "aktion": false, "optionen": [[0, "Geöffnet"], [1, "Geschlossen"], [2, "Blockiert"], [3, "Gewaltsam geöffnet"], [4, "Unbekannter Fehler"], [5, "Angelehnt"]]}
+  }
+}

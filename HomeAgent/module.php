@@ -3041,8 +3041,8 @@ class HomeAgent extends IPSModuleStrict
         // „Umgekehrt“ dreht bei Schaltern und Meldern den Wahrheitswert, beim Rollladen die Skala; ein Messwert hat nichts zu drehen.
         $invert = match (true) {
             $type === 'blind'                                 => $this->Translate('Reverse direction (if open and closed are swapped)'),
-            in_array($type, ['window', 'door'], true)         => $this->Translate('Inverted (the variable reports "on" when it is closed)'),
-            in_array($type, ['presence', 'water_leak'], true) => $this->Translate('Inverted (the variable reports "on" when nothing is detected)'),
+            in_array($type, ['window', 'door'], true)         => $this->Translate('Inverted (the variable reports "on" or a number above 0 when it is closed)'),
+            in_array($type, ['presence', 'water_leak'], true) => $this->Translate('Inverted (the variable reports "on" or a number above 0 when nothing is detected)'),
             DeviceIndex::TYPES[$type] === null                => null,
             default                                           => $this->Translate('Inverted (the variable reports "on" when the device is off)'),
         };

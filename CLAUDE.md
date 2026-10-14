@@ -224,6 +224,14 @@ Weitere Regeln, die nicht offensichtlich sind:
 - **Rückmeldung:** erst alle Aktionen auslösen, dann gemeinsam bis 2 s auf die Variablen warten.
   Rollläden gelten als „fährt“, sobald Position, Fahrstatus oder ein Lebenszeichen (Aktualisierung nach
   dem Befehl) es zeigen; das Ziel einer Fahrt merkt sich der Buffer `Travels`.
+- **Melder mit einer Zahl** (Fenster, Tür, Präsenz, Wasser): aktiv über 0, mit dem Haken „Umgekehrt“ nur bei 0
+  (`activeValue`, auch in der Zeitleiste; an schaltbaren Geräten dreht der Haken keine Zahl, ein Dimmer auf 0 bleibt aus).
+  Hat die Variable Einträge, steht der Eintrag in Klammern, außer er ist nur ein anderes Wort für den gezählten Zustand
+  (`PLAIN_CAPTIONS`); ohne Haken bleibt so „offen (Geschlossen)“ sichtbar. Anlass Forum 14.10.2026: Fenstergriffe über
+  Matter melden den Türstatus (0 Geöffnet, 1 Geschlossen, 2 Blockiert, 3 Gewaltsam geöffnet, 4 Unbekannter Fehler,
+  5 Angelehnt), die Claude-App sagte „offen (Geschlossen)“, und der Haken wirkte nur auf Wahrheitswerte. Home Assistant
+  übersetzt das Attribut in der Matter-Integration fest (0, 2, 3 offen, 1 zu, 4 und 5 unbekannt); das Modul sieht nur
+  die Variable. Test `check-ganzzahl-melder.php`.
 - **Richtung eines Rollladens** aus der Darstellung „Rollladen“, sonst aus einem Profil mit `.Reversed`,
   sonst aus dem Modul des Geräts (`SymconDeviceBackend::OPEN_AT_MAX_MODULES`: HomeAssistant-Modul, Ident
   `cover_…`, 100 offen), sonst ist der kleinste Wert offen; der Haken „Richtung umkehren“ dreht es um.

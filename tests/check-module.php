@@ -666,7 +666,7 @@ pruefe($dialogFehler === [] && count($felder) === count(DeviceIndex::TYPES), 'Di
 pruefe($ohneUebersetzung === [] && $felder !== [], 'jede Beschriftung der Dialoge hat eine deutsche Übersetzung, es fehlen: ' . implode(' / ', array_unique($ohneUebersetzung)));
 pruefe(($felder['light']['StateVariableID']['caption'] ?? '') === 'Switching state' && ($felder['light']['LevelVariableID']['caption'] ?? '') === 'Brightness', 'Licht: Schaltzustand und Helligkeit');
 pruefe(($felder['blind']['LevelVariableID']['caption'] ?? '') === 'Position' && ($felder['blind']['Invert']['caption'] ?? '') === 'Reverse direction (if open and closed are swapped)', 'Rollladen: Position, Richtung umkehren');
-pruefe(($felder['window']['StateVariableID']['caption'] ?? '') === 'Contact' && ($felder['window']['Invert']['caption'] ?? '') === 'Inverted (the variable reports "on" when it is closed)', 'Fenster: Kontakt, Umkehr');
+pruefe(($felder['window']['StateVariableID']['caption'] ?? '') === 'Contact' && ($felder['window']['Invert']['caption'] ?? '') === 'Inverted (the variable reports "on" or a number above 0 when it is closed)', 'Fenster: Kontakt, Umkehr');
 pruefe(($felder['temperature']['StateVariableID']['caption'] ?? '') === 'Measured value', 'Messwert');
 pruefe(($felder['socket']['Invert']['caption'] ?? '') === 'Inverted (the variable reports "on" when the device is off)', 'Steckdose: Umkehr');
 pruefe(array_column($felder['light']['Type']['options'] ?? [], 'value') === array_keys(DeviceIndex::TYPES), 'die Typauswahl nennt alle Typen');

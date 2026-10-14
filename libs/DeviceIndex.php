@@ -165,6 +165,12 @@ final class DeviceIndex
         'discharge' => 'BatteryDischargePowerVariableID',
     ];
 
+    /**
+     * Einträge, die neben dem Wort für aktiv bzw. inaktiv nichts sagen und deshalb nicht in Klammern stehen. Ein
+     * Eintrag des anderen Zustands bleibt stehen: „offen (Geschlossen)“ zeigt den fehlenden Haken „Umgekehrt“.
+     */
+    private const PLAIN_CAPTIONS = [['open', 'opened', 'offen', 'geöffnet', 'auf', 'on', 'an'], ['closed', 'geschlossen', 'zu', 'off', 'aus']];
+
     /** Sensoren mit Vorzeichen der Leistungsbilanz und das Feld, in das ihr negativer Wert fällt. */
     private const SIGNED_POWER = ['import' => 'export', 'discharge' => 'charge'];
 
@@ -676,7 +682,7 @@ final class DeviceIndex
         $options = $words === null ? ($this->backend->options($variable) ?? []) : [];
         $label = function (mixed $value) use ($words, $options, $entry): string {
             if ($words !== null) {
-                $active = is_bool($value) ? $value !== $entry['Invert'] : ((is_int($value) || is_float($value)) ? $value > 0 : null);
+                $active = self::activeValue($entry, $value);
                 return $active === null ? (string)$value : $this->t($active ? $words[0] : $words[1]);
             }
             foreach ($options as [$optionValue, $caption]) {
@@ -3480,6 +3486,22 @@ final class DeviceIndex
         return $append($state, $power['formatted']);
     }
 
+    /**
+     * Aktiv (an, offen, erkannt) bei einem Wahrheitswert oder einer Zahl über 0. Der Haken „Umgekehrt“ dreht den
+     * Wahrheitswert, bei Zahlen nur an Meldern: Dann ist 0 aktiv (Türstatus von Matter, 0 = Geöffnet). Ein Dimmer
+     * ohne Schalter bleibt bei 0 aus. null = weder Wahrheitswert noch Zahl.
+     */
+    private static function activeValue(array $entry, mixed $value): ?bool
+    {
+        if (is_bool($value)) {
+            return $value !== $entry['Invert'];
+        }
+        if (is_int($value) || is_float($value)) {
+            return ($value > 0) !== ($entry['Invert'] && !in_array($entry['Type'], self::CONTROLLABLE, true));
+        }
+        return null;
+    }
+
     /** @return array{text: string, active: ?bool} */
     private function mainStateOf(array $entry): array
     {
@@ -3518,7 +3540,15 @@ final class DeviceIndex
         }
         if ($words !== null && (is_int($main['value']) || is_float($main['value']))) {
             // Gerät nur mit Stufe (z. B. Dimmer ohne eigenen Schalter): an, sobald die Stufe über 0 liegt.
-            $active = $main['value'] > 0;
+            $active = (bool)self::activeValue($entry, $main['value']);
+            // Melder mit Einträgen (Türstatus von Matter: 0 Geöffnet, 1 Geschlossen, 5 Angelehnt …): der Eintrag in
+            // Klammern, wenn er mehr sagt als das Wort, in beiden Zuständen.
+            if (!in_array($entry['Type'], self::CONTROLLABLE, true) && $this->backend->options($this->mainVariable($entry)) !== null) {
+                $text = $this->t($active ? $words[0] : $words[1]);
+                $caption = trim($main['formatted']);
+                $plain = array_merge(self::PLAIN_CAPTIONS[$active ? 0 : 1], [mb_strtolower($text)]);
+                return ['text' => $caption === '' || in_array(mb_strtolower($caption), $plain, true) ? $text : $text . ' (' . $caption . ')', 'active' => $active];
+            }
             // Eine RGBW-Leiste ohne Schalter leuchtet auch mit Weißkanal 0, wenn ihre Farbe nicht schwarz
             // ist (IPS-868 am nuc nach color=blue: White 0, Color 255, die Zeile sagte „aus“).
             if (!$active && isset($entry['roles']['color'])) {
