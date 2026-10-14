@@ -553,7 +553,7 @@ writes every request as a line into a file in the log directory of Symcon (`home
 time, access, tool, arguments, duration and answer. After 24 hours or after **Lines per file** (5000 at first)
 a new file starts, the previous one stays as `homeagent_<InstanceID>.old.log`. So one to two days are
 available. **Show protocol** shows the last 200 lines, **Download protocol** downloads both files as one (at most the last 3 MB of each),
-**Clear protocol** deletes them. Tokens and pairing codes are never written.
+**Clear protocol** deletes them. Tokens and pairing codes are never written. Rejected requests without sign-in are written at most ten times in ten minutes per sender, then a note.
 ## Limits
 
 - Colour as text is not supported yet. The operating mode of a thermostat only works through a variable with an

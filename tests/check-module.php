@@ -2675,7 +2675,11 @@ $pHook->invoke($p);
 ob_end_clean();
 HomeAgentHarness::$body = '';
 $inhalt = (string)@file_get_contents($logAktuell);
-pruefe(str_contains($inhalt, ' | – | origin | https://beispiel.example | from 192.0.2.5'), 'eine Origin-Kopfzeile steht mit Absender im Protokoll: ' . $inhalt);
+// Seit der Messung (12.10.2026) steht nur noch die abgewiesene Origin im Protokoll, nicht jede (Review 14.10.2026: die
+// Zeile kam vor der Anmeldung und ließ sich beliebig oft auslösen)
+pruefe(str_contains($inhalt, ' | – | origin rejected | https://beispiel.example | HTTP 403') && !str_contains($inhalt, ' | – | origin | '), 'eine fremde Origin steht als abgewiesen im Protokoll, ohne eigene Zeile davor: ' . $inhalt);
+// Für die Zählungen des Rundlaufs unten: eine Zeile für die weggefallene Origin-Zeile
+$ruf('get_state', ['room' => 'Küche']);
 
 // Rundlauf nach Zeilen: bei 10 Zeilen wird gewechselt
 for ($i = 0; $i < 5; $i++) {
@@ -2759,6 +2763,36 @@ oderNull(static fn () => $p->UIShowLog());
 $spitze = memory_get_peak_usage() - $vorher;
 pruefe($spitze < 20 * 1048576, 'Anzeigen liest nicht beide Dateien ganz: ' . round($spitze / 1048576, 1) . ' MB');
 oderNull(static fn () => $p->UIClearLog());
+
+// Zeilen ohne Anmeldung (Review 14.10.2026): Origin, OAuth-Pfade und abgewiesene Anmeldungen schrieb das Modul vor der
+// Anmeldung bei jeder Anfrage. Wer die Adresse kennt, verdrängte so die echten Zeilen aus beiden Dateien. Jetzt je Absender
+// höchstens zehn Zeilen in zehn Minuten und ein Hinweis, Abrufe der OAuth-Metadaten gar nicht.
+$eigenschaft('LogLines', 1000);
+IPS_ApplyChanges($pid);
+$anfrage = static function (array $server) use ($pHook, $p, $pid): void {
+    $_SERVER = $server + ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $pid, 'REMOTE_ADDR' => '192.0.2.9'];
+    HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list']);
+    ob_start();
+    try {
+        $pHook->invoke($p);
+    } finally {
+        ob_end_clean();
+        HomeAgentHarness::$body = '';
+    }
+};
+for ($i = 0; $i < 30; $i++) {
+    $anfrage(['HTTP_ORIGIN' => 'https://boese.example']);
+    $anfrage(['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/hook/homeagent/' . $pid . '/.well-known/oauth-authorization-server', 'REMOTE_ADDR' => '192.0.2.10']);
+}
+$ruf('get_state', ['room' => 'Küche']);
+$inhalt = (string)@file_get_contents($logAktuell);
+pruefe(substr_count($inhalt, ' | origin rejected | ') === 10 && substr_count($inhalt, 'further lines from 192.0.2.9 suppressed') === 1, 'dreißig fremde Origins eines Absenders: zehn Zeilen und ein Hinweis: ' . substr_count($inhalt, ' | origin rejected | ') . ' / ' . substr_count($inhalt, 'suppressed'));
+pruefe(!str_contains($inhalt, '.well-known'), 'Abrufe der OAuth-Metadaten stehen nicht im Protokoll');
+pruefe(str_contains($inhalt, ' | Claude-App | get_state | room=Küche'), 'ein angemeldeter Aufruf danach steht weiter drin');
+oderNull(static fn () => $p->UIClearLog());
+(new ReflectionMethod($p, 'SetBuffer'))->invoke($p, 'LogQuiet', '');
+$eigenschaft('LogLines', 10);
+IPS_ApplyChanges($pid);
 // Nach 2026-07-28 trägt jede Anfrage den Client; die Zeile nennt ihn mit Name und Version (Burkhard 12.10.2026)
 $_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $pid, 'REMOTE_ADDR' => '192.0.2.5', 'HTTP_AUTHORIZATION' => 'Bearer ' . $pToken,
     'HTTP_MCP_PROTOCOL_VERSION' => '2026-07-28', 'HTTP_MCP_METHOD' => 'tools/call', 'HTTP_MCP_NAME' => 'get_state'];

@@ -572,7 +572,7 @@ schreibt das Modul jede Anfrage als Zeile in eine Datei im Log-Verzeichnis von S
 nach **Zeilen je Datei** (anfangs 5000) beginnt eine neue Datei, die vorige bleibt als
 `homeagent_<InstanzID>.old.log`. So liegen ein bis zwei Tage vor. **Protokoll anzeigen** zeigt die letzten
 200 Zeilen, **Protokoll herunterladen** lädt beide Dateien als eine herunter (von jeder höchstens die letzten 3 MB), **Protokoll leeren** löscht
-sie. Tokens und Kopplungscodes stehen nie darin.
+sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmeldung stehen je Absender höchstens zehnmal in zehn Minuten darin, danach ein Hinweis.
 ## Grenzen
 
 - Farbe als Text geht noch nicht. Die Betriebsart eines Thermostats geht nur über eine Variable mit Aktion;

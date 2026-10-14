@@ -91,6 +91,10 @@ class HomeAgent extends IPSModuleStrict
     private const LOG_LINE_MAX = 2000;
     private const LOG_SHOW_LINES = 200;
 
+    /** Zeilen ohne Anmeldung je Absender und Zeitraum im Protokoll (writeAnonymousLog). */
+    private const ANONYMOUS_LOG_LINES = 10;
+    private const ANONYMOUS_LOG_SECONDS = 600;
+
     /** Anzeige und Download nehmen von jeder Protokolldatei höchstens so viele Bytes vom Ende. */
     private const LOG_TAIL_BYTES = 3 * 1048576;
 
@@ -1072,12 +1076,11 @@ class HomeAgent extends IPSModuleStrict
 
     private function handleHook(): void
     {
-        // MCP verlangt, eine unpassende Origin-Kopfzeile abzuweisen (DNS-Rebinding). Zuerst nur mitschreiben, was
-        // echte Clients schicken (12.10.2026); die Prüfung folgt danach.
+        // Die Origin-Kopfzeile prüft der Hook nach den OAuth-Pfaden; ins Protokoll kommt sie nur, wenn sie abgewiesen wird
+        // (bis build 173 jede, zum Messen, was echte Clients schicken, 12.10.2026)
         $origin = trim((string)($_SERVER['HTTP_ORIGIN'] ?? ''));
         if ($origin !== '') {
             $this->SendDebug('Hook', 'Origin: ' . $origin, 0);
-            $this->writeLog('–', 'origin', mb_substr($origin, 0, 200), 'from ' . SignInGuard::sender($_SERVER));
         }
         $ready = $this->GetStatus() === IS_ACTIVE;
         // Nicht bereit ist kein Anmeldefehler: Bei 401 sucht ein Client wie HA nach OAuth, und der
@@ -1108,7 +1111,10 @@ class HomeAgent extends IPSModuleStrict
                     ?? OAuthServer::error(503, 'temporarily_unavailable', 'Sign-in is not available yet'),
             };
             $this->SendDebug('OAuth', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . $route . ' → HTTP ' . $response['status'], 0);
-            $this->writeLog('–', 'OAuth', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . $route, 'HTTP ' . $response['status']);
+            // Metadaten holt jeder Client beim Verbinden, sie sagen im Protokoll nichts
+            if ($route === 'oauth/authorize' || $route === 'oauth/token') {
+                $this->writeAnonymousLog(SignInGuard::sender($_SERVER), 'OAuth', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . $route, 'HTTP ' . $response['status']);
+            }
             $this->send($response);
             return;
         }
@@ -1117,7 +1123,7 @@ class HomeAgent extends IPSModuleStrict
         // (Protokoll am nuc, 12.10.2026). Vor dem Token geprüft und kein Fehlversuch.
         if ($origin !== '' && !$this->originAllowed($origin)) {
             $this->SendDebug('Hook', 'rejected: Origin not allowed', 0);
-            $this->writeLog('–', 'origin rejected', mb_substr($origin, 0, 200), 'HTTP 403');
+            $this->writeAnonymousLog(SignInGuard::sender($_SERVER), 'origin rejected', mb_substr($origin, 0, 200), 'HTTP 403');
             $this->send(['status' => 403, 'headers' => McpProtocol::BASE_HEADERS, 'body' => (string)json_encode(['jsonrpc' => '2.0', 'error' => ['code' => -32600, 'message' => 'Origin not allowed']])]);
             return;
         }
@@ -1177,7 +1183,7 @@ class HomeAgent extends IPSModuleStrict
                 $sender = SignInGuard::sender($_SERVER);
                 $this->recordSignInFailure($sender);
                 $this->rememberProblem(['access' => '–', 'request' => '', 'result' => '', 'kind' => 'sign_in', 'sender' => $sender]);
-                $this->writeLog('–', 'sign-in rejected', 'from ' . $sender, 'token missing or wrong');
+                $this->writeAnonymousLog($sender, 'sign-in rejected', 'from ' . $sender, 'token missing or wrong');
             }
         } else {
             $this->SendDebug('Request', ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ' . implode(', ', $response['methods'] ?? []) . ' → HTTP ' . $response['status'] . ' (' . ($_SERVER['REMOTE_ADDR'] ?? '?') . ', access ' . $access['Name'] . ($viaOAuth ? ', OAuth' : '') . ')', 0);
@@ -2322,6 +2328,42 @@ class HomeAgent extends IPSModuleStrict
             $this->SetBuffer('LogState', (string)json_encode($state));
         } finally {
             IPS_SemaphoreLeave($lock);
+        }
+    }
+
+    /**
+     * Zeile ohne Anmeldung (abgewiesene Origin, Anmeldung, OAuth): je Absender höchstens ANONYMOUS_LOG_LINES in
+     * ANONYMOUS_LOG_SECONDS, von allen zusammen das Zehnfache, beim Erreichen einmal ein Hinweis. Review 14.10.2026: Wer die
+     * Adresse kannte, verdrängte mit solchen Zeilen die echten aus beiden Dateien.
+     */
+    private function writeAnonymousLog(string $sender, string ...$fields): void
+    {
+        if (!$this->ReadPropertyBoolean('LogEnabled')) {
+            return;
+        }
+        $now = time();
+        $verdict = 'quiet';
+        $this->changeStored('LogQuiet', static function (array $quiet) use ($sender, $now, &$verdict): array {
+            if ((int)($quiet['since'] ?? 0) <= $now - self::ANONYMOUS_LOG_SECONDS) {
+                $quiet = ['since' => $now, 'all' => 0, 'senders' => []];
+            }
+            $mine = (int)($quiet['senders'][$sender] ?? 0);
+            $all = (int)($quiet['all'] ?? 0);
+            if ($mine < self::ANONYMOUS_LOG_LINES && $all < self::ANONYMOUS_LOG_LINES * 10) {
+                $verdict = 'write';
+            } elseif ($mine === self::ANONYMOUS_LOG_LINES || $all === self::ANONYMOUS_LOG_LINES * 10) {
+                $verdict = 'notice';
+            }
+            if (count($quiet['senders'] ?? []) < 1000 || isset($quiet['senders'][$sender])) {
+                $quiet['senders'][$sender] = $mine + 1;
+            }
+            $quiet['all'] = $all + 1;
+            return $quiet;
+        });
+        if ($verdict === 'write') {
+            $this->writeLog('–', ...$fields);
+        } elseif ($verdict === 'notice') {
+            $this->writeLog('–', sprintf('further lines from %s suppressed for %d min', $sender, intdiv(self::ANONYMOUS_LOG_SECONDS, 60)));
         }
     }
 
