@@ -977,6 +977,29 @@ AC_SetLoggingStatus($archiv, $leistung, true);
 pruefe(oderNull(static fn () => $m->testBackend()->counterSum($leistung, 1, $tag, 0)) === null, 'archiviert, aber nicht als Zähler: null');
 pruefe(is_int(oderNull(static fn () => $m->testBackend()->timestamp())), 'die Uhr der Anlage');
 
+// Grenze von 10000 Datensätzen je Abfrage (Review 14.10.2026). Echt ist die Grenze: laut Doku AC_GetAggregatedValues und
+// AC_GetLoggedValues „10000 ist das harte Limit, welches immer greift“, die neuesten zuerst; der Kernel-Stub bildet das
+// nach. Angenommen sind die Werte: 15000 Stunden (from=2025-01-01 bis Mitte 2026, so rechnen Kosten und Heatmap) und 12000
+// Änderungen eines Präsenzmelders. Vorher fehlten die ältesten 5000 Stunden bzw. 2000 Änderungen ohne Hinweis.
+$beginn = mktime(0, 0, 0, 1, 1, 2025);
+$stunden = static fn (int $anzahl, int $wert): array => array_map(static fn (int $i): array => ['TimeStamp' => $beginn + $i * 3600, 'Duration' => 3600, 'Avg' => $wert, 'Min' => 0, 'Max' => $wert, 'MinTime' => 0, 'MaxTime' => 0], range(0, $anzahl - 1));
+$stundenzaehler = variable(VARIABLETYPE_FLOAT, 0.0);
+AC_SetLoggingStatus($archiv, $stundenzaehler, true);
+AC_SetAggregationType($archiv, $stundenzaehler, 1);
+AC_StubsAddAggregatedValues($archiv, $stundenzaehler, 0, $stunden(15000, 1));
+$reihe = oderNull(static fn () => $m->testBackend()->counterSeries($stundenzaehler, 0, $beginn, $beginn + 15000 * 3600 - 1));
+pruefe(count($reihe['rows'] ?? []) === 15000 && ($reihe['rows'][0]['time'] ?? 0) === $beginn && ($reihe['rows'][14999]['time'] ?? 0) === $beginn + 14999 * 3600, 'counterSeries über 15000 Stunden: alle, die ältesten zuerst: ' . count($reihe['rows'] ?? []) . ' ab ' . date('Y-m-d H:i', $reihe['rows'][0]['time'] ?? 0));
+$messwert = variable(VARIABLETYPE_FLOAT, 0.0);
+AC_SetLoggingStatus($archiv, $messwert, true);
+AC_StubsAddAggregatedValues($archiv, $messwert, 0, $stunden(12000, 20));
+$reihe = oderNull(static fn () => $m->testBackend()->history($messwert, 0, $beginn, $beginn + 12000 * 3600 - 1));
+pruefe(count($reihe['rows'] ?? []) === 12000 && ($reihe['rows'][0]['time'] ?? 0) === $beginn, 'history über 12000 Stunden: alle: ' . count($reihe['rows'] ?? []));
+$praesenz = variable(VARIABLETYPE_BOOLEAN, false);
+AC_SetLoggingStatus($archiv, $praesenz, true);
+AC_AddLoggedValues($archiv, $praesenz, array_map(static fn (int $i): array => ['TimeStamp' => $beginn + 60 + $i * 600, 'Value' => $i % 2 === 0], range(0, 11999)));
+$reihe = oderNull(static fn () => $m->testBackend()->stateSeries($praesenz, $beginn, $beginn + 12000 * 600));
+pruefe(count($reihe['changes'] ?? []) === 12000 && ($reihe['changes'][0] ?? null) === [$beginn + 60, true] && ($reihe['changes'][11999][0] ?? 0) === $beginn + 60 + 11999 * 600, 'stateSeries mit 12000 Änderungen: alle, die erste zuerst: ' . count($reihe['changes'] ?? []) . ' / ' . json_encode($reihe['changes'][0] ?? null));
+
 /* --- Energiebilanz (09.10.2026): fünf Zählerfelder, Hausverbrauch wie bei HA ------------------ */
 
 $bilanzFelder = ['GridImportVariableID', 'GridExportVariableID', 'SolarVariableID', 'BatteryChargeVariableID', 'BatteryDischargeVariableID'];

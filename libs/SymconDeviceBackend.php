@@ -422,13 +422,44 @@ final class SymconDeviceBackend implements DeviceBackend
         // Ohne Aggregate (Zähler frisch archiviert) ist die Summe 0, archiviert ist er trotzdem.
         $sum = 0.0;
         try {
-            foreach (AC_GetAggregatedValues($archive, $variableId, $level, $from, $to, 0) as $row) {
+            foreach (self::allRows(static fn (int $until): array => AC_GetAggregatedValues($archive, $variableId, $level, $from, $until, 0), $from, $to) as $row) {
                 $sum += (float)$row['Avg'];
             }
         } catch (Throwable) {
             $sum = 0.0;
         }
         return ['sum' => $sum, 'unit' => self::unitOf($variableId)];
+    }
+
+    /** Datensätze je Abfrage des Archivs, laut Doku das harte Limit, das immer greift. */
+    private const ARCHIVE_LIMIT = 10000;
+
+    /** Höchstens so viele Abfragen je Reihe (100000 Datensätze); bremst den Speicher auf der SymBox (64 MB). */
+    private const ARCHIVE_SLICES = 10;
+
+    /**
+     * Alle Datensätze von $from bis $to, die neuesten zuerst wie im Archiv. Eine Abfrage liefert höchstens 10000 (Doku
+     * AC_GetAggregatedValues und AC_GetLoggedValues); kommen so viele, fragt die nächste bis vor den ältesten erhaltenen
+     * (Review 14.10.2026: Kosten über from=2025-01-01 rechneten nur mit den neuesten 10000 Stunden, eine Zeitleiste
+     * verlor die ältesten Änderungen, beides ohne Hinweis).
+     *
+     * @param callable(int): array $query Abfrage mit dem Ende des Zeitraums
+     */
+    private static function allRows(callable $query, int $from, int $to): array
+    {
+        $rows = [];
+        for ($slice = 0; $slice < self::ARCHIVE_SLICES; $slice++) {
+            $batch = $query($to);
+            array_push($rows, ...$batch);
+            if (count($batch) < self::ARCHIVE_LIMIT) {
+                break;
+            }
+            $to = (int)end($batch)['TimeStamp'] - 1;
+            if ($to < $from) {
+                break;
+            }
+        }
+        return $rows;
     }
 
     public function counterSeries(int $variableId, int $level, int $from, int $to): ?array
@@ -447,7 +478,7 @@ final class SymconDeviceBackend implements DeviceBackend
         }
         // Wie bei counterSum ist Avg die Summe der positiven Deltas; das Archiv liefert die neuesten zuerst.
         try {
-            $rows = array_reverse(AC_GetAggregatedValues($archive, $variableId, $level, $from, $to, 0));
+            $rows = array_reverse(self::allRows(static fn (int $until): array => AC_GetAggregatedValues($archive, $variableId, $level, $from, $until, 0), $from, $to));
         } catch (Throwable) {
             $rows = [];
         }
@@ -469,7 +500,7 @@ final class SymconDeviceBackend implements DeviceBackend
                 return null;
             }
             // Das Archiv liefert die neuesten zuerst (Doku AC_GetAggregatedValues).
-            $rows = array_reverse(AC_GetAggregatedValues($archive, $variableId, $level, $from, $to, 0));
+            $rows = array_reverse(self::allRows(static fn (int $until): array => AC_GetAggregatedValues($archive, $variableId, $level, $from, $until, 0), $from, $to));
         } catch (Throwable) {
             return null;
         }
@@ -493,7 +524,7 @@ final class SymconDeviceBackend implements DeviceBackend
             // Laut Doku AC_GetLoggedValues: neueste zuerst, höchstens 10000 Datensätze, nur Änderungen. Der Wert davor
             // ist der neueste bis $from - 1.
             $before = AC_GetLoggedValues($archive, $variableId, 0, $from - 1, 1);
-            $rows = array_reverse(AC_GetLoggedValues($archive, $variableId, $from, $to, 0));
+            $rows = array_reverse(self::allRows(static fn (int $until): array => AC_GetLoggedValues($archive, $variableId, $from, $until, 0), $from, $to));
         } catch (Throwable) {
             return null;
         }
