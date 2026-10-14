@@ -186,7 +186,9 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   Mit Karten verweist die Beschreibung von `get_state` fürs Zeigen („show me …“) auf `show_devices` (`$hasCards`): Die
   Claude-App beantwortete „Zeig mir die Lichter im Wohnzimmer“ sonst mit einer Tabelle über `get_state` (12.10.2026).
   Ebenso verweist sie für Diagramme auf `show_chart` (`$hasChart`): „Hausverbrauch von gestern als Diagramm“ ergab
-  `get_state` und eine SVG-Datei, die das Modell selbst zeichnete.
+  `get_state` und eine SVG-Datei, die das Modell selbst zeichnete. Der Verweis nennt Heatmap, Summenkurve und Punktwolke beim
+  Namen: „Hausverbrauch vom letzten Monat als Heatmap“ ergab am 14.10.2026 ohne „Nutze Home Agent“ 32 Aufrufe von
+  `get_state`, je Tag einer, und eine selbst gezeichnete Heatmap aus Tageswerten.
 - **Vorlagen (Prompts, B63):** `libs/PromptCatalog.php` baut „Haus verlassen“, „Gute Nacht“ (Fenster, Türen, Licht,
   Mediaplayer, je nach Freigabeliste, `active_only=true`) und „Energiebericht“ (nur mit Bilanz oder Zähler); ein
   Nur-Lese-Zugang bekommt keine Frage nach dem Schalten. `prompts/list` und `prompts/get` gibt es nur, wenn der

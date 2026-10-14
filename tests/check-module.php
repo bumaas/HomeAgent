@@ -2999,6 +2999,10 @@ pruefe(!isset($werkzeugNamen(false)['show_chart']), 'ohne Apps kein show_chart')
 // Claude-App 12.10.2026: „Zeig mir den Hausverbrauch von gestern als Diagramm“ ergab get_state und eine selbst gezeichnete
 // SVG-Datei statt show_chart. Mit Apps verweist get_state deshalb für Diagramme auf show_chart, ohne Apps nicht.
 pruefe(str_contains($mit['get_state']['description'] ?? '', 'use show_chart') && !str_contains($werkzeugNamen(false)['get_state']['description'] ?? 'show_chart', 'show_chart'), 'get_state verweist für Diagramme auf show_chart: ' . ($mit['get_state']['description'] ?? ''));
+// Claude-App 14.10.2026: „Zeig mir den Hausverbrauch vom letzten Monat als Heatmap“ ergab 32 Aufrufe von get_state, je Tag
+// einer, und eine selbst gezeichnete Heatmap aus Tageswerten. Der Verweis nennt deshalb die Diagrammarten beim Namen.
+pruefe(str_contains($mit['get_state']['description'] ?? '', 'heatmap, cumulative curve or scatter plot, use show_chart instead'), 'get_state nennt Heatmap, Summenkurve und Punktwolke beim Verweis auf show_chart');
+pruefe(str_contains($mit['get_state']['description'] ?? '', 'one call instead of one per day'), 'get_state sagt, dass show_chart einen Aufruf statt einen je Tag braucht');
 $nurLicht = json_encode([['Room' => 'Küche', 'Name' => 'Deckenlicht', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $kueche, 'Invert' => false]]);
 IPS_SetProperty($pid, 'Devices', $nurLicht);
 IPS_ApplyChanges($pid);

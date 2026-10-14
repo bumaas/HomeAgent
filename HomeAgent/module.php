@@ -1832,7 +1832,7 @@ class HomeAgent extends IPSModuleStrict
                 . (array_any($this->usableDevices(), static fn (array $row): bool => ($row['Type'] ?? '') === 'window' && in_array('open', DeviceIndex::abilitiesOf($row), true))
                     ? 'Windows marked "with drive" can be opened and closed with set_state, the others only report their state. ' : '')
                 . 'If nothing matches, the answer lists the known rooms and types. The last line gives the current date and time.'
-                . ($hasChart ? ' When the user asks for a chart, diagram or graph, use show_chart instead.' : '')
+                . ($hasChart ? ' When the user asks for a chart, diagram, graph, heatmap, cumulative curve or scatter plot, use show_chart instead (one call instead of one per day).' : '')
                 . ($hasCards ? ' When the user wants to see devices ("show me …") or to switch them by hand, use show_devices instead.' : '')
                 . ($readOnly ? ' ' . self::READ_ONLY_NOTE : ''),
             'inputSchema' => [
