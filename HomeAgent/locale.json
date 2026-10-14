@@ -136,7 +136,7 @@
             "variable for %s does not exist": "Variable für %s existiert nicht",
             "Show state of all released devices": "Zustand aller freigegebenen Geräte anzeigen",
             "Run self-test": "Selbsttest ausführen",
-            "No access with a token: add an access with a token so that the assistant can log in": "Kein Zugang mit Token: Legen Sie einen Zugang mit Token an, damit sich der Assistent anmelden kann",
+            "No access yet: add an access under \"Endpoint and accesses\" and click \"Apply\". The module creates the token itself.": "Noch kein Zugang: Fügen Sie unter „Endpunkt und Zugänge“ einen Zugang hinzu und klicken Sie auf „Übernehmen“. Das Token erzeugt das Modul selbst.",
             "One of the lists has errors, the log names the affected entries": "Eine der Listen ist fehlerhaft, das Log nennt die betroffenen Einträge",
             "Released scenes (scripts the assistant may start)": "Freigegebene Szenen (Skripte, die der Assistent starten darf)",
             "Script": "Skript",

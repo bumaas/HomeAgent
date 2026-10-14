@@ -295,7 +295,7 @@ class HomeAgent extends IPSModuleStrict
         $ok = true;
         if (!$this->hasAccessWithToken()) {
             $ok = false;
-            $lines[] = $this->Translate('No access with a token: add an access with a token so that the assistant can log in');
+            $lines[] = $this->Translate('No access yet: add an access under "Endpoint and accesses" and click "Apply". The module creates the token itself.');
         }
         foreach ($this->validateDeviceList() as $error) {
             $ok = false;

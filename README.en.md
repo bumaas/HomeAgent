@@ -114,7 +114,7 @@ access then need the new one.
 | Token also in the address | For clients that cannot send a login. The token is then appended to the address. |
 | Tool list | Whether the assistant knows the current tool list: **current**, **outdated** or **not fetched yet**, with the time of the last fetch. The list changes with an update of the module and with your settings, for example a device of a new type, a new room or a new scene. If it says **outdated**, open a new chat in the Claude app; if that does not help, disconnect the connector and connect it again. |
 
-Without an access that has a token, the instance shows status 104 and rejects all requests.
+Without an access, the instance shows status 104 and rejects all requests. A new access gets its token on Apply.
 
 ### Which access for whom
 
@@ -598,7 +598,7 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
   as the last part of the path. If a client sends both, the header counts.
 - Supported protocol versions: 2026-07-28 (without `initialize`, with `server/discover`; clients may keep the
   tool list for 5 minutes), plus 2025-11-25, 2025-06-18 and 2025-03-26.
-- Status 104: no access with a token, the endpoint rejects all requests. Status 201: the room list has
+- Status 104: no access yet, the endpoint rejects all requests. Status 201: the room list has
   errors, or there is no faultless access left; the log names every affected entry, and the endpoint
   stays closed until they are corrected. In both cases it answers with HTTP 503 ("not ready"), not
   with a login error. A faulty access (token too short or used twice, unknown default room), or a

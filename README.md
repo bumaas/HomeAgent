@@ -119,7 +119,7 @@ es beim Übernehmen; alle Assistenten dieses Zugangs brauchen dann das neue.
 | Token auch in der Adresse | Für Clients, die keine Anmeldung mitschicken können. Das Token hängt dann an der Adresse. |
 | Werkzeugliste | Ob der Assistent die aktuelle Werkzeugliste kennt: **aktuell**, **veraltet** oder **noch nicht geholt**, mit der Uhrzeit des letzten Abholens. Die Liste ändert sich mit einem Update des Moduls und mit Ihren Einstellungen, etwa einem Gerät mit neuem Typ, einem neuen Raum oder einer neuen Szene. Steht dort **veraltet**, öffnen Sie in der Claude-App einen neuen Chat; hilft das nicht, trennen Sie den Connector und verbinden ihn neu. |
 
-Ohne Zugang mit Token zeigt die Instanz den Status 104 und weist alle Anfragen ab.
+Ohne Zugang zeigt die Instanz den Status 104 und weist alle Anfragen ab. Ein neuer Zugang bekommt sein Token beim Übernehmen.
 
 ### Welcher Zugang für wen
 
@@ -620,7 +620,7 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
   als letzten Teil des Pfads. Schickt ein Client beides, zählt der Header.
 - Unterstützte Protokollversionen: 2026-07-28 (ohne `initialize`, mit `server/discover`; Clients dürfen die
   Werkzeugliste 5 Minuten behalten), dazu 2025-11-25, 2025-06-18 und 2025-03-26.
-- Status 104: kein Zugang mit Token, der Endpunkt weist alle Anfragen ab. Status 201: Die Raumliste ist
+- Status 104: noch kein Zugang, der Endpunkt weist alle Anfragen ab. Status 201: Die Raumliste ist
   fehlerhaft, oder es gibt keinen fehlerfreien Zugang mehr; das Log nennt jeden betroffenen Eintrag, und
   der Endpunkt bleibt bis zur Korrektur geschlossen. In beiden Fällen antwortet er mit HTTP 503
   („nicht bereit“), nicht mit einem Anmeldefehler. Ein fehlerhafter Zugang (Token zu kurz oder doppelt,

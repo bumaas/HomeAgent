@@ -1462,7 +1462,7 @@
     {
       "code": 104,
       "icon": "inactive",
-      "caption": "No access with a token: add an access with a token so that the assistant can log in"
+      "caption": "No access yet: add an access under \"Endpoint and accesses\" and click \"Apply\". The module creates the token itself."
     },
     {
       "code": 201,

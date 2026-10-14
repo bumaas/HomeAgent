@@ -179,6 +179,12 @@ $iid = (int)(new ReflectionProperty(IPSModuleStrict::class, 'InstanceID'))->getV
 pruefe(HomeAgentHarness::$hooks === ['homeagent/' . $iid], 'Create meldet den Hook homeagent/<InstanzID> an: ' . json_encode(HomeAgentHarness::$hooks));
 pruefe($m->GetEndpoint() === '/hook/homeagent/' . $iid, 'GetEndpoint nennt den vollen Pfad');
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === 104, 'ohne Token Status 104, nicht aktiv: ' . IPS_GetInstance($iid)['InstanceStatus']);
+// Der Text zu 104 sagt, wo und was zu tun ist; das Token erzeugt das Modul beim Übernehmen selbst (Burkhard 14.10.2026:
+// „Legen Sie einen Zugang mit Token an“ war für Anwender nicht deutlich genug)
+$status104 = array_values(array_filter(json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/form.json'), true)['status'], static fn (array $s): bool => $s['code'] === 104))[0]['caption'] ?? '';
+$deutsch = json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/locale.json'), true)['translations']['de'][$status104] ?? '';
+pruefe($deutsch === 'Noch kein Zugang: Fügen Sie unter „Endpunkt und Zugänge“ einen Zugang hinzu und klicken Sie auf „Übernehmen“. Das Token erzeugt das Modul selbst.', 'Status 104 auf Deutsch: ' . $deutsch);
+pruefe(str_contains($m->RunSelfTest(), $status104), 'der Selbsttest sagt dasselbe: ' . $m->RunSelfTest());
 
 $licht = variable(VARIABLETYPE_BOOLEAN, true);
 $temperatur = variable(VARIABLETYPE_FLOAT, 21.5);
