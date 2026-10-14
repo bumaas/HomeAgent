@@ -141,7 +141,9 @@ Feste Reihenfolge: Rollläden, Licht, Schalter und Steckdosen, Klima, Messwerte,
 ### Arten
 
 - **Verlauf:** je Einheit ein Diagramm, Linie für das Mittel, darunter das Band von Minimum bis Maximum (bei mehreren
-  Linien anfangs aus, ein Haken schaltet es um). Vergleich gestrichelt.
+  Linien anfangs aus, ein Haken schaltet es um). Vergleich gestrichelt. Linie, Vergleich und Band als weiche Kurve
+  (`smoothPath`, monoton nach Steffen: zwischen zwei Punkten nie darüber hinaus, Minimum und Maximum bleiben echt;
+  Burkhard 14.10.2026: „der verlauf der linien und des bandes könnte etwas weicher sein“).
 - **Stapel (Verbrauch):** ein Balken je Stunde, Tag oder Monat, positive Teile übereinander, die Einspeisung darunter,
   aber erst ab 3 % des höchsten Balkens. Vergleich als Marke je Balken.
 - **Zeitleiste (Bänder):** je Gerät ein Streifen von 14 px, Abschnitte in der Farbe ihres Zustands, dahinter eine

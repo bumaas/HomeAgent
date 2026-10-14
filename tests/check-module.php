@@ -2936,6 +2936,10 @@ foreach (['Karten' => $karten, 'Diagramme' => $seite] as $was => $html) {
 // „Einspeisung 0 kWh“, und rechts blieb ein Drittel frei
 pruefe(is_string($seite) && str_contains($seite, 'if (-low < high * 0.03) { low = 0; }'), 'kaum Einspeisung: kein Bereich unter der Nulllinie');
 pruefe(is_string($seite) && str_contains($seite, 'if (share >= 0.01) {'), 'Bögen unter 1 % fallen weg');
+// Burkhard 14.10.2026 auf dem iPhone: „der verlauf der linien und des bandes könnte etwas weicher sein“. Monotone Kurve
+// (Steffen), die zwischen zwei Punkten nie über sie hinausschießt: Minimum und Maximum bleiben echte Werte
+pruefe(is_string($seite) && str_contains($seite, 'function smoothPath(') && str_contains($seite, 'Math.min(Math.abs(s0), Math.abs(s1), 0.5 * Math.abs(p1))'), 'die Seite hat eine monotone Kurve');
+pruefe(is_string($seite) && substr_count($seite, 'el("path", { d: smoothPath(') >= 2 && str_contains($seite, 'smoothPath(top, true) + " L" + smoothPath(bottom, false)'), 'Mittel, Vergleich und Band im Verlauf werden als Kurve gezeichnet');
 pruefe(is_string($seite) && str_contains($seite, '.ring svg { max-height: 270px; }') && !str_contains($seite, 'max-width: 320px'), 'die Ringkarten füllen die Breite');
 
 /* --- Vorlagen am Modul (Prompts, Backlog B63) ---------------------------------------------------- */
