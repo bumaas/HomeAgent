@@ -2928,6 +2928,9 @@ pruefe(is_string($karten) && str_contains($karten, 'ui/initialize') && str_conta
 // Auswahl für Modus und Lüfterstufe auf den Karten (13.10.2026)
 pruefe(is_string($karten) && str_contains($karten, 'c.options') && str_contains($karten, 'node("select"'), 'die Seite zeichnet eine Auswahl je Eintrag in controls.options');
 pruefe(is_string($karten) && str_contains($karten, 'structuredContent.problem'), 'die Karte zeigt die Antwort nur bei einem Problem');
+// Eine Antwort ersetzt nur ihre eigene Karte, die Sperre hängt am Schlüssel, eine bediente Karte wartet (Review
+// 14.10.2026; das Verhalten selbst prüft ein Chrome-Prüfstand außerhalb der CI, siehe CLAUDE.md „Nachführen“)
+pruefe(is_string($karten) && str_contains($karten, 'el.replaceWith(cardElement(') && str_contains($karten, 'busy[card.key]') && str_contains($karten, 'function inUse(') && preg_match('/function replace\(fresh\) \{(?:(?!\n  \}).)*\n    draw\(\);\n  \}/s', $karten) !== 1, 'eine Antwort zeichnet nur ihre Karte neu, gesperrt bleibt sie bis zur Antwort');
 // Die Seiten der Apps laden nichts nach (CSP der Apps): kein Skript oder Stylesheet von außen, kein @import, keine Bilder
 // über http(s), kein fetch oder XMLHttpRequest. Das ist die eigentliche Regel. Die Größe ist nur eine Bremse gegen eine
 // versehentlich eingebettete Bibliothek (Burkhard 13.10.2026, Weg 1): Die Grenze wuchs vorher mit jeder Diagrammart

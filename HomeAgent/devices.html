@@ -198,10 +198,13 @@
   // Ein Gerät bedienen: Karte sperren, control_device aufrufen, die neue Karte und die Antwort zeigen, dem Modell
   // sagen, was geschah. Jede Meldung an das Modell ersetzt die vorige, deshalb gehen die letzten fünf zusammen hin.
   function control(card, args, element) {
+    if (busy[card.key]) { return; }
+    busy[card.key] = true;
     element.classList.add("busy");
     var call = { device: card.key };
     Object.keys(args).forEach(function (key) { call[key] = args[key]; });
     request("tools/call", { name: "control_device", arguments: call }).then(function (result) {
+      delete busy[card.key];
       var text = ((result && result.content) || []).map(function (c) { return c.text || ""; }).join("\n");
       var fresh = result && result.structuredContent && result.structuredContent.cards && result.structuredContent.cards[0];
       // Die Antwort nur bei einem Problem (nicht bestätigt, Fehler, nicht verstanden); sonst zeigt die Karte den neuen Zustand
@@ -210,7 +213,7 @@
       } else {
         delete replies[card.key];
       }
-      if (fresh) { replace(fresh); } else { draw(); }
+      if (fresh) { replace(fresh); } else { redraw(card.key); }
       if (fresh && (fresh.moving || (result.structuredContent && result.structuredContent.problem === "not_confirmed"))) {
         watch(card.key, Date.now(), 0);
       }
@@ -218,15 +221,16 @@
       done = done.slice(-5);
       request("ui/update-model-context", { content: [{ type: "text", text: "Operated on the device cards by the user:\n" + done.join("\n") }] }).catch(function () {});
     }, function (error) {
+      delete busy[card.key];
       replies[card.key] = { text: (error && error.message) || "–", error: true };
-      draw();
+      redraw(card.key);
     });
   }
 
   // Solange ein Gerät fährt (Velux 30 s, Fensterantrieb 45 s) oder ein Befehl noch nicht bestätigt ist, holt die Seite
   // die Karte alle drei Sekunden neu: control_device nur mit dem Schlüssel schaltet nichts. Burkhard 13.10.2026: die
   // Karte blieb bei „fährt auf 90 % offen (derzeit offen)“ stehen. Ohne Fahrt zweimal, höchstens 90 Sekunden.
-  var watches = {};
+  var watches = {}, busy = {}, showRoom = false;
   function watch(key, started, round) {
     if (watches[key]) { clearTimeout(watches[key]); }
     watches[key] = setTimeout(function () {
@@ -243,9 +247,39 @@
 
   function replace(fresh) {
     if (!state) { return; }
-    state.cards = state.cards.map(function (c) { return c.key === fresh.key ? fresh : c; });
-    draw();
+    var old = null;
+    state.cards = state.cards.map(function (c) {
+      if (c.key !== fresh.key) { return c; }
+      old = c;
+      return fresh;
+    });
+    if (old && (old.group || "sensor") !== (fresh.group || "sensor")) { draw(); } else { redraw(fresh.key); }
   }
+
+  // Eine Karte neu zeichnen, ohne die anderen anzufassen (Review 14.10.2026: jede Nachfrage baute alle Karten neu, ein
+  // gezogener Regler schickte seinen Zwischenwert, eine offene Auswahl klappte zu, die Sperre einer Karte fiel weg).
+  // Bedient der Anwender die Karte gerade (Maus oder Finger gedrückt, Auswahl im Fokus), wartet das Neuzeichnen.
+  var held = null, deferred = {};
+  function inUse(el) {
+    var active = document.activeElement;
+    return (held !== null && el.contains(held)) || (active && active.tagName === "SELECT" && el.contains(active));
+  }
+  function redraw(key) {
+    var el = document.querySelector('.card[data-key="' + CSS.escape(key) + '"]');
+    var card = state && state.cards.filter(function (c) { return c.key === key; })[0];
+    if (!el || !card) { draw(); return; }
+    if (inUse(el)) { deferred[key] = true; return; }
+    delete deferred[key];
+    el.replaceWith(cardElement(card, showRoom));
+    reportSize();
+  }
+  function flush() {
+    setTimeout(function () { Object.keys(deferred).forEach(redraw); }, 0);
+  }
+  document.addEventListener("pointerdown", function (event) { held = event.target; }, true);
+  document.addEventListener("pointerup", function () { held = null; flush(); }, true);
+  document.addEventListener("pointercancel", function () { held = null; flush(); }, true);
+  document.addEventListener("focusout", flush, true);
 
   // Bis zu fünf kurze Einträge als Knopfleiste, sonst ein Aufklappmenü (pitti, PN #12)
   function choiceElement(card, choice, el) {
@@ -314,7 +348,8 @@
     var labels = (state && state.labels) || {};
     // Farbig ist, was an ist; Rollläden und Klimawerte haben keinen Aus-Zustand und sind es immer
     var lit = card.active === true || (card.active === null && (group === "cover" || group === "climate" || group === "measure"));
-    var el = node("div", "card t-" + group + (lit ? " lit" : ""));
+    var el = node("div", "card t-" + group + (lit ? " lit" : "") + (busy[card.key] ? " busy" : ""));
+    el.setAttribute("data-key", card.key);
     var c = card.controls || {};
 
     var title = node("div");
@@ -416,7 +451,8 @@
     // Den Raum nennt die Karte nur, wenn die Geräte aus mehreren Räumen kommen; Überschriften erst ab zwei Gruppen
     var rooms = {};
     state.cards.forEach(function (card) { rooms[card.room] = true; });
-    var showRoom = Object.keys(rooms).length > 1;
+    showRoom = Object.keys(rooms).length > 1;
+    deferred = {};
     var order = (state.labels && state.labels.groups) || [];
     var groups = [];
     order.forEach(function (g) {

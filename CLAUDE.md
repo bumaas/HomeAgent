@@ -178,6 +178,11 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   **Nachführen:** `moving` (aus `blindText`) sagt, dass eine Fahrt läuft; `control_device` nur mit dem Schlüssel liefert die
   Karte neu, ohne zu schalten. Die Seite fragt so alle 3 s nach, solange `moving` gilt oder ein Befehl `not_confirmed` war
   (ohne Fahrt zweimal, höchstens 90 s). Anlass Burkhard 13.10.2026: die Karte blieb bei „fährt auf 90 % offen“ stehen.
+  Eine Antwort zeichnet nur ihre eigene Karte neu (`redraw`, `data-key`), die Sperre hängt am Schlüssel (`busy`), und eine
+  Karte, die gerade bedient wird (Zeiger gedrückt, Auswahl im Fokus, `inUse`), wartet bis zum Loslassen. Vorher baute jede
+  Nachfrage alle Karten neu: Ein gezogener Regler schickte den Zwischenwert (61 statt 94 %), eine offene Auswahl klappte
+  zu, ein zweiter Klick während der Sperre ging durch (Review 14.10.2026). Geprüft mit einem Chrome-Prüfstand über CDP mit
+  echter Maus (nicht im Repo, die CI führt kein JavaScript aus): vorher 4 von 6 Prüfungen rot, danach 6 grün.
   Mit Karten verweist die Beschreibung von `get_state` fürs Zeigen („show me …“) auf `show_devices` (`$hasCards`): Die
   Claude-App beantwortete „Zeig mir die Lichter im Wohnzimmer“ sonst mit einer Tabelle über `get_state` (12.10.2026).
   Ebenso verweist sie für Diagramme auf `show_chart` (`$hasChart`): „Hausverbrauch von gestern als Diagramm“ ergab
