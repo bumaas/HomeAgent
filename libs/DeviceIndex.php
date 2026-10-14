@@ -3748,7 +3748,8 @@ final class DeviceIndex
         $values = [];
         $sum = 0.0;
         $last = -1;
-        foreach ($totals($chart['series'] ?? [], count($times)) as $i => $v) {
+        $sections = $totals($chart['series'] ?? [], count($times));
+        foreach ($sections as $i => $v) {
             if ($running && $times[$i] > $now) {
                 $values[$i] = null;
                 continue;
@@ -3764,6 +3765,10 @@ final class DeviceIndex
         $method = null;
         if ($running && $now > $from && $last >= 0) {
             $step = count($times) > 1 ? $times[1] - $times[0] : 86400;
+            // Abschnitte ohne Vergleich (null) zählen weder im Vorjahr noch im Stand: Das Verhältnis kommt nur aus
+            // Abschnitten, die beide Zeiträume haben (Review 14.10.2026: ein fehlender Tag verschob die Hochrechnung).
+            $known = $basis === null ? [] : array_map(static fn (?float $v): bool => $v !== null, $basis);
+            $basis = $basis === null ? null : array_map(static fn (?float $v): float => $v ?? 0.0, $basis);
             $covered = $basis === null ? 0 : count(array_filter(array_slice($basis, 0, $last + 1), static fn (float $v): bool => $v > 0));
             if ($basis !== null && $covered >= 0.8 * ($last + 1) && count($basis) >= count($times) - 1) {
                 $before = [];
@@ -3774,8 +3779,16 @@ final class DeviceIndex
                 }
                 $share = min(1.0, max(0.0, ($now - $times[$last]) / $step));
                 $then = ($before[$last - 1] ?? 0.0) + ($basis[$last] ?? 0.0) * $share;
-                if ($then > 0) {
-                    $factor = $sum / $then;
+                $thenKnown = ($basis[$last] ?? 0.0) * $share;
+                $sumKnown = ($known[$last] ?? false) ? $sections[$last] : 0.0;
+                for ($i = 0; $i < $last; $i++) {
+                    if ($known[$i] ?? false) {
+                        $thenKnown += $basis[$i];
+                        $sumKnown += $sections[$i];
+                    }
+                }
+                if ($then > 0 && $thenKnown > 0) {
+                    $factor = $sumKnown / $thenKnown;
                     $projection = [[$now, round($sum, 3)]];
                     for ($i = $last + 1; $i < count($times) - 1 && $i < count($before); $i++) {
                         $projection[] = [$times[$i] + $step, round($sum + ($before[$i] - $then) * $factor, 3)];
@@ -3816,13 +3829,26 @@ final class DeviceIndex
         }
         $compare = null;
         if (isset($chart['compare']['values'])) {
+            $raw = $chart['compare']['values'];
+            while ($raw !== [] && end($raw) === null) {
+                array_pop($raw);
+            }
             $running2 = 0.0;
-            $cumulated = array_map(static function (float $v) use (&$running2): float {
-                $running2 += $v;
+            $cumulated = array_map(static function (?float $v) use (&$running2): float {
+                $running2 += $v ?? 0.0;
                 return round($running2, 3);
-            }, $chart['compare']['values']);
+            }, $raw);
             $compare = ['label' => $chart['compare']['label'] ?? '', 'range' => $chart['compare']['range'] ?? null, 'values' => $cumulated];
-            $then = $cumulated[min($last, count($cumulated) - 1)] ?? null;
+            // Zur selben Zeit: der laufende Abschnitt anteilig wie der Stand (Review 14.10.2026: vorher ganz)
+            $then = null;
+            if ($last >= 0 && $cumulated !== []) {
+                $index = min($last, count($cumulated) - 1);
+                $then = $cumulated[$index];
+                if ($running && $index === $last) {
+                    $next = $times[$last + 1] ?? $end;
+                    $then = ($cumulated[$last - 1] ?? 0.0) + (float)($raw[$last] ?? 0.0) * min(1.0, max(0.0, ($now - $times[$last]) / max(1, $next - $times[$last])));
+                }
+            }
             if ($then !== null && $then > 0) {
                 $change = (int)round(($sum - $then) / $then * 100);
                 $lines[] = sprintf($this->t('Comparison by the same time %s %s (%s%d %%).'), $format($then), $unit, $change >= 0 ? '+' : '', $change);
@@ -4020,8 +4046,8 @@ final class DeviceIndex
     /**
      * Vergleich zweier Zeiträume (B69): holt dasselbe Diagramm für den Vergleichszeitraum und legt es auf den Zeitraum.
      * Beim Verlauf bekommt jede Reihe „compare“ (Punkte, um den Abstand der Zeiträume verschoben), beim Verbrauch das
-     * Diagramm „compare.values“ (Summe je Balken, nach Position; reicht der Vergleich weiter, kommen Balken ohne Werte
-     * dazu). Zeitleisten haben keinen Vergleich. Zurück kommt der Text fürs Modell: der Vergleichszeitraum wie in
+     * Diagramm „compare.values“ (Summe je Balken, über die Zeit zugeordnet, null ohne Vergleich; reicht der Vergleich
+     * weiter, kommen Balken ohne Werte dazu). Zeitleisten haben keinen Vergleich. Zurück kommt der Text fürs Modell: der Vergleichszeitraum wie in
      * get_state und, solange der Zeitraum noch läuft, der Verbrauch bis zur selben Zeit.
      *
      * @param array<string, mixed> $chart
@@ -4036,7 +4062,7 @@ final class DeviceIndex
         if ($window === null) {
             return $this->t('A comparison needs a period or whole days in from and to.');
         }
-        [$from, $to, $mainFrom, $running] = $window;
+        [$from, $to, $mainFrom, $running, $shift] = $window;
         $label = date('Y-m-d', $from) . (date('Y-m-d', $from) === date('Y-m-d', $to) ? '' : ' – ' . date('Y-m-d', $to));
         $this->chart = ['series' => []];
         $this->chartByDevice = $byDevice;
@@ -4070,29 +4096,42 @@ final class DeviceIndex
             unset($series);
             return $text;
         }
-        // Verbrauch: Summe je Balken wie im Stapel (alle positiven Teile, die Einspeisung liegt darunter)
-        $values = [];
+        // Verbrauch: Summe je Balken wie im Stapel (alle positiven Teile, die Einspeisung liegt darunter), zugeordnet über
+        // die Zeit und nicht über die Position (Review 14.10.2026: Ein Archiv, das erst im Vergleichszeitraum beginnt,
+        // schob jeden Wert nach vorn). Ein Abschnitt ohne Vergleich bleibt null.
+        $byTime = [];
         foreach ($other['times'] ?? [] as $i => $time) {
-            $values[$i] = 0.0;
+            $at = (int)strtotime($shift, $time);
+            $byTime[$at] = $byTime[$at] ?? 0.0;
             foreach ($other['series'] ?? [] as $series) {
-                $values[$i] += max(0.0, (float)($series['values'][$i] ?? 0));
+                $byTime[$at] += max(0.0, (float)($series['values'][$i] ?? 0));
             }
         }
-        $count = count($chart['times'] ?? []);
-        foreach (array_slice($other['times'] ?? [], $count, null, true) as $i => $time) {
-            $chart['times'][$i] = $time + $offset;
+        // Reicht der Vergleich weiter (ein Monat mit mehr Tagen davor), kommen Balken ohne Werte dazu
+        $times = $chart['times'] ?? [];
+        $extra = array_diff(array_keys($byTime), $times);
+        if ($extra !== []) {
+            $all = array_merge($times, $extra);
+            sort($all);
+            $position = array_flip($times);
             foreach ($chart['series'] as &$series) {
-                $series['values'][$i] = 0;
+                $series['values'] = array_map(static fn (int $t) => isset($position[$t]) ? ($series['values'][$position[$t]] ?? 0) : 0, $all);
             }
             unset($series);
+            $chart['times'] = $times = $all;
         }
-        $chart['compare']['values'] = array_values($values);
+        $values = array_map(static fn (int $t): ?float => $byTime[$t] ?? null, $times);
+        $chart['compare']['values'] = $values;
         if ($running) {
+            // Bis zur selben Zeit: der laufende Abschnitt anteilig (Review 14.10.2026: vorher ganz, am 12.10. der ganze
+            // Oktober des Vorjahres)
             $now = $this->backend->timestamp();
             $sum = 0.0;
-            foreach ($other['times'] ?? [] as $i => $time) {
-                if ($time + $offset < $now) {
-                    $sum += $values[$i];
+            $last = (int)($chart['range'][1] ?? 0);
+            foreach ($times as $i => $time) {
+                $next = $times[$i + 1] ?? max($last, $time + 1);
+                if ($values[$i] !== null && $time < $now) {
+                    $sum += $values[$i] * min(1.0, ($now - $time) / max(1, $next - $time));
                 }
             }
             $text .= "\n" . sprintf($this->t('By the same time: %s %s.'), ($chart['unit'] ?? 'kWh') === '€' ? number_format($sum, 2, '.', '') : self::formatNumber($sum), $chart['unit'] ?? 'kWh');
@@ -4723,10 +4762,12 @@ final class DeviceIndex
             $unit = (int)round(($end + 1 - $from) / 86400) . ' days';
             $running = $end >= $now;
         }
+        // Fünftes Element: der Schritt vom Vergleichszeitraum zum Zeitraum nach dem Kalender (strtotime), nicht als feste
+        // Sekundenzahl; sonst trifft ein Tag zwischen den Zeitumstellungen zweier Jahre den Balken um eine Stunde daneben.
         if ($compare === 'year_before') {
-            return [(int)strtotime('-1 year', $from), (int)strtotime('-1 year', $end + 1) - 1, $from, $running];
+            return [(int)strtotime('-1 year', $from), (int)strtotime('-1 year', $end + 1) - 1, $from, $running, '+1 year'];
         }
-        return [(int)strtotime('-1 ' . $unit, $from), $from - 1, $from, $running];
+        return [(int)strtotime('-1 ' . $unit, $from), $from - 1, $from, $running, $period !== '' ? '+1 ' . $unit : '+' . $unit];
     }
 
     /**

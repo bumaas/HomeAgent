@@ -250,9 +250,14 @@ Weitere Regeln, die nicht offensichtlich sind:
   `compareWindow` bestimmt den Vergleichszeitraum (der davor in der Einheit des Zeitraums, bei from/to gleich viele Tage
   davor; nur ganze Tage), `compareChart` holt dasselbe Diagramm über from/to und legt es um den Abstand verschoben
   darüber: Verlauf je Reihe `compare`, Verbrauch `compare.values` als Summe der positiven Teile je Balken
-  nach Position (reicht der Vergleich weiter, etwa gestern gegen heute, kommen Balken ohne Werte dazu). Das Modell bekommt
-  den Text des Vergleichszeitraums wie aus get_state und, solange der Zeitraum läuft, den Verbrauch bis zur selben Zeit.
-  Nur ein Raum, keine Zeitleiste. Test `check-vergleich.php` (Orakel: das Diagramm des Vergleichszeitraums selbst).
+  über die Zeit: Jeder Abschnitt des Vergleichs geht um einen Kalenderschritt (`strtotime`, fünftes Element von
+  `compareWindow`) weiter, ein Balken ohne Vergleich bekommt null; reicht der Vergleich weiter, kommen Balken ohne Werte
+  dazu. Bis build 167 nach Position: Ein Archiv, das erst im Vergleichszeitraum beginnt, schob jeden Wert nach vorn, und
+  eine feste Sekundenzahl träfe Tage zwischen den Zeitumstellungen zweier Jahre um eine Stunde daneben (Review 14.10.2026).
+  Das Modell bekommt den Text des Vergleichszeitraums wie aus get_state und, solange der Zeitraum läuft, den Verbrauch bis
+  zur selben Zeit, der laufende Abschnitt anteilig (vorher ganz: am 12.10. der ganze Oktober des Vorjahres, 6 % zu viel).
+  Die Summenkurve trägt die Summe über Lücken weiter und rechnet die Hochrechnung nur aus Abschnitten, die beide Zeiträume
+  haben. Nur ein Raum, keine Zeitleiste. Test `check-vergleich.php` (Orakel: das Diagramm des Vergleichszeitraums selbst).
 - **Punktwolke** (B70, Burkhard 13.10.2026, `show_chart` mit `versus`, `DeviceIndex::scatter`): `versus` ist das Gerät der
   x-Achse, die übrigen Filter das der y-Achse, ohne Filter der Hausverbrauch der Bilanz; jede Achse genau ein Gerät, sonst
   Absage mit Kandidaten. Werte je Abschnitt aus `valueSeries`: Messwert (Mittel), sonst Zähler (kWh), sonst Leistung

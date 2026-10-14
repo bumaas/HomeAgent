@@ -59,7 +59,10 @@ $september = $tag($verbrauch, $sep, $okt);
 $bisher = array_sum($oktober);
 $anteil = ($verbrauch['jetzt'] - $okt) / ($nov - $okt);
 $hochrechnung = $bisher / $anteil;
-$vorher = array_sum(array_slice(array_values($september), 0, count($oktober)));
+$vorherGanz = array_sum(array_slice(array_values($september), 0, count($oktober)));
+// Der heutige Tag zählt im Vergleich nur anteilig wie der Stand selbst (Review 14.10.2026: vorher der ganze 12.09.)
+$heute = strtotime('2026-10-12 00:00');
+$vorher = array_sum(array_slice(array_values($september), 0, count($oktober) - 1)) + array_values($september)[count($oktober) - 1] * ($verbrauch['jetzt'] - $heute) / 86400;
 
 /* --- Hausverbrauch Oktober: laufend, hochgerechnet, mit September ----------------------------- */
 
@@ -69,7 +72,7 @@ pruefe(!$r['isError'] && ($d['kind'] ?? '') === 'cumulative' && ($d['per'] ?? ''
 $werte = $d['values'] ?? [];
 pruefe(abs(($werte[0] ?? -1) - array_values($oktober)[0]) < 0.01 && abs(($werte[count($oktober) - 1] ?? -1) - $bisher) < 0.01 && array_key_exists(count($oktober), $werte) && $werte[count($oktober)] === null, 'aufaddiert bis heute, danach leer: ' . json_encode(array_slice($werte, 10, 3)));
 pruefe(abs(($d['projection'][1][1] ?? -1) - $hochrechnung) < 0.05 && ($d['projection'][1][0] ?? 0) === $nov && ($d['projection'][0][0] ?? 0) === $verbrauch['jetzt'], 'Hochrechnung bis Monatsende: ' . json_encode($d['projection'] ?? null) . ' / ' . round($hochrechnung, 2));
-pruefe(abs(($d['compare']['values'][count($oktober) - 1] ?? -1) - $vorher) < 0.01 && count($d['compare']['values'] ?? []) === 30, 'September aufaddiert, am selben Tag ' . round($vorher, 1) . ' kWh');
+pruefe(abs(($d['compare']['values'][count($oktober) - 1] ?? -1) - $vorherGanz) < 0.01 && count($d['compare']['values'] ?? []) === 30, 'September aufaddiert, am selben Tag ' . round($vorherGanz, 1) . ' kWh');
 $prozent = (int)round(($bisher - $vorher) / $vorher * 100);
 pruefe(str_contains($r['text'], sprintf('So far %s kWh, projected %s kWh for the whole period.', $zahl($bisher), $zahl($hochrechnung))), 'Text mit Stand und Hochrechnung: ' . $r['text']);
 pruefe(str_contains($r['text'], sprintf('Comparison by the same time %s kWh (%s%d %%).', $zahl($vorher), $prozent >= 0 ? '+' : '', $prozent)), 'Text mit dem Vergleich zur selben Zeit: ' . $r['text']);
