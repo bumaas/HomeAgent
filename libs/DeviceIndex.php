@@ -165,6 +165,9 @@ final class DeviceIndex
         'discharge' => 'BatteryDischargePowerVariableID',
     ];
 
+    /** Sensoren mit Vorzeichen der Leistungsbilanz und das Feld, in das ihr negativer Wert fällt. */
+    private const SIGNED_POWER = ['import' => 'export', 'discharge' => 'charge'];
+
     /** Zeitraum „jetzt“: die aktuelle Leistung statt des Verbrauchs. */
     public const NOW = 'now';
 
@@ -253,6 +256,9 @@ final class DeviceIndex
 
     /** @var array<string, int> Leistungen der Energiebilanz: Schlüssel aus BALANCE_POWER => Variablen-ID */
     private array $powerBalance;
+
+    /** @var list<string> Sensoren mit Vorzeichen, deren Vorzeichen umgekehrt gilt (B77): 'import', 'discharge' */
+    private array $invertedPower = [];
 
     /** Art des Problems der letzten Anfrage, null = alles erreicht (problem()). */
     private ?string $problem = null;
@@ -440,8 +446,10 @@ final class DeviceIndex
         $matches = $this->find($room, $type, $name, $floor);
         // Ein Haus mit Energiebilanz braucht für den Hausverbrauch über einen Zeitraum keine freigegebenen Geräte (gefunden
         // am Mitschnitt nur mit Bilanzzählern, 13.10.2026)
-        $houseOnly = $room === '' && $floor === '' && $type === '' && $name === '' && $this->balance !== []
-            && ($range !== null || ($period !== '' && $period !== self::NOW));
+        // Ebenso die Hausleistung jetzt mit einer Leistungsbilanz (B77, Test mit einer Bilanz ohne Geräte).
+        $houseOnly = $room === '' && $floor === '' && $type === '' && $name === ''
+            && (($this->balance !== [] && ($range !== null || ($period !== '' && $period !== self::NOW)))
+                || ($this->powerBalance !== [] && $range === null && $period === self::NOW));
         if ($matches === [] && !$houseOnly) {
             $this->noMatch($room, $name);
             return $this->fail(sprintf($this->t('No released device matches %s.'), $filter) . ' ' . $this->knownRoomsAndTypes());
@@ -1306,7 +1314,8 @@ final class DeviceIndex
 
     /**
      * Hausleistung aus der Energiebilanz. Ein Netzsensor mit Vorzeichen ohne eigenes Einspeisefeld
-     * zählt negativ als Einspeisung, ein Batteriesensor ohne eigenes Ladefeld negativ als Laden.
+     * zählt negativ als Einspeisung, ein Batteriesensor ohne eigenes Ladefeld negativ als Laden; mit
+     * dem Haken „Vorzeichen umkehren“ (setInvertedPower) jeweils positiv.
      *
      * @param array<string, int> $balance
      * @return array{total: float, parts: list<string>}|string
@@ -1326,8 +1335,14 @@ final class DeviceIndex
             }
             $values[$key] = $watts;
         }
-        foreach (['import' => 'export', 'discharge' => 'charge'] as $signed => $opposite) {
-            if (isset($values[$signed]) && $values[$signed] < 0 && !isset($balance[$opposite])) {
+        foreach (self::SIGNED_POWER as $signed => $opposite) {
+            if (!isset($values[$signed]) || isset($balance[$opposite])) {
+                continue;
+            }
+            if (in_array($signed, $this->invertedPower, true)) {
+                $values[$signed] = -$values[$signed];
+            }
+            if ($values[$signed] < 0) {
                 $values[$opposite] = -$values[$signed];
                 $values[$signed] = 0.0;
             }
@@ -4566,6 +4581,42 @@ final class DeviceIndex
     private static function roughNumber(float $value): string
     {
         return abs($value) >= 1 ? self::formatNumber($value) : (string)round($value, 2);
+    }
+
+    /**
+     * Sensoren der Leistungsbilanz, deren Vorzeichen umgekehrt gilt (B77): 'import' (positiv = Einspeisung) und
+     * 'discharge' (positiv = laden, so meldet der Marstek Venus E). Andere Schlüssel haben kein Vorzeichen.
+     *
+     * @param list<string> $keys
+     */
+    public function setInvertedPower(array $keys): void
+    {
+        $this->invertedPower = array_values(array_intersect(array_keys(self::SIGNED_POWER), $keys));
+    }
+
+    /**
+     * Sensoren mit Vorzeichen der Leistungsbilanz (ohne eigenes Gegenfeld), für den Selbsttest: Rohwert in W und wie
+     * er jetzt zählt.
+     *
+     * @return list<array{key: string, variable: int, raw: float, counted: string, watts: float, inverted: bool}>
+     */
+    public function signedPowers(): array
+    {
+        $result = [];
+        foreach (self::SIGNED_POWER as $signed => $opposite) {
+            if (!isset($this->powerBalance[$signed]) || isset($this->powerBalance[$opposite])) {
+                continue;
+            }
+            $raw = $this->wattsOf($this->powerBalance[$signed]);
+            if (is_array($raw)) {
+                continue;
+            }
+            $inverted = in_array($signed, $this->invertedPower, true);
+            $value = $inverted ? -$raw : $raw;
+            $result[] = ['key' => $signed, 'variable' => $this->powerBalance[$signed], 'raw' => (float)$raw,
+                'counted' => $value < 0 ? $opposite : $signed, 'watts' => abs((float)$value), 'inverted' => $inverted];
+        }
+        return $result;
     }
 
     /** Strompreis und Einspeisevergütung (ct/kWh) für die Kosten in Euro (B72); 0 = keine. */

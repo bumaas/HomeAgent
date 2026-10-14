@@ -309,7 +309,10 @@ devices, period=now): grid import 27, solar 0, battery discharge 1521, grid expo
 0 W." and "Of this, 750 W by 11 of 11 device(s) with power measurement, 798 W not metered." W, kW and
 MW are converted; without a unit, W is assumed. If you only have one signed grid sensor, enter it as
 grid import (negative means export); a signed battery sensor goes into battery discharge (negative
-means charging).
+means charging). If a sensor reports the other way round, for example a battery that counts positive
+while charging, tick "Reverse sign" below it. The self-test then shows the current value and how it
+counts ("Energy balance: battery discharge power Battery Power reads 1112 W now and counts as battery
+charge 1112 W, reversed by the checkbox").
 
 For measured values (temperature, humidity, air quality, other measurements and the current
 temperature of a thermostat) the same periods return the **history**: minimum, average and maximum per

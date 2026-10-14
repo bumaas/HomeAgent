@@ -1,0 +1,54 @@
+{
+    "_quelle": "Betreute Anlage (9.0 C++) 14.10.2026, nur gelesen, Werte aus dem Archiv: Netzsensor Shelly Pro 3EM „Gesamt Wirkleistung (Bezug(+)/Einspeisung(-))“ #16895, PV-Leistung aus einem Skript des Anwenders #49040, Batterie Marstek Venus E 3.0 „Battery Power“ #31051 (positiv = laden, umgekehrt zur Konvention des Moduls) und der Verbrauch #45303, den dasselbe Skript als Netz + PV − Batterie rechnet. Je Zeitpunkt der letzte archivierte Wert; ausgewählt sind die Zeitpunkte, an denen der Verbrauch des Skripts ohne Rest aufgeht. „verbrauch“ ist das Orakel für die Hausleistung. Die Seriennummer des Shelly ist genullt.",
+    "zeitzone": "Europe/Berlin",
+    "bilanzLeistung": {
+        "import": 16895,
+        "solar": 49040,
+        "discharge": 31051
+    },
+    "namen": {
+        "16895": "Keller_Eingang_ShellyPro3em-000000000000, Gesamt Wirkleistung (Bezug(+)/Einspeisung(-))",
+        "49040": "Energy Distribution, Werte aufbereiten, Leistung, PV",
+        "31051": "Marstek Venus E 3.0, Battery Power",
+        "45303": "Energy Distribution, Werte aufbereiten, Leistung, Verbrauch"
+    },
+    "zeitpunkte": {
+        "laden": {
+            "jetzt": 1791965455,
+            "datum": "2026-10-14 10:10:55",
+            "werte": {
+                "16895": 1.077,
+                "49040": 1503.5,
+                "31051": 1112,
+                "45303": 392.577
+            }
+        },
+        "entladen": {
+            "jetzt": 1791975430,
+            "datum": "2026-10-14 12:57:10",
+            "werte": {
+                "16895": 9.101,
+                "49040": 630.9,
+                "31051": -637,
+                "45303": 1277.001
+            }
+        },
+        "einspeisen": {
+            "jetzt": 1791987066,
+            "datum": "2026-10-14 16:11:06",
+            "_hinweis": "aktuelle Werte, nicht aus dem Archiv; Aktualisierung 16:11:01 bis 16:11:05",
+            "werte": {
+                "16895": -474.801,
+                "49040": 734.4,
+                "31051": -5,
+                "45303": 264.599
+            }
+        }
+    },
+    "einheiten": {
+        "16895": "W",
+        "49040": "W",
+        "31051": "W",
+        "45303": "W"
+    }
+}

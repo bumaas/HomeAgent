@@ -147,6 +147,9 @@ class HomeAgent extends IPSModuleStrict
         foreach (array_merge(array_values(DeviceIndex::BALANCE), array_values(DeviceIndex::BALANCE_POWER)) as $property) {
             $this->RegisterPropertyInteger($property, 0);
         }
+        // Vorzeichen eines einzelnen Netz- bzw. Batteriesensors umkehren (B77): Der Marstek Venus E meldet positiv = laden.
+        $this->RegisterPropertyBoolean('InvertGridPower', false);
+        $this->RegisterPropertyBoolean('InvertBatteryPower', false);
         // Kosten in Euro (B72): Strompreis als archivierte Variable (ct/kWh oder €/kWh) und Einspeisevergütung in ct/kWh
         $this->RegisterPropertyInteger('PriceVariableID', 0);
         $this->RegisterPropertyFloat('FeedInTariff', 0.0);
@@ -357,6 +360,12 @@ class HomeAgent extends IPSModuleStrict
             if (IPS_VariableExists($variableId) && !DeviceIndex::isPowerUnit($unit)) {
                 $lines[] = sprintf($this->Translate('Note: energy balance: %s %s is in %s, not a power value, so there is no house power'), $this->powerCaption($key), IPS_GetName($variableId), $unit);
             }
+        }
+        // Sensoren mit Vorzeichen: wie der aktuelle Wert zählt, damit der Anwender die Richtung am Haus prüft (B77).
+        foreach ($this->deviceIndex()->signedPowers() as $signed) {
+            $line = sprintf($this->Translate('Energy balance: %s %s reads %s W now and counts as %s %s W'), $this->powerCaption($signed['key']), IPS_GetName($signed['variable']),
+                (string)(int)round($signed['raw']), $this->balanceCaption($signed['counted']), (string)(int)round($signed['watts']));
+            $lines[] = $signed['inverted'] ? $line . $this->Translate(', reversed by the checkbox') : $line;
         }
         // Raumliste: Ein Tippfehler im Raum eines Geräts fällt hier auf, denn der Raum bleibt freier Text.
         $rooms = $this->roomIndex();
@@ -2442,7 +2451,19 @@ class HomeAgent extends IPSModuleStrict
     {
         $index = new DeviceIndex($this->usableDevices(), $this->backend(), $this->roomIndex(), $defaultRoom, $this->usableBalance($this->balance()), $this->usableBalance($this->powerBalance()));
         $index->setTariff($this->priceVariable(), (float)@$this->ReadPropertyFloat('FeedInTariff'));
+        $index->setInvertedPower($this->invertedPower());
         return $index;
+    }
+
+    /**
+     * Sensoren der Leistungsbilanz mit umgekehrtem Vorzeichen (B77): Schlüssel aus DeviceIndex::BALANCE_POWER.
+     *
+     * @return list<string>
+     */
+    private function invertedPower(): array
+    {
+        // Vor dem Neuladen der Bibliothek gibt es die Properties bei bestehenden Instanzen noch nicht.
+        return array_keys(array_filter(['import' => (bool)@$this->ReadPropertyBoolean('InvertGridPower'), 'discharge' => (bool)@$this->ReadPropertyBoolean('InvertBatteryPower')]));
     }
 
     private function sceneIndex(): SceneIndex

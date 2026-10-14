@@ -202,6 +202,12 @@ Drei Werkzeuge: `get_state`, `set_state`, `run_scene`. Alle tragen `openWorldHin
   nennt die übrigen in einer Schlusszeile. `period` bzw. `from`/`to` liefern den Verbrauch aus den
   Archiv-Aggregaten, `period=now` die Leistung; fürs ganze Haus aus der Energiebilanz (Bezug + PV +
   Batterie entladen − Einspeisung − Batterie geladen), mit Autarkie und den fünf größten Geräten.
+  Ein einzelner Netz- bzw. Batteriesensor mit Vorzeichen zählt wie bei Home Assistant (negativ = Einspeisung bzw.
+  laden); die Haken `InvertGridPower` und `InvertBatteryPower` drehen das um (B77, `DeviceIndex::setInvertedPower`,
+  nur ohne eigenes Gegenfeld). Anlass: Der Marstek Venus E meldet positiv = laden; die Hausleistung lag damit um das
+  Doppelte der Ladeleistung zu hoch. Der Selbsttest nennt je Sensor mit Vorzeichen Rohwert und Zählweise
+  (`signedPowers`). Test `check-vorzeichen.php`, Orakel ist der Verbrauch aus einem Skript des Anwenders. Seit B77
+  gibt es die Hausleistung jetzt auch ohne freigegebene Geräte (`houseOnly` mit `period=now`).
   Für Messwerte (Temperatur, Feuchte, Luftqualität, Messwert, Ist-Temperatur des Thermostats) liefern
   dieselben Zeiträume den Verlauf (Minimum / Mittel / Maximum je Stunde, Tag oder Monat).
 - **`set_state`** mit `command` (`on`, `off`, `open`, `close`, `stop`), `percent` oder `temperature`;

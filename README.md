@@ -321,7 +321,10 @@ Netzbezug 27, PV-Ertrag 0, Batterie entladen 1521, Einspeisung 0, Batterie gelad
 750 W durch 11 von 11 Gerät(en) mit Leistungsmessung, 798 W nicht erfasst.“ W, kW und MW werden
 umgerechnet, ohne Einheit gilt W. Haben Sie für das Netz nur einen Sensor mit Vorzeichen, gehört er
 zum Netzbezug (negativ heißt Einspeisung); ebenso ein Batteriesensor zu „Batterie entladen“ (negativ
-heißt laden).
+heißt laden). Meldet ein Sensor andersherum, etwa eine Batterie, die beim Laden positiv zählt, setzen Sie
+darunter den Haken „Vorzeichen umkehren“. Der Selbsttest nennt dann den aktuellen Wert und wie er zählt
+(„Energiebilanz: Batterie entladen Leistung Battery Power meldet jetzt 1112 W und zählt als Batterie
+geladen 1112 W, durch den Haken umgekehrt“).
 
 Für Messwerte (Temperatur, Feuchte, Luftqualität, sonstige Messwerte und die Ist-Temperatur eines
 Thermostats) liefern dieselben Zeiträume den **Verlauf**: je Stunde, Tag oder Monat Minimum, Mittel und

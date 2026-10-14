@@ -548,6 +548,8 @@ foreach ([
     'The energy balance uses the properties GridImportVariableID, GridExportVariableID, SolarVariableID, BatteryChargeVariableID and BatteryDischargeVariableID (energy meters archived as counters), the current power the matching GridImportPowerVariableID and so on; each part is optional.' => 'Die Energiebilanz nutzt die Properties GridImportVariableID, GridExportVariableID, SolarVariableID, BatteryChargeVariableID und BatteryDischargeVariableID (als Zähler archivierte Energiezähler), die aktuelle Leistung die passenden GridImportPowerVariableID und so weiter; jeder Teil ist freiwillig.',
     'An access without a token gets one on apply (64 hex characters); a token set by script needs at least 24 characters.'                         => 'Ein Zugang ohne Token bekommt beim Übernehmen eines (64 Hex-Zeichen); ein per Skript gesetztes Token braucht mindestens 24 Zeichen.',
     'Room names are the words the user speaks (Küche, Bad oben), without technical additions.'                                                      => 'Raumnamen sind die Wörter, die der Anwender spricht (Küche, Bad oben), ohne technische Zusätze.',
+    // Vorzeichen umkehren (B77, Burkhard 14.10.2026)
+    'InvertGridPower and InvertBatteryPower reverse the sign of a single signed grid or battery power sensor; HAGT_RunSelfTest shows how the current value counts.' => 'InvertGridPower und InvertBatteryPower kehren das Vorzeichen eines einzelnen Netz- oder Batteriesensors mit Vorzeichen um; HAGT_RunSelfTest zeigt, wie der aktuelle Wert zählt.',
     // Raum als Auswahl der Raumliste (B75, Burkhard 13.10.2026)
     'The Room of a device is a room of the room list or empty; the form names rooms that are missing there.' => 'Der Raum eines Geräts ist ein Raum der Raumliste oder leer; das Formular nennt Räume, die dort fehlen.',
     'The fields of each type (volume, mode, fan and others) are named by HAGT_UIDeviceForm(int $InstanceID, string $Type).'                           => 'Die Felder je Typ (Lautstärke, Modus, Lüfter und andere) nennt HAGT_UIDeviceForm(int $InstanceID, string $Type).',
@@ -1141,6 +1143,52 @@ foreach ($leistungFelder as $feld) {
         IPS_SetProperty($iid, $feld, 0);
     } catch (Throwable) {
     }
+}
+IPS_ApplyChanges($iid);
+
+// Vorzeichen umkehren (B77, Burkhard 14.10.2026): Der Marstek Venus E meldet positiv = laden. Je ein Haken für den
+// Netzsensor und den Batteriesensor mit Vorzeichen; der Selbsttest nennt den Rohwert und wie er zählt.
+$umkehren = [];
+foreach (['InvertGridPower', 'InvertBatteryPower'] as $feld) {
+    try {
+        $umkehren[$feld] = IPS_GetProperty($iid, $feld);
+    } catch (Throwable) {
+        $umkehren[$feld] = null;
+    }
+}
+pruefe($umkehren === ['InvertGridPower' => false, 'InvertBatteryPower' => false], 'zwei Haken zum Umkehren, anfangs aus: ' . json_encode($umkehren));
+pruefe(array_diff(['InvertGridPower', 'InvertBatteryPower'], $namen) === [], 'das Formular hat beide Haken: fehlen ' . implode(', ', array_diff(['InvertGridPower', 'InvertBatteryPower'], $namen)));
+$jetzt = static fn (): string => (string)strtok((string)(oderNull(static fn () => \Closure::bind(fn () => $this->deviceIndex()->getState(['period' => 'now'])['text'], $m, HomeAgent::class)()) ?? ''), "\n");
+try {
+    IPS_SetProperty($iid, 'BatteryDischargePowerVariableID', $leistung);
+    IPS_SetProperty($iid, 'InvertBatteryPower', true);
+} catch (Throwable) {
+}
+IPS_ApplyChanges($iid);
+$test = $m->RunSelfTest();
+pruefe(str_contains($test, 'Energy balance: battery discharge power POWER reads 26 W now and counts as battery charge 26 W, reversed by the checkbox'), 'Selbsttest: Batterie umgekehrt, positiv zählt als Laden: ' . $test);
+pruefe(str_contains($jetzt(), 'battery charge 26 W'), 'get_state period=now zählt die Batterie als Laden: ' . $jetzt());
+try {
+    IPS_SetProperty($iid, 'InvertBatteryPower', false);
+} catch (Throwable) {
+}
+IPS_ApplyChanges($iid);
+$test = $m->RunSelfTest();
+pruefe(str_contains($test, 'Energy balance: battery discharge power POWER reads 26 W now and counts as battery discharge 26 W') && !str_contains($test, 'battery charge 26 W'), 'Selbsttest ohne Haken: positiv zählt als Entladen: ' . $test);
+pruefe(str_contains($jetzt(), 'battery discharge 26 W'), 'get_state ohne Haken: Entladen: ' . $jetzt());
+try {
+    IPS_SetProperty($iid, 'BatteryDischargePowerVariableID', 0);
+    IPS_SetProperty($iid, 'GridImportPowerVariableID', $leistung);
+    IPS_SetProperty($iid, 'InvertGridPower', true);
+} catch (Throwable) {
+}
+IPS_ApplyChanges($iid);
+$test = $m->RunSelfTest();
+pruefe(str_contains($test, 'Energy balance: grid import power POWER reads 26 W now and counts as grid export 26 W, reversed by the checkbox'), 'Selbsttest: Netz umgekehrt, positiv zählt als Einspeisung: ' . $test);
+try {
+    IPS_SetProperty($iid, 'GridImportPowerVariableID', 0);
+    IPS_SetProperty($iid, 'InvertGridPower', false);
+} catch (Throwable) {
 }
 IPS_ApplyChanges($iid);
 
