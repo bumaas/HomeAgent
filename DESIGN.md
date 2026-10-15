@@ -182,7 +182,10 @@ Feste Reihenfolge: Rollläden, Licht, Schalter und Steckdosen, Klima, Messwerte,
   derselben Stelle; Vergleichspunkte ohne eigenen Punkt (nach heute) haben einen eigenen Tooltip (Burkhard 13.10.2026).
 - **Ringe:** drei Viertel eines Kreises, von oben im Uhrzeigersinn, innen kleiner; Teile links neben dem Anfang ihres
   Bogens, Skala außen (Prozent oder ganze kW), die Zahl groß in der Mitte. Bögen unter 1 % entfallen. Die Teile heißen
-  in allen Ringen gleich kurz: PV bzw. PV direkt, Batterie, Netz, Einspeisung. Ringkarten füllen die Breite.
+  in allen Ringen gleich kurz: PV bzw. PV direkt, Batterie, Netz, Einspeisung. Ringkarten füllen die Breite. Ohne
+  Batterie in der Bilanz fehlt ihre Zeile. Mit Vergleich steht dessen Anteil rechts in der Kopfzeile der Ringkarte
+  („2025: 79 %“, Farbe `--muted`, Zeitraum wie in der Titelzeile, Tooltip „Vergleich …“); in der Mitte ist dafür kein
+  Platz, unten rechts liegt der innerste Bogen (Hardcopy 15.10.2026).
 
 ## Texte
 

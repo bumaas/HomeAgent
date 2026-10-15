@@ -511,7 +511,9 @@ die Einspeisung darunter. Zusammen ergibt jeder Balken den Hausverbrauch der Bil
 Netz, zählt das als Netz. Darüber stehen zwei Ringe: Die Autarkie teilt den Hausverbrauch in PV direkt, Batterie und
 Netz, der Eigenverbrauch teilt den PV-Ertrag in direkt verbraucht, in die Batterie geladen und eingespeist. Mit
 „Zeig mir die Leistung jetzt als Diagramm“ kommen dieselben Ringe aus den Leistungen der Bilanz, dazu ein Ring mit
-der Hausleistung aus PV, Batterie und Netz.
+der Hausleistung aus PV, Batterie und Netz. Ohne Batterie in der Bilanz fehlt sie in den Ringen. Mit einem Vergleich,
+etwa „verglichen mit dem Vorjahr“, steht oben rechts in jedem Ring der Anteil des Vergleichszeitraums, in einem
+laufenden Zeitraum bis zur selben Zeit.
 
 Ebenso geht der Verbrauch je Gerät, etwa „Welche Geräte haben im September am meisten verbraucht? Als Diagramm“:
 die fünf größten Geräte mit Zähler übereinander, der Rest als „übrige Geräte“, fürs ganze Haus dazu „nicht

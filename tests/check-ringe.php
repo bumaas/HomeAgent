@@ -131,6 +131,55 @@ pruefe($r['isError'] && !isset($r['structuredContent']), 'period=now mit Raum: k
 $r = diagrammLeistung(['period' => 'now'], []);
 pruefe($r['isError'] && !isset($r['structuredContent']), 'period=now ohne Leistungsbilanz: kein Diagramm: ' . $r['text']);
 
+/* --- Ohne Batterie ----------------------------------------------------------------------------- */
+
+// Neustadt (15.10.2026, Hardcopy Burkhard aus der Claude-App): Die Bilanz hat Netz, Einspeisung und PV, aber keinen
+// Batteriezähler (der Marstek steht nur als Leistungssensor drin). Die Ringe zeigten trotzdem „Batterie 0 kWh“. Ohne
+// Batteriezähler gibt es die Zeile nicht, wie im Stapel. Werte vom nuc, nur die Batteriezähler weggelassen.
+$anlage = new FakeBackend($verbrauch['variablen']);
+$anlage->jetzt = $verbrauch['jetzt'];
+$ohneBatterie = (new DeviceIndex($verbrauch['geraete'], $anlage, null, '', array_diff_key($verbrauch['bilanz'], ['charge' => 0, 'discharge' => 0])))->chart(['period' => 'yesterday']);
+pruefe(array_keys(teile(ring($ohneBatterie, 'autarky'))) === ['solar', 'grid'], 'ohne Batteriezähler: Autarkie nur aus PV direkt und Netz: ' . json_encode(teile(ring($ohneBatterie, 'autarky'))));
+pruefe(array_keys(teile(ring($ohneBatterie, 'self_use'))) === ['solar', 'export'], 'ohne Batteriezähler: Eigenverbrauch nur aus PV direkt und Einspeisung: ' . json_encode(teile(ring($ohneBatterie, 'self_use'))));
+// Ebenso jetzt ohne Batterieleistung
+$r = diagrammLeistung(['period' => 'now'], array_diff_key($leistung['bilanzLeistung'], ['charge' => 0, 'discharge' => 0]));
+pruefe(array_keys(teile(ring($r, 'power'))) === ['solar', 'grid'] && array_keys(teile(ring($r, 'autarky'))) === ['solar', 'grid'], 'ohne Batterieleistung: Leistung und Autarkie ohne Batterie: ' . json_encode([teile(ring($r, 'power')), teile(ring($r, 'autarky'))]));
+// Mit Batterie bleibt die Zeile, auch wenn sie 0 ist (am nuc nachts geladen, tagsüber oft 0)
+pruefe(array_keys(teile(ring(diagrammZaehler(['period' => 'yesterday']), 'autarky'))) === ['solar', 'battery', 'grid'], 'mit Batteriezähler bleibt die Zeile');
+
+/* --- Mit Vergleich ----------------------------------------------------------------------------- */
+
+// Hardcopy 15.10.2026: Titel „2026 · Vergleich 2025“, die Ringe zeigten aber nur 2026. Mit compare trägt jeder Ring den
+// Anteil des Vergleichszeitraums (compare.share), solange der Zeitraum läuft bis zur selben Zeit wie „By the same time“.
+// Orakel: die Ringe des Vergleichszeitraums selbst bzw. die Stundenaggregate von gestern bis 17:19.
+$r = diagrammZaehler(['from' => '2026-10-05', 'to' => '2026-10-10', 'compare' => 'previous']);
+$alt = diagrammZaehler(['from' => '2026-09-29', 'to' => '2026-10-04']);
+pruefe(!$r['isError'] && (ring($r, 'autarky')['compare']['share'] ?? null) === (ring($alt, 'autarky')['share'] ?? 'fehlt')
+    && (ring($r, 'self_use')['compare']['share'] ?? null) === (ring($alt, 'self_use')['share'] ?? 'fehlt'), 'abgeschlossener Zeitraum: der Vergleich hat die Anteile der Woche davor: ' . json_encode([ring($r, 'autarky')['compare'] ?? null, ring($alt, 'autarky')['share'] ?? null, ring($r, 'self_use')['compare'] ?? null, ring($alt, 'self_use')['share'] ?? null]));
+
+$bis = [];
+$jetzt = $verbrauch['jetzt'];
+$heuteBeginn = mktime(0, 0, 0, 10, 12, 2026);
+foreach ($verbrauch['bilanz'] as $teil => $id) {
+    $v = $verbrauch['variablen'][(string)$id];
+    $bis[$teil] = 0.0;
+    foreach ($v['aggregate']['0'] as $a) {
+        $gleicheZeit = $a['zeit'] + 86400;
+        if ($a['zeit'] >= $beginn && $gleicheZeit < $jetzt) {
+            $bis[$teil] += $kwh($v, (float)$a['summe']) * min(1.0, ($jetzt - $gleicheZeit) / 3600);
+        }
+    }
+}
+$hausBis = $bis['import'] + $bis['solar'] + $bis['discharge'] - $bis['export'] - $bis['charge'];
+$autarkieBis = (int)round(max(0.0, min(1.0, 1 - $bis['import'] / $hausBis)) * 100);
+$eigenBis = (int)round(max(0.0, min(1.0, ($bis['solar'] - $bis['export']) / $bis['solar'])) * 100);
+$r = diagrammZaehler(['period' => 'today', 'compare' => 'previous']);
+pruefe((ring($r, 'autarky')['compare']['share'] ?? null) === $autarkieBis && (ring($r, 'self_use')['compare']['share'] ?? null) === $eigenBis,
+    'laufender Tag: der Vergleich bis zur selben Zeit: ' . json_encode([ring($r, 'autarky')['compare'] ?? null, $autarkieBis, ring($r, 'self_use')['compare'] ?? null, $eigenBis]));
+pruefe(str_contains($r['text'], sprintf("\nBy the same time: Self-sufficiency %d %%, self-consumed solar %d %%.", $autarkieBis, $eigenBis)), 'das Modell bekommt dieselben Anteile: ' . $r['text']);
+// Ohne Vergleich kein compare am Ring
+pruefe(!isset(ring(diagrammZaehler(['period' => 'yesterday']), 'autarky')['compare']), 'ohne Vergleich kein compare am Ring');
+
 /* --- Beschriftungen ---------------------------------------------------------------------------- */
 
 $r = diagrammZaehler(['period' => 'yesterday'], $de);

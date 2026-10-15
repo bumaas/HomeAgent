@@ -308,6 +308,9 @@ final class DeviceIndex
     /** Während chart() mit part: nur dieser Zähler der Bilanz (Schlüssel aus PARTS) statt des Hausstapels (B74). */
     private string $chartPart = '';
 
+    /** Teile der Bilanz je Abschnitt aus dem letzten Hausstapel; compareChart rechnet daraus die Ringe des Vergleichs. */
+    private ?array $chartParts = null;
+
     /** Strompreis (Variable in ct/kWh oder €/kWh, archiviert) und Einspeisevergütung in ct/kWh; 0 = keine (B72). */
     private int $priceVariable = 0;
     private float $feedIn = 0.0;
@@ -1033,10 +1036,17 @@ final class DeviceIndex
                 $totals[$key] = ($totals[$key] ?? 0.0) + $kwh;
             }
         }
-        $rings = $this->shareRings($totals, 'kWh');
+        $rings = $this->shareRings($totals, 'kWh', self::hasBattery($balance));
         if ($rings !== []) {
             $this->chart['rings'] = $rings;
         }
+        $this->chartParts = $values;
+    }
+
+    /** Hat die Bilanz eine Batterie (Zähler bzw. Leistung für Laden oder Entladen)? */
+    private static function hasBattery(array $balance): bool
+    {
+        return isset($balance['charge']) || isset($balance['discharge']);
     }
 
     /**
@@ -1044,12 +1054,29 @@ final class DeviceIndex
      * Hausverbrauch in PV direkt (PV − Einspeisung − Batterie geladen, nicht unter 0), Batterie (entladen) und Netz,
      * Eigenverbrauch teilt die PV in direkt, in die Batterie geladen und eingespeist. Die Zahl in der Mitte rechnet
      * selfSufficiency(), damit Bild und Text des Modells übereinstimmen. Ein Ring fehlt, wenn sich seine Zahl nicht
-     * rechnen lässt. Gilt für kWh über einen Zeitraum wie für W jetzt.
+     * rechnen lässt. Gilt für kWh über einen Zeitraum wie für W jetzt. Ohne Batterie in der Bilanz fehlt ihre Zeile, wie
+     * im Stapel (Neustadt 15.10.2026: „Batterie 0 kWh“, der Marstek stand nur als Leistungssensor drin).
      *
      * @param array<string, float> $values Teile der Bilanz je Schlüssel
      * @return list<array<string, mixed>>
      */
-    private function shareRings(array $values, string $unit): array
+    private function shareRings(array $values, string $unit, bool $battery = true): array
+    {
+        $rings = $this->buildShareRings($values, $unit);
+        if (!$battery) {
+            foreach ($rings as &$ring) {
+                $ring['parts'] = array_values(array_filter($ring['parts'], static fn (array $part): bool => $part['key'] !== 'battery'));
+            }
+            unset($ring);
+        }
+        return $rings;
+    }
+
+    /**
+     * @param array<string, float> $values
+     * @return list<array<string, mixed>>
+     */
+    private function buildShareRings(array $values, string $unit): array
     {
         $house = 0.0;
         foreach (self::BALANCE_TERMS as $key => [$sign]) {
@@ -1388,7 +1415,11 @@ final class DeviceIndex
                 ['key' => 'battery', 'name' => $this->t('battery'), 'value' => round($values['discharge'] ?? 0.0, 1)],
                 ['key' => 'grid', 'name' => $this->t('grid'), 'value' => round($values['import'] ?? 0.0, 1)],
             ]]];
-        $rings = array_merge($rings, $this->shareRings($values, 'W'));
+        $battery = self::hasBattery($this->powerBalance);
+        if (!$battery) {
+            $rings[0]['parts'] = array_values(array_filter($rings[0]['parts'], static fn (array $part): bool => $part['key'] !== 'battery'));
+        }
+        $rings = array_merge($rings, $this->shareRings($values, 'W', $battery));
         $lines = [$state['text']];
         $shares = $this->selfSufficiency($values, $total);
         if ($shares !== null) {
@@ -4124,10 +4155,13 @@ final class DeviceIndex
         $this->chartByDevice = $byDevice;
         $this->chartCosts = $costs;
         $this->chartPart = $part;
+        $this->chartParts = null;
         try {
             $state = $this->getState(['from' => date('Y-m-d', $from), 'to' => date('Y-m-d', $to)] + array_diff_key($arguments, ['period' => 0, 'from' => 0, 'to' => 0]));
             $other = $this->chart;
+            $otherParts = $this->chartParts;
         } finally {
+            $this->chartParts = null;
             $this->chart = null;
             $this->chartByDevice = false;
             $this->chartCosts = false;
@@ -4178,19 +4212,53 @@ final class DeviceIndex
         }
         $values = array_map(static fn (int $t): ?float => $byTime[$t] ?? null, $times);
         $chart['compare']['values'] = $values;
+        // Anteil eines Abschnitts bis zur selben Zeit: der laufende anteilig, künftige nicht (Review 14.10.2026: vorher
+        // ganz, am 12.10. der ganze Oktober des Vorjahres)
+        $now = $this->backend->timestamp();
+        $last = (int)($chart['range'][1] ?? 0);
+        $position = array_flip($times);
+        $weight = static function (int $time) use ($running, $now, $last, $times, $position): float {
+            if (!$running) {
+                return 1.0;
+            }
+            $next = $times[($position[$time] ?? PHP_INT_MAX) + 1] ?? max($last, $time + 1);
+            return $time < $now ? min(1.0, ($now - $time) / max(1, $next - $time)) : 0.0;
+        };
         if ($running) {
-            // Bis zur selben Zeit: der laufende Abschnitt anteilig (Review 14.10.2026: vorher ganz, am 12.10. der ganze
-            // Oktober des Vorjahres)
-            $now = $this->backend->timestamp();
             $sum = 0.0;
-            $last = (int)($chart['range'][1] ?? 0);
             foreach ($times as $i => $time) {
-                $next = $times[$i + 1] ?? max($last, $time + 1);
-                if ($values[$i] !== null && $time < $now) {
-                    $sum += $values[$i] * min(1.0, ($now - $time) / max(1, $next - $time));
+                if ($values[$i] !== null) {
+                    $sum += $values[$i] * $weight($time);
                 }
             }
             $text .= "\n" . sprintf($this->t('By the same time: %s %s.'), ($chart['unit'] ?? 'kWh') === '€' ? number_format($sum, 2, '.', '') : self::formatNumber($sum), $chart['unit'] ?? 'kWh');
+        }
+        // Ringe: Autarkie und Eigenverbrauch des Vergleichszeitraums, bis zur selben Zeit (Hardcopy 15.10.2026: Titel
+        // „2026 · Vergleich 2025“, die Ringe zeigten nur 2026)
+        if (isset($chart['rings']) && is_array($otherParts)) {
+            $totals = [];
+            foreach ($otherParts as $time => $parts) {
+                $share = $weight($shift($time));
+                foreach ($parts as $key => $kwh) {
+                    $totals[$key] = ($totals[$key] ?? 0.0) + $kwh * $share;
+                }
+            }
+            $house = 0.0;
+            foreach (self::BALANCE_TERMS as $key => [$sign]) {
+                $house += $sign * ($totals[$key] ?? 0.0);
+            }
+            $shares = $this->shares($totals, max(0.0, $house));
+            foreach ($chart['rings'] as &$ring) {
+                $value = $shares[$ring['key'] === 'autarky' ? 'autarky' : 'solar'] ?? null;
+                if ($value !== null) {
+                    $ring['compare'] = ['share' => $value];
+                }
+            }
+            unset($ring);
+            $line = $this->selfSufficiency($totals, max(0.0, $house));
+            if ($running && $line !== null) {
+                $text .= "\n" . sprintf($this->t('By the same time: %s'), $line);
+            }
         }
         return $text;
     }
@@ -4867,8 +4935,10 @@ final class DeviceIndex
             $shift = static fn (int $time): int => (int)strtotime($leap && date('m-d', $time) === '02-28' ? '+1 year +1 day' : '+1 year', $time);
             return [$start, (int)strtotime('-1 year', $end + 1) - 1, $from, $running, $shift];
         }
+        // Bei from/to ist $unit schon eine Anzahl („6 days“); „-1 6 days“ las strtotime als sechs Tage vorwärts (15.10.2026)
         $step = $period !== '' ? '+1 ' . $unit : '+' . $unit;
-        return [(int)strtotime('-1 ' . $unit, $from), $from - 1, $from, $running, static fn (int $time): int => (int)strtotime($step, $time)];
+        $back = $period !== '' ? '-1 ' . $unit : '-' . $unit;
+        return [(int)strtotime($back, $from), $from - 1, $from, $running, static fn (int $time): int => (int)strtotime($step, $time)];
     }
 
     /**

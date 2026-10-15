@@ -495,7 +495,9 @@ directly and battery, with the grid export below. Each bar adds up to the house 
 the battery charges from the grid, that counts as grid. Above it are two rings: self-sufficiency splits the house
 consumption into solar used directly, battery and grid, self-consumption splits the solar production into used
 directly, charged into the battery and exported. "Show me the power right now as a chart" draws the same rings from
-the power values of the balance, plus a ring with the house power from solar, battery and grid.
+the power values of the balance, plus a ring with the house power from solar, battery and grid. Without a battery in
+the balance the rings leave it out. With a comparison, for example "compared with last year", each ring shows the
+share of the comparison period in its top right corner, for a running period up to the same time.
 
 Consumption per device works the same way, for example "Which devices used the most in September? As a chart":
 the five largest devices with a meter stacked, the rest as "other devices", and for the whole house also "not

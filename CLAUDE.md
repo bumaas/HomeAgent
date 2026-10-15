@@ -141,6 +141,11 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   Einspeisung negativ. Dazu die Ringe Autarkie und Eigenverbrauch (`rings`, `shareRings`, Anregung pitti im Forum,
   13.10.2026): Autarkie teilt den Hausverbrauch über den ganzen Zeitraum in PV direkt, Batterie und Netz, Eigenverbrauch
   die PV in direkt, geladen und eingespeist; die Zahl in der Mitte rechnet `shares()` wie die Textzeile des Modells.
+  Ohne Batterie in der Bilanz (`hasBattery`) fehlt ihre Zeile in allen Ringen, wie im Stapel (Neustadt 15.10.2026:
+  „Batterie 0 kWh“, eingetragen war nur ein Leistungssensor). Mit `compare` trägt jeder Ring `compare.share`, gerechnet
+  in `compareChart` aus den Teilen des Vergleichs (`chartParts`), solange der Zeitraum läuft bis zur selben Zeit wie
+  „By the same time“; das Modell bekommt dieselben Anteile als Zeile. Die Seite zeigt sie rechts in der Kopfzeile der
+  Ringkarte (Hardcopy 15.10.2026: Titel „2026 · Vergleich 2025“, die Ringe zeigten nur 2026).
   `show_chart` mit `period=now` ohne Filter gibt es nur mit Leistungsbilanz (`powerRings`, `kind: rings`): Hausleistung
   auf einer Skala in ganzen kW, dann dieselben Ringe aus den Leistungen. Wie Ringe und Stapel gezeichnet werden, steht in `DESIGN.md`. Jeder Balken ist der Hausverbrauch der Bilanz; am nuc lud die Batterie am 11.10.2026 um 14 Uhr
   aus dem Netz (Fixture `nuc_2026-10-12_verbrauch.json`, Burkhard 12.10.2026: „verbrauchsdiagramme, also

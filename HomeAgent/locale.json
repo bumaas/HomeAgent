@@ -360,6 +360,7 @@
             "\"%s\" is part of the energy balance, not a device: use part=%s without name.": "„%s“ ist ein Teil der Energiebilanz, kein Gerät: part=%s ohne Name verwenden.",
             "electricity costs": "Stromkosten",
             "By the same time: %s %s.": "Bis zur selben Zeit: %s %s.",
+            "By the same time: %s": "Bis zur selben Zeit: %s",
             "Heatmap of %s (%s) per hour (%s): %d days.": "Heatmap %s (%s) je Stunde (%s): %d Tage.",
             "Heatmap of %s (%s) per weekday and hour (%s): average over %d days.": "Heatmap %s (%s) je Wochentag und Stunde (%s): Mittel über %d Tage.",
             "On average highest at %s (%s %s), lowest at %s (%s %s).": "Im Mittel am höchsten %s (%s %s), am niedrigsten %s (%s %s).",

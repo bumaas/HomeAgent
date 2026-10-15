@@ -50,7 +50,8 @@
   .rings { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
   .ring { flex: 1 1 190px; border: 1px solid var(--grid); border-radius: 10px; padding: 8px 6px 2px; box-sizing: border-box; }
   .ring svg { max-height: 270px; }
-  .ring h3 { margin: 0 0 0 6px; font-size: 13px; font-weight: 600; color: var(--fg); }
+  .ring h3 { margin: 0 6px; font-size: 13px; font-weight: 600; color: var(--fg); display: flex; justify-content: space-between; gap: 8px; }
+  .ring h3 .cmp { font-weight: 400; color: var(--muted); }
   .ring svg text { font-size: 11px; }
   .ring svg text.part { font-size: 12px; font-weight: 600; }
   .ring svg text.part tspan.value { fill: var(--fg); }
@@ -464,12 +465,20 @@
     }
     return (Math.abs(value) >= 100 ? Math.round(value) : Math.round(value * 10) / 10).toLocaleString(lang) + " " + unit;
   }
-  function drawRing(container, ring) {
+  function drawRing(container, ring, data) {
     var W = 300, H = 270, cx = 150, cy = 148, width = 15, gap = 6, outer = 96;
     var box = document.createElement("div");
     box.className = "ring";
     var title = document.createElement("h3");
-    title.textContent = ring.title;
+    title.appendChild(document.createTextNode(ring.title));
+    // Anteil des Vergleichszeitraums rechts in der Kopfzeile (Hardcopy 15.10.2026), in der Mitte ist kein Platz
+    if (ring.compare && data && data.compare && data.compare.range) {
+      var cmp = document.createElement("span");
+      cmp.className = "cmp";
+      cmp.textContent = periodText(data.compare.range) + ": " + ring.compare.share + " %";
+      cmp.title = compareText(data) + ": " + ring.compare.share + " %";
+      title.appendChild(cmp);
+    }
     box.appendChild(title);
     var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
     var power = ring.unit === "W" && ring.max;
@@ -819,11 +828,11 @@
     container.appendChild(box);
   }
 
-  function drawRings(container, rings) {
+  function drawRings(container, rings, data) {
     if (!rings || !rings.length) { return; }
     var row = document.createElement("div");
     row.className = "rings";
-    rings.forEach(function (ring) { drawRing(row, ring); });
+    rings.forEach(function (ring) { drawRing(row, ring, data); });
     container.appendChild(row);
   }
 
@@ -867,7 +876,7 @@
       var target = document.getElementById("root");
       target.textContent = "";
       addTitle(target, data);
-      drawRings(target, data.rings);
+      drawRings(target, data.rings, data);
       drawBars(target, data);
       var per = document.createElement("p");
       per.className = "note";
