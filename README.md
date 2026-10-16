@@ -592,8 +592,8 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
   Prozentzahl ohne „offen“ oder „geschlossen“.
 - Der Endpunkt spricht MCP über einfache HTTP-Anfragen und bietet keinen Datenstrom an. Clients, die
   zwingend einen Datenstrom (SSE) verlangen, können sich nicht direkt verbinden. Per OAuth melden sich
-  nur Clients mit einem Client ID Metadata Document an, erprobt ist die Claude-App. Für ChatGPT ist
-  beides nicht erprobt.
+  nur Clients mit einem Client ID Metadata Document an, erprobt ist die Claude-App. ChatGPT verbindet
+  sich mit dem Token, mit OAuth ist es nicht erprobt.
 - Anfragen aus einem Browser mit fremder Herkunft (`Origin`) weist der Endpunkt ab, auch mit richtigem Token. Als eigen gelten die IP-Adressen der Anlage, `localhost`, ihr Rechnername (auch mit `.local`, `.fritz.box`, `.lan`, `.home.arpa`, `.home` oder `.internal`) und die Connect-Adresse.
 - Tokens und Kopplungscodes sind das einzige Schloss. Über Symcon Connect ist der Endpunkt aus dem
   Internet erreichbar; verwenden Sie deshalb erzeugte Tokens. Abgewiesene Anmeldungen stehen im

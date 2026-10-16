@@ -573,7 +573,8 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
   "open" or "closed".
 - The endpoint speaks MCP over plain HTTP requests and offers no event stream. Clients that require
   an event stream (SSE) cannot connect directly. With OAuth only clients with a Client ID Metadata
-  Document can sign in; the Claude app has been tried. Neither way has been tried for ChatGPT.
+  Document can sign in; the Claude app has been tried. ChatGPT connects with the token, OAuth has not
+  been tried with it.
 - Requests from a browser with a foreign origin (`Origin`) are rejected, even with the right token. The system's own names are its IP addresses, `localhost`, its host name (also with `.local`, `.fritz.box`, `.lan`, `.home.arpa`, `.home` or `.internal`) and the Connect address.
 - Tokens and pairing codes are the only lock. Through Symcon Connect the endpoint is reachable from
   the internet, so use generated tokens. Rejected logins appear in the message log (the first one of a
