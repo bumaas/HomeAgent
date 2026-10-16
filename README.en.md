@@ -410,6 +410,10 @@ for example Hue via Matter), the module converts it. A value outside the range o
 nearest end, and the answer names the value sent. A light that is off is switched on. With the light on,
 the query names the colour temperature, for example "on (100 %, 2700 K)".
 
+If a variable with the colour mode sits next to the colour or colour temperature (as with Zigbee2MQTT, the
+HomeAssistant module and Matter), query and card name only what currently applies: the colour temperature
+for white light, the colour for coloured light. Without that variable both are shown.
+
 The assistant picks a colour from a fixed list of nine names. The module writes it as RGB into the
 variable and switches a light that is off on. With the light on, the query names the nearest colour of the
 list. A light without its own switch, such as an RGBW strip, counts as on as long as its colour is not black,
@@ -509,7 +513,7 @@ one hour of an hourly chart.
 With "Show me the lights in the living room" the Claude app shows the devices as cards, grouped by kind. Each card
 shows the state and, in large print, the main value (brightness, opening, reading or power); what is on is coloured.
 Depending on the device there is a switch, a bar for brightness or opening that can be dragged, buttons for open, stop and close, the setpoint with plus
-and minus, playback with volume, and a selection for operating mode and fan speed (a few entries as buttons). While a blind is still moving, the card follows it until it stops. A tap on a card switches at once, without a detour through the language model, and the
+and minus, playback with volume, a selection for operating mode and fan speed (a few entries as buttons), and for lights a slider for the colour temperature and colour swatches. While a blind is still moving, the card follows it until it stops. A tap on a card switches at once, without a detour through the language model, and the
 card then shows the state the device reported back; a message only appears when something did not work. The assistant learns in the further conversation what was operated
 on the cards. With a **Query only** access the cards only show the state.
 

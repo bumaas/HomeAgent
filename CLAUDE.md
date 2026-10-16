@@ -180,6 +180,17 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   `control_device` 68 ms. Modus und Lüfterstufe stehen als Auswahl auf der Karte (`controls.options`, `cardChoice`: Beschriftungen aus
   `DeviceBackend::options()` und der aktuelle Eintrag); die Seite schickt die Beschriftung als `mode` bzw. `fan_speed`, `runOption`
   sucht den Wert dazu (13.10.2026).
+  **Farbe auf der Karte** (Burkhard 16.10.2026, Hardcopy aus der Claude-App: „Gibt es noch keine Möglichkeit, Farbe
+  einzustellen?“): `controls.colortemp` (`cardKelvin`, Bereich der Variable gekappt auf `CARD_KELVIN` 2000 bis 6500 K,
+  `~TWColor` reicht von 1000 bis 12000) und `controls.color` (Tupfer aus `COLORS` mit Name, Beschriftung und `rgb`),
+  geschickt als `color_temperature` bzw. `color` (`CARD_FIELDS`, dieselben im Schema von `control_device`). Der
+  **Farbmodus** kommt aus einer Variable neben Farbe oder Farbtemperatur, deren Ident auf `color_mode` endet
+  (`DeviceBackend::colorMode`, Bedeutung in `colorModeKind`): Zigbee2MQTT `color_mode` COLOR_TEMP/XY, HomeAssistant-Modul
+  `light_color_mode` (auch `light_<entität>_color_mode`) color_temp/xy, Matter `ColorControl_ColorMode` 0/1 Farbe, 2
+  Farbtemperatur. Mit bekanntem Modus nennen Zustand (`stateOf`, also auch get_state) und Karte nur den gültigen Wert,
+  der andere Teil der Bedienung ist blass (`active`). Anlass an einer betreuten Anlage: Ein weißes Licht hieß „2732 K,
+  gelb“ (Zigbee2MQTT rechnet die Farbtemperatur in RGB um), ein rotes „4739 K, rot“. Bewusst keine Rolle „Farbmodus“
+  im Dialog, solange alle bekannten Module die Variable so nennen. Test `check-farbmodus.php`.
   **Daten der Karten** (Gestaltung nach pitti, die Regeln stehen in `DESIGN.md`): Jede Karte trägt `group` (`CARD_GROUPS`,
   Überschriften in fester Reihenfolge aus `labels.groups`; `measurement` bildet die Gruppe `measure`), `figure` (Hauptwert
   als Zahl und Einheit, `cardFigure`: Stufe eines eingeschalteten Lichts, Öffnungsgrad, Messwert, Ist-Temperatur bzw.

@@ -2369,6 +2369,44 @@ final class DeviceIndex
         return $best;
     }
 
+    /** Bereich des Reglers für die Farbtemperatur auf der Karte in Kelvin; ~TWColor reicht von 1000 bis 12000 K. */
+    public const CARD_KELVIN = [2000, 6500];
+
+    /**
+     * Bedeutung eines Farbmodus (Burkhard 16.10.2026): „temperature“ (weißes Licht), „color“ oder null (unbekannt, etwa
+     * HomeAssistant „brightness“ oder leer bei ausgeschaltetem Licht). Gelesen an den Anlagen: Zigbee2MQTT color_mode
+     * COLOR_TEMP/XY, HomeAssistant-Modul light_color_mode color_temp/xy, Matter ColorControl_ColorMode 0 Farbton und
+     * Sättigung, 1 XY, 2 Farbtemperatur (Darstellung des Matter-Moduls).
+     */
+    public static function colorModeKind(string $ident, mixed $value): ?string
+    {
+        if (is_int($value)) {
+            return stripos($ident, 'ColorControl') === false ? null : match ($value) {
+                2       => 'temperature',
+                0, 1    => 'color',
+                default => null,
+            };
+        }
+        $value = strtolower(trim((string)$value));
+        return match (true) {
+            in_array($value, ['color_temp', 'colortemp', 'color_temperature'], true) => 'temperature',
+            in_array($value, ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'], true)              => 'color',
+            default                                                                  => null,
+        };
+    }
+
+    /** Farbmodus eines Lichts aus der Variable neben Farbe oder Farbtemperatur; null = unbekannt. */
+    private function colorModeOf(array $entry): ?string
+    {
+        foreach (['color', 'colortemp'] as $role) {
+            $mode = isset($entry['roles'][$role]) ? $this->backend->colorMode($entry['roles'][$role]) : null;
+            if ($mode !== null) {
+                return self::colorModeKind($mode['ident'], $mode['value']);
+            }
+        }
+        return null;
+    }
+
     /** Mired statt Kelvin: ein Bereich bis 1000 (Hue über Matter 153 bis 454), ohne Bereich die Einheit. */
     private function isMired(int $variableId): bool
     {
@@ -3496,14 +3534,16 @@ final class DeviceIndex
             return $state;
         };
         // Die Farbtemperatur nur bei eingeschaltetem Licht; ausgeschaltet meldet etwa das
-        // HomeAssistant-Modul 0 K.
-        if ($state['active'] === true && isset($entry['roles']['colortemp'])) {
+        // HomeAssistant-Modul 0 K. Mit bekanntem Farbmodus nur der gültige Wert: Ein weißes Licht nannte sonst die
+        // umgerechnete Farbe („2732 K, gelb“), ein farbiges eine alte Farbtemperatur (betreute Anlage 16.10.2026).
+        $colorMode = $state['active'] === true && $entry['Type'] === 'light' ? $this->colorModeOf($entry) : null;
+        if ($state['active'] === true && isset($entry['roles']['colortemp']) && $colorMode !== 'color') {
             $raw = $this->backend->read($entry['roles']['colortemp'])['value'] ?? null;
             if ((is_int($raw) || is_float($raw)) && $raw > 0) {
                 $state = $append($state, $this->kelvinOf($entry['roles']['colortemp'], (float)$raw) . ' K');
             }
         }
-        if ($state['active'] === true && isset($entry['roles']['color'])) {
+        if ($state['active'] === true && isset($entry['roles']['color']) && $colorMode !== 'temperature') {
             $rgb = $this->backend->read($entry['roles']['color'])['value'] ?? null;
             $name = is_int($rgb) ? self::colorName($rgb) : null;
             if ($name !== null) {
@@ -4991,14 +5031,14 @@ final class DeviceIndex
         }
         // Nur der Schlüssel: die Karte neu, ohne etwas zu schalten. Die Seite fragt so nach, solange ein Gerät fährt
         // oder noch nicht bestätigt ist (Burkhard 13.10.2026: die Karte blieb bei „fährt auf 90 %“ stehen).
-        if (array_intersect_key($arguments, array_flip(['command', 'percent', 'temperature', 'humidity', 'volume', 'mode', 'fan_speed'])) === []) {
+        if (array_intersect_key($arguments, array_flip(self::CARD_FIELDS)) === []) {
             $card = $this->cardOf($entry, false);
             return ['text' => $entry['Room'] . ' | ' . $entry['Name'] . ' | ' . $card['text'], 'isError' => false,
                 'structuredContent' => ['kind' => 'cards', 'problem' => null, 'cards' => [$card]]];
         }
         $this->onlyKey = $key;
         try {
-            $result = $this->setState(['name' => $entry['Name']] + array_intersect_key($arguments, array_flip(['command', 'percent', 'temperature', 'humidity', 'volume', 'mode', 'fan_speed'])));
+            $result = $this->setState(['name' => $entry['Name']] + array_intersect_key($arguments, array_flip(self::CARD_FIELDS)));
         } finally {
             $this->onlyKey = null;
         }
@@ -5006,6 +5046,9 @@ final class DeviceIndex
         // (Burkhard 12.10.2026: nach dem Schalten stand die ganze Antwort von set_state auf der Karte).
         return $result + ['structuredContent' => ['kind' => 'cards', 'problem' => $this->problem, 'cards' => [$this->cardOf($entry, false)]]];
     }
+
+    /** Felder, die eine Karte an control_device schickt; das Schema in module.php nennt dieselben. */
+    public const CARD_FIELDS = ['command', 'percent', 'temperature', 'humidity', 'volume', 'mode', 'fan_speed', 'color_temperature', 'color'];
 
     /** Schlüssel einer Karte aus allen Variablen des Geräts; ein Thermostat und sein Raumfühler teilen sich eine. */
     public static function cardKey(array $entry): string
@@ -5044,6 +5087,19 @@ final class DeviceIndex
         }
         if (in_array('volume', $abilities, true)) {
             $controls['volume'] = $this->cardVolume($entry);
+        }
+        // Farbtemperatur und Farbe (Burkhard 16.10.2026); mit bekanntem Farbmodus ist nur der gültige Teil aktiv
+        if (in_array('color_temperature', $abilities, true) || in_array('color', $abilities, true)) {
+            $colorMode = $this->colorModeOf($entry);
+            if (in_array('color_temperature', $abilities, true)) {
+                $controls['colortemp'] = $this->cardKelvin($entry, $colorMode !== 'color');
+            }
+            if (in_array('color', $abilities, true)) {
+                $rgb = $this->backend->read($entry['roles']['color'])['value'] ?? null;
+                $controls['color'] = ['label' => $this->t('Colour'), 'active' => $colorMode !== 'temperature',
+                    'value' => $colorMode !== 'temperature' && is_int($rgb) ? self::colorName($rgb) : null,
+                    'entries' => array_map(fn (string $name, int $value): array => ['name' => $name, 'label' => $this->t($name), 'rgb' => sprintf('#%06x', $value)], array_keys(self::COLORS), self::COLORS)];
+            }
         }
         foreach (['mode' => ['mode', 'Mode'], 'fan_speed' => ['fan', 'Fan speed']] as $field => [$role, $label]) {
             $choice = in_array($field, $abilities, true) ? $this->cardChoice($entry['roles'][$role] ?? 0, $field, $label) : null;
@@ -5150,6 +5206,31 @@ final class DeviceIndex
             }
         }
         return ['field' => $field, 'label' => $this->t($label), 'value' => $value, 'entries' => array_map(static fn (array $o): string => (string)$o[1], $options)];
+    }
+
+    /**
+     * Regler der Farbtemperatur in Kelvin: Bereich der Variable, gekappt auf CARD_KELVIN, und der Wert (null ohne Wert
+     * oder bei 0, das HomeAssistant-Modul meldet ausgeschaltet 0 K). $active: Das Licht leuchtet gerade weiß oder der
+     * Farbmodus ist unbekannt.
+     *
+     * @return array{label: string, value: ?int, min: int, max: int, active: bool}
+     */
+    private function cardKelvin(array $entry, bool $active): array
+    {
+        $variable = $entry['roles']['colortemp'];
+        [$min, $max] = self::CARD_KELVIN;
+        $range = $this->backend->setpointRange($variable);
+        if ($range !== null && $range['max'] > $range['min'] && $range['min'] > 0) {
+            $ends = [$this->kelvinOf($variable, $range['min']), $this->kelvinOf($variable, $range['max'])];
+            $min = max($min, min($ends));
+            $max = min($max, max($ends));
+            if ($max <= $min) {
+                [$min, $max] = self::CARD_KELVIN;
+            }
+        }
+        $raw = $this->backend->read($variable)['value'] ?? null;
+        $value = (is_int($raw) || is_float($raw)) && $raw > 0 ? $this->kelvinOf($variable, (float)$raw) : null;
+        return ['label' => $this->t('Colour temperature'), 'value' => $value, 'min' => $min, 'max' => $max, 'active' => $active];
     }
 
     /** Lautstärke in ganzen Prozent des Bereichs wie im Zustandstext; null, wenn Wert oder Bereich unbekannt sind. */

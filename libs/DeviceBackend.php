@@ -51,6 +51,15 @@ interface DeviceBackend
     public function setpointRange(int $variableId): ?array;
 
     /**
+     * Farbmodus eines Lichts: Ident und Wert der Variable neben $variableId (Farbe oder Farbtemperatur), deren Ident
+     * auf color_mode endet (Zigbee2MQTT color_mode, HomeAssistant-Modul light_color_mode, Matter ColorControl_ColorMode).
+     * null = keine solche Variable. Die Bedeutung des Werts kennt DeviceIndex::colorModeKind().
+     *
+     * @return null|array{ident: string, value: mixed}
+     */
+    public function colorMode(int $variableId): ?array;
+
+    /**
      * Wie sich die Fahrt eines Rollladens oder Fensters anhalten lässt: „variable“ (eigene
      * Stoppvariable mit Aktion, ein Wahrheitswert oder eine Zahl mit dem Eintrag „Stop“/„Stopp“),
      * der Name des Moduls, über dessen Funktion es geht („HomeMatic“, „KLF200“), oder '' (gar nicht).

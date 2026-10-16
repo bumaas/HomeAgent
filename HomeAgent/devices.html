@@ -83,6 +83,15 @@
   .card:not(.lit) .bar { --tone: var(--inactive); }
   .bar.static::-webkit-slider-thumb { opacity: 0; }
   .bar.static::-moz-range-thumb { opacity: 0; }
+  /* Farbtemperatur und Farbe beim Licht (Burkhard 16.10.2026); der gerade nicht gültige Teil ist blass */
+  .dim { opacity: 0.45; }
+  .capline { display: flex; justify-content: space-between; gap: 8px; }
+  .ct { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; margin: 2px 0; border-radius: 3px; cursor: pointer; background: linear-gradient(90deg, #ffb46b, #cfe3ff); }
+  .ct::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--fg); border: 2px solid var(--bg); }
+  .ct::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--fg); border: 2px solid var(--bg); }
+  .swatches { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px; }
+  .swatch, .swatch:hover { width: 18px; height: 18px; min-width: 18px; padding: 0; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px var(--border); }
+  .swatch.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg); }
   .switch { position: relative; width: 34px; height: 20px; flex: none; }
   .switch input { opacity: 0; width: 0; height: 0; }
   .switch span { position: absolute; inset: 0; background: color-mix(in srgb, var(--muted) 25%, transparent); border-radius: 10px; cursor: pointer; transition: background 0.15s; }
@@ -342,6 +351,44 @@
     return bar;
   }
 
+  // Farbtemperatur in Kelvin: Regler von warm nach kalt, der Wert steht rechts neben der Beschriftung
+  function kelvinElement(card, ct, el) {
+    var box = node("div", "choice" + (ct.active ? "" : " dim"));
+    var head = node("div", "capline");
+    head.appendChild(node("div", "caption", ct.label));
+    var shown = node("div", "caption", ct.value === null ? "–" : ct.value + " K");
+    head.appendChild(shown);
+    box.appendChild(head);
+    var bar = node("input", "ct");
+    bar.type = "range";
+    bar.min = String(ct.min);
+    bar.max = String(ct.max);
+    bar.step = "50";
+    bar.value = String(ct.value === null ? Math.round((ct.min + ct.max) / 2) : Math.min(ct.max, Math.max(ct.min, ct.value)));
+    bar.setAttribute("aria-label", card.name + ": " + ct.label);
+    bar.addEventListener("input", function () { shown.textContent = bar.value + " K"; });
+    bar.addEventListener("change", function () { control(card, { color_temperature: Number(bar.value) }, el); });
+    box.appendChild(bar);
+    return box;
+  }
+
+  // Farbe: Tupfer aus der festen Liste des Moduls, gesendet wird der Name
+  function colorElement(card, co, el) {
+    var box = node("div", "choice" + (co.active ? "" : " dim"));
+    box.appendChild(node("div", "caption", co.label));
+    var row = node("div", "swatches");
+    co.entries.forEach(function (entry) {
+      var b = button("", entry.label, function () { if (entry.name !== co.value) { control(card, { color: entry.name }, el); } });
+      b.className = "swatch" + (entry.name === co.value ? " on" : "");
+      b.style.setProperty("--c", entry.rgb);
+      b.setAttribute("aria-label", co.label + ": " + entry.label);
+      if (entry.name === co.value) { b.setAttribute("aria-pressed", "true"); }
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+    return box;
+  }
+
   // Aufbau nach pitti (PN #11): Name oben, darunter Symbol und Bedienung, dann Zustand und Wert, dann Balken
   function cardElement(card, showRoom) {
     var group = card.group || "sensor";
@@ -436,6 +483,8 @@
     }
     // Auswahl (Modus, Lüfterstufe): gesendet wird die Beschriftung, das Modul sucht den Wert dazu
     (c.options || []).forEach(function (choice) { el.appendChild(choiceElement(card, choice, el)); });
+    if (c.colortemp) { el.appendChild(kelvinElement(card, c.colortemp, el)); }
+    if (c.color) { el.appendChild(colorElement(card, c.color, el)); }
     var reply = replies[card.key];
     if (reply) { el.appendChild(node("div", "reply" + (reply.error ? " error" : ""), reply.text)); }
     return el;

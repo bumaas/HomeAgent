@@ -104,7 +104,12 @@ Jede Karte hat von oben nach unten dieselben Teile; was ein Gerät nicht hat, f�
    einfache Karten einer Zeile gleich hoch sind.
 4. **Balken** für Prozentwerte (Helligkeit, Öffnung, Lautstärke). Er ist zugleich Schieberegler.
 5. **Weitere Bedienung**, jede mit Beschriftung in Großbuchstaben darüber: Sollwert („SOLLWERT“, „ZIELFEUCHTE“) mit
-   −/+, dann Auswahlen („MODUS“, „LÜFTERSTUFE“).
+   −/+, dann Auswahlen („MODUS“, „LÜFTERSTUFE“). Beim Licht die Farbtemperatur („FARBTEMPERATUR“, rechts daneben der
+   Wert in K) und die Farbe („FARBE“, Tupfer).
+
+Ein Licht mit bekanntem Farbmodus nennt im Zustand nur den gültigen Wert: weiß „AN (2732 K)“, farbig „AN (ROT)“. Der
+andere Teil der Bedienung bleibt da, aber blass (Deckkraft 0,45), damit man sieht, dass er gerade nicht gilt. Ohne
+Farbmodus gilt beides.
 
 Jede Karte behält ihre eigene Höhe (`align-items: start`); höher werden nur Karten mit weiterer Bedienung.
 
@@ -127,6 +132,8 @@ Jede Karte behält ihre eigene Höhe (`align-items: start`); höher werden nur K
 | Auswahl mit mehr Einträgen | Aufklappliste im Stil der Knöpfe (graue Fläche, kein Rahmen) |
 | Balken / Schieberegler | 6 px hoch, Füllung in der Farbe der Art, runder Griff 14 px immer sichtbar; reine Anzeige ohne Griff |
 | Sollwert | −, Wert mit Einheit, + in einer Zeile unter der Beschriftung |
+| Farbtemperatur | Schieberegler wie der Balken, Fläche von warm (#ffb46b) nach kalt (#cfe3ff) statt der Farbe der Art, Griff in `--fg`; Bereich der Lampe, höchstens 2000 bis 6500 K |
+| Farbe | Tupfer 18 px rund in einer Zeile (umbrechend), gewählter Tupfer mit Ring 2 px in `--fg`, Name als Tooltip; Weiß mit Rand `--border` |
 
 ### Gruppen
 

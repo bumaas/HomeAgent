@@ -1957,6 +1957,8 @@ class HomeAgent extends IPSModuleStrict
                         'volume'      => ['type' => 'number', 'minimum' => 0, 'maximum' => 100],
                         'mode'        => ['type' => 'string'],
                         'fan_speed'   => ['type' => 'string'],
+                        'color_temperature' => ['type' => 'number'],
+                        'color'       => ['type' => 'string', 'enum' => array_keys(DeviceIndex::COLORS)],
                     ],
                     'required'             => ['device'],
                     'additionalProperties' => false,

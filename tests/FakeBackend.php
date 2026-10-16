@@ -356,6 +356,13 @@ final class FakeBackend implements DeviceBackend
         return $range === null ? null : ['min' => (float)$range['min'], 'max' => (float)$range['max'], 'step' => (float)($range['schritt'] ?? 0)];
     }
 
+    /** Farbmodus aus dem Mitschnitt: „farbmodus“ als [ident, wert] an der Farb- oder Farbtemperaturvariable. */
+    public function colorMode(int $variableId): ?array
+    {
+        $mode = $this->variables[$variableId]['farbmodus'] ?? null;
+        return is_array($mode) ? ['ident' => (string)$mode['ident'], 'value' => $mode['wert']] : null;
+    }
+
     public function sleep(int $milliseconds): void
     {
         $this->slept += $milliseconds;

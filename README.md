@@ -425,6 +425,10 @@ etwa Hue über Matter), rechnet das Modul um. Ein Wert außerhalb des Bereichs d
 nächste Ende, und die Antwort nennt den gesendeten Wert. Ein ausgeschaltetes Licht wird dabei
 eingeschaltet. Bei eingeschaltetem Licht nennt die Abfrage die Farbtemperatur, etwa „an (100 %, 2700 K)“.
 
+Liegt neben der Farbe oder der Farbtemperatur eine Variable mit dem Farbmodus (so bei Zigbee2MQTT, beim
+HomeAssistant-Modul und bei Matter), nennen Abfrage und Karte nur, was gerade gilt: bei weißem Licht die
+Farbtemperatur, bei farbigem die Farbe. Ohne diese Variable stehen beide da.
+
 Eine Farbe wählt der Assistent aus einer festen Liste von neun Namen. Das Modul schreibt sie als RGB in
 die Variable und schaltet ein ausgeschaltetes Licht dabei ein. Die Abfrage nennt bei eingeschaltetem
 Licht die nächstliegende Farbe der Liste. Ein Licht ohne eigenen Schalter, etwa eine RGBW-Leiste, gilt als an,
@@ -525,7 +529,7 @@ steht in einem Stundendiagramm mit dem ganzen Tag in einer Stunde.
 Mit „Zeig mir die Lichter im Wohnzimmer“ zeigt die Claude-App die Geräte als Karten, nach Art
 gruppiert. Jede Karte nennt den Zustand und groß den wichtigsten Wert (Helligkeit, Öffnungsgrad, Messwert oder Leistung);
 was an ist, ist farbig. Dazu kommen je nach Gerät ein Schalter, ein Balken für Helligkeit oder Öffnungsgrad, den man ziehen kann, Knöpfe für Auf, Stopp und Zu, der Sollwert mit
-Plus und Minus, die Wiedergabe mit Lautstärke und eine Auswahl für Betriebsart und Lüfterstufe (wenige Einträge als Knöpfe). Fährt ein Rollladen noch, holt die Karte den Stand nach, bis er steht. Ein Tippen auf der Karte schaltet sofort, ohne Umweg über das Sprachmodell, und
+Plus und Minus, die Wiedergabe mit Lautstärke, eine Auswahl für Betriebsart und Lüfterstufe (wenige Einträge als Knöpfe) und beim Licht ein Regler für die Farbtemperatur und Farbtupfer. Fährt ein Rollladen noch, holt die Karte den Stand nach, bis er steht. Ein Tippen auf der Karte schaltet sofort, ohne Umweg über das Sprachmodell, und
 die Karte zeigt danach den Zustand, den das Gerät zurückgemeldet hat; eine Meldung steht dort nur, wenn etwas nicht geklappt hat. Der Assistent erfährt im weiteren Gespräch, was auf den
 Karten bedient wurde. Bei einem Zugang mit **Nur abfragen** zeigen die Karten nur den Zustand.
 

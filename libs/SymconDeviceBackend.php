@@ -364,6 +364,20 @@ final class SymconDeviceBackend implements DeviceBackend
         return $max > $min ? ['min' => $min, 'max' => $max, 'step' => $step] : null;
     }
 
+    public function colorMode(int $variableId): ?array
+    {
+        if ($variableId <= 0 || !IPS_VariableExists($variableId)) {
+            return null;
+        }
+        foreach (IPS_GetChildrenIDs(IPS_GetParent($variableId)) as $child) {
+            $ident = IPS_GetObject($child)['ObjectIdent'];
+            if (IPS_VariableExists($child) && preg_match('/(^|_)colou?r_?mode$/i', $ident) === 1) {
+                return ['ident' => $ident, 'value' => GetValue($child)];
+            }
+        }
+        return null;
+    }
+
     public function sleep(int $milliseconds): void
     {
         IPS_Sleep($milliseconds);

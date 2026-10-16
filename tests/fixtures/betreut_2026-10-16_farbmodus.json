@@ -1,0 +1,32 @@
+{
+    "_quelle": "Betreute Anlage 16.10.2026 20:21, nur gelesen: zwei Philips Ensis (4090331P9) über Zigbee2MQTT, Variablen Status, Helligkeit (~Intensity.100), Farbtemperatur Kelvin (~TWColor, 1000 bis 12000 K), Farbe (~HexColor). Neben ihnen liegt die Variable Farbmodus (Ident color_mode). Das Downlight leuchtete weiß (COLOR_TEMP), die Farbe 0xFFE87B ist die Umrechnung von Zigbee2MQTT; das Uplight leuchtete rot (XY), die Farbtemperatur 4739 K ist ein alter Wert. Verhalten der Aktionen nicht gemessen, angenommen sofort.",
+    "variablen": {
+        "38645": {"name": "Esstisch Downlight Status", "wert": true, "formatiert": "An", "formate": {"true": "An", "false": "Aus"}, "aktion": true},
+        "35752": {"name": "Esstisch Downlight Helligkeit", "wert": 100, "formatiert": "100 %", "aktion": true, "bereich": {"min": 0, "max": 100}},
+        "45386": {"name": "Esstisch Downlight Farbtemperatur Kelvin", "wert": 2732, "formatiert": "2732 K", "aktion": true, "sollbereich": {"min": 1000, "max": 12000, "schritt": 1}, "farbmodus": {"ident": "color_mode", "wert": "COLOR_TEMP"}},
+        "59287": {"name": "Esstisch Downlight Farbe", "wert": 16771195, "formatiert": "", "aktion": true, "farbmodus": {"ident": "color_mode", "wert": "COLOR_TEMP"}},
+        "45744": {"name": "Esstisch Uplight Status", "wert": true, "formatiert": "An", "formate": {"true": "An", "false": "Aus"}, "aktion": true},
+        "14338": {"name": "Esstisch Uplight Helligkeit", "wert": 100, "formatiert": "100 %", "aktion": true, "bereich": {"min": 0, "max": 100}},
+        "43725": {"name": "Esstisch Uplight Farbtemperatur Kelvin", "wert": 4739, "formatiert": "4739 K", "aktion": true, "sollbereich": {"min": 1000, "max": 12000, "schritt": 1}, "farbmodus": {"ident": "color_mode", "wert": "XY"}},
+        "22826": {"name": "Esstisch Uplight Farbe", "wert": 16711680, "formatiert": "", "aktion": true, "farbmodus": {"ident": "color_mode", "wert": "XY"}}
+    },
+    "geraete": [
+        {"Room": "Esszimmer", "Name": "Esstisch Downlight", "Aliases": "Esstischlicht", "Type": "light", "StateVariableID": 38645, "LevelVariableID": 35752, "ColorTempVariableID": 45386, "ColorVariableID": 59287, "Invert": false},
+        {"Room": "Esszimmer", "Name": "Esstisch Uplight", "Aliases": "", "Type": "light", "StateVariableID": 45744, "LevelVariableID": 14338, "ColorTempVariableID": 43725, "ColorVariableID": 22826, "Invert": false}
+    ],
+    "farbmodus_andere": {
+        "_quelle": "Weitere Schreibweisen, gelesen am 16.10.2026: HomeAssistant-Modul (nuc, MQTT Discovery, Einträge xy und color_temp), Matter Device (Testbox, Hue Aurelle, Darstellung 0 Farbton und Sättigung, 1 XY, 2 Farbtemperatur).",
+        "werte": [
+            ["light_color_mode", "color_temp", "temperature"],
+            ["light_color_mode", "xy", "color"],
+            ["light_color_mode", "brightness", null],
+            ["light_color_mode", "", null],
+            ["light_wohnzimmer_licht_esstisch_color_mode", "", null],
+            ["ColorControl_ColorMode", 2, "temperature"],
+            ["ColorControl_ColorMode", 1, "color"],
+            ["ColorControl_ColorMode", 0, "color"],
+            ["color_mode", "COLOR_TEMP", "temperature"],
+            ["color_mode", "XY", "color"]
+        ]
+    }
+}

@@ -1262,6 +1262,21 @@ foreach ([[15, '15,0'], [16, '16,0'], [17, '17,0'], [18, '18,0'], [19, '19,0'], 
 $sollOhneSchritt = variable(VARIABLETYPE_FLOAT, 22.0);
 IPS_SetVariableCustomProfile($sollOhneSchritt, 'Temperature.HM_my');
 pruefe($sollbereich($sollOhneSchritt) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.0], 'ohne Schrittweite: „On“ bei 30,5 fällt heraus, Ende 30: ' . json_encode($sollbereich($sollOhneSchritt)));
+
+// Farbmodus neben der Farbvariable (16.10.2026): Ident endet auf color_mode, wie bei Zigbee2MQTT, dem
+// HomeAssistant-Modul (auch mit Entitätsnamen davor) und Matter; andere Geschwister zählen nicht.
+$lampe = IPS_CreateCategory();
+$farbe = variable(VARIABLETYPE_INTEGER, 0xFF0000);
+IPS_SetParent($farbe, $lampe);
+$helligkeit = variable(VARIABLETYPE_INTEGER, 100);
+IPS_SetParent($helligkeit, $lampe);
+IPS_SetIdent($helligkeit, 'brightness');
+pruefe(oderNull(static fn () => $anlage->colorMode($farbe)) === null, 'ohne Farbmodus-Variable: null');
+$modus = variable(VARIABLETYPE_STRING, 'XY');
+IPS_SetParent($modus, $lampe);
+IPS_SetIdent($modus, 'light_wohnzimmer_licht_esstisch_color_mode');
+pruefe(oderNull(static fn () => $anlage->colorMode($farbe)) === ['ident' => 'light_wohnzimmer_licht_esstisch_color_mode', 'value' => 'XY'], 'Farbmodus neben der Farbe gefunden: ' . json_encode(oderNull(static fn () => $anlage->colorMode($farbe))));
+pruefe(oderNull(static fn () => $anlage->colorMode(59998)) === null, 'unbekannte Variable: null');
 $haSoll = variable(VARIABLETYPE_FLOAT, 21.5);
 IPS_SetVariableCustomPresentation($haSoll, ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'MIN' => 6, 'MAX' => 30, 'STEP_SIZE' => 0.5, 'SUFFIX' => ' °C']);
 pruefe($sollbereich($haSoll) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.5], 'Darstellung Schieberegler (HomeAssistant-Modul): ' . json_encode($sollbereich($haSoll)));
@@ -3120,7 +3135,10 @@ $lesen = $werkzeugNamen(true);
 // additionalProperties false; ein Host, der Aufrufe der App gegen das Schema prüft, hätte die Lautstärke abgewiesen).
 $felder = array_keys($schalten['control_device']['inputSchema']['properties'] ?? []);
 sort($felder);
-pruefe($felder === ['command', 'device', 'fan_speed', 'humidity', 'mode', 'percent', 'temperature', 'volume'] && ($schalten['control_device']['inputSchema']['properties']['volume']['type'] ?? null) === 'number', 'control_device nennt alle Felder der Karte, auch volume: ' . json_encode($felder));
+// Seit 16.10.2026 mit color_temperature und color; maßgeblich ist DeviceIndex::CARD_FIELDS
+$kartenFelder = defined(DeviceIndex::class . '::CARD_FIELDS') ? array_merge(DeviceIndex::CARD_FIELDS, ['device']) : [];
+sort($kartenFelder);
+pruefe($felder === $kartenFelder && in_array('color', $felder, true) &&($schalten['control_device']['inputSchema']['properties']['volume']['type'] ?? null) === 'number', 'control_device nennt alle Felder der Karte, auch volume: ' . json_encode($felder));
 pruefe(isset($lesen['show_devices']) && !isset($lesen['control_device']), 'Nur-Lese-Zugang: Karten ja, Bedienen nein: ' . json_encode(array_keys($lesen)));
 pruefe(!isset($werkzeugNamen(false)['show_devices']), 'ohne Apps keine Karten');
 // Claude-App 12.10.2026: „Zeig mir die Lichter im Wohnzimmer“ ergab eine Tabelle über get_state statt der Karten. Mit Apps
