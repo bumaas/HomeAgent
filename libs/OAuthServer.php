@@ -45,6 +45,17 @@ final class OAuthServer
     private const MAX_FAMILIES = 50;
     private const MAX_USED_REFRESH = 20;
 
+    /**
+     * So lange gilt das vorige Erneuerungstoken einer Familie noch, solange der Client die letzte Erneuerung nicht
+     * benutzt hat (Sekunden). Kommt die Antwort des Token-Endpunkts nicht an, hält der Client weiter das alte Paar;
+     * am 16.10.2026 erneuerte claude.ai damit 3 h 38 min später, und die Kopplung fiel. Der Client erneuert erst,
+     * wenn er den Endpunkt wieder braucht, deshalb eine Woche.
+     */
+    public const PREVIOUS_SECONDS = 7 * 86400;
+
+    /** Abgelaufene Zugriffstokens bleiben so lange bekannt, damit sie als abgelaufen und nicht als Raten gelten. */
+    public const EXPIRED_KEEP_SECONDS = 86400;
+
     /** Parameter der Autorisierungsanfrage, die die Einwilligungsseite verdeckt weitergibt. */
     private const AUTHORIZE_PARAMS = ['response_type', 'client_id', 'redirect_uri', 'code_challenge', 'code_challenge_method', 'state', 'scope', 'resource'];
 
@@ -400,6 +411,11 @@ final class OAuthServer
      * Erneuert mit einem Erneuerungstoken (grant_type=refresh_token) und rotiert es. Ein schon
      * verbrauchtes Token widerruft die ganze Familie (RFC 9700, Abschnitt 4.14.2).
      *
+     * Ausnahme: das unmittelbar vorige Token, solange die letzte Erneuerung unbenutzt ist (`pending`, gelöscht
+     * von confirm()) und höchstens PREVIOUS_SECONDS lang. Dann ist die Antwort wohl verloren gegangen; die Familie
+     * bekommt ein neues Paar, das nie zugestellte Token gilt als verbraucht. Taucht es doch noch auf, fällt die
+     * Familie wie bisher. Ein gestohlenes voriges Token nützt nur, bis der Client das neue Zugriffstoken benutzt.
+     *
      * @return array{families: array, family: ?array, error: ?string}
      */
     public static function refresh(array $families, array $params, string $newRefreshToken, string $base, int $now, ?array $usableAccesses = null): array
@@ -412,11 +428,13 @@ final class OAuthServer
         $families = array_filter($families, static fn (array $f): bool => $f['expires'] > $now);
         $hash = hash('sha256', $text('refresh_token'));
         foreach ($families as $id => $family) {
-            if (in_array($hash, $family['used'], true)) {
+            $previous = isset($family['previous'], $family['pending']) && hash_equals($family['previous'], $hash)
+                && $now - (int)$family['pending'] <= self::PREVIOUS_SECONDS;
+            if (!$previous && in_array($hash, $family['used'], true)) {
                 unset($families[$id]);
                 return ['families' => $families, 'family' => null, 'error' => 'invalid_grant'];
             }
-            if (!hash_equals($family['refresh'], $hash)) {
+            if (!$previous && !hash_equals($family['refresh'], $hash)) {
                 continue;
             }
             if (!hash_equals($family['client_id'], $text('client_id'))) {
@@ -434,7 +452,14 @@ final class OAuthServer
             if ($usableAccesses !== null && !in_array($family['access'], $usableAccesses, true)) {
                 return ['families' => $unchanged, 'family' => null, 'error' => 'invalid_grant'];
             }
-            $family['used'] = array_slice(array_merge($family['used'], [$hash]), -self::MAX_USED_REFRESH);
+            if ($previous) {
+                // Das nie zugestellte Token gilt als verbraucht, das vorige bleibt das vorige
+                $family['used'] = array_slice(array_merge($family['used'], [$family['refresh']]), -self::MAX_USED_REFRESH);
+            } else {
+                $family['used'] = array_slice(array_merge($family['used'], [$hash]), -self::MAX_USED_REFRESH);
+                $family['previous'] = $hash;
+            }
+            $family['pending'] = $now;
             $family['refresh'] = hash('sha256', $newRefreshToken);
             $family['expires'] = $now + self::REFRESH_SECONDS;
             // ans Ende: Bei zu vielen Kopplungen fallen die am längsten unbenutzten heraus
@@ -446,14 +471,36 @@ final class OAuthServer
     }
 
     /**
+     * Ein gültiges Zugriffstoken, ausgegeben bei oder nach der letzten Erneuerung, zeigt: Die Antwort ist
+     * angekommen, das vorige Erneuerungstoken gilt nicht mehr. Gibt die geänderten Familien zurück, null, wenn
+     * nichts zu schreiben ist (nichts offen, älteres Token, unbekannte Familie).
+     *
+     * @param array{family: string, expires: int, issued?: int} $entry
+     */
+    public static function confirm(array $families, array $entry, int $now): ?array
+    {
+        $id = (string)$entry['family'];
+        if (!isset($families[$id]['pending'])) {
+            return null;
+        }
+        $issued = (int)($entry['issued'] ?? ((int)$entry['expires'] - self::ACCESS_SECONDS));
+        if ($issued < (int)$families[$id]['pending'] || $issued > $now) {
+            return null;
+        }
+        unset($families[$id]['pending'], $families[$id]['previous']);
+        return $families;
+    }
+
+    /**
      * Legt ein Zugriffstoken ab, nur als Hash, mit Familie, Zugang und Ablauf.
      *
      * @param array{family: string, access: string, client_id: string, scope: string} $binding
      */
     public static function issueAccessToken(array $tokens, string $token, array $binding, int $now): array
     {
-        $tokens = array_filter($tokens, static fn (array $t): bool => $t['expires'] > $now);
-        $tokens[hash('sha256', $token)] = ['family' => $binding['family'], 'access' => $binding['access'], 'client_id' => $binding['client_id'], 'scope' => $binding['scope'], 'expires' => $now + self::ACCESS_SECONDS];
+        // Abgelaufene bleiben einen Tag, sonst zählte ein Client mit einem alten Token als Fehlversuch (16.10.2026)
+        $tokens = array_filter($tokens, static fn (array $t): bool => $t['expires'] + self::EXPIRED_KEEP_SECONDS > $now);
+        $tokens[hash('sha256', $token)] = ['family' => $binding['family'], 'access' => $binding['access'], 'client_id' => $binding['client_id'], 'scope' => $binding['scope'], 'issued' => $now, 'expires' => $now + self::ACCESS_SECONDS];
         return array_slice($tokens, -self::MAX_ACCESS_TOKENS, null, true);
     }
 

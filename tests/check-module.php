@@ -2148,9 +2148,14 @@ pruefe($a['status'] === 405, 'Token-Endpunkt nur per POST');
 $a = $tokenAnfrage(['grant_type' => 'refresh_token', 'refresh_token' => $erneuern1, 'client_id' => $claudeId]);
 $erneuern2 = (string)($a['json']['refresh_token'] ?? '');
 pruefe($a['status'] === 200 && $erneuern2 !== '' && $erneuern2 !== $erneuern1 && ($a['json']['access_token'] ?? '') !== $zugriff1, 'Erneuern liefert neue Tokens: ' . $a['status'] . ' ' . ($a['json']['error'] ?? ''));
+// Die Antwort mit $erneuern2 ging verloren (betreute Anlage 16.10.2026): Das vorige gilt noch, solange die
+// Erneuerung unbenutzt ist. Das nie zugestellte $erneuern2 ist danach verbraucht und widerruft die Familie.
 $a = $tokenAnfrage(['grant_type' => 'refresh_token', 'refresh_token' => $erneuern1, 'client_id' => $claudeId]);
-pruefe($a['status'] === 400 && ($a['json']['error'] ?? '') === 'invalid_grant', 'altes Erneuerungstoken: invalid_grant');
+$erneuern3 = (string)($a['json']['refresh_token'] ?? '');
+pruefe($a['status'] === 200 && $erneuern3 !== '' && $erneuern3 !== $erneuern2, 'voriges Erneuerungstoken vor Benutzung der Erneuerung: neues Paar: ' . $a['status'] . ' ' . ($a['json']['error'] ?? ''));
 $a = $tokenAnfrage(['grant_type' => 'refresh_token', 'refresh_token' => $erneuern2, 'client_id' => $claudeId]);
+pruefe($a['status'] === 400 && ($a['json']['error'] ?? '') === 'invalid_grant', 'das nie zugestellte Erneuerungstoken: invalid_grant');
+$a = $tokenAnfrage(['grant_type' => 'refresh_token', 'refresh_token' => $erneuern3, 'client_id' => $claudeId]);
 pruefe($a['status'] === 400 && ($a['json']['error'] ?? '') === 'invalid_grant', 'nach der Wiederverwendung gilt auch das neue nicht mehr');
 
 // Ein geändertes Token des Zugangs trennt dessen OAuth-Clients

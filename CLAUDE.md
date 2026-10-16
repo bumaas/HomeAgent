@@ -87,8 +87,17 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   auch bei falschem `code_verifier`, sonst ließe sich der Prüfwert raten) und gibt ein Zugriffstoken für
   1 h aus, mit `offline_access` auch ein Erneuerungstoken. Erneuerungstokens rotieren und gelten 90 Tage
   ab der letzten Erneuerung; ein schon verbrauchtes widerruft die ganze Familie (Kopplung eines Clients
-  mit einem Zugang, Attribut `OAuthGrants`, überlebt einen Neustart). Zugriffstokens liegen nur im
-  Buffer `OAuthTokens`; nach einem Neustart erneuert der Client. Ein ungültiger Code oder ein ungültiges
+  mit einem Zugang, Attribut `OAuthGrants`, überlebt einen Neustart). Ausnahme ist das unmittelbar vorige
+  Erneuerungstoken (`previous`), solange die letzte Erneuerung unbenutzt ist (`pending`, `OAuthServer::confirm` in
+  `oauthAccess` löscht beides beim ersten Zugriffstoken ab dieser Erneuerung), höchstens `PREVIOUS_SECONDS` (7 Tage):
+  Es bekommt ein neues Paar, das nie zugestellte Token gilt als verbraucht und widerruft, falls es doch noch kommt.
+  Anlass (betreute Anlage 16.10.2026, Fixture `oauth_betreut_2026-10-16_antwort_verloren.json`): Die Antwort auf eine
+  Erneuerung kam wegen des Connect-Tageslimits nie an, claude.ai erneuerte 3 h 38 min später mit dem alten Token, und die
+  Kopplung fiel. Eine Frist von Sekunden hätte nicht gereicht, der Client erneuert erst, wenn er den Endpunkt wieder
+  braucht; ein gestohlenes voriges Token nützt nur bis zur ersten Benutzung der Erneuerung. Test `check-oauth-verloren.php`. Zugriffstokens liegen nur im
+  Buffer `OAuthTokens`; nach einem Neustart erneuert der Client. Abgelaufene bleiben dort `EXPIRED_KEEP_SECONDS`
+  (1 Tag), damit ein Client mit altem Token als „abgelaufen“ gilt und nicht als Fehlversuch (am 16.10.2026 zählten
+  acht solche Anfragen im `SignInGuard`). Ein ungültiger Code oder ein ungültiges
   Erneuerungstoken zählt im `SignInGuard`. Am Hook gilt ein Bearer-Token, das kein festes Token ist, als
   OAuth-Zugriffstoken (`oauthAccess`, nur im Header): nicht abgelaufen, Familie vorhanden, der Zugang
   benutzbar und mit demselben Token. Der Client bekommt Werkzeuge, Rechte und Standardraum dieses

@@ -1482,6 +1482,10 @@ class HomeAgent extends IPSModuleStrict
                 if (OAuthServer::markUsed($this->storedJson('OAuthGrants', true), $family, $now) !== null) {
                     $this->changeStored('OAuthGrants', static fn (array $families): array => OAuthServer::markUsed($families, $family, $now) ?? $families, true);
                 }
+                // Das erste Zugriffstoken nach einer Erneuerung bestätigt sie; erst dann verfällt das vorige Erneuerungstoken
+                if (OAuthServer::confirm($this->storedJson('OAuthGrants', true), $entry, $now) !== null) {
+                    $this->changeStored('OAuthGrants', static fn (array $families): array => OAuthServer::confirm($families, $entry, $now) ?? $families, true);
+                }
                 return $access;
             }
         }

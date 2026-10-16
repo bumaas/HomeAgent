@@ -1,0 +1,22 @@
+{
+    "source": "Protokoll homeagent_<ID>.log einer betreuten Anlage (0.6 build 183, Symcon 9.0 C++), gefiltert auf OAuth und Anmeldungen, Zeitzone Europe/Berlin",
+    "context": "Gegen 14:23 griff das Connect-Tageslimit der Anlage (Error 509 ab 14:26 belegt). Die Antwort auf die Erneuerung um 14:23:15 kam offenbar nie bei claude.ai an: Die folgenden Anfragen kamen mit dem alten, schon abgelaufenen Zugriffstoken, um 18:01 erneuerte claude.ai mit dem alten Erneuerungstoken.",
+    "assumed": "Dass die acht Abweisungen das Zugriffstoken von 12:14 trugen und die Erneuerung um 18:01 das Erneuerungstoken von 12:14, steht nicht im Protokoll (es nennt keine Tokens); es folgt aus dem Ablauf.",
+    "lines": [
+        "2026-10-16 12:14:39.716 | – | OAuth | POST oauth/token | HTTP 200",
+        "2026-10-16 12:14:40.414 | Claude-App | server/discover | OAuth | Anthropic/ClaudeAI 1.0.0 (extension io.modelcontextprotocol/ui) | HTTP 200",
+        "2026-10-16 12:30:19.891 | Claude-App | server/discover | OAuth | Anthropic/ClaudeAI 1.0.0 (extension io.modelcontextprotocol/ui) | HTTP 200",
+        "2026-10-16 14:23:15.568 | – | OAuth | POST oauth/token | HTTP 200",
+        "2026-10-16 14:23:18.487 | – | sign-in rejected | from 160.79.106.169 | token missing or wrong",
+        "2026-10-16 14:23:19.391 | – | sign-in rejected | from 160.79.106.160 | token missing or wrong",
+        "2026-10-16 14:23:21.279 | – | sign-in rejected | from 160.79.106.173 | token missing or wrong",
+        "2026-10-16 14:23:22.172 | – | sign-in rejected | from 160.79.106.160 | token missing or wrong",
+        "2026-10-16 14:23:25.192 | – | sign-in rejected | from 160.79.106.180 | token missing or wrong",
+        "2026-10-16 14:23:26.206 | – | sign-in rejected | from 160.79.106.160 | token missing or wrong",
+        "2026-10-16 14:23:31.119 | – | sign-in rejected | from 160.79.106.176 | token missing or wrong",
+        "2026-10-16 14:23:32.017 | – | sign-in rejected | from 160.79.106.167 | token missing or wrong",
+        "2026-10-16 18:01:23.524 | – | OAuth | POST oauth/token | HTTP 400",
+        "2026-10-16 18:01:24.269 | – | sign-in rejected | from 160.79.106.180 | token missing or wrong",
+        "2026-10-16 18:02:27.480 | – | OAuth | GET oauth/authorize | HTTP 200"
+    ]
+}

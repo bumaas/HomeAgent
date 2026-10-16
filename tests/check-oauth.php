@@ -254,8 +254,8 @@ pruefe(OAuthServer::refresh($e['families'], ['grant_type' => 'refresh_token', 'r
 $tok = OAuthServer::issueAccessToken([], 'ACCESS-1', ['family' => 'fam-1', 'access' => 'zugang-a', 'client_id' => $claudeId, 'scope' => 'mcp offline_access'], $t);
 $tEintrag = array_values($tok)[0] ?? [];
 pruefe(!str_contains((string)json_encode($tok), 'ACCESS-1') && ($tEintrag['expires'] ?? 0) === $t + 3600 && ($tEintrag['family'] ?? '') === 'fam-1', 'Zugriffstoken nur als Hash, 1 h gültig');
-$tok = OAuthServer::issueAccessToken($tok, 'ACCESS-2', $tEintrag, $t + 3601);
-pruefe(count($tok) === 1, 'abgelaufene Zugriffstokens fallen heraus');
+$tok = OAuthServer::issueAccessToken($tok, 'ACCESS-2', $tEintrag, $t + 3600 + 86400);
+pruefe(count($tok) === 1, 'abgelaufene Zugriffstokens fallen nach einem Tag heraus');
 $a = OAuthServer::tokenResponse('ACCESS-1', 'REFRESH-1', 'mcp offline_access');
 $k = json_decode($a['body'], true);
 pruefe($a['status'] === 200 && ($a['headers']['Cache-Control'] ?? '') === 'no-store' && $k === ['access_token' => 'ACCESS-1', 'token_type' => 'Bearer', 'expires_in' => 3600, 'refresh_token' => 'REFRESH-1', 'scope' => 'mcp offline_access'], 'Token-Antwort nach RFC 6749: ' . $a['body']);
