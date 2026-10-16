@@ -1249,6 +1249,19 @@ IPS_SetVariableProfileAssociation('VoiceControlTest.SollAusEin', 30.5, 'Ein', ''
 $sollAusEin = variable(VARIABLETYPE_FLOAT, 20.0);
 IPS_SetVariableCustomProfile($sollAusEin, 'VoiceControlTest.SollAusEin');
 pruefe($sollbereich($sollAusEin) === ['min' => 5.0, 'max' => 30.0, 'step' => 0.5], 'Sonderwerte an beiden Rändern fallen heraus: ' . json_encode($sollbereich($sollAusEin)));
+// Profil ohne Schrittweite, gelesen an einer betreuten Anlage (16.10.2026, Homematic-IP-Wandthermostate): Einträge
+// 15 bis 24, „On“ bei 30,5. Vorher blieb 30,5 im Bereich, „+“ bei 30 öffnete das Ventil ganz. Ohne Schrittweite
+// endet der Bereich 0,5 vor dem Sonderwert; die Einträge begrenzen die Eingabe nicht (Burkhard 16.10.2026).
+IPS_CreateVariableProfile('Temperature.HM_my', VARIABLETYPE_FLOAT);
+IPS_SetVariableProfileValues('Temperature.HM_my', 6, 30.5, 0);
+IPS_SetVariableProfileText('Temperature.HM_my', '', ' °C');
+IPS_SetVariableProfileDigits('Temperature.HM_my', 1);
+foreach ([[15, '15,0'], [16, '16,0'], [17, '17,0'], [18, '18,0'], [19, '19,0'], [20, '20,0'], [20.5, '20,5'], [21, '21,0'], [21.5, '21,5'], [22, '22,0'], [22.5, '22,5'], [23, '23,0'], [23.5, '23,5'], [24, '24,0'], [30.5, 'On']] as [$wert, $text]) {
+    IPS_SetVariableProfileAssociation('Temperature.HM_my', $wert, $text, '', -1);
+}
+$sollOhneSchritt = variable(VARIABLETYPE_FLOAT, 22.0);
+IPS_SetVariableCustomProfile($sollOhneSchritt, 'Temperature.HM_my');
+pruefe($sollbereich($sollOhneSchritt) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.0], 'ohne Schrittweite: „On“ bei 30,5 fällt heraus, Ende 30: ' . json_encode($sollbereich($sollOhneSchritt)));
 $haSoll = variable(VARIABLETYPE_FLOAT, 21.5);
 IPS_SetVariableCustomPresentation($haSoll, ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'MIN' => 6, 'MAX' => 30, 'STEP_SIZE' => 0.5, 'SUFFIX' => ' °C']);
 pruefe($sollbereich($haSoll) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.5], 'Darstellung Schieberegler (HomeAssistant-Modul): ' . json_encode($sollbereich($haSoll)));

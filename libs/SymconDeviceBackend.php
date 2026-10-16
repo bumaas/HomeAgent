@@ -348,15 +348,17 @@ final class SymconDeviceBackend implements DeviceBackend
         $min = (float)$data['MinValue'];
         $max = (float)$data['MaxValue'];
         $step = (float)$data['StepSize'];
-        // Ein Rand mit Text statt Zahl ist ein Sonderwert (Homematic: 30,5 „On“, 4,5 „Off“).
+        // Ein Rand mit Text statt Zahl ist ein Sonderwert (Homematic: 30,5 „On“, 4,5 „Off“). Ohne Schrittweite
+        // zählt das Raster der Karte (0,5); vorher blieb der Sonderwert dann im Bereich (betreute Anlage 16.10.2026).
+        $edge = $step > 0 ? $step : 0.5;
         foreach ($data['Associations'] as $association) {
-            if (is_numeric(str_replace(',', '.', trim((string)$association['Name']))) || $step <= 0) {
+            if (is_numeric(str_replace(',', '.', trim((string)$association['Name'])))) {
                 continue;
             }
             if (abs((float)$association['Value'] - $max) < 0.001) {
-                $max -= $step;
+                $max -= $edge;
             } elseif (abs((float)$association['Value'] - $min) < 0.001) {
-                $min += $step;
+                $min += $edge;
             }
         }
         return $max > $min ? ['min' => $min, 'max' => $max, 'step' => $step] : null;

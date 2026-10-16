@@ -258,7 +258,8 @@ Weitere Regeln, die nicht offensichtlich sind:
   Felder von `set_state` und die Properties der Energiebilanz.
 - **Prozent beim Licht rechnet das Modul selbst**; der Anzeigetext von Symcon schneidet ab.
 - **Sollwert:** Bereich und Schrittweite aus Darstellung oder Profil, Sonderwerte mit Text am Rand
-  („On“) zählen nicht dazu. Batteriegeräte melden den neuen Sollwert oft schon über die Zentrale,
+  („On“) zählen nicht dazu, bei einem Profil ohne Schrittweite um 0,5 (das Raster der Karte; Homematic-IP-Profil
+  einer betreuten Anlage mit Einträgen 15 bis 24 und „On“ bei 30,5, vorher bis 30,5, 16.10.2026). Batteriegeräte melden den neuen Sollwert oft schon über die Zentrale,
   bevor das Gerät ihn übernimmt.
 - **Stopp:** über eine Stoppvariable (Wahrheitswert oder Eintrag „Stop“), sonst über das Modul des
   Geräts (`SymconDeviceBackend::STOP_MODULES`, Homematic und Velux KLF200).
