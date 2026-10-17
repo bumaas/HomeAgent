@@ -299,6 +299,13 @@ Summe der Geräte. Mit PV oder Batterie folgt eine Zeile mit Autarkie und Eigenv
 Verbraucher und fasst den Rest zusammen („5 weitere Gerät(e) zusammen 25.6 kWh.“); nach einem Raum
 gefragt, kommen alle Geräte in der Reihenfolge der Liste.
 
+Haben Sie mehr als eine PV-Anlage oder Batterie oder einen zweiten Netzanschluss, tragen Sie die weiteren in der
+Liste **Weitere Quellen** unter den Feldern ein: je Zeile die Art (Netz, PV, Batterie), einen Namen, die Zähler und
+wahlweise die Leistungen. Die Bilanz zählt jede Zeile mit den Feldern ihrer Art zusammen, auch rückwirkend aus dem
+Archiv, und die Antwort nennt die benannten Quellen in Klammern, etwa „PV-Ertrag … (davon Garage …)“. Eine PV-Anlage
+hat nur den Ertrag. Eine einzelne Leistung mit Vorzeichen zählt wie das Feld, „Vorzeichen umkehren“ dreht sie um, und
+der Selbsttest nennt sie mit dem Namen der Quelle. Hat eine Zeile einen Fehler, ist die ganze Bilanz gesperrt.
+
 Eine Unterverteilung, eine Wallbox oder einen Wohnungszähler tragen Sie als Typ **Zähler** ein, mit dem
 Energiezähler und wahlweise der Leistung. Ein Zähler zählt nie in einer Gerätesumme, er hat seine eigene Zeile.
 Im Feld „Gemessen von“ wählen Sie bei Geräten und Zählern den Zähler darüber, beliebig tief, etwa das Terrarium am
@@ -627,6 +634,7 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
   Skript oder ein anderes Modul, liest sie mit.
 - Das Protokoll zur Fehlersuche enthält Raum- und Gerätenamen und die Antworten an die Assistenten. Wer das
   Log-Verzeichnis von Symcon lesen kann, liest es mit. Tokens und Kopplungscodes stehen nicht darin.
+- Die weiteren Quellen zählen in Diagrammen mit, eine eigene Farbe je Quelle gibt es dort noch nicht.
 - Zähler stehen noch in keinem Diagramm. Das Verbrauchsdiagramm des Hauses zeigt weiter die Geräte und als „nicht
   erfasst“ den Rest gegen alle Geräte.
 - Die Skriptfunktionen kennen weder Standardraum noch Etage. Es gibt sie für Zustand, Schalten,

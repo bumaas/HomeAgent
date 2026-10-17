@@ -1,5 +1,5 @@
 {
-    "_quelle": "nuc 17.10.2026 13:54 (Europe/Berlin), nur gelesen: Aggregate (AC_GetAggregatedValues, „summe“ ist Avg, je Zeitraum vom ältesten zum neuesten) der Bilanzzähler (Netzbezug #43989, Einspeisung #47491, PV #10639 in kWh, Batterie geladen #17418 und entladen #13436 in Wh), der Gerätezähler der Freigabeliste und dreier Zähler, die keine Geräte sind: „Haushaltsbedarf Zähler“ #40308 (kWh, Skript des Anwenders: Hausverbrauch ohne Wallbox), „EVCC Geladene Energie Total“ #36579 (Wh, Wallbox) und die Shelly-Schalterleiste Multimedia im Wohnzimmer #16183 (kWh, Leistung #55941). Stufe 0 (Stunde) ab 16.10.2026, 1 (Tag) ab 01.09.2026, 3 (Monat) ab 01.01.2026, je bis jetzt. Dazu die Leistungen (W) der Geräte, der Leiste und der Leistungsbilanz in diesem Augenblick. Echt sind alle Werte. Angenommen ist die Verschachtelung in „geraete“ (Feld MeteredBy, Backlog B82): alle Geräte hängen am Haushalt, die Steckdose Fernseher an der Schalterleiste. Belegt ist sie nur rechnerisch: Haushalt plus Wallbox ergibt in jedem Monat den Hausverbrauch der Bilanz (im April 27 kWh darüber, also 103 %), die Leiste liegt in allen 38 Stunden und jedem Monat über dem Fernseher. Entfeuchter und Luftentfeuchter teilen sich den Zähler #49570 wie in der Freigabeliste.",
+    "_quelle": "nuc 17.10.2026 13:54 (Europe/Berlin), nur gelesen: Aggregate (AC_GetAggregatedValues, „summe“ ist Avg, je Zeitraum vom ältesten zum neuesten) der Bilanzzähler (Netzbezug #43989, Einspeisung #47491, PV #10639 in kWh, Batterie geladen #17418 und entladen #13436 in Wh), der Gerätezähler der Freigabeliste und dreier Zähler, die keine Geräte sind: „Haushaltsbedarf Zähler“ #40308 (kWh, Skript des Anwenders: Hausverbrauch ohne Wallbox), „EVCC Geladene Energie Total“ #36579 (Wh, Wallbox) und die Shelly-Schalterleiste Multimedia im Wohnzimmer #16183 (kWh, Leistung #55941). Stufe 0 (Stunde) ab 16.10.2026, 1 (Tag) ab 01.09.2026, 3 (Monat) ab 01.01.2026, je bis jetzt. Dazu die Leistungen (W) der Geräte, der Leiste und der Leistungsbilanz in diesem Augenblick. Echt sind alle Werte. Angenommen ist die Verschachtelung in „geraete“ (Feld MeteredBy, Backlog B82): alle Geräte hängen am Haushalt, die Steckdose Fernseher an der Schalterleiste. Belegt ist sie nur rechnerisch: Haushalt plus Wallbox ergibt in jedem Monat den Hausverbrauch der Bilanz (im April 27 kWh darüber, also 103 %), die Leiste liegt in allen 38 Stunden und jedem Monat über dem Fernseher. Entfeuchter und Luftentfeuchter teilen sich den Zähler #49570 wie in der Freigabeliste. Nachgetragen 17.10.2026 mit denselben Zeitfenstern und demselben „jetzt“ (für B82 Stufe b): die Zählerstände des Tibber Pulse am Hauszähler, Bezug #30012 und Einspeisung #44499 (kWh). Sie messen denselben Netzanschluss wie der SMA Home Manager; als zweiter Netzanschluss eingetragen ist das eine angenommene Anordnung, die nur das Addieren zweier Quellen prüft.",
     "jetzt": 1792238064,
     "zeitzone": "Europe/Berlin",
     "bilanz": {
@@ -6984,6 +6984,798 @@
             "einheit": "W",
             "archiviert": true,
             "aggregationstyp": 0
+        },
+        "30012": {
+            "name": "Hardware\\Tibber\\Tibber Realtime V.2\\Zählerstand Bezug",
+            "wert": 31741.798,
+            "formatiert": "31741.80 kWh",
+            "einheit": "kWh",
+            "archiviert": true,
+            "aggregationstyp": 1,
+            "aggregate": {
+                "0": [
+                    {
+                        "zeit": 1792101600,
+                        "summe": 0.01480000000083237
+                    },
+                    {
+                        "zeit": 1792105200,
+                        "summe": 0.003299999996670522
+                    },
+                    {
+                        "zeit": 1792108800,
+                        "summe": 0.0031000000017229468
+                    },
+                    {
+                        "zeit": 1792112400,
+                        "summe": 0.002899999999499414
+                    },
+                    {
+                        "zeit": 1792116000,
+                        "summe": 0.002899999999499414
+                    },
+                    {
+                        "zeit": 1792119600,
+                        "summe": 0.002899999999499414
+                    },
+                    {
+                        "zeit": 1792123200,
+                        "summe": 0.002300000000104774
+                    },
+                    {
+                        "zeit": 1792126800,
+                        "summe": 0.003400000001420267
+                    },
+                    {
+                        "zeit": 1792130400,
+                        "summe": 0.001299999999901047
+                    },
+                    {
+                        "zeit": 1792134000,
+                        "summe": 0.0005000000019208528
+                    },
+                    {
+                        "zeit": 1792137600,
+                        "summe": 0.002299999996466795
+                    },
+                    {
+                        "zeit": 1792141200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792144800,
+                        "summe": 0.000800000001618173
+                    },
+                    {
+                        "zeit": 1792148400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792152000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792155600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792159200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792162800,
+                        "summe": 0.002899999999499414
+                    },
+                    {
+                        "zeit": 1792166400,
+                        "summe": 0.0031000000017229468
+                    },
+                    {
+                        "zeit": 1792170000,
+                        "summe": 0.0036000000000058208
+                    },
+                    {
+                        "zeit": 1792173600,
+                        "summe": 0.0031999999991967343
+                    },
+                    {
+                        "zeit": 1792177200,
+                        "summe": 0.003099999998084968
+                    },
+                    {
+                        "zeit": 1792180800,
+                        "summe": 0.0033000000003085006
+                    },
+                    {
+                        "zeit": 1792184400,
+                        "summe": 0.003200000002834713
+                    },
+                    {
+                        "zeit": 1792188000,
+                        "summe": 0.003099999998084968
+                    },
+                    {
+                        "zeit": 1792191600,
+                        "summe": 0.0031999999991967343
+                    },
+                    {
+                        "zeit": 1792195200,
+                        "summe": 0.003200000002834713
+                    },
+                    {
+                        "zeit": 1792198800,
+                        "summe": 0.003399999997782288
+                    },
+                    {
+                        "zeit": 1792202400,
+                        "summe": 0.0030000000006111804
+                    },
+                    {
+                        "zeit": 1792206000,
+                        "summe": 0.0031999999991967343
+                    },
+                    {
+                        "zeit": 1792209600,
+                        "summe": 0.0035000000025320332
+                    },
+                    {
+                        "zeit": 1792213200,
+                        "summe": 0.002799999998387648
+                    },
+                    {
+                        "zeit": 1792216800,
+                        "summe": 0.002899999999499414
+                    },
+                    {
+                        "zeit": 1792220400,
+                        "summe": 0.0011000000013154931
+                    },
+                    {
+                        "zeit": 1792224000,
+                        "summe": 0.003099999998084968
+                    },
+                    {
+                        "zeit": 1792227600,
+                        "summe": 0.0030000000006111804
+                    },
+                    {
+                        "zeit": 1792231200,
+                        "summe": 0.006799999999202555
+                    },
+                    {
+                        "zeit": 1792234800,
+                        "summe": 0.0072000000000116415
+                    }
+                ],
+                "1": [
+                    {
+                        "zeit": 1788213600,
+                        "summe": 7.452500000003056
+                    },
+                    {
+                        "zeit": 1788300000,
+                        "summe": 0.35179999999672873
+                    },
+                    {
+                        "zeit": 1788386400,
+                        "summe": 6.028600000001461
+                    },
+                    {
+                        "zeit": 1788472800,
+                        "summe": 10.651499999999942
+                    },
+                    {
+                        "zeit": 1788559200,
+                        "summe": 17.577399999998306
+                    },
+                    {
+                        "zeit": 1788645600,
+                        "summe": 0.3952000000026601
+                    },
+                    {
+                        "zeit": 1788732000,
+                        "summe": 0.7365999999965425
+                    },
+                    {
+                        "zeit": 1788818400,
+                        "summe": 4.044000000001688
+                    },
+                    {
+                        "zeit": 1788904800,
+                        "summe": 10.981799999997747
+                    },
+                    {
+                        "zeit": 1788991200,
+                        "summe": 2.5865999999987253
+                    },
+                    {
+                        "zeit": 1789077600,
+                        "summe": 0.35090000000127475
+                    },
+                    {
+                        "zeit": 1789164000,
+                        "summe": 0.6016000000017812
+                    },
+                    {
+                        "zeit": 1789250400,
+                        "summe": 8.210699999999633
+                    },
+                    {
+                        "zeit": 1789336800,
+                        "summe": 0.05319999999846914
+                    },
+                    {
+                        "zeit": 1789423200,
+                        "summe": 4.275499999999738
+                    },
+                    {
+                        "zeit": 1789509600,
+                        "summe": 0.9199999999982538
+                    },
+                    {
+                        "zeit": 1789596000,
+                        "summe": 0.5416000000004715
+                    },
+                    {
+                        "zeit": 1789682400,
+                        "summe": 1.9455999999991036
+                    },
+                    {
+                        "zeit": 1789768800,
+                        "summe": 1.1051000000006752
+                    },
+                    {
+                        "zeit": 1789855200,
+                        "summe": 1.8571000000010827
+                    },
+                    {
+                        "zeit": 1789941600,
+                        "summe": 6.224799999999959
+                    },
+                    {
+                        "zeit": 1790028000,
+                        "summe": 0.8192000000017288
+                    },
+                    {
+                        "zeit": 1790114400,
+                        "summe": 8.225900000001275
+                    },
+                    {
+                        "zeit": 1790200800,
+                        "summe": 1.6398000000008324
+                    },
+                    {
+                        "zeit": 1790287200,
+                        "summe": 6.1229999999995925
+                    },
+                    {
+                        "zeit": 1790373600,
+                        "summe": 4.828300000001036
+                    },
+                    {
+                        "zeit": 1790460000,
+                        "summe": 2.4130999999979394
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "summe": 3.070800000001327
+                    },
+                    {
+                        "zeit": 1790632800,
+                        "summe": 3.6090000000003783
+                    },
+                    {
+                        "zeit": 1790719200,
+                        "summe": 3.4327999999986787
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 5.304400000000896
+                    },
+                    {
+                        "zeit": 1790892000,
+                        "summe": 4.028200000000652
+                    },
+                    {
+                        "zeit": 1790978400,
+                        "summe": 1.2044999999998254
+                    },
+                    {
+                        "zeit": 1791064800,
+                        "summe": 2.029899999997724
+                    },
+                    {
+                        "zeit": 1791151200,
+                        "summe": 3.683600000000297
+                    },
+                    {
+                        "zeit": 1791237600,
+                        "summe": 3.018499999998312
+                    },
+                    {
+                        "zeit": 1791324000,
+                        "summe": 1.521600000003673
+                    },
+                    {
+                        "zeit": 1791410400,
+                        "summe": 2.7461999999977706
+                    },
+                    {
+                        "zeit": 1791496800,
+                        "summe": 21.4945000000007
+                    },
+                    {
+                        "zeit": 1791583200,
+                        "summe": 8.798899999997957
+                    },
+                    {
+                        "zeit": 1791669600,
+                        "summe": 15.475099999999657
+                    },
+                    {
+                        "zeit": 1791756000,
+                        "summe": 6.358000000000175
+                    },
+                    {
+                        "zeit": 1791842400,
+                        "summe": 10.301900000002206
+                    },
+                    {
+                        "zeit": 1791928800,
+                        "summe": 7.58640000000014
+                    },
+                    {
+                        "zeit": 1792015200,
+                        "summe": 12.226699999999255
+                    },
+                    {
+                        "zeit": 1792101600,
+                        "summe": 0.06290000000080909
+                    },
+                    {
+                        "zeit": 1792188000,
+                        "summe": 0.04949999999735155
+                    }
+                ],
+                "3": [
+                    {
+                        "zeit": 1767222000,
+                        "summe": 1789.0751999999993
+                    },
+                    {
+                        "zeit": 1769900400,
+                        "summe": 1092.0034000000014
+                    },
+                    {
+                        "zeit": 1772319600,
+                        "summe": 499.53440000000046
+                    },
+                    {
+                        "zeit": 1774994400,
+                        "summe": 261.96919999999955
+                    },
+                    {
+                        "zeit": 1777586400,
+                        "summe": 158.82290000000648
+                    },
+                    {
+                        "zeit": 1780264800,
+                        "summe": 81.48280000000159
+                    },
+                    {
+                        "zeit": 1782856800,
+                        "summe": 90.28790000000299
+                    },
+                    {
+                        "zeit": 1785535200,
+                        "summe": 85.61599999999817
+                    },
+                    {
+                        "zeit": 1788213600,
+                        "summe": 121.05400000000009
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 105.8907999999974
+                    }
+                ]
+            }
+        },
+        "44499": {
+            "name": "Hardware\\Tibber\\Tibber Realtime V.2\\Zählerstand Einspeisung",
+            "wert": 70802.506,
+            "formatiert": "70802.51 kWh",
+            "einheit": "kWh",
+            "archiviert": true,
+            "aggregationstyp": 1,
+            "aggregate": {
+                "0": [
+                    {
+                        "zeit": 1792101600,
+                        "summe": 0.00029999999969732016
+                    },
+                    {
+                        "zeit": 1792105200,
+                        "summe": 0.0006000000139465556
+                    },
+                    {
+                        "zeit": 1792108800,
+                        "summe": 0.0005999999993946403
+                    },
+                    {
+                        "zeit": 1792112400,
+                        "summe": 0.00039999998989515007
+                    },
+                    {
+                        "zeit": 1792116000,
+                        "summe": 0.0005000000091968104
+                    },
+                    {
+                        "zeit": 1792119600,
+                        "summe": 0.00039999998989515007
+                    },
+                    {
+                        "zeit": 1792123200,
+                        "summe": 0.00020000000949949026
+                    },
+                    {
+                        "zeit": 1792126800,
+                        "summe": 0.0005999999993946403
+                    },
+                    {
+                        "zeit": 1792130400,
+                        "summe": 0.00029999999969732016
+                    },
+                    {
+                        "zeit": 1792134000,
+                        "summe": 0.7384999999922002
+                    },
+                    {
+                        "zeit": 1792137600,
+                        "summe": 2.169500000003609
+                    },
+                    {
+                        "zeit": 1792141200,
+                        "summe": 4.966199999995297
+                    },
+                    {
+                        "zeit": 1792144800,
+                        "summe": 4.221799999999348
+                    },
+                    {
+                        "zeit": 1792148400,
+                        "summe": 7.118100000006962
+                    },
+                    {
+                        "zeit": 1792152000,
+                        "summe": 9.305999999996857
+                    },
+                    {
+                        "zeit": 1792155600,
+                        "summe": 3.1141000000061467
+                    },
+                    {
+                        "zeit": 1792159200,
+                        "summe": 7.90329999999085
+                    },
+                    {
+                        "zeit": 1792162800,
+                        "summe": 0.6644000000087544
+                    },
+                    {
+                        "zeit": 1792166400,
+                        "summe": 0.00039999998989515007
+                    },
+                    {
+                        "zeit": 1792170000,
+                        "summe": 0.0009000000136438757
+                    },
+                    {
+                        "zeit": 1792173600,
+                        "summe": 0.00039999998989515007
+                    },
+                    {
+                        "zeit": 1792177200,
+                        "summe": 0.00020000000949949026
+                    },
+                    {
+                        "zeit": 1792180800,
+                        "summe": 0.0006999999895924702
+                    },
+                    {
+                        "zeit": 1792184400,
+                        "summe": 0.00029999999969732016
+                    },
+                    {
+                        "zeit": 1792188000,
+                        "summe": 0.0004000000044470653
+                    },
+                    {
+                        "zeit": 1792191600,
+                        "summe": 0.0005999999993946403
+                    },
+                    {
+                        "zeit": 1792195200,
+                        "summe": 0.0004999999946448952
+                    },
+                    {
+                        "zeit": 1792198800,
+                        "summe": 0.0005000000091968104
+                    },
+                    {
+                        "zeit": 1792202400,
+                        "summe": 0.0004999999946448952
+                    },
+                    {
+                        "zeit": 1792206000,
+                        "summe": 0.00029999999969732016
+                    },
+                    {
+                        "zeit": 1792209600,
+                        "summe": 0.0004000000044470653
+                    },
+                    {
+                        "zeit": 1792213200,
+                        "summe": 0.0004000000044470653
+                    },
+                    {
+                        "zeit": 1792216800,
+                        "summe": 0.00029999999969732016
+                    },
+                    {
+                        "zeit": 1792220400,
+                        "summe": 0.0025999999925261363
+                    },
+                    {
+                        "zeit": 1792224000,
+                        "summe": 0.045100000003003515
+                    },
+                    {
+                        "zeit": 1792227600,
+                        "summe": 0.4915000000037253
+                    },
+                    {
+                        "zeit": 1792231200,
+                        "summe": 3.688299999994342
+                    },
+                    {
+                        "zeit": 1792234800,
+                        "summe": 4.555099999997765
+                    }
+                ],
+                "1": [
+                    {
+                        "zeit": 1788213600,
+                        "summe": 6.570599999991828
+                    },
+                    {
+                        "zeit": 1788300000,
+                        "summe": 29.445300000006682
+                    },
+                    {
+                        "zeit": 1788386400,
+                        "summe": 1.0709000000060769
+                    },
+                    {
+                        "zeit": 1788472800,
+                        "summe": 0.5993000000016764
+                    },
+                    {
+                        "zeit": 1788559200,
+                        "summe": 8.114199999996345
+                    },
+                    {
+                        "zeit": 1788645600,
+                        "summe": 26.503899999996065
+                    },
+                    {
+                        "zeit": 1788732000,
+                        "summe": 23.87170000001788
+                    },
+                    {
+                        "zeit": 1788818400,
+                        "summe": 11.120899999994435
+                    },
+                    {
+                        "zeit": 1788904800,
+                        "summe": 6.846500000014203
+                    },
+                    {
+                        "zeit": 1788991200,
+                        "summe": 8.342000000004191
+                    },
+                    {
+                        "zeit": 1789077600,
+                        "summe": 14.51140000000305
+                    },
+                    {
+                        "zeit": 1789164000,
+                        "summe": 10.889500000004773
+                    },
+                    {
+                        "zeit": 1789250400,
+                        "summe": 0.5347000000037951
+                    },
+                    {
+                        "zeit": 1789336800,
+                        "summe": 50.541499999992084
+                    },
+                    {
+                        "zeit": 1789423200,
+                        "summe": 36.818800000008196
+                    },
+                    {
+                        "zeit": 1789509600,
+                        "summe": 12.907999999995809
+                    },
+                    {
+                        "zeit": 1789596000,
+                        "summe": 9.296400000006543
+                    },
+                    {
+                        "zeit": 1789682400,
+                        "summe": 7.08870000000752
+                    },
+                    {
+                        "zeit": 1789768800,
+                        "summe": 11.147600000011153
+                    },
+                    {
+                        "zeit": 1789855200,
+                        "summe": 13.486100000009174
+                    },
+                    {
+                        "zeit": 1789941600,
+                        "summe": 33.418799999999464
+                    },
+                    {
+                        "zeit": 1790028000,
+                        "summe": 48.61040000000503
+                    },
+                    {
+                        "zeit": 1790114400,
+                        "summe": 46.341700000019046
+                    },
+                    {
+                        "zeit": 1790200800,
+                        "summe": 49.83169999998063
+                    },
+                    {
+                        "zeit": 1790287200,
+                        "summe": 64.98539999999048
+                    },
+                    {
+                        "zeit": 1790373600,
+                        "summe": 24.155199999993783
+                    },
+                    {
+                        "zeit": 1790460000,
+                        "summe": 45.979999999995925
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "summe": 12.162299999996321
+                    },
+                    {
+                        "zeit": 1790632800,
+                        "summe": 4.417400000005728
+                    },
+                    {
+                        "zeit": 1790719200,
+                        "summe": 37.97579999998561
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 0.24260000001231674
+                    },
+                    {
+                        "zeit": 1790892000,
+                        "summe": 30.809899999992922
+                    },
+                    {
+                        "zeit": 1790978400,
+                        "summe": 49.56450000000768
+                    },
+                    {
+                        "zeit": 1791064800,
+                        "summe": 48.79750000000058
+                    },
+                    {
+                        "zeit": 1791151200,
+                        "summe": 48.73410000001604
+                    },
+                    {
+                        "zeit": 1791237600,
+                        "summe": 37.83779999999388
+                    },
+                    {
+                        "zeit": 1791324000,
+                        "summe": 45.75119999998424
+                    },
+                    {
+                        "zeit": 1791410400,
+                        "summe": 12.56239999999525
+                    },
+                    {
+                        "zeit": 1791496800,
+                        "summe": 0.019100000004982576
+                    },
+                    {
+                        "zeit": 1791583200,
+                        "summe": 21.441399999996065
+                    },
+                    {
+                        "zeit": 1791669600,
+                        "summe": 11.681100000001607
+                    },
+                    {
+                        "zeit": 1791756000,
+                        "summe": 27.060599999997066
+                    },
+                    {
+                        "zeit": 1791842400,
+                        "summe": 0.08929999999236315
+                    },
+                    {
+                        "zeit": 1791928800,
+                        "summe": 16.356099999989965
+                    },
+                    {
+                        "zeit": 1792015200,
+                        "summe": 30.966099999990547
+                    },
+                    {
+                        "zeit": 1792101600,
+                        "summe": 40.208700000002864
+                    },
+                    {
+                        "zeit": 1792188000,
+                        "summe": 12.659800000008545
+                    }
+                ],
+                "3": [
+                    {
+                        "zeit": 1767222000,
+                        "summe": 105.7132000000056
+                    },
+                    {
+                        "zeit": 1769900400,
+                        "summe": 352.1761999999944
+                    },
+                    {
+                        "zeit": 1772319600,
+                        "summe": 933.7700000000041
+                    },
+                    {
+                        "zeit": 1774994400,
+                        "summe": 1442.9677999999985
+                    },
+                    {
+                        "zeit": 1777586400,
+                        "summe": 1419.3258999999744
+                    },
+                    {
+                        "zeit": 1780264800,
+                        "summe": 1599.8224999998783
+                    },
+                    {
+                        "zeit": 1782856800,
+                        "summe": 991.935799999992
+                    },
+                    {
+                        "zeit": 1785535200,
+                        "summe": 732.7848000000085
+                    },
+                    {
+                        "zeit": 1788213600,
+                        "summe": 657.5867000000435
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 434.7821999999869
+                    }
+                ]
+            }
         }
     }
 }

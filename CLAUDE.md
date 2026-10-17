@@ -465,6 +465,19 @@ Weitere Regeln, die nicht offensichtlich sind:
   Diagramme kennen Zähler noch nicht, `deviceChart` bekommt nur Geräte. Das Verworfene unter „Teil der Bilanz“ (Zähler der
   Bilanz als Geräte) bleibt verworfen: Erzeugung gehört in die Bilanz, ein `meter` misst nur Verbrauch. Test
   `check-zaehler.php` mit `nuc_2026-10-17_zaehler.json` (Werte echt, Verschachtelung angenommen, rechnerisch belegt).
+- **Weitere Quellen der Bilanz** (B82 Stufe b, Micha87 17.10.2026: drei PV-Anlagen mit je einem Zähler): Property
+  `Sources` (Liste mit Type grid/solar/battery, Name, EnergyIn, EnergyOut, PowerIn, PowerOut, Invert), an den Index über
+  `DeviceIndex::addSources`, Zuordnung zu den Schlüsseln in `SOURCE_KEYS`. Die Felder der Bilanz bleiben, wie sie sind
+  (keine Übernahme nötig, wer eine Anlage hat, sieht nur eine leere Liste); geplant waren Listen statt der Felder, der
+  Umbau hätte jede bestehende Instanz umgeschrieben. Intern zählen `balanceVars`/`powerVars` je Schlüssel alle Variablen,
+  `$this->balance` bleibt die Anwesenheit (das Feld oder die erste Zeile), damit Diagramme, Kosten, Teile und Ringe
+  unverändert über `balanceParts`/`houseConsumption`/`housePower` laufen. `partText` nennt bei mehreren Variablen die
+  benannten („Netzbezug 0.2 (davon Tibber 0.1)“). Vorzeichen: Ein Feld zählt wie bisher (Gegenfeld nur unter den Feldern,
+  `powerFields`), eine Zeile mit PowerIn ohne PowerOut ist ein Sensor mit Vorzeichen, Invert je Zeile (`signedOf`);
+  `signedPowers` nennt `source`. Fehler (`sourceProblems`: unknown_type, empty, solar_out, dazu fehlende Variablen) sperren
+  die ganze Bilanz (`usableBalance` prüft `sourcesUsable`), Anwesenheit im Modul über `balanceKeys`. Test
+  `check-quellen.php`: Orakel „ein Eintrag in der Liste statt im Feld ändert nichts“ (nuc, betreute Anlage), zwei
+  Netzanschlüsse mit dem Tibber Pulse (Werte echt, Anordnung angenommen); echte Daten mehrerer PV-Anlagen fehlen noch.
 - **Datum und Uhrzeit** hängt das Modul an jede Antwort von `get_state` (`withNow()` in `module.php`, nicht in
   `DeviceIndex`, damit Skriptfunktionen und Bibliothekstests ohne sie bleiben). In Anleitung oder Werkzeugliste
   veraltete sie, weil Claude-App und HA beides lange zwischenspeichern.

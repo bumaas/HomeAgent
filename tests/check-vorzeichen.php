@@ -94,8 +94,8 @@ pruefe($text === 'House power 2617 W (all devices, period=now): grid import 1, s
 
 $r = richtung(index(werte($mitschnitt, 'laden'), $bilanz, ['discharge']));
 pruefe($r === [
-    ['key' => 'import', 'variable' => 16895, 'raw' => 1.077, 'counted' => 'import', 'watts' => 1.077, 'inverted' => false],
-    ['key' => 'discharge', 'variable' => 31051, 'raw' => 1112.0, 'counted' => 'charge', 'watts' => 1112.0, 'inverted' => true],
+    ['key' => 'import', 'variable' => 16895, 'raw' => 1.077, 'source' => '', 'counted' => 'import', 'watts' => 1.077, 'inverted' => false],
+    ['key' => 'discharge', 'variable' => 31051, 'raw' => 1112.0, 'source' => '', 'counted' => 'charge', 'watts' => 1112.0, 'inverted' => true],
 ], 'signedPowers nennt je Sensor mit Vorzeichen den Rohwert und wie er zählt: ' . json_encode($r));
 $r = richtung(index(werte($mitschnitt, 'entladen'), $bilanz, ['discharge']));
 pruefe(($r[1]['counted'] ?? null) === 'discharge' && ($r[1]['watts'] ?? null) === 637.0, 'entladen: zählt als discharge 637 W: ' . json_encode($r));

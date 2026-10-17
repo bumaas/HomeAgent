@@ -550,6 +550,8 @@ foreach ([
     'Room names are the words the user speaks (Küche, Bad oben), without technical additions.'                                                      => 'Raumnamen sind die Wörter, die der Anwender spricht (Küche, Bad oben), ohne technische Zusätze.',
     // Vorzeichen umkehren (B77, Burkhard 14.10.2026)
     'InvertGridPower and InvertBatteryPower reverse the sign of a single signed grid or battery power sensor; HAGT_RunSelfTest shows how the current value counts.' => 'InvertGridPower und InvertBatteryPower kehren das Vorzeichen eines einzelnen Netz- oder Batteriesensors mit Vorzeichen um; HAGT_RunSelfTest zeigt, wie der aktuelle Wert zählt.',
+    // Weitere Quellen der Bilanz (B82 Stufe b, 17.10.2026)
+    'The property Sources is an optional JSON list of further sources (Type grid, solar or battery, Name, EnergyIn, EnergyOut, PowerIn, PowerOut, Invert) that count together with the fields of their kind; solar only has EnergyIn and PowerIn.' => 'Die Property Sources ist eine wahlweise JSON-Liste weiterer Quellen (Type grid, solar oder battery, Name, EnergyIn, EnergyOut, PowerIn, PowerOut, Invert), die mit den Feldern ihrer Art zusammen zählen; solar hat nur EnergyIn und PowerIn.',
     // Zähler mit „gemessen von“ (B82, 17.10.2026)
     'water_leak, temperature, humidity, air_quality, measurement, meter.' => 'water_leak, temperature, humidity, air_quality, measurement, meter.',
     'The type meter (a sub-distribution, wallbox or flat meter) needs EnergyVariableID and never counts in a device total. MeteredBy is the EnergyVariableID of the meter above a device or meter (0 = none); the answers name per meter what is measured below it and the rest.' => 'Der Typ meter (Unterverteilung, Wallbox, Wohnungszähler) braucht EnergyVariableID und zählt nie in einer Gerätesumme. MeteredBy ist die EnergyVariableID des Zählers über einem Gerät oder Zähler (0 = keiner); die Antworten nennen je Zähler, was darunter gemessen ist, und den Rest.',
@@ -3243,6 +3245,57 @@ IPS_SetProperty($zid, 'Devices', json_encode([['MeteredBy' => $truheE] + $leiste
 IPS_ApplyChanges($zid);
 $testZ = $z->RunSelfTest();
 pruefe(str_contains($testZ, 'Device "Schalterleiste" (Wohnzimmer): the meters in "Measured by" measure each other in a circle') && str_contains($testZ, 'Device "Haushalt": the meters in "Measured by" measure each other in a circle'), 'Selbsttest: Kreis: ' . $testZ);
+
+/* --- Weitere Quellen der Energiebilanz (B82 Stufe b) --------------------------------------------- */
+
+// Werte der betreuten Anlage (Fixture betreut_2026-10-14_batterie.json, Zeitpunkt „laden“): Netz 1.077 W, PV 1504 W,
+// Batterie 1112 W (positiv = laden). Hier steht die Batterie nicht im Feld, sondern in der Liste, mit Umkehr.
+$q = neueInstanz();
+$qid = (int)(new ReflectionProperty(IPSModuleStrict::class, 'InstanceID'))->getValue($q);
+try {
+    $quellenDa = IPS_GetProperty($qid, 'Sources') === '[]';
+} catch (Throwable) {
+    $quellenDa = false;
+}
+pruefe($quellenDa, 'Property Sources, leer');
+if ($quellenDa) {
+    $formularQ = json_decode($q->GetConfigurationForm(), true);
+    $bilanzBereich = array_values(array_filter($formularQ['elements'], static fn (array $e): bool => ($e['name'] ?? '') === 'PanelBalance'))[0] ?? [];
+    $quellenListe = array_values(array_filter(flach($bilanzBereich['items'] ?? []), static fn (array $e): bool => ($e['name'] ?? '') === 'Sources'))[0] ?? [];
+    pruefe(($quellenListe['type'] ?? '') === 'List' && array_column($quellenListe['columns'] ?? [], 'name') === ['Type', 'Name', 'EnergyIn', 'EnergyOut', 'PowerIn', 'PowerOut', 'Invert']
+        && array_column(array_column($quellenListe['columns'], null, 'name')['Type']['edit']['options'] ?? [], 'value') === ['grid', 'solar', 'battery'], 'Liste „Weitere Quellen“ in der Energiebilanz: ' . json_encode(array_column($quellenListe['columns'] ?? [], 'name')));
+    $netzQ = variable(VARIABLETYPE_FLOAT, 1.077);
+    $pvQ = variable(VARIABLETYPE_FLOAT, 1504.0);
+    $batterieQ = variable(VARIABLETYPE_FLOAT, 1112.0);
+    IPS_SetName($batterieQ, 'Battery Power');
+    IPS_SetProperty($qid, 'Accesses', json_encode([['Name' => 'Test', 'Token' => str_repeat('d', 32), 'DefaultRoom' => '', 'ReadOnly' => true, 'InPath' => false]]));
+    IPS_SetProperty($qid, 'GridImportPowerVariableID', $netzQ);
+    IPS_SetProperty($qid, 'SolarPowerVariableID', $pvQ);
+    IPS_SetProperty($qid, 'Sources', json_encode([['Type' => 'battery', 'Name' => 'Marstek', 'EnergyIn' => 0, 'EnergyOut' => 0, 'PowerIn' => $batterieQ, 'PowerOut' => 0, 'Invert' => true]]));
+    IPS_ApplyChanges($qid);
+    $indexQ = oderNull(static fn () => \Closure::bind(fn () => $this->deviceIndex(), $q, HomeAgent::class)());
+    $jetztQ = $indexQ instanceof DeviceIndex ? explode("\n", $indexQ->getState(['period' => 'now'])['text'])[0] : '';
+    pruefe($jetztQ === 'House power 393 W (all devices, period=now): grid import 1, solar 1504, battery discharge 0, battery charge 1112 W.', 'die Batterie der Liste zählt in der Hausleistung, umgekehrt: ' . $jetztQ);
+    $testQ = $q->RunSelfTest();
+    pruefe(str_contains($testQ, 'Energy balance: battery discharge power "Marstek" Battery Power reads 1112 W now and counts as battery charge 1112 W, reversed by the checkbox'), 'der Selbsttest nennt die Quelle mit Namen: ' . $testQ);
+    $referenzen = IPS_GetInstance($qid)['References'] ?? oderNull(static fn () => \Closure::bind(fn () => $this->GetReferenceList(), $q, HomeAgent::class)());
+    pruefe(is_array($referenzen) && in_array($batterieQ, $referenzen, true), 'die Variable der Liste ist Referenz: ' . json_encode($referenzen));
+    // Nur eine PV-Anlage in der Liste, kein Feld: show_chart bietet part=pv an
+    $zaehlerQ = variable(VARIABLETYPE_FLOAT, 110100.0);
+    IPS_SetProperty($qid, 'Sources', json_encode([['Type' => 'solar', 'Name' => 'Garage', 'EnergyIn' => $zaehlerQ, 'EnergyOut' => 0, 'PowerIn' => 0, 'PowerOut' => 0, 'Invert' => false]]));
+    IPS_ApplyChanges($qid);
+    $werkzeugeQ = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(null, true), $q, HomeAgent::class)()), true), null, 'name');
+    pruefe(in_array('pv', $werkzeugeQ['show_chart']['inputSchema']['properties']['part']['enum'] ?? [], true), 'eine PV-Anlage nur in der Liste: part=pv: ' . json_encode($werkzeugeQ['show_chart']['inputSchema']['properties']['part'] ?? null));
+    // Fehler: PV mit zweitem Zähler, gelöschte Variable; dann ist die Bilanz gesperrt
+    IPS_SetProperty($qid, 'Sources', json_encode([['Type' => 'solar', 'Name' => 'Garage', 'EnergyIn' => $zaehlerQ, 'EnergyOut' => $zaehlerQ, 'PowerIn' => 0, 'PowerOut' => 0, 'Invert' => false],
+        ['Type' => 'grid', 'Name' => 'Tibber', 'EnergyIn' => 59997, 'EnergyOut' => 0, 'PowerIn' => 0, 'PowerOut' => 0, 'Invert' => false]]));
+    IPS_ApplyChanges($qid);
+    $testQ = $q->RunSelfTest();
+    pruefe(str_contains($testQ, 'Source "Garage": a solar plant has only its production, no second meter or power'), 'Selbsttest: PV mit zweitem Zähler: ' . $testQ);
+    pruefe(str_contains($testQ, 'Source "Tibber": variable for energy (import, production or discharge) does not exist'), 'Selbsttest: gelöschte Variable: ' . $testQ);
+    $werkzeugeQ = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(null, true), $q, HomeAgent::class)()), true), null, 'name');
+    pruefe(!isset($werkzeugeQ['get_state']['inputSchema']['properties']['period']), 'eine fehlerhafte Quelle sperrt die Bilanz: ' . json_encode(array_keys($werkzeugeQ['get_state']['inputSchema']['properties'] ?? [])));
+}
 
 /* --- Vorlagen am Modul (Prompts, Backlog B63) ---------------------------------------------------- */
 

@@ -270,6 +270,21 @@ final class DeviceIndex
     /** @var list<string> Sensoren mit Vorzeichen, deren Vorzeichen umgekehrt gilt (B77): 'import', 'discharge' */
     private array $invertedPower = [];
 
+    /**
+     * Weitere Quellen der Bilanz (B82 Stufe b): Art => Schlüssel des ersten und des zweiten Zählers bzw. der Leistung
+     * (Netz: Bezug und Einspeisung, Batterie: entladen und geladen, PV hat nur den ersten).
+     */
+    public const SOURCE_KEYS = ['grid' => ['import', 'export'], 'solar' => ['solar', null], 'battery' => ['discharge', 'charge']];
+
+    /** @var array<string, list<array{variable: int, name: string}>> alle Zähler je Schlüssel der Bilanz, das Feld zuerst (Name '') */
+    private array $balanceVars = [];
+
+    /** @var array<string, list<array{variable: int, name: string, signed: ?bool, inverted: bool}>> alle Leistungen je Schlüssel; signed null = Feld der Bilanz */
+    private array $powerVars = [];
+
+    /** @var array<string, int> die Leistungsfelder der Bilanz ohne die Liste: ob ein Sensor ein Gegenfeld hat */
+    private array $powerFields = [];
+
     /** Art des Problems der letzten Anfrage, null = alles erreicht (problem()). */
     private ?string $problem = null;
 
@@ -333,6 +348,13 @@ final class DeviceIndex
     {
         $this->balance = array_filter(array_map('intval', array_intersect_key($balance, self::BALANCE)), static fn (int $id): bool => $id > 1);
         $this->powerBalance = array_filter(array_map('intval', array_intersect_key($powerBalance, self::BALANCE_POWER)), static fn (int $id): bool => $id > 1);
+        $this->powerFields = $this->powerBalance;
+        foreach ($this->balance as $key => $id) {
+            $this->balanceVars[$key] = [['variable' => $id, 'name' => '']];
+        }
+        foreach ($this->powerBalance as $key => $id) {
+            $this->powerVars[$key] = [['variable' => $id, 'name' => '', 'signed' => null, 'inverted' => false]];
+        }
         $this->entries = array_map(static fn (array $e): array => [
             'Name'     => trim((string)($e['Name'] ?? '')),
             'Aliases'  => (string)($e['Aliases'] ?? ''),
@@ -1343,12 +1365,15 @@ final class DeviceIndex
             if (!isset($balance[$key])) {
                 continue;
             }
-            $series = $this->backend->counterSeries($balance[$key], $level, $from, $to);
-            if ($series === null) {
-                return null;
-            }
-            foreach ($series['rows'] as $row) {
-                $values[$row['time']][$key] = (float)self::kilowattHours(['sum' => $row['sum'], 'unit' => $series['unit']]);
+            // Mehrere Quellen einer Art (B82 Stufe b) zählen je Abschnitt zusammen
+            foreach ($this->balanceVars[$key] ?? [['variable' => $balance[$key]]] as $counter) {
+                $series = $this->backend->counterSeries($counter['variable'], $level, $from, $to);
+                if ($series === null) {
+                    return null;
+                }
+                foreach ($series['rows'] as $row) {
+                    $values[$row['time']][$key] = ($values[$row['time']][$key] ?? 0.0) + (float)self::kilowattHours(['sum' => $row['sum'], 'unit' => $series['unit']]);
+                }
             }
         }
         ksort($values);
@@ -1441,17 +1466,26 @@ final class DeviceIndex
             if (!isset($balance[$key])) {
                 continue;
             }
-            $counter = $this->backend->counterSum($balance[$key], $level, $from, $to);
-            if ($counter !== null && !self::isEnergyUnit($counter['unit'])) {
-                return sprintf($this->t('House consumption unknown (%s): %s is not an energy counter (unit %s).'), $filter, $this->t($word), trim($counter['unit']));
-            }
-            $kwh = self::kilowattHours($counter);
-            if ($kwh === null) {
-                return sprintf($this->t('House consumption unknown (%s): no history archived for %s.'), $filter, $this->t($word));
+            $kwh = 0.0;
+            $named = [];
+            $counters = $this->balanceVars[$key] ?? [['variable' => $balance[$key], 'name' => '']];
+            foreach ($counters as $meter) {
+                $counter = $this->backend->counterSum($meter['variable'], $level, $from, $to);
+                if ($counter !== null && !self::isEnergyUnit($counter['unit'])) {
+                    return sprintf($this->t('House consumption unknown (%s): %s is not an energy counter (unit %s).'), $filter, $this->t($word), trim($counter['unit']));
+                }
+                $part = self::kilowattHours($counter);
+                if ($part === null) {
+                    return sprintf($this->t('House consumption unknown (%s): no history archived for %s.'), $filter, $this->t($word));
+                }
+                $kwh += $part;
+                if ($meter['name'] !== '') {
+                    $named[$meter['name']] = ($named[$meter['name']] ?? 0.0) + $part;
+                }
             }
             $total += $sign * $kwh;
             $values[$key] = $kwh;
-            $parts[] = $this->t($word) . ' ' . self::formatNumber($kwh);
+            $parts[] = $this->partText($word, $kwh, $named, count($counters), static fn (float $v): string => self::formatNumber($v));
         }
         return ['total' => $total, 'parts' => $parts, 'values' => $values];
     }
@@ -1593,28 +1627,35 @@ final class DeviceIndex
     private function housePower(array $balance, string $filter): array|string
     {
         $values = [];
+        $named = [];
+        $counts = [];
         foreach (self::BALANCE_TERMS as $key => [, $word]) {
             if (!isset($balance[$key])) {
                 continue;
             }
-            $watts = $this->wattsOf($balance[$key]);
-            if (is_array($watts)) {
-                return $watts['unit'] === null
-                    ? sprintf($this->t('House power unknown (%s): %s is not available.'), $filter, $this->t($word))
-                    : sprintf($this->t('House power unknown (%s): %s is not a power value (unit %s).'), $filter, $this->t($word), $watts['unit']);
-            }
-            $values[$key] = $watts;
-        }
-        foreach (self::SIGNED_POWER as $signed => $opposite) {
-            if (!isset($values[$signed]) || isset($balance[$opposite])) {
-                continue;
-            }
-            if (in_array($signed, $this->invertedPower, true)) {
-                $values[$signed] = -$values[$signed];
-            }
-            if ($values[$signed] < 0) {
-                $values[$opposite] = -$values[$signed];
-                $values[$signed] = 0.0;
+            $values[$key] ??= 0.0;
+            foreach ($this->powerVars[$key] ?? [['variable' => $balance[$key], 'name' => '', 'signed' => null, 'inverted' => false]] as $sensor) {
+                $watts = $this->wattsOf($sensor['variable']);
+                if (is_array($watts)) {
+                    return $watts['unit'] === null
+                        ? sprintf($this->t('House power unknown (%s): %s is not available.'), $filter, $this->t($word))
+                        : sprintf($this->t('House power unknown (%s): %s is not a power value (unit %s).'), $filter, $this->t($word), $watts['unit']);
+                }
+                // Ein Sensor mit Vorzeichen ohne Gegenfeld: negativ zählt er als Einspeisung bzw. Laden
+                [$signed, $inverted] = $this->signedOf($key, $sensor);
+                $target = $key;
+                if ($signed) {
+                    $watts = $inverted ? -$watts : $watts;
+                    if ($watts < 0) {
+                        $target = self::SIGNED_POWER[$key];
+                        $watts = -$watts;
+                    }
+                }
+                $values[$target] = ($values[$target] ?? 0.0) + $watts;
+                $counts[$target] = ($counts[$target] ?? 0) + 1;
+                if ($sensor['name'] !== '') {
+                    $named[$target][$sensor['name']] = ($named[$target][$sensor['name']] ?? 0.0) + $watts;
+                }
             }
         }
         $total = 0.0;
@@ -1622,7 +1663,7 @@ final class DeviceIndex
         foreach (self::BALANCE_TERMS as $key => [$sign, $word]) {
             if (isset($values[$key])) {
                 $total += $sign * $values[$key];
-                $parts[] = $this->t($word) . ' ' . self::formatWatts($values[$key]);
+                $parts[] = $this->partText($word, $values[$key], $named[$key] ?? [], $counts[$key] ?? 0, static fn (float $v): string => self::formatWatts($v));
             }
         }
         return ['total' => $total, 'parts' => $parts, 'values' => $values];
@@ -4966,6 +5007,91 @@ final class DeviceIndex
      *
      * @param list<string> $keys
      */
+    /**
+     * Fehler einer Zeile der Liste „Weitere Quellen“ (B82 Stufe b): unbekannte Art, keine Variable, oder bei PV ein
+     * zweiter Zähler bzw. eine zweite Leistung (eine PV-Anlage speist nur ein).
+     *
+     * @param list<array<string, mixed>> $rows
+     * @return array<int, string> Zeile => unknown_type | empty | solar_out
+     */
+    public static function sourceProblems(array $rows): array
+    {
+        $problems = [];
+        foreach ($rows as $index => $row) {
+            $type = (string)($row['Type'] ?? '');
+            $ids = array_map(static fn (string $field): int => (int)($row[$field] ?? 0), ['EnergyIn', 'EnergyOut', 'PowerIn', 'PowerOut']);
+            if (!isset(self::SOURCE_KEYS[$type])) {
+                $problems[$index] = 'unknown_type';
+            } elseif (max($ids) <= 1) {
+                $problems[$index] = 'empty';
+            } elseif ($type === 'solar' && ($ids[1] > 1 || $ids[3] > 1)) {
+                $problems[$index] = 'solar_out';
+            }
+        }
+        return $problems;
+    }
+
+    /**
+     * Weitere Quellen der Bilanz (B82 Stufe b, Wunsch Micha87 17.10.2026: drei PV-Anlagen): Netzanschlüsse, PV-Anlagen und
+     * Batterien wie im Energie-Dashboard von Home Assistant, je Art zusammengezählt mit den Feldern der Bilanz. Eine
+     * Quelle mit nur der ersten Leistung (Netz, Batterie) ist ein Sensor mit Vorzeichen wie das einzelne Feld, „Invert“
+     * dreht ihn um. Zeilen mit Fehlern (sourceProblems) übergeht die Bilanz; das Modul sperrt sie vorher ganz.
+     *
+     * @param list<array<string, mixed>> $sources Zeilen mit Type, Name, EnergyIn, EnergyOut, PowerIn, PowerOut, Invert
+     */
+    public function addSources(array $sources): void
+    {
+        $problems = self::sourceProblems($sources);
+        foreach ($sources as $index => $source) {
+            if (isset($problems[$index])) {
+                continue;
+            }
+            [$in, $out] = self::SOURCE_KEYS[(string)$source['Type']];
+            $name = trim((string)($source['Name'] ?? ''));
+            foreach ([[$in, 'EnergyIn'], [$out, 'EnergyOut']] as [$key, $field]) {
+                $id = (int)($source[$field] ?? 0);
+                if ($key !== null && $id > 1) {
+                    $this->balance[$key] ??= $id;
+                    $this->balanceVars[$key][] = ['variable' => $id, 'name' => $name];
+                }
+            }
+            $powerOut = (int)($source['PowerOut'] ?? 0);
+            foreach ([[$in, 'PowerIn'], [$out, 'PowerOut']] as [$key, $field]) {
+                $id = (int)($source[$field] ?? 0);
+                if ($key !== null && $id > 1) {
+                    $this->powerBalance[$key] ??= $id;
+                    $this->powerVars[$key][] = ['variable' => $id, 'name' => $name,
+                        'signed' => $field === 'PowerIn' && isset(self::SIGNED_POWER[$key]) && $powerOut <= 1, 'inverted' => (bool)($source['Invert'] ?? false)];
+                }
+            }
+        }
+    }
+
+    /** Zählt ein Leistungssensor mit Vorzeichen, und ist er umgekehrt? Felder der Bilanz wie bisher (B77), die Liste je Zeile. */
+    private function signedOf(string $key, array $entry): array
+    {
+        if ($entry['signed'] === null) {
+            $signed = isset(self::SIGNED_POWER[$key]) && !isset($this->powerFields[self::SIGNED_POWER[$key]]);
+            return [$signed, $signed && in_array($key, $this->invertedPower, true)];
+        }
+        return [$entry['signed'], $entry['signed'] && $entry['inverted']];
+    }
+
+    /**
+     * Ein Teil der Bilanz in Worten, mit mehreren Quellen dahinter die benannten: „Netzbezug 0.2 (davon Tibber 0.1)“.
+     *
+     * @param array<string, float> $named Name => Wert
+     */
+    private function partText(string $word, float $value, array $named, int $count, callable $format): string
+    {
+        $text = $this->t($word) . ' ' . $format($value);
+        if ($count < 2 || $named === []) {
+            return $text;
+        }
+        $list = implode(', ', array_map(static fn (string $name, float $part): string => $name . ' ' . $format($part), array_keys($named), $named));
+        return sprintf($this->t('%s (of this %s)'), $text, $list);
+    }
+
     public function setInvertedPower(array $keys): void
     {
         $this->invertedPower = array_values(array_intersect(array_keys(self::SIGNED_POWER), $keys));
@@ -4980,18 +5106,17 @@ final class DeviceIndex
     public function signedPowers(): array
     {
         $result = [];
-        foreach (self::SIGNED_POWER as $signed => $opposite) {
-            if (!isset($this->powerBalance[$signed]) || isset($this->powerBalance[$opposite])) {
-                continue;
+        foreach (self::SIGNED_POWER as $key => $opposite) {
+            foreach ($this->powerVars[$key] ?? [] as $sensor) {
+                [$signed, $inverted] = $this->signedOf($key, $sensor);
+                $raw = $signed ? $this->wattsOf($sensor['variable']) : [];
+                if (is_array($raw)) {
+                    continue;
+                }
+                $value = $inverted ? -$raw : $raw;
+                $result[] = ['key' => $key, 'variable' => $sensor['variable'], 'raw' => (float)$raw, 'source' => $sensor['name'],
+                    'counted' => $value < 0 ? $opposite : $key, 'watts' => abs((float)$value), 'inverted' => $inverted];
             }
-            $raw = $this->wattsOf($this->powerBalance[$signed]);
-            if (is_array($raw)) {
-                continue;
-            }
-            $inverted = in_array($signed, $this->invertedPower, true);
-            $value = $inverted ? -$raw : $raw;
-            $result[] = ['key' => $signed, 'variable' => $this->powerBalance[$signed], 'raw' => (float)$raw,
-                'counted' => $value < 0 ? $opposite : $signed, 'watts' => abs((float)$value), 'inverted' => $inverted];
         }
         return $result;
     }
