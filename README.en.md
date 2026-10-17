@@ -290,7 +290,9 @@ answer lists only the five largest consumers and sums up the rest ("5 more devic
 
 Several solar plants, batteries or grid connections each get a row of their own. The balance adds up the rows of a
 type, also backwards from the archive, and the answer then names them, for example "solar … (of this Roof …,
-Garage …)". If a row has an error, the whole balance is disabled. If the balance used to be in single fields, you
+Garage …)". In the chart of the house consumption "solar (used directly)" then stands per plant in shades of the
+solar colour, split by its production in the section; nobody measures which plant feeds in or charges the battery. A
+part of the balance (`part`) shows each source as a series of its own. If a row has an error, the whole balance is disabled. If the balance used to be in single fields, you
 will find it as the rows "Grid", "Solar" and "Battery" in the list after the update; you may rename them.
 
 Enter a sub-distribution, a wallbox or a flat meter as type **Meter**, with its energy meter and optionally its
@@ -302,7 +304,9 @@ metered". For the whole house the top level counts, that is everything without "
 2 meter(s) and 0 device(s) at the top level, 0 kWh not metered." The same goes for the power with `period=now`; a
 meter without power of its own counts there with what is measured below it. A reference to something that is not a
 meter of the list, and meters that measure each other in a circle, disable the row. If more than 105 % of its own
-value is measured below a meter in the last 30 days, the self test points it out. The production of a solar plant
+value is measured below a meter in the last 30 days, the self test points it out. The chart of a meter shows what
+hangs below it and the rest as "not metered"; with meters the chart of the house per device shows the top level. The
+production of a solar plant
 belongs in the energy balance, not in a meter.
 
 If you enter the **electricity price** in the energy balance (an archived variable in ct/kWh or €/kWh, for a dynamic
@@ -613,9 +617,6 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
   for example a script or another module, reads them as well.
 - The protocol for troubleshooting contains room and device names and the answers to the assistants. Whoever
   can read the log directory of Symcon reads it as well. Tokens and pairing codes are not in it.
-- Several sources of one type count together in charts, there is no colour of their own per source yet.
-- Meters do not appear in any chart yet. The consumption chart of the house still shows the devices and, as "not
-  metered", the rest against all devices.
 - The script functions know neither default room nor floor. They exist for state, switching, setting
   and scenes, not for stop, setpoint, colour temperature, colour, consumption, power and history.
 

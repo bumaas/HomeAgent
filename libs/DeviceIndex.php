@@ -660,7 +660,7 @@ final class DeviceIndex
      * Leistung). Ein Verweis auf einen Zähler, den es nicht gibt (gesperrt), macht die Zeile zur obersten.
      *
      * @param callable(array<string, mixed>): (float|string|null) $valueOf Wert des Knotens, ein Text bei einem Fehler
-     * @return array{own: array<int, float|string|null>, below: array<int, ?float>, count: array<int, int>, value: array<int, ?float>, top: list<int>}
+     * @return array{own: array<int, float|string|null>, below: array<int, ?float>, count: array<int, int>, value: array<int, ?float>, top: list<int>, children: array<int, list<int>>}
      */
     private function meterTree(string $role, callable $valueOf): array
     {
@@ -724,7 +724,7 @@ final class DeviceIndex
         foreach (array_keys($nodes) as $index) {
             $resolve($index, []);
         }
-        return ['own' => $own, 'below' => $below, 'count' => $count, 'value' => $value, 'top' => $top];
+        return ['own' => $own, 'below' => $below, 'count' => $count, 'value' => $value, 'top' => $top, 'children' => $children];
     }
 
     /**
@@ -1195,7 +1195,22 @@ final class DeviceIndex
             }
         }
         if ($this->chart !== null && ($this->chartByDevice || !$wholeHouse)) {
-            $this->deviceChart($metered, $chartLevel, $from, $to, $head[0], $filter, $balance);
+            // Mit Zählern (B82 Stufe c): ein einzelner Zähler zeigt, was unter ihm hängt, und den Rest; das Haus die oberste
+            // Ebene. Sonst stünden Geräte unter einem Zähler und der Zähler selbst doppelt im Stapel.
+            $entryOf = fn (int $index): array => $this->entries[$index];
+            if ($tree !== null && $metered === [] && count($meters) === 1) {
+                $meter = $meters[0];
+                $own = $this->backend->counterSeries($meter['roles']['energy'], $chartLevel, $from, $to);
+                $total = [];
+                foreach ($own === null ? [] : $own['rows'] as $row) {
+                    $total[$row['time']] = (float)self::kilowattHours(['sum' => $row['sum'], 'unit' => $own['unit']]);
+                }
+                $this->deviceChart(array_map($entryOf, $tree['children'][$meter['Index']] ?? []), $chartLevel, $from, $to, $head[0], $filter, [], $total);
+            } elseif ($tree !== null && $wholeHouse) {
+                $this->deviceChart(array_map($entryOf, $tree['top']), $chartLevel, $from, $to, $head[0], $filter, $balance);
+            } else {
+                $this->deviceChart($metered, $chartLevel, $from, $to, $head[0], $filter, $balance);
+            }
         }
         return ['text' => implode("\n", array_merge($head, $meterLines, $lines)), 'isError' => false];
     }
@@ -1242,9 +1257,18 @@ final class DeviceIndex
             $key = self::PARTS[$this->chartPart];
             $name = $this->t(self::BALANCE_TERMS[$key][1]);
             [$per] = self::HISTORY_LEVELS[$level];
+            $series = [['key' => $this->chartPart, 'name' => $name, 'values' => array_map(static fn (array $parts): float => round($parts[$key] ?? 0.0, 3), array_values($values))]];
+            // Mehrere Quellen dieses Teils (B82 Stufe c): eine Reihe je Quelle in Abstufungen der Farbe
+            $sources = $this->sourceSeries($key, $level, $from, $to);
+            if ($sources !== null && count($sources) > 1) {
+                $series = [];
+                foreach ($sources as $shade => $source) {
+                    $series[] = ['key' => $this->chartPart, 'name' => $source['name'] === '' ? $name : $source['name'], 'source' => $source['name'], 'shade' => $shade,
+                        'values' => array_map(static fn (int $time): float => round($source['values'][$time] ?? 0.0, 3), array_keys($values))];
+                }
+            }
             $this->chart = ['kind' => 'consumption', 'title' => $title, 'per' => $per, 'unit' => 'kWh', 'filter' => $filter, 'times' => array_keys($values),
-                'series' => [['key' => $this->chartPart, 'name' => $name, 'values' => array_map(static fn (array $parts): float => round($parts[$key] ?? 0.0, 3), array_values($values))]],
-                'labels' => ['per' => $this->t($per), 'total' => $name]];
+                'series' => $series, 'labels' => ['per' => $this->t($per), 'total' => $name]];
             return;
         }
         $stacks = ['grid' => [], 'solar' => [], 'battery' => [], 'export' => []];
@@ -1264,11 +1288,27 @@ final class DeviceIndex
         }
         $present = ['grid' => true, 'solar' => isset($balance['solar']), 'battery' => isset($balance['discharge']), 'export' => isset($balance['export'])];
         $names = ['grid' => 'grid', 'solar' => 'solar (used directly)', 'battery' => 'battery', 'export' => 'grid export'];
+        // Mehrere PV-Anlagen (B82 Stufe c): PV direkt je Anlage im Verhältnis ihres Ertrags im Abschnitt. Welche Anlage
+        // einspeist oder die Batterie lädt, misst niemand.
+        $solarSources = $present['solar'] ? $this->sourceSeries('solar', $level, $from, $to) : null;
         $series = [];
         foreach ($stacks as $key => $list) {
-            if ($present[$key]) {
-                $series[] = ['key' => $key, 'name' => $this->t($names[$key]), 'values' => $list];
+            if (!$present[$key]) {
+                continue;
             }
+            if ($key === 'solar' && $solarSources !== null && count($solarSources) > 1) {
+                $times = array_keys($values);
+                foreach ($solarSources as $shade => $source) {
+                    $split = [];
+                    foreach ($times as $i => $time) {
+                        $all = array_sum(array_map(static fn (array $s): float => $s['values'][$time] ?? 0.0, $solarSources));
+                        $split[] = $all > 0 ? round($list[$i] * ($source['values'][$time] ?? 0.0) / $all, 3) : 0.0;
+                    }
+                    $series[] = ['key' => 'solar', 'name' => $this->t($names['solar']) . ($source['name'] === '' ? '' : ' · ' . $source['name']), 'source' => $source['name'], 'shade' => $shade, 'values' => $split];
+                }
+                continue;
+            }
+            $series[] = ['key' => $key, 'name' => $this->t($names[$key]), 'values' => $list];
         }
         [$per] = self::HISTORY_LEVELS[$level];
         $this->chart = ['kind' => 'consumption', 'title' => $title, 'per' => $per, 'unit' => 'kWh', 'filter' => $filter,
@@ -1381,15 +1421,41 @@ final class DeviceIndex
     }
 
     /**
+     * kWh je Abschnitt für jede Quelle eines Teils der Bilanz (B82 Stufe c), Quellen mit gleichem Namen zusammen, in der
+     * Reihenfolge der Liste; null, wenn ein Zähler keinen Verlauf hat.
+     *
+     * @return null|list<array{name: string, values: array<int, float>}>
+     */
+    private function sourceSeries(string $key, int $level, int $from, int $to): ?array
+    {
+        $sources = [];
+        foreach ($this->balanceVars[$key] ?? [] as $counter) {
+            $series = $this->backend->counterSeries($counter['variable'], $level, $from, $to);
+            if ($series === null) {
+                return null;
+            }
+            $name = (string)($counter['name'] ?? '');
+            $sources[$name] ??= ['name' => $name, 'values' => []];
+            foreach ($series['rows'] as $row) {
+                $sources[$name]['values'][$row['time']] = ($sources[$name]['values'][$row['time']] ?? 0.0) + (float)self::kilowattHours(['sum' => $row['sum'], 'unit' => $series['unit']]);
+            }
+        }
+        return array_values($sources);
+    }
+
+    /**
      * Verbrauch je Gerät als Stapeldiagramm (Burkhard 12.10.2026): die CHART_DEVICES größten Geräte über den Zeitraum mit
      * eigenem Stapel, der Rest als „übrige Geräte“. Mit Energiebilanz fürs ganze Haus dazu „nicht erfasst“ (Haus minus
      * Geräte je Zeitraum, nicht unter 0). Geräte ohne archivierten Zähler oder mit einem Zähler für Wasser oder Gas
      * fehlen im Diagramm, die Textzeilen nennen sie.
      *
+     * Unter einem Zähler (B82 Stufe c) bekommt der Stapel statt der Bilanz den Zähler selbst als Ganzes ($total).
+     *
      * @param list<array<string, mixed>> $metered
      * @param array<string, int> $balance leer = kein „nicht erfasst“
+     * @param null|array<int, float> $total kWh je Abschnitt des Zählers darüber
      */
-    private function deviceChart(array $metered, int $level, int $from, int $to, string $title, string $filter, array $balance): void
+    private function deviceChart(array $metered, int $level, int $from, int $to, string $title, string $filter, array $balance, ?array $total = null): void
     {
         $devices = [];
         $times = [];
@@ -1403,12 +1469,18 @@ final class DeviceIndex
                 $values[$row['time']] = (float)self::kilowattHours(['sum' => $row['sum'], 'unit' => $series['unit']]);
                 $times[$row['time']] = true;
             }
-            $devices[] = ['name' => $entry['Room'] . ' · ' . $entry['Name'], 'values' => $values, 'total' => array_sum($values)];
+            // Ein Zähler ohne Raum (Unterverteilung, Haushalt) nur mit Namen
+            $devices[] = ['name' => ($entry['Room'] === '' ? '' : $entry['Room'] . ' · ') . $entry['Name'], 'values' => $values, 'total' => array_sum($values)];
         }
         // Die größten zuerst; bei Gleichstand bleibt die Reihenfolge der Liste
         usort($devices, static fn (array $a, array $b): int => $b['total'] <=> $a['total']);
         $house = [];
-        if ($balance !== []) {
+        if ($total !== null) {
+            $house = $total;
+            foreach (array_keys($total) as $time) {
+                $times[$time] = true;
+            }
+        } elseif ($balance !== []) {
             foreach ($this->balanceParts($balance, $level, $from, $to) ?? [] as $time => $parts) {
                 $sum = 0.0;
                 foreach (self::BALANCE_TERMS as $key => [$sign]) {
@@ -4440,7 +4512,8 @@ final class DeviceIndex
             self::padTimes($chart, $span[1]);
         }
         if ($part !== '') {
-            $sum = array_sum(array_map('floatval', $chart['series'][0]['values'] ?? []));
+            // Mit mehreren Quellen eine Reihe je Quelle (B82 Stufe c), die Zeile nennt die Summe aller
+            $sum = array_sum(array_map(static fn (array $series): float => array_sum(array_map('floatval', $series['values'])), $chart['series'] ?? []));
             $result['text'] .= "\n" . $this->t(self::PART_TITLES[$part]) . ' ' . (($chart['unit'] ?? '') === '€' ? number_format($sum, 2, '.', '') . ' €.' : self::formatNumber($sum) . ' kWh.');
         }
         if ($compare !== '') {

@@ -303,7 +303,9 @@ gefragt, kommen alle Geräte in der Reihenfolge der Liste.
 
 Mehrere PV-Anlagen, Batterien oder Netzanschlüsse bekommen je eine eigene Zeile. Die Bilanz zählt die Zeilen einer
 Art zusammen, auch rückwirkend aus dem Archiv, und die Antwort nennt sie dann mit Namen, etwa „PV-Ertrag …
-(davon Dach …, Garage …)“. Hat eine Zeile einen Fehler, ist die ganze Bilanz gesperrt. Stand die Bilanz bisher in
+(davon Dach …, Garage …)“. Im Diagramm des Hausverbrauchs steht „PV direkt“ dann je Anlage in Abstufungen der
+PV-Farbe, aufgeteilt nach ihrem Ertrag im Abschnitt; welche Anlage einspeist oder die Batterie lädt, misst niemand.
+Ein Teil der Bilanz (`part`) zeigt jede Quelle als eigene Reihe. Hat eine Zeile einen Fehler, ist die ganze Bilanz gesperrt. Stand die Bilanz bisher in
 einzelnen Feldern, finden Sie sie nach dem Update als Zeilen „Netz“, „PV“ und „Batterie“ in der Liste; die Namen
 dürfen Sie ändern.
 
@@ -316,8 +318,9 @@ gemessen ist, und den Rest: „Haushalt 13.4 kWh, davon 2.1 kWh von 9 Zähler(n)
 durch 2 Zähler und 0 Gerät(e) auf oberster Ebene, 0 kWh nicht erfasst.“ Ebenso bei der Leistung mit `period=now`;
 ein Zähler ohne eigene Leistung zählt dort mit dem, was darunter gemessen ist. Ein Verweis auf etwas, das kein
 Zähler der Liste ist, und Zähler, die sich im Kreis messen, sperren die Zeile. Liegt unter einem Zähler in den
-letzten 30 Tagen mehr als 105 % seines eigenen Werts, weist der Selbsttest darauf hin. Die Erzeugung einer
-PV-Anlage gehört in die Energiebilanz, nicht in einen Zähler.
+letzten 30 Tagen mehr als 105 % seines eigenen Werts, weist der Selbsttest darauf hin. Das Diagramm eines Zählers
+zeigt, was unter ihm hängt, und den Rest als „nicht erfasst“; das Diagramm des Hauses je Gerät zeigt mit Zählern die
+oberste Ebene. Die Erzeugung einer PV-Anlage gehört in die Energiebilanz, nicht in einen Zähler.
 
 Tragen Sie in der Energiebilanz den **Strompreis** ein (eine archivierte Variable in ct/kWh oder €/kWh, bei einem
 dynamischen Tarif etwa der aktuelle Preis aus dem Tibber-Modul) und die Einspeisevergütung, nennt der Hausverbrauch
@@ -635,9 +638,6 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
   Skript oder ein anderes Modul, liest sie mit.
 - Das Protokoll zur Fehlersuche enthält Raum- und Gerätenamen und die Antworten an die Assistenten. Wer das
   Log-Verzeichnis von Symcon lesen kann, liest es mit. Tokens und Kopplungscodes stehen nicht darin.
-- Mehrere Quellen einer Art zählen in Diagrammen zusammen, eine eigene Farbe je Quelle gibt es dort noch nicht.
-- Zähler stehen noch in keinem Diagramm. Das Verbrauchsdiagramm des Hauses zeigt weiter die Geräte und als „nicht
-  erfasst“ den Rest gegen alle Geräte.
 - Die Skriptfunktionen kennen weder Standardraum noch Etage. Es gibt sie für Zustand, Schalten,
   Stellen und Szenen, für Stopp, Sollwert, Farbtemperatur, Farbe, Verbrauch, Leistung und Verlauf nicht.
 

@@ -11,7 +11,9 @@ declare(strict_types=1);
  * Anordnung), bei der Leistung ebenso mit Vorzeichen und Umkehr (betreut_2026-10-14_batterie.json).
  * Orakel 2: Zwei Quellen derselben Art zählen zusammen. Dafür steht der Tibber Pulse (#30012, #44499) als zweiter
  * Netzanschluss in der Liste. Die Werte sind echt, die Anordnung ist angenommen: Er misst denselben Anschluss wie der
- * SMA Home Manager. Echte Daten mehrerer PV-Anlagen gibt es noch nicht.
+ * SMA Home Manager.
+ * Orakel 3 (Stufe c, betreut_2026-10-17_quellen.json, echte Werte und echte Anordnung: zwei Wechselrichter, ein
+ * ausgebauter und ein neuer Netzzähler nacheinander): Text, Stapel und Teile rechnet der Test selbst aus den Aggregaten.
  */
 
 require __DIR__ . '/pruefen.php';
@@ -132,5 +134,95 @@ pruefe($pruefe([['Type' => 'solar', 'Name' => 'Garage', 'EnergyIn' => 10639, 'En
 pruefe($pruefe([['Type' => 'solar', 'Name' => 'Garage', 'PowerIn' => 14114, 'PowerOut' => 35568]]) === [0 => 'solar_out'], 'PV hat keine zweite Leistung');
 pruefe($pruefe([['Type' => 'grid', 'Name' => 'leer']]) === [0 => 'empty'], 'eine Quelle ohne Variable');
 pruefe($pruefe([['Type' => 'wind', 'Name' => 'Rad', 'EnergyIn' => 10639]]) === [0 => 'unknown_type'], 'unbekannte Art');
+
+/* --- Mehrere PV-Anlagen und zwei Netzzähler nacheinander (betreute Anlage, Stufe c) -------------- */
+
+// Echte Werte und echte Anordnung: zwei Wechselrichter, ein ausgebauter und ein neuer Netzzähler, eine Batterie
+$zwei = fixture('betreut_2026-10-17_quellen.json');
+
+function zweiIndex(): DeviceIndex
+{
+    global $zwei;
+    $anlage = new FakeBackend($zwei['variablen']);
+    $anlage->jetzt = $zwei['jetzt'];
+    $index = new DeviceIndex([], $anlage, null, '');
+    $index->addSources($zwei['quellen']);
+    return $index;
+}
+
+/** kWh je Abschnitt eines Zählers der Fixture (Stufe, Beginn ab, Beginn bis einschließlich). */
+function abschnitte(int $id, string $stufe, int $von, int $bis): array
+{
+    global $zwei;
+    $werte = [];
+    foreach ($zwei['variablen'][(string)$id]['aggregate'][$stufe] as $a) {
+        if ($a['zeit'] >= $von && $a['zeit'] <= $bis) {
+            $werte[$a['zeit']] = (float)$a['summe'];
+        }
+    }
+    return $werte;
+}
+
+$september = [(int)strtotime('2026-09-01'), (int)strtotime('2026-09-30')];
+$summe = static fn (int ...$ids): float => array_sum(array_map(static fn (int $id): float => array_sum(abschnitte($id, '1', ...$GLOBALS['september'])), $ids));
+$huawei = $summe(25173);
+$hoymiles = $summe(53548);
+$bezug = $summe(11557, 51590);
+$einspeisung = $summe(11314, 18681);
+$haus = $bezug + $huawei + $hoymiles + $summe(53433) - $einspeisung - $summe(42220);
+$soll = sprintf('House consumption %s kWh (all devices, from=2026-09-01, to=2026-09-30): grid import %s (of this Netz %s, Netz bis 05/2026 %s), solar %s (of this Huawei %s, Hoymiles %s), battery discharge %s, grid export %s (of this Netz %s, Netz bis 05/2026 %s), battery charge %s kWh.',
+    zahl($haus), zahl($bezug), zahl($summe(11557)), zahl($summe(51590)), zahl($huawei + $hoymiles), zahl($huawei), zahl($hoymiles), zahl($summe(53433)),
+    zahl($einspeisung), zahl($summe(11314)), zahl($summe(18681)), zahl($summe(42220)));
+$ist = strtok(zweiIndex()->getState(['from' => '2026-09-01', 'to' => '2026-09-30'])['text'], "\n");
+pruefe($ist === $soll, 'zwei PV-Anlagen und zwei Netzzähler im Text: ' . $ist . ' ‖ erwartet ' . $soll);
+
+// Stapel des Hausverbrauchs: PV direkt je Anlage im Verhältnis ihres Ertrags (welche Anlage einspeist, misst niemand)
+try {
+    $diagramm = zweiIndex()->chart(['from' => '2026-09-01', 'to' => '2026-09-30'])['structuredContent'] ?? [];
+} catch (Throwable $e) {
+    $diagramm = [];
+}
+$reihen = $diagramm['series'] ?? [];
+$pv = array_values(array_filter($reihen, static fn (array $r): bool => $r['key'] === 'solar'));
+pruefe(array_column($reihen, 'key') === ['grid', 'solar', 'solar', 'battery', 'export'], 'Stapel: Netz, PV je Anlage, Batterie, Einspeisung: ' . json_encode(array_column($reihen, 'key')));
+pruefe(array_column($pv, 'source') === ['Huawei', 'Hoymiles'] && array_column($pv, 'shade') === [0, 1], 'jede PV-Reihe nennt ihre Anlage und eine Abstufung der Farbe: ' . json_encode(array_map(static fn (array $r): array => array_diff_key($r, ['values' => 0]), $pv), JSON_UNESCAPED_UNICODE));
+$abweichung = 0.0;
+$zeiten = $diagramm['times'] ?? [];
+$teil = static fn (int $id, int $zeit): float => abschnitte($id, '1', $zeit, $zeit)[$zeit] ?? 0.0;
+foreach ($zeiten as $i => $zeit) {
+    if ($zeit > $september[1]) {
+        continue;
+    }
+    $erzeugt = [$teil(25173, $zeit), $teil(53548, $zeit)];
+    $tag = $teil(11557, $zeit) + $teil(51590, $zeit) + array_sum($erzeugt) + $teil(53433, $zeit) - $teil(11314, $zeit) - $teil(18681, $zeit) - $teil(42220, $zeit);
+    $direkt = max(0.0, min(max(0.0, $tag), array_sum($erzeugt) - $teil(11314, $zeit) - $teil(18681, $zeit) - $teil(42220, $zeit)));
+    foreach ([0, 1] as $j) {
+        $erwartet = array_sum($erzeugt) > 0 ? $direkt * $erzeugt[$j] / array_sum($erzeugt) : 0.0;
+        $abweichung = max($abweichung, abs((float)($pv[$j]['values'][$i] ?? -1) - $erwartet));
+    }
+}
+pruefe($zeiten !== [] && $abweichung <= 0.002, 'PV direkt je Anlage und Tag im Verhältnis des Ertrags, größte Abweichung ' . $abweichung . ' kWh');
+
+// Teil der Bilanz mit mehreren Quellen: eine Reihe je Quelle, die Summenzeile über alle
+try {
+    $teilPv = zweiIndex()->chart(['from' => '2026-09-01', 'to' => '2026-09-30', 'part' => 'pv']);
+} catch (Throwable $e) {
+    $teilPv = ['text' => 'FEHLT: ' . $e->getMessage()];
+}
+$reihen = $teilPv['structuredContent']['series'] ?? [];
+pruefe(array_column($reihen, 'name') === ['Huawei', 'Hoymiles'] && array_column($reihen, 'key') === ['pv', 'pv'] && array_column($reihen, 'shade') === [0, 1], 'part=pv: eine Reihe je Anlage: ' . json_encode(array_map(static fn (array $r): array => array_diff_key($r, ['values' => 0]), $reihen), JSON_UNESCAPED_UNICODE));
+pruefe(abs(array_sum($reihen[1]['values'] ?? []) - $hoymiles) < 0.01 && abs(array_sum($reihen[0]['values'] ?? []) - $huawei) < 0.01, 'part=pv: Werte je Anlage aus ihrem Zähler');
+pruefe(str_contains($teilPv['text'], 'Solar production ' . zahl($huawei + $hoymiles) . ' kWh.'), 'part=pv: die Summenzeile zählt beide Anlagen: ' . $teilPv['text']);
+try {
+    $teilNetz = zweiIndex()->chart(['period' => 'this_year', 'part' => 'grid'])['structuredContent']['series'] ?? [];
+} catch (Throwable $e) {
+    $teilNetz = [];
+}
+$jahr = (int)strtotime('2026-01-01');
+pruefe(array_column($teilNetz, 'name') === ['Netz', 'Netz bis 05/2026']
+    && abs(array_sum($teilNetz[1]['values'] ?? []) - array_sum(abschnitte(51590, '3', $jahr, $zwei['jetzt']))) < 0.01
+    && abs(array_sum($teilNetz[0]['values'] ?? []) - array_sum(abschnitte(11557, '3', $jahr, $zwei['jetzt']))) < 0.01,
+    'part=grid über das Jahr: alter und neuer Netzzähler je als Reihe');
+pruefe(str_contains((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/chart.html'), 'SOURCE_SHADES'), 'die Seite kennt Abstufungen der Farbe je Quelle');
 
 ende('Weitere Quellen der Energiebilanz');

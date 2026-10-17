@@ -177,4 +177,84 @@ foreach ([3, 4, 5, 6, 7, 8, 9, 10, 11] as $i) {
 $warnung = $ueber($verkehrt);
 pruefe(count($warnung) === 1 && ($warnung[0]['name'] ?? '') === 'Schalterleiste Multimedia' && $warnung[0]['below'] > 1.05 * $warnung[0]['meter'], 'verkehrt verschachtelt: Warnung für die Leiste: ' . json_encode($warnung, JSON_UNESCAPED_UNICODE));
 
+/* --- Diagramm eines Zählers: Stapel aus dem, was darunter hängt, und dem Rest (Stufe c) ------------- */
+
+/** kWh je Stunde gestern eines Zählers der Fixture, Schlüssel ist der Beginn der Stunde. */
+function stunden(int $id): array
+{
+    global $mitschnitt;
+    $heute = (int)strtotime('today', $mitschnitt['jetzt']);
+    $v = $mitschnitt['variablen'][(string)$id];
+    $werte = [];
+    foreach ($v['aggregate']['0'] as $a) {
+        if ($a['zeit'] >= $heute - 86400 && $a['zeit'] < $heute) {
+            $werte[$a['zeit']] = strtolower($v['einheit']) === 'wh' ? $a['summe'] / 1000 : $a['summe'];
+        }
+    }
+    return $werte;
+}
+
+function zaehlerDiagramm(array $argumente): array
+{
+    global $alle;
+    try {
+        return index($alle)->chart($argumente)['structuredContent'] ?? [];
+    } catch (Throwable $e) {
+        return ['fehler' => $e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')'];
+    }
+}
+
+/** Prüft einen Stapel gegen Zähler und Kinder je Stunde; liefert die größte Abweichung in kWh. */
+function stapelAbweichung(array $diagramm, array $oben, array $kinder): float
+{
+    $abweichung = 0.0;
+    foreach ($diagramm['times'] ?? [] as $i => $zeit) {
+        if (!isset($oben[$zeit])) {
+            continue;
+        }
+        $gemessen = array_sum(array_map(static fn (array $k): float => $k[$zeit] ?? 0.0, $kinder));
+        $teile = 0.0;
+        $rest = null;
+        foreach ($diagramm['series'] as $reihe) {
+            if ($reihe['key'] === 'unmetered') {
+                $rest = (float)$reihe['values'][$i];
+            } else {
+                $teile += (float)$reihe['values'][$i];
+            }
+        }
+        $abweichung = max($abweichung, abs($teile - $gemessen), abs(($rest ?? -1.0) - max(0.0, $oben[$zeit] - $gemessen)));
+    }
+    return ($diagramm['times'] ?? []) === [] ? INF : $abweichung;
+}
+
+// Haushalt: alle Geräte hängen an ihm, jede Variable einmal (Entfeuchter und Luftentfeuchter teilen sich #49570)
+$kinder = [];
+foreach ($alle as $g) {
+    if (($g['MeteredBy'] ?? 0) === 40308 && !isset($kinder[$g['EnergyVariableID']])) {
+        $kinder[$g['EnergyVariableID']] = stunden($g['EnergyVariableID']);
+    }
+}
+$diagramm = zaehlerDiagramm(['name' => 'Haushalt', 'period' => 'yesterday']);
+$schluessel = array_column($diagramm['series'] ?? [], 'key');
+pruefe(($diagramm['kind'] ?? '') === 'consumption' && end($schluessel) === 'unmetered' && in_array('other', $schluessel, true) && count($schluessel) === 7,
+    'Zähler Haushalt: fünf größte darunter, die übrigen, der Rest: ' . json_encode($diagramm['fehler'] ?? $schluessel));
+pruefe(stapelAbweichung($diagramm, stunden(40308), $kinder) <= 0.002, 'Zähler Haushalt: Stapel und Rest je Stunde aus den Zählern, größte Abweichung ' . stapelAbweichung($diagramm, stunden(40308), $kinder));
+
+// Schalterleiste: ein Gerät darunter und der Rest
+$diagramm = zaehlerDiagramm(['name' => 'Schalterleiste', 'period' => 'yesterday']);
+pruefe(array_column($diagramm['series'] ?? [], 'name') === ['Wohnzimmer · Steckdose Fernseher', 'not metered']
+    && stapelAbweichung($diagramm, stunden(16183), [stunden(37729)]) <= 0.002, 'Zähler Schalterleiste: Fernseher und Rest: ' . json_encode($diagramm['fehler'] ?? array_column($diagramm['series'] ?? [], 'name'), JSON_UNESCAPED_UNICODE));
+
+// Haus je Gerät mit Zählern: die oberste Ebene (Haushalt, Wallbox) und der Rest der Bilanz
+$hausStunden = [];
+foreach (['import' => 1, 'solar' => 1, 'discharge' => 1, 'export' => -1, 'charge' => -1] as $schl => $vorzeichen) {
+    foreach (stunden($mitschnitt['bilanz'][$schl]) as $zeit => $kwh) {
+        $hausStunden[$zeit] = ($hausStunden[$zeit] ?? 0.0) + $vorzeichen * $kwh;
+    }
+}
+$diagramm = zaehlerDiagramm(['type' => 'energy', 'period' => 'yesterday']);
+pruefe(array_column($diagramm['series'] ?? [], 'name') === ['Haushalt', 'Wallbox', 'not metered']
+    && stapelAbweichung($diagramm, array_map(static fn (float $v): float => max(0.0, $v), $hausStunden), [stunden(40308), stunden(36579)]) <= 0.002,
+    'Haus je Gerät mit Zählern: oberste Ebene und Rest der Bilanz: ' . json_encode($diagramm['fehler'] ?? array_column($diagramm['series'] ?? [], 'name'), JSON_UNESCAPED_UNICODE));
+
 ende('Zähler mit „gemessen von“');

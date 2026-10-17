@@ -461,8 +461,10 @@ Weitere Regeln, die nicht offensichtlich sind:
   Assistant (core `energy/data.py`, frontend `common/sankey.ts`, 17.10.2026); anders als dort sperren ein Verweis ins Leere
   und ein Kreis die Zeile (`DeviceIndex::meterProblems`, geprüft in `findProblems`), und der Selbsttest meldet Zähler, unter
   denen in den letzten 30 Tagen mehr als 105 % gemessen ist (`meterOverruns`). Der Dialog hat die Auswahl `MeteredBy` mit
-  „-“ und den Zählern der gespeicherten Liste (wie der Raum: ein unbekannter Wert bekommt einen eigenen Eintrag). Die
-  Diagramme kennen Zähler noch nicht, `deviceChart` bekommt nur Geräte. Das Verworfene unter „Teil der Bilanz“ (Zähler der
+  „-“ und den Zählern der gespeicherten Liste (wie der Raum: ein unbekannter Wert bekommt einen eigenen Eintrag). Diagramme
+  (Stufe c): Ein einzelner Zähler unter den Treffern zeigt in `deviceChart` seine direkten Kinder (`meterTree` liefert
+  `children`) und als `unmetered` sich selbst minus die Kinder (Parameter `$total`), das Haus je Gerät mit Zählern die
+  oberste Ebene gegen die Bilanz; vorher stand der Rest gegen alle Geräte, Geräte unter einem Zähler zählten doppelt. Das Verworfene unter „Teil der Bilanz“ (Zähler der
   Bilanz als Geräte) bleibt verworfen: Erzeugung gehört in die Bilanz, ein `meter` misst nur Verbrauch. Test
   `check-zaehler.php` mit `nuc_2026-10-17_zaehler.json` (Werte echt, Verschachtelung angenommen, rechnerisch belegt).
 - **Quellen der Bilanz** (B82 Stufe b, Micha87 17.10.2026: drei PV-Anlagen mit je einem Zähler): Property
@@ -485,7 +487,12 @@ Weitere Regeln, die nicht offensichtlich sind:
   `signedPowers` nennt `source`. Fehler (`sourceProblems`: unknown_type, empty, solar_out, dazu fehlende Variablen mit
   dem Teil der Bilanz) sperren die ganze Bilanz (`sourcesUsable`), Anwesenheit im Modul über `balanceKeys`. Test
   `check-quellen.php`: Orakel „ein Eintrag in der Liste statt im Feld ändert nichts“ (nuc, betreute Anlage), zwei
-  Netzanschlüsse mit dem Tibber Pulse (Werte echt, Anordnung angenommen); echte Daten mehrerer PV-Anlagen fehlen noch.
+  Netzanschlüsse mit dem Tibber Pulse (Werte echt, Anordnung angenommen), dazu `betreut_2026-10-17_quellen.json` mit
+  echter Anordnung: zwei Wechselrichter, ein ausgebauter und ein neuer Netzzähler nacheinander, eine Batterie (die
+  Archive waren vorher repariert, siehe `_quelle`). **Diagramme (Stufe c):** `sourceSeries` liefert je Quelle eines
+  Teils die Abschnitte. Im Stapel des Hauses teilt `houseChart` PV direkt auf die Anlagen im Verhältnis ihres Ertrags je
+  Abschnitt (wer einspeist oder lädt, misst niemand), mit `part` bekommt jede Quelle eine Reihe; Reihen tragen `source`
+  und `shade`, die Seite färbt nach `SOURCE_SHADES` (`DESIGN.md`). Die Ringe bleiben je Art.
 - **Datum und Uhrzeit** hängt das Modul an jede Antwort von `get_state` (`withNow()` in `module.php`, nicht in
   `DeviceIndex`, damit Skriptfunktionen und Bibliothekstests ohne sie bleiben). In Anleitung oder Werkzeugliste
   veraltete sie, weil Claude-App und HA beides lange zwischenspeichern.

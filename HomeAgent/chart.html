@@ -76,6 +76,16 @@
   // Farben wie in den Ringen (Anregung pitti, Forum t/144633): PV gelb, Batterie türkis, Netz orangerot, Einspeisung grün
   var STACK_COLORS = { grid: "#e8603c", solar: "#f2b705", battery: "#14b8a6", export: "#4caf50",
     feed_in: "#4caf50", pv: "#f2b705", battery_charge: "#14b8a6", battery_discharge: "#14b8a6", other: "#8c959f", unmetered: "#d0d7de" };
+  // Mehrere Quellen einer Art (zwei PV-Anlagen, zwei Netzzähler): Abstufungen der Farbe der Art, nach „shade“ der Reihe
+  var SOURCE_SHADES = {
+    solar: ["#f2b705", "#b88a00", "#f8d66a", "#8a6700"], grid: ["#e8603c", "#b5452a", "#f29b80", "#8c3520"],
+    battery: ["#14b8a6", "#0d7f73", "#6fd8cb", "#0a5f56"], export: ["#4caf50", "#2e7d32", "#8fd694", "#1f5a23"] };
+  var SHADE_OF = { pv: "solar", feed_in: "export", battery_charge: "battery", battery_discharge: "battery" };
+  function stackColor(s, devices) {
+    var shades = SOURCE_SHADES[SHADE_OF[s.key] || s.key];
+    if (shades && typeof s.shade === "number") { return shades[s.shade % shades.length]; }
+    return STACK_COLORS[s.key] || COLORS[devices % COLORS.length];
+  }
   var nextId = 1;
   var pending = {};
   var lang = (navigator.language || "de").slice(0, 2);
@@ -399,7 +409,7 @@
     var slot = (W - L - R) / n, width = Math.max(1, slot * 0.7);
     var unit = data.unit || "";
     var devices = 0;
-    var colors = data.series.map(function (s) { return STACK_COLORS[s.key] || COLORS[devices++ % COLORS.length]; });
+    var colors = data.series.map(function (s) { return stackColor(s, STACK_COLORS[s.key] ? devices : devices++); });
 
     var box = document.createElement("div");
     box.className = "chart";

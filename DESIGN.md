@@ -71,6 +71,11 @@ Farbe ohne eigene Bedeutung (etwa Fokus oder gewählter Eintrag) nimmt den Akzen
 - **Energie** immer gleich, in Stapeln wie in Ringen (`STACK_COLORS`): Netz #e8603c, PV #f2b705, Batterie #14b8a6,
   Einspeisung #4caf50, übrige Geräte #8c959f, nicht erfasst #d0d7de.
   Ein einzelner Teil der Bilanz (`part`: `grid`, `feed_in`, `pv`, `battery_charge`, `battery_discharge`) trägt dieselbe Farbe.
+- **Mehrere Quellen einer Art** (zwei PV-Anlagen, zwei Netzzähler) in Abstufungen ihrer Farbe (`SOURCE_SHADES`, Reihe
+  mit `shade` in der Reihenfolge der Liste „Quellen“): erst die Grundfarbe, dann dunkler, heller, noch dunkler, danach von
+  vorn. PV #f2b705, #b88a00, #f8d66a, #8a6700; Netz #e8603c, #b5452a, #f29b80, #8c3520; Batterie #14b8a6, #0d7f73,
+  #6fd8cb, #0a5f56; Einspeisung #4caf50, #2e7d32, #8fd694, #1f5a23. Die Art bleibt so auf einen Blick erkennbar, die
+  Anlagen trennt die Helligkeit. Die Ringe zeigen weiter nur die Art.
 - **Zustände in Bändern:** aktiv (an, offen, erkannt) #2f81f7, inaktiv `--inactive`. Eine Auswahl (Batteriemodus,
   Betriebsart) bekommt `CHOICE_COLORS` in der Reihenfolge ihrer Einträge: #2f81f7, #14b8a6, #d29922, #a371f7, #8c959f.
   Rot und Grün bleiben Bedeutungen vorbehalten („Halten“ in Rot sah nach einem Fehler aus). Die Reihenfolge der
