@@ -1047,6 +1047,11 @@ class HomeAgent extends IPSModuleStrict
         foreach (['EnergyLabel' => ['EnergyIn', 'EnergyOut'], 'PowerLabel' => ['PowerIn', 'PowerOut']] as $label => [$in, $out]) {
             $names = $two ? [$nameOf((int)($row[$in] ?? 0)), $nameOf((int)($row[$out] ?? 0))] : [$nameOf((int)($row[$in] ?? 0))];
             $labels[$label] = array_unique($names) === ['-'] ? '-' : implode(' / ', $names);
+            // Eine Leistung allein im ersten Feld ist ein Sensor mit Vorzeichen und vollständig; „/ -“ sah nach einem
+            // fehlenden Feld aus (Burkhard 17.10.2026). Bei den Zählern fehlt dann wirklich etwas, dort bleibt es.
+            if ($label === 'PowerLabel' && $two && $names[0] !== '-' && $names[1] === '-') {
+                $labels[$label] = $names[0] . ' ' . $this->Translate('(signed)');
+            }
         }
         return $labels;
     }

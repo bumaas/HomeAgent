@@ -3209,7 +3209,8 @@ pruefe(str_contains($testQ, 'Energy balance: battery discharge power "Marstek" B
 $referenzen = IPS_GetInstance($qid)['References'] ?? oderNull(static fn () => \Closure::bind(fn () => $this->GetReferenceList(), $q, HomeAgent::class)());
 pruefe(is_array($referenzen) && in_array($batterieQ, $referenzen, true), 'die Variable der Liste ist Referenz: ' . json_encode($referenzen));
 $werteQ = array_values(array_filter(flach(json_decode($q->GetConfigurationForm(), true)['elements']), static fn (array $e): bool => ($e['name'] ?? '') === 'Sources'))[0]['values'] ?? [];
-pruefe(($werteQ[2]['PowerLabel'] ?? '') === 'Battery Power / -' && ($werteQ[1]['EnergyLabel'] ?? '') === '-', 'die Textspalten nennen die Variablen: ' . json_encode($werteQ));
+// Eine einzelne Leistung mit Vorzeichen ist vollständig, ein „/ -“ sah nach einem fehlenden Feld aus (Burkhard 17.10.2026)
+pruefe(($werteQ[2]['PowerLabel'] ?? '') === 'Battery Power (signed)' && ($werteQ[1]['EnergyLabel'] ?? '') === '-', 'die Textspalten nennen die Variablen, eine Leistung mit Vorzeichen ohne „/ -“: ' . json_encode($werteQ));
 // Nur eine PV-Anlage: show_chart bietet part=pv an
 $zaehlerQ = variable(VARIABLETYPE_FLOAT, 110100.0);
 IPS_SetProperty($qid, 'Sources', json_encode([$bilanzZeile('solar', 'Garage', $zaehlerQ)]));

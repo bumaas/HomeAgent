@@ -635,7 +635,8 @@
             "Battery discharge (energy meter)": "Batterie entladen (Zähler)",
             "Battery charge (energy meter)": "Batterie geladen (Zähler)",
             "Grid import power (alone with a sign: negative = export)": "Netzbezug Leistung (allein mit Vorzeichen: negativ = Einspeisung)",
-            "Battery discharge power (alone with a sign: negative = charging)": "Batterie entladen Leistung (allein mit Vorzeichen: negativ = laden)"
+            "Battery discharge power (alone with a sign: negative = charging)": "Batterie entladen Leistung (allein mit Vorzeichen: negativ = laden)",
+            "(signed)": "(mit Vorzeichen)"
         }
     }
 }
