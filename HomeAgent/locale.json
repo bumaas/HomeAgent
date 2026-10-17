@@ -56,6 +56,8 @@
             "\"Measured by\" names no meter of the list": "„Gemessen von“ nennt keinen Zähler der Liste",
             "the meters in \"Measured by\" measure each other in a circle": "die Zähler in „Gemessen von“ messen sich gegenseitig im Kreis",
             "Note: meter %s: %s kWh are measured below it in the last 30 days, more than its own %s kWh; check \"Measured by\"": "Hinweis: Zähler %s: Darunter sind in den letzten 30 Tagen %s kWh gemessen, mehr als seine eigenen %s kWh; „Gemessen von“ prüfen",
+            "Note: %s %s: the archive counts more than the meter reading rose (%s). Usually that is a single wrong value, which counts as consumption": "Hinweis: %s %s: Das Archiv zählt mehr, als der Zählerstand gestiegen ist (%s). Meist ist das ein einzelner Fehlwert, der als Verbrauch zählt",
+            " and %d more month(s)": " und %d weitere Monat(e)",
             "%s, of this %s measured below it by %d meter(s) or device(s), %s not metered": "%s, davon %s von %d Zähler(n) oder Gerät(en) darunter gemessen, %s nicht erfasst",
             "%s, of this %s measured below it by %d meter(s) or device(s)": "%s, davon %s von %d Zähler(n) oder Gerät(en) darunter gemessen",
             "Of this, %s by %d meter(s) and %d device(s) at the top level, %s not metered.": "Davon %s durch %d Zähler und %d Gerät(e) auf oberster Ebene, %s nicht erfasst.",

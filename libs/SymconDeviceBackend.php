@@ -504,6 +504,37 @@ final class SymconDeviceBackend implements DeviceBackend
         ];
     }
 
+    /** So viele Rohwerte vor einem Zeitpunkt werden nach einem Wert über 0 durchsucht. */
+    private const READING_DEPTH = 20;
+
+    public function counterReadings(int $variableId, array $times): ?array
+    {
+        $archives = IPS_GetInstanceListByModuleID(self::ARCHIVE_CONTROL);
+        if ($archives === [] || $variableId <= 0 || !IPS_VariableExists($variableId)) {
+            return null;
+        }
+        $archive = $archives[0];
+        try {
+            if (!AC_GetLoggingStatus($archive, $variableId) || AC_GetAggregationType($archive, $variableId) !== self::AGGREGATION_COUNTER) {
+                return null;
+            }
+            // Laut Doku AC_GetLoggedValues die neuesten zuerst; Startzeit 0 heißt von Anfang an.
+            $readings = [];
+            foreach ($times as $time) {
+                $readings[$time] = null;
+                foreach (AC_GetLoggedValues($archive, $variableId, 0, $time - 1, self::READING_DEPTH) as $row) {
+                    if ((float)$row['Value'] > 0) {
+                        $readings[$time] = (float)$row['Value'];
+                        break;
+                    }
+                }
+            }
+        } catch (Throwable) {
+            return null;
+        }
+        return $readings;
+    }
+
     public function history(int $variableId, int $level, int $from, int $to): ?array
     {
         $archives = IPS_GetInstanceListByModuleID(self::ARCHIVE_CONTROL);

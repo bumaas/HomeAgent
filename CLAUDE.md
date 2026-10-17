@@ -499,6 +499,20 @@ Weitere Regeln, die nicht offensichtlich sind:
   dadurch eine eigene Säule (Hardcopy Burkhard 17.10.2026: 13 Monate, „Warum fehlt hier der Septemberwert für
   Huawei?“). Deshalb liest `DeviceIndex` Reihen nur über `counterRows` und `historyRows`, die jeden Zeitpunkt auf den
   Beginn seines Abschnitts setzen (`sectionStart`), nie direkt über `counterSeries`/`history` des Backends.
+- **Plausibilität der Energiezähler im Selbsttest** (B78, Burkhard 14.10.2026; Anlass ein ModBus-Fehlwert in einer betreuten
+  Anlage, der in der Punktwolke 32,8 Mio. kWh ergab): `DeviceIndex::counterJumps` prüft jeden Zähler der Bilanz und der Geräte
+  einmal (die der Bilanz zuerst). Das Archiv summiert nur positive Sprünge, ein Fehlwert nach oben und zurück zählt also als
+  Verbrauch. Erst die Probe übers ganze Archiv (Summe der Jahre gegen den Zuwachs seit dem ersten Satz), nur bei mehr als
+  `JUMP_KWH` Abweichung je Monat Summe gegen Zuwachs des Zählerstands (`DeviceBackend::counterReadings`: letzter Rohwert über
+  0 vor jeder Grenze; das erste Aggregat trägt den ersten Satz, deshalb hier die Reihe des Backends ohne `counterRows`).
+  Ein Monat fällt auf, wenn die Abweichung über 2 kWh und über einem Fünftel des Medians aller Monate liegt, die Summe des
+  Monats um mindestens drei Viertel der Abweichung über dem Median liegt (bei einer Rücksetzung oder einem Zählertausch
+  bleibt die Summe normal, das Archiv zählt richtig) und der Zählerstand an beiden Grenzen über zwei Medianen liegt (sonst
+  hat er kurz vorher neu angefangen). Die Schwellen sind an echten Fällen gemessen (Test `check-zaehlerstand.php`, Fixture
+  `mix_2026-10-17_zaehlerstand.json`): Homematic-`ENERGY_COUNTER` setzen nach Stromausfällen auf 0 zurück (am nuc eine
+  Kühltruhe in 34 Monaten, eine Fernsehsteckdose im Sommer 2023 mit doppeltem Verbrauch), die Wallbox sprang an einem Tag
+  41-mal hin und her, die Wärmepumpe lieferte Milliarden kWh. Nicht erkannt wird ein dauerhafter Sprung nach oben (der Zähler
+  geht dann auf). Am nuc dauert der ganze Selbsttest damit 2,2 s statt rund 0,5 s.
 - **Datum und Uhrzeit** hängt das Modul an jede Antwort von `get_state` (`withNow()` in `module.php`, nicht in
   `DeviceIndex`, damit Skriptfunktionen und Bibliothekstests ohne sie bleiben). In Anleitung oder Werkzeugliste
   veraltete sie, weil Claude-App und HA beides lange zwischenspeichern.

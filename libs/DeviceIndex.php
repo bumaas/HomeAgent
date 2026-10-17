@@ -799,6 +799,109 @@ final class DeviceIndex
         return $overruns;
     }
 
+    /** Ein Monat fällt auf, wenn das Archiv mehr zählt als der Zuwachs des Zählerstands: mindestens so viele kWh … */
+    private const JUMP_KWH = 2.0;
+
+    /**
+     * … und mindestens dieser Anteil eines üblichen Monats (Median aller Monate). Gemessen am nuc: Die Kühltruhe lag im Juli
+     * 2020 nach einer Rücksetzung 4,2 kWh über dem Zuwachs bei 23 kWh im Median, die Wallbox im Mai 2026 27,2 kWh bei 110 kWh.
+     */
+    private const JUMP_SHARE = 0.2;
+
+    /** … und die Summe des Monats liegt um mindestens diesen Anteil der Abweichung über dem Median. */
+    private const JUMP_ABOVE = 0.75;
+
+    /** Ein Zählerstand unter so vielen üblichen Monaten gilt als neu angefangen (Rücksetzung), der Monat als ungeprüft. */
+    private const RESTART_MONTHS = 2;
+
+    /**
+     * Für den Selbsttest (B78): Zähler der Bilanz und der Geräte, deren Archiv in einem Monat mehr zählt, als der
+     * Zählerstand gestiegen ist. Das Archiv summiert nur positive Sprünge (Doku AC_GetAggregatedValues), ein Fehlwert nach
+     * oben und zurück zählt also als Verbrauch, ebenso der Zuwachs nach einem fallenden Zählerstand. Anlass: ein ModBus-Fehlwert
+     * in einer betreuten Anlage ergab in der Punktwolke 32,8 Mio. kWh. Erst eine Probe über das ganze Archiv (Summe der Jahre
+     * gegen den Zuwachs seit dem ersten Satz), nur bei einer Abweichung die Monate. Jede Variable einmal, die der Bilanz zuerst.
+     *
+     * @return list<array{variable: int, key: string, label: string, months: array<int, float>}> key ist der Teil der Bilanz
+     *         ('' bei Geräten), label der Name der Quelle bzw. Raum und Name des Geräts, months Monatsbeginn => kWh zu viel
+     */
+    public function counterJumps(): array
+    {
+        $counters = [];
+        foreach ($this->balanceVars as $key => $vars) {
+            foreach ($vars as $var) {
+                $counters[$var['variable']] ??= [$key, $var['name']];
+            }
+        }
+        foreach ($this->entries as $entry) {
+            $id = $entry['roles']['energy'] ?? 0;
+            if ($id > 0) {
+                $counters[$id] ??= ['', trim($entry['Room'] . ' ' . $entry['Name'])];
+            }
+        }
+        $jumps = [];
+        foreach ($counters as $id => [$key, $label]) {
+            $months = $this->counterExcess($id);
+            if ($months !== []) {
+                $jumps[] = ['variable' => $id, 'key' => $key, 'label' => $label, 'months' => $months];
+            }
+        }
+        return $jumps;
+    }
+
+    /**
+     * Monate, in denen das Archiv eines Zählers mehr zählt als der Zuwachs des Zählerstands, Monatsbeginn => kWh zu viel.
+     * Das erste Aggregat trägt den Zeitpunkt des ersten Satzes (siehe counterRows), der Zählerstand davor ist also dieser
+     * Satz selbst; deshalb hier die Reihe des Backends unverändert. Ein Monat ohne Zählerstand am Anfang (erster Satz 0 bei
+     * „Nullen ignorieren“) bleibt ungeprüft.
+     *
+     * @return array<int, float>
+     */
+    private function counterExcess(int $variableId): array
+    {
+        $now = $this->backend->timestamp();
+        $years = $this->backend->counterSeries($variableId, 4, 0, 0);
+        if ($years === null || $years['rows'] === [] || !self::isEnergyUnit($years['unit'])) {
+            return [];
+        }
+        $kwh = static fn (float $value): float => (float)self::kilowattHours(['sum' => $value, 'unit' => $years['unit']]);
+        $first = (int)$years['rows'][0]['time'] + 1;
+        $total = $this->backend->counterReadings($variableId, [$first, $now + 1]);
+        $sum = array_sum(array_column($years['rows'], 'sum'));
+        if ($total !== null && $total[$first] !== null && $total[$now + 1] !== null && $kwh($sum - ($total[$now + 1] - $total[$first])) <= self::JUMP_KWH) {
+            return [];
+        }
+        $rows = $this->backend->counterSeries($variableId, 3, 0, 0)['rows'] ?? [];
+        $bounds = [];
+        foreach ($rows as $i => $row) {
+            $bounds[$i] = [$i === 0 ? (int)$row['time'] + 1 : (int)$row['time'], isset($rows[$i + 1]) ? (int)$rows[$i + 1]['time'] : $now + 1];
+        }
+        $readings = $this->backend->counterReadings($variableId, array_values(array_unique(array_merge(...array_values($bounds ?: [[]]))))) ?? [];
+        $sums = array_map(static fn (array $row): float => $kwh((float)$row['sum']), $rows);
+        $sorted = $sums;
+        sort($sorted);
+        $median = $sorted === [] ? 0.0 : $sorted[intdiv(count($sorted), 2)];
+        $months = [];
+        foreach ($rows as $i => $row) {
+            $start = $readings[$bounds[$i][0]] ?? null;
+            $end = $readings[$bounds[$i][1]] ?? null;
+            if ($start === null || $end === null) {
+                continue;
+            }
+            $rise = $kwh($end - $start);
+            $excess = $sums[$i] - $rise;
+            // Ein Fehlwert hebt die Summe des Monats um etwa die Abweichung über einen üblichen Monat. Eine Rücksetzung
+            // (Homematic ENERGY_COUNTER nach einem Stromausfall, Zählertausch) lässt sie normal: Das Archiv zählt dann richtig,
+            // nur der Zählerstand fiel (nuc: Kühltruhe 34 Monate mit Rücksetzung, jeder mit 21 bis 27 kWh).
+            // Ein Zählerstand unter zwei üblichen Monaten hat kurz vorher neu angefangen; auch dann zählt das Archiv richtig
+            // (nuc: Steckdose Fernseher im August 2023, Rücksetzungen am 31.07. und 01.08. bei doppeltem Sommerverbrauch).
+            $restarted = min($kwh($start), $kwh($end)) < self::RESTART_MONTHS * $median;
+            if (!$restarted && $excess > max(self::JUMP_KWH, self::JUMP_SHARE * $median) && $sums[$i] - $median >= self::JUMP_ABOVE * $excess) {
+                $months[self::sectionStart((int)$row['time'], 3)] = $excess;
+            }
+        }
+        return $months;
+    }
+
     /**
      * Ist das Gerät ein Messwert mit Verlauf? Temperatur, Feuchte, Luftqualität und sonstige Messwerte,
      * dazu die Ist-Temperatur eines Thermostats.

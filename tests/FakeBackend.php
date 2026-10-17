@@ -483,6 +483,25 @@ final class FakeBackend implements DeviceBackend
         return ['rows' => $rows, 'unit' => (string)($v['einheit'] ?? '')];
     }
 
+    /** Zählerstand vor jedem Zeitpunkt aus den mitgeschnittenen Rohwerten („ablesungen“ als [zeit, wert]), Nullen übergangen. */
+    public function counterReadings(int $variableId, array $times): ?array
+    {
+        $v = $this->variables[$variableId] ?? null;
+        if ($v === null || ($v['archiviert'] ?? false) !== true || ($v['aggregationstyp'] ?? 0) !== 1) {
+            return null;
+        }
+        $readings = [];
+        foreach ($times as $time) {
+            $readings[$time] = null;
+            foreach ($v['ablesungen'] ?? [] as [$at, $value]) {
+                if ($at < $time && (float)$value > 0) {
+                    $readings[$time] = (float)$value;
+                }
+            }
+        }
+        return $readings;
+    }
+
     /** Einheit der Variable laut Mitschnitt; '' = keine. */
     public function unit(int $variableId): string
     {

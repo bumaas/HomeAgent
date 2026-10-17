@@ -1078,6 +1078,30 @@ pruefe(str_contains($mitApps['show_chart']['description'] ?? '', 'with self-suff
 pruefe(!in_array('now', $mitApps['show_chart']['inputSchema']['properties']['period']['enum'] ?? ['now'], true), 'ohne Leistungsbilanz kein now im Diagramm');
 $setzeBilanz([$bilanzZeile('grid', 'Grid', $zaehler), $bilanzZeile('solar', 'Solar', $leistung)]);
 pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: solar production "Solar" POWER is not archived as a counter, so there is no house consumption'), 'Selbsttest: Bilanzzähler nicht als Zähler archiviert: ' . $m->RunSelfTest());
+// Plausibilität der Zähler (B78): der „Verbrauch“ der betreuten Anlage aus mix_2026-10-17_zaehlerstand.json mit seinen
+// echten Aggregaten und Ablesungen im Archiv des Kernel-Stubs, als Netzbezug eingetragen.
+$plausibel = fixture('mix_2026-10-17_zaehlerstand.json');
+$verbrauchQuelle = $plausibel['betreut']['variablen']['14339'];
+$alteZone = date_default_timezone_get();
+date_default_timezone_set($plausibel['zeitzone']);
+$verbrauch = variable(VARIABLETYPE_FLOAT, $verbrauchQuelle['wert']);
+IPS_SetName($verbrauch, 'Verbrauch');
+IPS_CreateVariableProfile('HomeAgentTest.kWh', VARIABLETYPE_FLOAT);
+IPS_SetVariableProfileText('HomeAgentTest.kWh', '', ' kWh');
+IPS_SetVariableCustomProfile($verbrauch, 'HomeAgentTest.kWh');
+AC_SetLoggingStatus($archiv, $verbrauch, true);
+AC_SetAggregationType($archiv, $verbrauch, 1);
+foreach ([3, 4] as $stufe) {
+    AC_StubsAddAggregatedValues($archiv, $verbrauch, $stufe, array_map(static fn (array $a): array => ['TimeStamp' => $a['zeit'], 'Duration' => 0, 'Avg' => $a['summe'], 'Min' => 0, 'Max' => 0, 'MinTime' => 0, 'MaxTime' => 0], $verbrauchQuelle['aggregate'][(string)$stufe]));
+}
+AC_AddLoggedValues($archiv, $verbrauch, array_map(static fn (array $r): array => ['TimeStamp' => $r[0], 'Value' => $r[1]], $verbrauchQuelle['ablesungen']));
+$ablesung = oderNull(static fn () => $m->testBackend()->counterReadings($verbrauch, [$verbrauchQuelle['ablesungen'][1][0], $verbrauchQuelle['ablesungen'][1][0] + 1, 1000]));
+pruefe($ablesung === [$verbrauchQuelle['ablesungen'][1][0] => (float)$verbrauchQuelle['ablesungen'][0][1], $verbrauchQuelle['ablesungen'][1][0] + 1 => (float)$verbrauchQuelle['ablesungen'][1][1], 1000 => null], 'counterReadings: der letzte Satz vor dem Zeitpunkt, vor dem ersten keiner: ' . json_encode($ablesung));
+pruefe(oderNull(static fn () => $m->testBackend()->counterReadings($leistung, [1000])) === null, 'counterReadings ohne Zähler im Archiv: null');
+$setzeBilanz([$bilanzZeile('grid', 'Netz', $verbrauch)]);
+$test = $m->RunSelfTest();
+pruefe(str_contains($test, 'Note: grid import "Netz" Verbrauch: the archive counts more than the meter reading rose (01/2024 +659.8 kWh). Usually that is a single wrong value'), 'Selbsttest nennt den Monat mit Fehlwert, nicht den Neustart im Mai 2026: ' . $test);
+date_default_timezone_set($alteZone);
 $setzeBilanz([$bilanzZeile('grid', 'Grid', $zaehler), $bilanzZeile('battery', 'Battery', 0, 59995)]);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Source "Battery": variable for battery charge does not exist'), 'gelöschter Bilanzzähler: aktiv, das Log nennt ihn mit Quelle und Teil: ' . implode(' | ', array_slice(array_column($m->logs(), 'Message'), -2)));
 $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');

@@ -280,7 +280,7 @@ wird mit ganzen Stunden aus den Stundenwerten, höchstens 48 Stunden am Stück. 
 nennt die Summe, etwa „88.5 kWh verbraucht durch 3 von 3 Gerät(en) mit Zähler“, darunter steht der
 Verbrauch je Gerät. Die Werte kommen aus den Aggregaten des Archivs, der laufende Tag, die laufende
 Woche usw. zählen bis jetzt. Ist ein Zähler nicht als Zähler archiviert, sagt die Zeile „kein Verlauf
-archiviert“, und der Selbsttest weist darauf hin. Ein Zähler in einer anderen Einheit als Wh, kWh oder MWh, etwa ein Wasser- oder Gaszähler, gilt nicht als Energiezähler: Seine Zeile sagt „kein Energiezähler (Einheit m³)“, und er zählt nicht mit. Ohne Einheit gilt kWh. Geräte ohne Zähler bleiben außen vor. Den Parameter
+archiviert“, und der Selbsttest weist darauf hin. Er prüft auch, ob das Archiv zum Zählerstand passt: Ein einzelner Fehlwert nach oben und zurück zählt im Archiv als Verbrauch, dann nennt der Selbsttest den Zähler und die Monate, etwa „Das Archiv zählt mehr, als der Zählerstand gestiegen ist (01/2024 +659.8 kWh)“. Den Fehlwert löschen Sie im Archiv und aggregieren die Variable neu. Setzt ein Zähler zurück, etwa nach einem Stromausfall, zählt das Archiv richtig weiter, das ist kein Befund. Ein Zähler in einer anderen Einheit als Wh, kWh oder MWh, etwa ein Wasser- oder Gaszähler, gilt nicht als Energiezähler: Seine Zeile sagt „kein Energiezähler (Einheit m³)“, und er zählt nicht mit. Ohne Einheit gilt kWh. Geräte ohne Zähler bleiben außen vor. Den Parameter
 bekommt der Assistent nur, wenn mindestens ein freigegebenes Gerät einen Zähler hat oder die
 Energiebilanz eingetragen ist.
 
@@ -617,6 +617,7 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
 - Bei einem Rollladen, der sich erst am Ziel meldet und keinen Fahrstatus hat, weiß das Modul nach
   dem Fahrbefehl nicht, ob er fährt.
 - Fehler innerhalb eines Szenen-Skripts sieht der Assistent nicht, er erfährt nur vom Start.
+- Die Prüfung der Zähler im Selbsttest findet nur Fehlwerte, die wieder verschwinden. Springt ein Zähler dauerhaft nach oben, etwa beim Tausch gegen einen Zähler mit höherem Stand, zählt das Archiv den Sprung als Verbrauch, ohne dass der Selbsttest es merkt. Kleine Fehlwerte unter einem Fünftel eines üblichen Monats und Monate kurz nach einer Rücksetzung prüft er nicht.
 - Lamellen, deren Variable die Darstellung „Rollladen“ mit Rotation trägt, bekommen nur eine
   Prozentzahl ohne „offen“ oder „geschlossen“.
 - Der Endpunkt spricht MCP über einfache HTTP-Anfragen und bietet keinen Datenstrom an. Clients, die

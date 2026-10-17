@@ -130,6 +130,16 @@ interface DeviceBackend
     public function counterSeries(int $variableId, int $level, int $from, int $to): ?array;
 
     /**
+     * Zählerstand eines als Zähler archivierten Werts aus den Rohwerten (B78): je Zeitpunkt der letzte Wert über 0 davor
+     * (null, wenn es keinen gibt). Nullen fallen weg, wie bei „Nullen ignorieren“ des Archivs. null = nicht archiviert
+     * oder nicht als Zähler aggregiert.
+     *
+     * @param list<int> $times
+     * @return null|array<int, null|float> Zeitpunkt => Zählerstand
+     */
+    public function counterReadings(int $variableId, array $times): ?array;
+
+    /**
      * Verlauf eines Messwerts aus den Aggregaten des Archivs, aufsteigend: je Zeitraum der Stufe
      * (0 Stunde, 1 Tag, 3 Monat) Beginn, Minimum, Mittel und Maximum. $to = 0 heißt bis jetzt.
      * null = nicht archiviert oder als Zähler aggregiert.

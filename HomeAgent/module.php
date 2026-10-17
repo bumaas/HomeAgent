@@ -460,6 +460,20 @@ class HomeAgent extends IPSModuleStrict
             $kwh = static fn (float $value): string => rtrim(rtrim(number_format($value, 1, '.', ''), '0'), '.');
             $lines[] = sprintf($this->Translate('Note: meter %s: %s kWh are measured below it in the last 30 days, more than its own %s kWh; check "Measured by"'), trim($overrun['room'] . ' ' . $overrun['name']), $kwh($overrun['below']), $kwh($overrun['meter']));
         }
+        // Energiezähler (B78): Das Archiv zählt mehr, als der Zählerstand gestiegen ist; genannt werden die drei größten Monate.
+        foreach ($this->deviceIndex()->counterJumps() as $jump) {
+            $kwh = static fn (float $value): string => rtrim(rtrim(number_format($value, 1, '.', ''), '0'), '.');
+            $largest = $jump['months'];
+            arsort($largest);
+            $shown = array_slice($largest, 0, 3, true);
+            ksort($shown);
+            $months = implode(', ', array_map(static fn (int $month, float $value): string => date('m/Y', $month) . ' +' . $kwh($value) . ' kWh', array_keys($shown), $shown));
+            if (count($largest) > 3) {
+                $months .= sprintf($this->Translate(' and %d more month(s)'), count($largest) - 3);
+            }
+            $caption = $jump['key'] === '' ? $jump['label'] : $this->balanceCaption($jump['key']) . ' "' . $jump['label'] . '"';
+            $lines[] = sprintf($this->Translate('Note: %s %s: the archive counts more than the meter reading rose (%s). Usually that is a single wrong value, which counts as consumption'), $caption, IPS_GetName($jump['variable']), $months);
+        }
         // Thermostate: in welchem Bereich und mit welcher Schrittweite der Assistent stellen darf.
         foreach ($list as $entry) {
             $setpoint = (string)($entry['Type'] ?? '') === 'thermostat' ? (DeviceIndex::rolesOf($entry)['setpoint'] ?? 0) : 0;
