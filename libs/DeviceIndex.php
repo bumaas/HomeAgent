@@ -32,6 +32,7 @@ final class DeviceIndex
         'humidity'    => null,
         'air_quality' => null,
         'measurement' => null,
+        'meter'       => null,
     ];
 
     /** Nur diese Typen lassen sich schalten oder stellen; alle anderen sind Melder und Messwerte. */
@@ -137,6 +138,9 @@ final class DeviceIndex
         'humidity'    => ['roles' => ['state'], 'required' => ['state']],
         'air_quality' => ['roles' => ['state'], 'required' => ['state']],
         'measurement' => ['roles' => ['state'], 'required' => ['state']],
+        // Zähler (B82): Unterverteilung, Wallbox, Wohnungszähler. Zählt nie in einer Gerätesumme; was er misst, hängt über
+        // „gemessen von“ (MeteredBy) an ihm. Nur Verbrauch, eine Erzeugung gehört in die Energiebilanz.
+        'meter'       => ['roles' => ['energy', 'power'], 'required' => ['energy']],
     ];
 
     /**
@@ -289,7 +293,7 @@ final class DeviceIndex
         'blind' => 'cover', 'light' => 'light', 'switch' => 'power', 'socket' => 'power', 'appliance' => 'power',
         'thermostat' => 'climate', 'humidifier' => 'climate', 'fan' => 'climate', 'temperature' => 'climate',
         'humidity' => 'climate', 'air_quality' => 'climate', 'measurement' => 'measure', 'window' => 'opening',
-        'door' => 'opening', 'presence' => 'sensor', 'water_leak' => 'sensor', 'media' => 'media',
+        'door' => 'opening', 'presence' => 'sensor', 'water_leak' => 'sensor', 'media' => 'media', 'meter' => 'measure',
     ];
     private const CARD_GROUP_LABELS = [
         'cover' => 'Blinds', 'light' => 'Lights', 'power' => 'Switches and sockets', 'climate' => 'Climate',
@@ -338,7 +342,14 @@ final class DeviceIndex
             'ReadOnly' => (bool)($e['ReadOnly'] ?? false),
             'Tilt'     => (bool)($e['Tilt'] ?? false),
             'roles'    => self::rolesOf($e),
+            // Zähler, an dem das Gerät hängt (B82): seine Energievariable, 0 = keiner
+            'MeteredBy' => (int)($e['MeteredBy'] ?? 0),
         ], $entries);
+        // Stelle in der Liste, damit ein Treffer aus find() seinen Knoten im Zählerbaum wiederfindet
+        foreach ($this->entries as $index => &$entry) {
+            $entry['Index'] = $index;
+        }
+        unset($entry);
         // Wie sich ein Rollladen oder Fenster anhalten lässt, weiß erst die Anlage.
         foreach ($this->entries as &$entry) {
             $entry['StopVia'] = self::moves($entry) && isset($entry['roles']['level'])
@@ -572,6 +583,198 @@ final class DeviceIndex
             }
             return $seen[$id] = true;
         }));
+    }
+
+    /**
+     * Fehler in „gemessen von“ je Zeile der Freigabeliste (B82). MeteredBy ist die Energievariable eines Zählers der
+     * Liste; ein Verweis auf etwas anderes (unknown_meter) und ein Kreis über Zähler (cycle, auch auf sich selbst)
+     * sperren die Zeile. Home Assistant übergeht solche Verweise still, dann stimmt der Rest „nicht erfasst“ nicht mehr.
+     *
+     * @param list<array<string, mixed>> $rows Zeilen der Formularliste „Devices“
+     * @return array<int, string> Zeile => unknown_meter | cycle
+     */
+    public static function meterProblems(array $rows): array
+    {
+        $meters = [];
+        foreach ($rows as $index => $row) {
+            $energy = self::rolesOf($row)['energy'] ?? 0;
+            if ((string)($row['Type'] ?? '') === 'meter' && $energy > 0) {
+                $meters[$energy] = $index;
+            }
+        }
+        $problems = [];
+        foreach ($rows as $index => $row) {
+            $parent = (int)($row['MeteredBy'] ?? 0);
+            if ($parent <= 1) {
+                continue;
+            }
+            if (!isset($meters[$parent])) {
+                $problems[$index] = 'unknown_meter';
+                continue;
+            }
+            // Der Kette nach oben folgen, bis sie endet oder wieder bei dieser Zeile ankommt
+            $seen = [$index => true];
+            $at = $meters[$parent];
+            while (!isset($seen[$at])) {
+                $seen[$at] = true;
+                $next = (int)($rows[$at]['MeteredBy'] ?? 0);
+                if (!isset($meters[$next])) {
+                    break;
+                }
+                $at = $meters[$next];
+            }
+            if ($at === $index) {
+                $problems[$index] = 'cycle';
+            }
+        }
+        ksort($problems);
+        return $problems;
+    }
+
+    /**
+     * Zählerbaum für eine Rolle (energy oder power, B82): alle Zähler und jedes Gerät mit dieser Variable, jede Variable
+     * einmal (wie firstPerVariable), über „gemessen von“ an ihren Zähler gehängt. Je Knoten der eigene Wert, die Summe der
+     * direkten Kinder und der Wert, mit dem er oben zählt: der eigene, ohne ihn die Summe darunter (Haushaltszähler ohne
+     * Leistung). Ein Verweis auf einen Zähler, den es nicht gibt (gesperrt), macht die Zeile zur obersten.
+     *
+     * @param callable(array<string, mixed>): (float|string|null) $valueOf Wert des Knotens, ein Text bei einem Fehler
+     * @return array{own: array<int, float|string|null>, below: array<int, ?float>, count: array<int, int>, value: array<int, ?float>, top: list<int>}
+     */
+    private function meterTree(string $role, callable $valueOf): array
+    {
+        $meterOf = [];
+        foreach ($this->entries as $index => $entry) {
+            if ($entry['Type'] === 'meter' && isset($entry['roles']['energy'])) {
+                $meterOf[$entry['roles']['energy']] = $index;
+            }
+        }
+        $nodes = [];
+        $seen = [];
+        foreach ($this->entries as $index => $entry) {
+            $id = $entry['roles'][$role] ?? 0;
+            if ($entry['Type'] !== 'meter' && ($id === 0 || isset($seen[$id]))) {
+                continue;
+            }
+            if ($id !== 0) {
+                $seen[$id] = true;
+            }
+            $nodes[$index] = $entry;
+        }
+        $children = [];
+        $top = [];
+        foreach ($nodes as $index => $entry) {
+            $parent = $meterOf[$entry['MeteredBy']] ?? null;
+            if ($parent !== null && $parent !== $index && isset($nodes[$parent])) {
+                $children[$parent][] = $index;
+            } else {
+                $top[] = $index;
+            }
+        }
+        $own = [];
+        foreach ($nodes as $index => $entry) {
+            $own[$index] = isset($entry['roles'][$role]) ? $valueOf($entry) : null;
+        }
+        $value = [];
+        $below = [];
+        $count = [];
+        $resolve = static function (int $index, array $path) use (&$resolve, &$value, &$below, &$count, $own, $children): ?float {
+            if (array_key_exists($index, $value)) {
+                return $value[$index];
+            }
+            // Ein Kreis sperrt die Zeilen schon in der Prüfung der Liste; hier nur, damit nichts endlos läuft
+            if (isset($path[$index])) {
+                return null;
+            }
+            $path[$index] = true;
+            $sum = null;
+            $valued = 0;
+            foreach ($children[$index] ?? [] as $child) {
+                $childValue = $resolve($child, $path);
+                if ($childValue !== null) {
+                    $sum = ($sum ?? 0.0) + $childValue;
+                    $valued++;
+                }
+            }
+            $below[$index] = $sum;
+            $count[$index] = $valued;
+            return $value[$index] = is_float($own[$index]) ? $own[$index] : $sum;
+        };
+        foreach (array_keys($nodes) as $index) {
+            $resolve($index, []);
+        }
+        return ['own' => $own, 'below' => $below, 'count' => $count, 'value' => $value, 'top' => $top];
+    }
+
+    /**
+     * Zeile eines Zählers: sein Wert, was darunter gemessen ist, und der Rest „nicht erfasst“, nur wenn er positiv ist.
+     * null, wenn der Zähler diese Variable nicht hat (ein Zähler ohne Leistung bei period=now).
+     *
+     * @param callable(float): string $format
+     */
+    private function meterLine(array $meter, array $tree, callable $format): ?string
+    {
+        $own = $tree['own'][$meter['Index']] ?? null;
+        if (!is_float($own)) {
+            return is_string($own) ? $this->line($meter, $own) : null;
+        }
+        $below = $tree['below'][$meter['Index']] ?? null;
+        if ($below === null) {
+            return $this->line($meter, $format($own));
+        }
+        $count = $tree['count'][$meter['Index']];
+        return $this->line($meter, $own - $below > 0
+            ? sprintf($this->t('%s, of this %s measured below it by %d meter(s) or device(s), %s not metered'), $format($own), $format($below), $count, $format($own - $below))
+            : sprintf($this->t('%s, of this %s measured below it by %d meter(s) or device(s)'), $format($own), $format($below), $count));
+    }
+
+    /** Gibt es in der Freigabeliste einen Zähler? Dann zählt fürs Haus die oberste Ebene (B82). */
+    private function hasMeters(): bool
+    {
+        return array_any($this->entries, static fn (array $entry): bool => $entry['Type'] === 'meter');
+    }
+
+    /**
+     * Satz „davon“ fürs ganze Haus mit Zählern: die oberste Ebene (Zähler und Geräte ohne „gemessen von“) und der Rest.
+     *
+     * @param callable(float): string $format
+     */
+    private function topLevelLine(array $tree, float $house, string $text, callable $format): ?string
+    {
+        $sum = 0.0;
+        $meters = 0;
+        $devices = 0;
+        foreach ($tree['top'] as $index) {
+            $value = $tree['value'][$index];
+            if ($value === null) {
+                continue;
+            }
+            $sum += $value;
+            $this->entries[$index]['Type'] === 'meter' ? $meters++ : $devices++;
+        }
+        return $meters + $devices === 0 ? null : sprintf($this->t($text), $format($sum), $meters, $devices, $format(max(0.0, $house - $sum)));
+    }
+
+    /**
+     * Für den Selbsttest (B82): Zähler, unter denen mehr gemessen ist als 105 % ihres eigenen Werts. Dann hängt ein Gerät
+     * am falschen Zähler oder ein Zähler zählt in einer anderen Einheit.
+     *
+     * @return list<array{room: string, name: string, meter: float, below: float}> kWh im Zeitraum
+     */
+    public function meterOverruns(int $from, int $to): array
+    {
+        $tree = $this->meterTree('energy', function (array $entry) use ($from, $to): ?float {
+            $counter = $this->backend->counterSum($entry['roles']['energy'], 1, $from, $to);
+            return $counter !== null && self::isEnergyUnit($counter['unit']) ? self::kilowattHours($counter) : null;
+        });
+        $overruns = [];
+        foreach ($this->entries as $index => $entry) {
+            $own = $tree['own'][$index] ?? null;
+            $below = $tree['below'][$index] ?? null;
+            if ($entry['Type'] === 'meter' && is_float($own) && $below !== null && $below > 1.05 * $own) {
+                $overruns[] = ['room' => $entry['Room'], 'name' => $entry['Name'], 'meter' => $own, 'below' => $below];
+            }
+        }
+        return $overruns;
     }
 
     /**
@@ -882,13 +1085,24 @@ final class DeviceIndex
 
     private function consumption(array $matches, array $bounds, string $filter, bool $wholeHouse = false, int $chartLevel = 1): array
     {
-        $matches = self::firstPerVariable($matches, 'energy');
+        // Ein Zähler zählt nie in einer Gerätesumme, er hat seine eigene Zeile (B82)
+        $meters = array_values(array_filter($matches, static fn (array $entry): bool => $entry['Type'] === 'meter'));
+        $matches = self::firstPerVariable(array_values(array_filter($matches, static fn (array $entry): bool => $entry['Type'] !== 'meter')), 'energy');
         $metered = array_values(array_filter($matches, static fn (array $entry): bool => isset($entry['roles']['energy'])));
         $balance = $wholeHouse ? $this->balance : [];
-        if ($metered === [] && $balance === []) {
+        if ($metered === [] && $balance === [] && $meters === []) {
             return $this->fail(sprintf($this->t('None of the matching devices measures energy (%s).'), $filter));
         }
         [$level, $from, $to] = $bounds;
+        $tree = $meters === [] && !($wholeHouse && $this->hasMeters()) ? null : $this->meterTree('energy', function (array $entry) use ($level, $from, $to): float|string|null {
+            $counter = $this->backend->counterSum($entry['roles']['energy'], $level, $from, $to);
+            if ($counter !== null && !self::isEnergyUnit($counter['unit'])) {
+                return sprintf($this->t('not an energy meter (unit %s)'), trim($counter['unit']));
+            }
+            return self::kilowattHours($counter) ?? $this->t('no history archived');
+        });
+        $kwhText = static fn (float $kwh): string => self::formatNumber($kwh) . ' kWh';
+        $meterLines = $tree === null ? [] : array_values(array_filter(array_map(fn (array $meter): ?string => $this->meterLine($meter, $tree, $kwhText), $meters)));
         $total = 0.0;
         $withHistory = 0;
         $rows = [];
@@ -928,6 +1142,10 @@ final class DeviceIndex
             $lines[] = sprintf($this->t('%d device(s) without energy meter were left out.'), $skipped);
         }
         $head = [sprintf($this->t('%s kWh consumed by %d of %d metered device(s) (%s).'), self::formatNumber($total), $withHistory, count($metered), $filter)];
+        if ($metered === [] && $meters !== []) {
+            // Nur Zähler: Einer kann den anderen enthalten, eine Summe wäre doppelt
+            $head = [sprintf($this->t('%d meter(s) (%s). Meters are not added up, one can contain another.'), count($meters), $filter)];
+        }
         if ($balance !== []) {
             $house = $this->houseConsumption($balance, $level, $from, $to, $filter);
             if (is_string($house)) {
@@ -943,7 +1161,10 @@ final class DeviceIndex
                 if ($costs !== null) {
                     $head[] = $costs;
                 }
-                if ($metered !== []) {
+                $topLine = $tree === null ? null : $this->topLevelLine($tree, $house['total'], 'Of this, %s by %d meter(s) and %d device(s) at the top level, %s not metered.', $kwhText);
+                if ($topLine !== null) {
+                    $head[] = $topLine;
+                } elseif ($metered !== []) {
                     $head[] = sprintf($this->t('Of this, %s kWh by %d of %d metered device(s), %s kWh not metered.'), self::formatNumber($total), $withHistory, count($metered), self::formatNumber(max(0.0, $house['total'] - $total)));
                 }
                 if ($this->chart !== null && !$this->chartByDevice) {
@@ -954,7 +1175,7 @@ final class DeviceIndex
         if ($this->chart !== null && ($this->chartByDevice || !$wholeHouse)) {
             $this->deviceChart($metered, $chartLevel, $from, $to, $head[0], $filter, $balance);
         }
-        return ['text' => implode("\n", array_merge($head, $lines)), 'isError' => false];
+        return ['text' => implode("\n", array_merge($head, $meterLines, $lines)), 'isError' => false];
     }
 
     /**
@@ -1304,10 +1525,20 @@ final class DeviceIndex
      */
     private function power(array $matches, string $filter, bool $wholeHouse): array
     {
-        $matches = self::firstPerVariable($matches, 'power');
+        $meters = array_values(array_filter($matches, static fn (array $entry): bool => $entry['Type'] === 'meter'));
+        $matches = self::firstPerVariable(array_values(array_filter($matches, static fn (array $entry): bool => $entry['Type'] !== 'meter')), 'power');
         $measured = array_values(array_filter($matches, static fn (array $entry): bool => isset($entry['roles']['power'])));
         $balance = $wholeHouse ? $this->powerBalance : [];
-        if ($measured === [] && $balance === []) {
+        $tree = $meters === [] && !($wholeHouse && $this->hasMeters()) ? null : $this->meterTree('power', function (array $entry): float|string {
+            $watts = $this->wattsOf($entry['roles']['power']);
+            if (!is_array($watts)) {
+                return $watts;
+            }
+            return $watts['unit'] === null ? sprintf($this->t('not available (variable %d is missing)'), $entry['roles']['power']) : sprintf($this->t('not a power value (unit %s)'), $watts['unit']);
+        });
+        $wattText = static fn (float $watts): string => self::formatWatts($watts) . ' W';
+        $meterLines = $tree === null ? [] : array_values(array_filter(array_map(fn (array $meter): ?string => $this->meterLine($meter, $tree, $wattText), $meters)));
+        if ($measured === [] && $balance === [] && $meterLines === []) {
             return $this->fail(sprintf($this->t('None of the matching devices measures power (%s).'), $filter));
         }
         $total = 0.0;
@@ -1331,18 +1562,24 @@ final class DeviceIndex
             $lines[] = sprintf($this->t('%d device(s) without power measurement were left out.'), $skipped);
         }
         $head = [sprintf($this->t('%s W used by %d of %d device(s) with power measurement (%s).'), self::formatWatts($total), $withValue, count($measured), $filter)];
+        if ($measured === [] && $meters !== []) {
+            $head = [sprintf($this->t('%d meter(s) (%s). Meters are not added up, one can contain another.'), count($meters), $filter)];
+        }
         if ($balance !== []) {
             $house = $this->housePower($balance, $filter);
             if (is_string($house)) {
                 $head = array_merge([$house], $measured === [] ? [] : $head);
             } else {
                 $head = [sprintf($this->t('House power %s W (%s): %s W.'), self::formatWatts(max(0.0, $house['total'])), $filter, implode(', ', $house['parts']))];
-                if ($measured !== []) {
+                $topLine = $tree === null ? null : $this->topLevelLine($tree, $house['total'], 'Of this, %s by %d meter(s) and %d device(s) at the top level, %s not metered.', $wattText);
+                if ($topLine !== null) {
+                    $head[] = $topLine;
+                } elseif ($measured !== []) {
                     $head[] = sprintf($this->t('Of this, %s W by %d of %d device(s) with power measurement, %s W not metered.'), self::formatWatts($total), $withValue, count($measured), self::formatWatts(max(0.0, $house['total'] - $total)));
                 }
             }
         }
-        return ['text' => implode("\n", array_merge($head, $lines)), 'isError' => false];
+        return ['text' => implode("\n", array_merge($head, $meterLines, $lines)), 'isError' => false];
     }
 
     /**
@@ -3053,7 +3290,7 @@ final class DeviceIndex
     /** Die Variable, an der sich zeigt, ob es das Gerät gibt: der Zustand, sonst die Stufe (0 = keine). */
     private function mainVariable(array $entry): int
     {
-        return $entry['roles']['state'] ?? $entry['roles']['level'] ?? $entry['roles']['playback'] ?? $entry['roles']['volume'] ?? 0;
+        return $entry['roles']['state'] ?? $entry['roles']['level'] ?? $entry['roles']['playback'] ?? $entry['roles']['volume'] ?? $entry['roles']['energy'] ?? 0;
     }
 
     /**
@@ -5158,6 +5395,7 @@ final class DeviceIndex
         $variable = match (true) {
             in_array($entry['Type'], ['temperature', 'humidity', 'air_quality', 'measurement', 'thermostat'], true) => $roles['state'] ?? 0,
             $entry['Type'] === 'humidifier'                                                                     => $roles['humidity'] ?? 0,
+            $entry['Type'] === 'meter'                                                                          => $roles['power'] ?? $roles['energy'] ?? 0,
             $entry['Type'] !== 'media'                                                                          => $roles['power'] ?? 0,
             default                                                                                             => 0,
         };

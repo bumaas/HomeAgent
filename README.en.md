@@ -9,7 +9,7 @@ unambiguous answer. It only sees and switches the devices you release.
 
 > **Status:** early preview. Querying, switching, setting brightness, colour temperature, colour, position,
 > heating setpoint and target humidity, operating mode and fan speed of dehumidifiers and ventilation units,
-> stopping blinds, consumption and power, the history of measured values, timelines of states, starting scenes as well as playback
+> stopping blinds, consumption and power also behind meters and sub-meters, the history of measured values, timelines of states, starting scenes as well as playback
 > and volume of media players work. The device list can be proposed from an Alexa instance. The Claude app can
 > sign in with OAuth. The form shows what did not work, a protocol for troubleshooting can be switched on. So far
 > the module has been tried on three systems.
@@ -178,7 +178,7 @@ then shows only the variables that belong to this type.
 |---|---|
 | Room | A room from the room list or "-". In requests case and umlauts do not matter ("Küche" = "kueche"). |
 | Name, aliases | The name and further names, separated by commas. A partial word is enough when searching. If a device is found through an alias, the answer shows it in brackets after the name. |
-| Type | Light, switch, socket, appliance, blind, thermostat, media player, humidifier, ventilation/fan, window, door, presence, water leak, temperature, humidity, air quality or other measured value. |
+| Type | Light, switch, socket, appliance, blind, thermostat, media player, humidifier, ventilation/fan, window, door, presence, water leak, temperature, humidity, air quality, other measured value or meter. |
 | State or measured value | The variable for on/off, open/closed or detected, for measured values the value itself. For a thermostat the current temperature. |
 | Setpoint | Only for a thermostat: the variable with the target temperature. It needs an action. |
 | Colour temperature | Only for a light, optional: the variable with the colour temperature in Kelvin or mired. It needs an action. |
@@ -190,6 +190,7 @@ then shows only the variables that belong to this type.
 | Stop | Only for blinds and windows with a drive, optional: a variable that stops the travel, that is a boolean with an action or a selection with the entry "Stop" (such as "Aktion" in the HomeAssistant module). Homematic and Velux KLF200 devices are stopped by the module even without it. |
 | Power | Only for lights, switches, sockets, appliances, humidifiers and ventilation, optional: the current power, for example `POWER` of a Homematic metering channel. It follows the state in every answer, for example "on (26.1 W)". |
 | Energy meter | Also optional: the energy counter, for example `ENERGY_COUNTER`. For consumption over periods it must be aggregated as a counter in the archive. If a device hangs on a metering socket, both rows may carry the same power and energy meter; consumption and power of a room or the house count each variable only once, and the self test points it out. |
+| Measured by | For everything with power or an energy meter, optional: the meter the device or meter hangs on, for example the sub-distribution of the upper floor. The choice lists the meters of the saved list, so a new one appears after Apply. |
 | Inverted | Tick this if `true` means "closed" or "off". Many window contacts report `true` for closed. For windows, doors and sensors with a number, anything above 0 otherwise counts as open or detected, with the tick only 0; this fits the Matter door state, for example (0 open, 1 closed). Further entries such as "ajar" appear in brackets in the answer. For blinds the module finds out by itself which value means "open"; the tick reverses that if open and closed are swapped. |
 | Tilt window | Only for a window with a drive: tick this if the drive only tilts the window. The answer then says "tilted" and "50 % tilted" instead of "open" and "50 % open". |
 | Query only | The assistant may announce the state but not switch or set the device. Meant for devices like the garage door or the heating in the children's room. |
@@ -210,6 +211,7 @@ Which variables a device needs depends on its type:
 | Door | Contact |
 | Presence, water leak | Detector |
 | Temperature, humidity, air quality, other measured value | Measured value |
+| Meter | Energy meter, optionally power |
 
 If a row lacks the variable of its type, or an entered variable is deleted, only this device is
 disabled. The row turns red, form and log name it, all other devices stay reachable. Symcon also
@@ -283,6 +285,18 @@ answer stays with the sum of the devices. With solar or a battery, a line with s
 and self-consumption follows: "Self-sufficiency 84 %, self-consumed solar 51 %." For the whole house the
 answer lists only the five largest consumers and sums up the rest ("5 more device(s) together
 25.6 kWh."); asked for a room, all devices follow in the order of the list.
+
+Enter a sub-distribution, a wallbox or a flat meter as type **Meter**, with its energy meter and optionally its
+power. A meter never counts in a device total, it has a line of its own. In the field "Measured by" you choose for
+devices and meters the meter above them, as deep as needed, for example the terrarium on the children's room and the
+children's room on the sub-distribution of the upper floor. The line of a meter then names what is measured below
+it and the rest: "Haushalt 13.4 kWh, of this 2.1 kWh measured below it by 9 meter(s) or device(s), 11.3 kWh not
+metered". For the whole house the top level counts, that is everything without "Measured by": "Of this, 13.4 kWh by
+2 meter(s) and 0 device(s) at the top level, 0 kWh not metered." The same goes for the power with `period=now`; a
+meter without power of its own counts there with what is measured below it. A reference to something that is not a
+meter of the list, and meters that measure each other in a circle, disable the row. If more than 105 % of its own
+value is measured below a meter in the last 30 days, the self test points it out. The production of a solar plant
+belongs in the energy balance, not in a meter.
 
 If you enter the **electricity price** in the energy balance (an archived variable in ct/kWh or €/kWh, for a dynamic
 tariff for example the current price from the Tibber module) and the feed-in tariff, the house consumption also names
@@ -592,6 +606,8 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
   for example a script or another module, reads them as well.
 - The protocol for troubleshooting contains room and device names and the answers to the assistants. Whoever
   can read the log directory of Symcon reads it as well. Tokens and pairing codes are not in it.
+- Meters do not appear in any chart yet. The consumption chart of the house still shows the devices and, as "not
+  metered", the rest against all devices.
 - The script functions know neither default room nor floor. They exist for state, switching, setting
   and scenes, not for stop, setpoint, colour temperature, colour, consumption, power and history.
 

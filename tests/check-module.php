@@ -550,6 +550,9 @@ foreach ([
     'Room names are the words the user speaks (Küche, Bad oben), without technical additions.'                                                      => 'Raumnamen sind die Wörter, die der Anwender spricht (Küche, Bad oben), ohne technische Zusätze.',
     // Vorzeichen umkehren (B77, Burkhard 14.10.2026)
     'InvertGridPower and InvertBatteryPower reverse the sign of a single signed grid or battery power sensor; HAGT_RunSelfTest shows how the current value counts.' => 'InvertGridPower und InvertBatteryPower kehren das Vorzeichen eines einzelnen Netz- oder Batteriesensors mit Vorzeichen um; HAGT_RunSelfTest zeigt, wie der aktuelle Wert zählt.',
+    // Zähler mit „gemessen von“ (B82, 17.10.2026)
+    'water_leak, temperature, humidity, air_quality, measurement, meter.' => 'water_leak, temperature, humidity, air_quality, measurement, meter.',
+    'The type meter (a sub-distribution, wallbox or flat meter) needs EnergyVariableID and never counts in a device total. MeteredBy is the EnergyVariableID of the meter above a device or meter (0 = none); the answers name per meter what is measured below it and the rest.' => 'Der Typ meter (Unterverteilung, Wallbox, Wohnungszähler) braucht EnergyVariableID und zählt nie in einer Gerätesumme. MeteredBy ist die EnergyVariableID des Zählers über einem Gerät oder Zähler (0 = keiner); die Antworten nennen je Zähler, was darunter gemessen ist, und den Rest.',
     // Raum als Auswahl der Raumliste (B75, Burkhard 13.10.2026)
     'The Room of a device is a room of the room list or empty; the form names rooms that are missing there.' => 'Der Raum eines Geräts ist ein Raum der Raumliste oder leer; das Formular nennt Räume, die dort fehlen.',
     'The fields of each type (volume, mode, fan and others) are named by HAGT_UIDeviceForm(int $InstanceID, string $Type).'                           => 'Die Felder je Typ (Lautstärke, Modus, Lüfter und andere) nennt HAGT_UIDeviceForm(int $InstanceID, string $Type).',
@@ -589,7 +592,8 @@ $formular = json_decode($m->GetConfigurationForm(), true);
 $geraete = array_values(array_filter(flach($formular['elements']), static fn ($e) => ($e['name'] ?? '') === 'Devices'))[0];
 $spalten = array_column($geraete['columns'], 'name');
 pruefe(in_array('StateVariableID', $spalten, true) && in_array('LevelVariableID', $spalten, true) && in_array('ReadOnly', $spalten, true) && !in_array('VariableID', $spalten, true), 'Spalten der Liste im neuen Format: ' . implode(', ', $spalten));
-pruefe(($geraete['form'] ?? null) === "return json_decode(HAGT_UIDeviceForm(\$id, \$Devices['Type'] ?? 'light', \$Devices['Room'] ?? ''), true);", 'die Liste erzeugt ihren Dialog je Zeile über das Modul, mit dem Raum der Zeile: ' . json_encode($geraete['form'] ?? null));
+pruefe(($geraete['form'] ?? null) === "return json_decode(HAGT_UIDeviceForm(\$id, \$Devices['Type'] ?? 'light', \$Devices['Room'] ?? '', \$Devices['MeteredBy'] ?? 0), true);", 'die Liste erzeugt ihren Dialog je Zeile über das Modul, mit Raum und Zähler der Zeile: ' . json_encode($geraete['form'] ?? null));
+pruefe(in_array('MeteredBy', $spalten, true), 'die Liste speichert „gemessen von“ (B82): ' . implode(', ', $spalten));
 // Raum als Auswahl (B75): keine Hilfsspalte mehr, der Raum der Zeile ist der Wert der Auswahl
 pruefe(!in_array('RoomChoice', $spalten, true), 'keine Spalte RoomChoice: ' . implode(', ', $spalten));
 // Burkhard, 10.10.2026: Endpunkt mit Zugängen, Räume, Geräte, Szenen und Energiebilanz je einzeln aufklappbar
@@ -637,7 +641,7 @@ foreach (DeviceIndex::TYPES as $typ => $woerter) {
         continue;
     }
     $felder[$typ] = array_column($dialog, null, 'name');
-    if (array_keys($felder[$typ]) !== ['Room', 'Name', 'Aliases', 'Type', 'StateVariableID', 'StateLabel', 'HumidityVariableID', 'HumidityLabel', 'SetpointVariableID', 'SetpointLabel', 'ModeVariableID', 'ModeLabel', 'FanVariableID', 'FanLabel', 'ColorTempVariableID', 'ColorTempLabel', 'ColorVariableID', 'ColorLabel', 'PlaybackVariableID', 'PlaybackLabel', 'VolumeVariableID', 'VolumeLabel', 'MuteVariableID', 'MuteLabel', 'TitleVariableID', 'TitleLabel', 'ArtistVariableID', 'ArtistLabel', 'LevelVariableID', 'LevelLabel', 'MovingVariableID', 'MovingLabel', 'StopVariableID', 'StopLabel', 'PowerVariableID', 'PowerLabel', 'EnergyVariableID', 'EnergyLabel', 'Invert', 'Tilt', 'ReadOnly']) {
+    if (array_keys($felder[$typ]) !== ['Room', 'Name', 'Aliases', 'Type', 'StateVariableID', 'StateLabel', 'HumidityVariableID', 'HumidityLabel', 'SetpointVariableID', 'SetpointLabel', 'ModeVariableID', 'ModeLabel', 'FanVariableID', 'FanLabel', 'ColorTempVariableID', 'ColorTempLabel', 'ColorVariableID', 'ColorLabel', 'PlaybackVariableID', 'PlaybackLabel', 'VolumeVariableID', 'VolumeLabel', 'MuteVariableID', 'MuteLabel', 'TitleVariableID', 'TitleLabel', 'ArtistVariableID', 'ArtistLabel', 'LevelVariableID', 'LevelLabel', 'MovingVariableID', 'MovingLabel', 'StopVariableID', 'StopLabel', 'PowerVariableID', 'PowerLabel', 'EnergyVariableID', 'EnergyLabel', 'MeteredBy', 'Invert', 'Tilt', 'ReadOnly']) {
         $dialogFehler[] = $typ . ': Felder ' . implode(', ', array_keys($felder[$typ]));
         continue;
     }
@@ -647,6 +651,10 @@ foreach (DeviceIndex::TYPES as $typ => $woerter) {
             $dialogFehler[] = $typ . ': Sichtbarkeit von ' . $schluessel;
         }
     }
+    // „gemessen von“ (B82) bei jedem Typ mit Leistung oder Zähler, auch beim Zähler selbst
+    if (($felder[$typ]['MeteredBy']['visible'] ?? null) !== (array_intersect(['energy', 'power'], $rollenDesTyps) !== [])) {
+        $dialogFehler[] = $typ . ': Sichtbarkeit von MeteredBy';
+    }
     if ($felder[$typ]['Invert']['visible'] !== ($woerter !== null || $typ === 'blind')) {
         $dialogFehler[] = $typ . ': Sichtbarkeit von Invert';
     }
@@ -654,8 +662,8 @@ foreach (DeviceIndex::TYPES as $typ => $woerter) {
         $dialogFehler[] = $typ . ': Sichtbarkeit von ReadOnly';
     }
     foreach ($dialog as $element) {
-        // Die Einträge der Raumauswahl sind Räume des Anwenders, kein Text des Moduls
-        foreach (array_merge([$element['caption'] ?? ''], ($element['name'] ?? '') === 'Room' ? [] : array_column($element['options'] ?? [], 'caption')) as $beschriftung) {
+        // Die Einträge der Raum- und Zählerauswahl sind Räume und Zähler des Anwenders, kein Text des Moduls
+        foreach (array_merge([$element['caption'] ?? ''], in_array($element['name'] ?? '', ['Room', 'MeteredBy'], true) ? [] : array_column($element['options'] ?? [], 'caption')) as $beschriftung) {
             if ($beschriftung !== '' && !isset($de[$beschriftung])) {
                 $ohneUebersetzung[] = $beschriftung;
             }
@@ -3182,6 +3190,59 @@ foreach (['chart.html', 'devices.html'] as $datei) {
 pruefe(is_string($seite) && str_contains($seite, 'function smoothPath(') && str_contains($seite, 'Math.min(Math.abs(s0), Math.abs(s1), 0.5 * Math.abs(p1))'), 'die Seite hat eine monotone Kurve');
 pruefe(is_string($seite) && substr_count($seite, 'el("path", { d: smoothPath(') >= 2 && str_contains($seite, 'smoothPath(top, true) + " L" + smoothPath(bottom, false)'), 'Mittel, Vergleich und Band im Verlauf werden als Kurve gezeichnet');
 pruefe(is_string($seite) && str_contains($seite, '.ring svg { max-height: 270px; }') && !str_contains($seite, 'max-width: 320px'), 'die Ringkarten füllen die Breite');
+
+/* --- Zähler mit „gemessen von“ (B82) ------------------------------------------------------------- */
+
+// Tageswerte vom nuc (Fixture nuc_2026-10-17_zaehler.json, September 2026): Schalterleiste 16,73 kWh, Waschmaschine
+// 7,34 kWh und Kühltruhe 10,63 kWh. Hängen beide Geräte an der Leiste, liegt darunter mehr als der Zähler misst.
+$z = neueInstanz();
+$zid = (int)(new ReflectionProperty(IPSModuleStrict::class, 'InstanceID'))->getValue($z);
+$leisteE = variable(VARIABLETYPE_FLOAT, 842.86);
+IPS_SetName($leisteE, 'Gesamt Energie');
+$waschE = variable(VARIABLETYPE_FLOAT, 188.6);
+$truheE = variable(VARIABLETYPE_FLOAT, 33.2);
+$truheS = variable(VARIABLETYPE_BOOLEAN, true);
+$waschS = variable(VARIABLETYPE_BOOLEAN, true);
+$gestern = (int)strtotime('yesterday');
+foreach ([[$leisteE, 16.73], [$waschE, 7.34], [$truheE, 10.63]] as [$var, $kwh]) {
+    AC_SetLoggingStatus($archiv, $var, true);
+    AC_SetAggregationType($archiv, $var, 1);
+    AC_StubsAddAggregatedValues($archiv, $var, 1, [['TimeStamp' => $gestern, 'Duration' => 86400, 'Avg' => $kwh, 'Min' => 0, 'Max' => 0, 'MinTime' => 0, 'MaxTime' => 0]]);
+}
+$zugangZ = ['Name' => 'Test', 'Token' => str_repeat('c', 32), 'DefaultRoom' => '', 'ReadOnly' => true, 'InPath' => false];
+IPS_SetProperty($zid, 'Accesses', json_encode([$zugangZ]));
+$leisteZeile = ['Room' => 'Wohnzimmer', 'Name' => 'Schalterleiste', 'Aliases' => '', 'Type' => 'meter', 'EnergyVariableID' => $leisteE, 'MeteredBy' => 0];
+$waschZeile = ['Room' => 'Keller', 'Name' => 'Waschmaschine', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => $waschS, 'EnergyVariableID' => $waschE, 'MeteredBy' => $leisteE];
+$truheZeile = ['Room' => 'Keller', 'Name' => 'Kühltruhe', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => $truheS, 'EnergyVariableID' => $truheE, 'MeteredBy' => $leisteE];
+IPS_SetProperty($zid, 'Devices', json_encode([$leisteZeile, $waschZeile, $truheZeile]));
+IPS_ApplyChanges($zid);
+pruefe(IPS_GetInstance($zid)['InstanceStatus'] === IS_ACTIVE, 'Zähler mit Geräten darunter: aktiv');
+$testZ = $z->RunSelfTest();
+pruefe(str_contains($testZ, 'Note: meter Wohnzimmer Schalterleiste: 18 kWh are measured below it in the last 30 days, more than its own 16.7 kWh; check "Measured by"'), 'Selbsttest: darunter mehr als der Zähler (B82): ' . $testZ);
+$zeilenZ = explode("\n", $z->QueryState('', 'meter', '', false));
+pruefe(($zeilenZ[1] ?? '') === 'Wohnzimmer | Schalterleiste | meter | 842.86', 'QueryState mit type=meter: ' . implode(' ‖ ', $zeilenZ));
+$werkzeugeZ = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $z, HomeAgent::class)()), true), null, 'name');
+pruefe(str_contains($werkzeugeZ['get_state']['inputSchema']['properties']['period']['description'] ?? '', 'A meter (type meter) never counts in a device total; its line names what is measured below it and the rest that is not metered.'), 'period erklärt die Zähler: ' . ($werkzeugeZ['get_state']['inputSchema']['properties']['period']['description'] ?? ''));
+
+// Dialog: Auswahl „gemessen von“ mit den Zählern der Liste, Wert der Zeile
+$dialogZ = array_column(json_decode((string)oderNull(static fn () => $z->UIDeviceForm('switch', '', $leisteE)), true) ?? [], null, 'name');
+$auswahl = $dialogZ['MeteredBy'] ?? [];
+pruefe(($auswahl['type'] ?? '') === 'Select' && ($auswahl['visible'] ?? false) === true && ($auswahl['caption'] ?? '') === 'Measured by (meter above it)' && ($auswahl['options'] ?? []) === [['caption' => '-', 'value' => 0], ['caption' => 'Schalterleiste (Wohnzimmer)', 'value' => $leisteE]] && ($auswahl['value'] ?? null) === $leisteE, 'Dialog: Auswahl mit „-“ und dem Zähler: ' . json_encode($auswahl, JSON_UNESCAPED_UNICODE));
+$fremdZ = array_column(json_decode((string)oderNull(static fn () => $z->UIDeviceForm('switch', '', 99999)), true) ?? [], null, 'name')['MeteredBy'] ?? [];
+pruefe(array_last($fremdZ['options'] ?? [0]) === ['caption' => '#99999 (no meter in the list)', 'value' => 99999] && ($fremdZ['value'] ?? null) === 99999, 'Dialog: ein Wert ohne Zähler bekommt einen eigenen Eintrag: ' . json_encode($fremdZ['options'] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe((array_column(json_decode((string)oderNull(static fn () => $z->UIDeviceForm('door')), true) ?? [], null, 'name')['MeteredBy']['visible'] ?? null) === false, 'Dialog: bei der Tür ohne Zähler unsichtbar');
+
+// Verweis ins Leere und Kreis sperren die Zeile
+IPS_SetProperty($zid, 'Devices', json_encode([$leisteZeile, ['MeteredBy' => $truheE] + $waschZeile, ['MeteredBy' => 99999] + $truheZeile]));
+IPS_ApplyChanges($zid);
+$testZ = $z->RunSelfTest();
+pruefe(str_contains($testZ, 'Device "Kühltruhe" (Keller): "Measured by" names no meter of the list'), 'Selbsttest: Verweis ins Leere: ' . $testZ);
+pruefe(str_contains($testZ, 'Device "Waschmaschine" (Keller): "Measured by" names no meter of the list') && !str_contains($testZ, 'Device "Schalterleiste"'), 'auch die Truhe als Oberzähler ist kein Zähler, die Leiste ist fehlerfrei: ' . $testZ);
+$kreis = ['Room' => '', 'Name' => 'Haushalt', 'Aliases' => '', 'Type' => 'meter', 'EnergyVariableID' => $truheE, 'MeteredBy' => $leisteE];
+IPS_SetProperty($zid, 'Devices', json_encode([['MeteredBy' => $truheE] + $leisteZeile, $kreis]));
+IPS_ApplyChanges($zid);
+$testZ = $z->RunSelfTest();
+pruefe(str_contains($testZ, 'Device "Schalterleiste" (Wohnzimmer): the meters in "Measured by" measure each other in a circle') && str_contains($testZ, 'Device "Haushalt": the meters in "Measured by" measure each other in a circle'), 'Selbsttest: Kreis: ' . $testZ);
 
 /* --- Vorlagen am Modul (Prompts, Backlog B63) ---------------------------------------------------- */
 

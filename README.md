@@ -10,7 +10,7 @@ die Geräte, die Sie freigeben.
 
 > **Stand:** frühe Vorschau. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Farbe, Position,
 > Heizungs-Sollwert und Zielfeuchte, Betriebsart und Lüfterstufe von Luftentfeuchtern und Lüftungen, das
-> Anhalten von Rollläden, Verbrauch und Leistung, der Verlauf von Messwerten, Zeitleisten von Zuständen, das Starten von Szenen sowie
+> Anhalten von Rollläden, Verbrauch und Leistung auch hinter Zählern und Unterzählern, der Verlauf von Messwerten, Zeitleisten von Zuständen, das Starten von Szenen sowie
 > Wiedergabe und Lautstärke von Mediaplayern gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz
 > vorschlagen. Die Claude-App meldet sich auf Wunsch per OAuth an. Was nicht geklappt hat, zeigt das
 > Formular, ein Protokoll zur Fehlersuche lässt sich einschalten. Erprobt ist das Modul bisher auf drei Anlagen.
@@ -186,7 +186,7 @@ zeigt der Dialog nur die Variablen, die zu diesem Typ gehören.
 |---|---|
 | Raum | Ein Raum aus der Raumliste oder „-“. In Anfragen sind Groß- und Kleinschreibung und Umlaute egal („Küche“ = „kueche“). |
 | Name, Aliase | Der Name und weitere Bezeichnungen, durch Komma getrennt. Ein Teilwort genügt beim Suchen. Wird ein Gerät über einen Alias gefunden, steht er in der Antwort in Klammern hinter dem Namen. |
-| Typ | Licht, Schalter, Steckdose, Gerät, Rollladen, Thermostat, Mediaplayer, Luftbe-/entfeuchter, Lüftung/Ventilator, Fenster, Tür, Anwesenheit, Wasserleck, Temperatur, Luftfeuchte, Luftqualität oder sonstiger Messwert. |
+| Typ | Licht, Schalter, Steckdose, Gerät, Rollladen, Thermostat, Mediaplayer, Luftbe-/entfeuchter, Lüftung/Ventilator, Fenster, Tür, Anwesenheit, Wasserleck, Temperatur, Luftfeuchte, Luftqualität, sonstiger Messwert oder Zähler. |
 | Zustand oder Messwert | Die Variable für an/aus, offen/zu oder erkannt, bei Messwerten der Wert selbst. Beim Thermostat die Ist-Temperatur. |
 | Sollwert | Nur beim Thermostat: die Variable mit der Solltemperatur. Sie braucht eine Aktion. |
 | Farbtemperatur | Nur beim Licht, wahlweise: die Variable mit der Farbtemperatur in Kelvin oder Mired. Sie braucht eine Aktion. |
@@ -198,6 +198,7 @@ zeigt der Dialog nur die Variablen, die zu diesem Typ gehören.
 | Stopp | Nur bei Rollladen und Fenster mit Antrieb, wahlweise: eine Variable, die die Fahrt anhält, also ein Wahrheitswert mit Aktion oder eine Auswahl mit dem Eintrag „Stop“ (etwa „Aktion“ beim HomeAssistant-Modul). Homematic- und Velux-KLF200-Geräte hält das Modul auch ohne sie an. |
 | Leistung | Nur bei Licht, Schalter, Steckdose, Gerät, Luftbe-/entfeuchter und Lüftung, wahlweise: die aktuelle Leistung, etwa `POWER` eines Homematic-Messkanals. Sie steht in jeder Antwort hinter dem Zustand, zum Beispiel „an (26.1 W)“. |
 | Zähler | Ebenso wahlweise: der Energiezähler, etwa `ENERGY_COUNTER`. Für den Verbrauch über Zeiträume muss er im Archiv als Zähler aggregiert werden. Hängt ein Gerät an einer Messsteckdose, dürfen beide Zeilen dieselbe Leistung und denselben Zähler tragen; Verbrauch und Leistung eines Raums oder des Hauses zählen jede Variable nur einmal, und der Selbsttest weist darauf hin. |
+| Gemessen von | Bei allem mit Leistung oder Zähler, wahlweise: der Zähler, hinter dem das Gerät oder der Zähler hängt, etwa die Unterverteilung OG. Zur Auswahl stehen die Zähler der gespeicherten Liste, ein neuer also erst nach dem Übernehmen. |
 | Umgekehrt | Haken setzen, wenn `true` „zu“ oder „aus“ bedeutet. Viele Fensterkontakte melden `true` für geschlossen. Bei Fenster, Tür und Meldern mit einer Zahl gilt sonst alles über 0 als offen bzw. erkannt, mit dem Haken nur die 0; so passt etwa der Türstatus von Matter (0 Geöffnet, 1 Geschlossen). Weitere Einträge wie „Angelehnt“ nennt die Antwort in Klammern. Bei Rollläden erkennt das Modul selbst, welcher Wert „offen“ bedeutet; der Haken dreht das um, falls auf und zu vertauscht sind. |
 | Kippfenster | Nur beim Fenster mit Antrieb: Haken setzen, wenn der Antrieb das Fenster nur kippt. Die Antwort sagt dann „gekippt“ und „50 % gekippt“ statt „offen“ und „50 % offen“. |
 | Nur abfragen | Der Assistent darf den Zustand ansagen, das Gerät aber nicht schalten oder stellen. Gedacht für Geräte wie das Garagentor oder die Heizung im Kinderzimmer. |
@@ -218,6 +219,7 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 | Tür | Kontakt |
 | Anwesenheit, Wasserleck | Melder |
 | Temperatur, Luftfeuchte, Luftqualität, sonstiger Messwert | Messwert |
+| Zähler | Zähler, wahlweise Leistung |
 
 Fehlt einer Zeile die Variable ihres Typs, oder wird eine eingetragene Variable gelöscht, ist nur dieses
 Gerät gesperrt. Die Zeile wird rot, Formular und Log nennen sie, alle anderen Geräte bleiben erreichbar.
@@ -296,6 +298,18 @@ Summe der Geräte. Mit PV oder Batterie folgt eine Zeile mit Autarkie und Eigenv
 „Autarkie 84 %, Eigenverbrauch der PV 51 %.“ Fürs ganze Haus nennt die Antwort nur die fünf größten
 Verbraucher und fasst den Rest zusammen („5 weitere Gerät(e) zusammen 25.6 kWh.“); nach einem Raum
 gefragt, kommen alle Geräte in der Reihenfolge der Liste.
+
+Eine Unterverteilung, eine Wallbox oder einen Wohnungszähler tragen Sie als Typ **Zähler** ein, mit dem
+Energiezähler und wahlweise der Leistung. Ein Zähler zählt nie in einer Gerätesumme, er hat seine eigene Zeile.
+Im Feld „Gemessen von“ wählen Sie bei Geräten und Zählern den Zähler darüber, beliebig tief, etwa das Terrarium am
+Kinderzimmer und das Kinderzimmer an der Unterverteilung OG. Die Zeile eines Zählers nennt dann, was darunter
+gemessen ist, und den Rest: „Haushalt 13.4 kWh, davon 2.1 kWh von 9 Zähler(n) oder Gerät(en) darunter gemessen,
+11.3 kWh nicht erfasst“. Fürs ganze Haus zählt die oberste Ebene, also alles ohne „Gemessen von“: „Davon 13.4 kWh
+durch 2 Zähler und 0 Gerät(e) auf oberster Ebene, 0 kWh nicht erfasst.“ Ebenso bei der Leistung mit `period=now`;
+ein Zähler ohne eigene Leistung zählt dort mit dem, was darunter gemessen ist. Ein Verweis auf etwas, das kein
+Zähler der Liste ist, und Zähler, die sich im Kreis messen, sperren die Zeile. Liegt unter einem Zähler in den
+letzten 30 Tagen mehr als 105 % seines eigenen Werts, weist der Selbsttest darauf hin. Die Erzeugung einer
+PV-Anlage gehört in die Energiebilanz, nicht in einen Zähler.
 
 Tragen Sie in der Energiebilanz den **Strompreis** ein (eine archivierte Variable in ct/kWh oder €/kWh, bei einem
 dynamischen Tarif etwa der aktuelle Preis aus dem Tibber-Modul) und die Einspeisevergütung, nennt der Hausverbrauch
@@ -613,6 +627,8 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
   Skript oder ein anderes Modul, liest sie mit.
 - Das Protokoll zur Fehlersuche enthält Raum- und Gerätenamen und die Antworten an die Assistenten. Wer das
   Log-Verzeichnis von Symcon lesen kann, liest es mit. Tokens und Kopplungscodes stehen nicht darin.
+- Zähler stehen noch in keinem Diagramm. Das Verbrauchsdiagramm des Hauses zeigt weiter die Geräte und als „nicht
+  erfasst“ den Rest gegen alle Geräte.
 - Die Skriptfunktionen kennen weder Standardraum noch Etage. Es gibt sie für Zustand, Schalten,
   Stellen und Szenen, für Stopp, Sollwert, Farbtemperatur, Farbe, Verbrauch, Leistung und Verlauf nicht.
 

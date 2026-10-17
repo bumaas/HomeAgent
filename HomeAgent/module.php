@@ -428,6 +428,12 @@ class HomeAgent extends IPSModuleStrict
                 $lines[] = sprintf($this->Translate('Blind %s stops through the %s module'), $label, $stopVia);
             }
         }
+        // Zähler (B82): Darunter gemessen ist mehr als der Zähler selbst, dann hängt etwas am falschen Zähler.
+        $today = (int)strtotime('today');
+        foreach ($this->deviceIndex()->meterOverruns((int)strtotime('-30 days', $today), 0) as $overrun) {
+            $kwh = static fn (float $value): string => rtrim(rtrim(number_format($value, 1, '.', ''), '0'), '.');
+            $lines[] = sprintf($this->Translate('Note: meter %s: %s kWh are measured below it in the last 30 days, more than its own %s kWh; check "Measured by"'), trim($overrun['room'] . ' ' . $overrun['name']), $kwh($overrun['below']), $kwh($overrun['meter']));
+        }
         // Thermostate: in welchem Bereich und mit welcher Schrittweite der Assistent stellen darf.
         foreach ($list as $entry) {
             $setpoint = (string)($entry['Type'] ?? '') === 'thermostat' ? (DeviceIndex::rolesOf($entry)['setpoint'] ?? 0) : 0;
@@ -555,7 +561,7 @@ class HomeAgent extends IPSModuleStrict
             if (($element['name'] ?? '') === 'Devices') {
                 // Der Dialog einer Zeile hängt vom Gerätetyp ab und entsteht deshalb bei jedem Öffnen
                 // neu; die Vorlage dafür steht als „form“ der Liste in der form.json.
-                $element['form'] = "return json_decode(HAGT_UIDeviceForm(\$id, \$Devices['Type'] ?? 'light', \$Devices['Room'] ?? ''), true);";
+                $element['form'] = "return json_decode(HAGT_UIDeviceForm(\$id, \$Devices['Type'] ?? 'light', \$Devices['Room'] ?? '', \$Devices['MeteredBy'] ?? 0), true);";
                 // Die sichtbaren Spalten zu den Variablen sind Text, den das Modul füllt: der Name der
                 // Variable oder „-“. Eine Variablenauswahl als Spalte zeigte für jedes leere Feld „Kein(e)“.
                 $list = json_decode($this->ReadPropertyString('Devices'), true);
@@ -620,7 +626,7 @@ class HomeAgent extends IPSModuleStrict
      * Nur für das Konfigurationsformular: liefert den Bearbeitungsdialog einer Zeile der
      * Freigabeliste als JSON. Sichtbar sind die Fähigkeiten, die der Gerätetyp haben kann.
      */
-    public function UIDeviceForm(string $Type, string $Room = ''): string
+    public function UIDeviceForm(string $Type, string $Room = '', int $MeteredBy = 0): string
     {
         $type = array_key_exists($Type, DeviceIndex::TYPES) ? $Type : array_key_first(DeviceIndex::TYPES);
         $form = json_decode((string)file_get_contents(__DIR__ . '/form.json'), true);
@@ -660,6 +666,23 @@ class HomeAgent extends IPSModuleStrict
                 if (!in_array($element['value'], array_column($element['options'], 'value'), true)) {
                     $listed = $this->roomIndex()->nameOf($Room);
                     $element['options'][] = ['caption' => $listed !== null ? trim($Room) . ' (' . $listed . ')' : sprintf($this->Translate('%s (not in the room list)'), trim($Room)), 'value' => $Room];
+                }
+            }
+            // „gemessen von“ (B82): „-“ und die Zähler der gespeicherten Liste, Wert ist ihre Energievariable. Ein neuer
+            // Zähler erscheint erst nach dem Übernehmen, wie ein neuer Raum. Ein Wert ohne Zähler bekommt einen eigenen
+            // Eintrag, sonst ließe die Konsole das Übernehmen nicht zu.
+            if ($name === 'MeteredBy') {
+                $element['options'] = [['caption' => '-', 'value' => 0]];
+                foreach ($this->deviceList() as $row) {
+                    $energy = DeviceIndex::rolesOf($row)['energy'] ?? 0;
+                    if ((string)($row['Type'] ?? '') === 'meter' && $energy > 0) {
+                        $room = trim((string)($row['Room'] ?? ''));
+                        $element['options'][] = ['caption' => trim((string)($row['Name'] ?? '')) . ($room === '' ? '' : ' (' . $room . ')'), 'value' => $energy];
+                    }
+                }
+                $element['value'] = $MeteredBy > 1 ? $MeteredBy : 0;
+                if (!in_array($element['value'], array_column($element['options'], 'value'), true)) {
+                    $element['options'][] = ['caption' => sprintf($this->Translate('#%d (no meter in the list)'), $MeteredBy), 'value' => $MeteredBy];
                 }
             }
         }
@@ -1821,6 +1844,9 @@ class HomeAgent extends IPSModuleStrict
                 . ($hasBalance
                     ? 'For the whole house (no room, type or name) the first line gives the house consumption from grid, solar and battery.'
                     : 'Covers only devices with their own energy meter, not the whole house.')
+                // Zähler (B82): sonst addiert ein Modell Unterverteilung und Geräte darunter
+                . (array_any($this->usableDevices(), static fn (array $row): bool => ($row['Type'] ?? '') === 'meter')
+                    ? ' A meter (type meter) never counts in a device total; its line names what is measured below it and the rest that is not metered.' : '')
             : '';
         $period = $hasMeters || $hasBalance || $hasPower || $hasHistory || $hasTimeline ? ['period' => ['type' => 'string', 'enum' => array_merge($hasPower ? [DeviceIndex::NOW] : [], DeviceIndex::PERIODS), 'description' => trim($consumption
             . ($hasPower ? ' "now" gives the current power in W instead.' : '')
@@ -2952,6 +2978,12 @@ class HomeAgent extends IPSModuleStrict
                 }
             }
         }
+        // „gemessen von“ (B82): ein Verweis ins Leere oder ein Kreis sperrt die Zeile, sonst stimmt der Rest nicht
+        foreach (DeviceIndex::meterProblems($list) as $index => $problem) {
+            $entry = $list[$index];
+            $row = fn (): string => $this->rowLabel('Device', trim((string)($entry['Name'] ?? '')), trim((string)($entry['Room'] ?? '')));
+            $add('Devices', $index, $row, $this->Translate($problem === 'cycle' ? 'the meters in "Measured by" measure each other in a circle' : '"Measured by" names no meter of the list'));
+        }
         foreach ($this->balance() as $key => $variableId) {
             if (!IPS_VariableExists($variableId)) {
                 $errors[] = ['list' => 'Balance', 'index' => 0, 'text' => sprintf($this->Translate('Energy balance: variable for %s does not exist'), $this->balanceCaption($key))];
@@ -3053,6 +3085,8 @@ class HomeAgent extends IPSModuleStrict
             default                                           => $this->Translate('Inverted (the variable reports "on" when the device is off)'),
         };
         $fields['Invert'] = ['visible' => $invert !== null, 'caption' => $invert ?? $this->Translate('Inverted')];
+        // „gemessen von“ (B82) bei allem, was Energie oder Leistung misst, auch beim Zähler unter einem Zähler
+        $fields['MeteredBy'] = ['visible' => array_intersect(['energy', 'power'], DeviceIndex::TYPE_ROLES[$type]['roles']) !== [], 'caption' => $this->Translate('Measured by (meter above it)')];
         // Ein Kippfenster heißt ganz offen „gekippt“.
         $fields['Tilt'] = ['visible' => $type === 'window', 'caption' => $this->Translate('Tilt window (fully open means tilted)')];
         // „Nur abfragen“ ergibt nur bei Typen Sinn, die sich sonst schalten ließen.

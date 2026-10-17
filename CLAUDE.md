@@ -449,6 +449,22 @@ Weitere Regeln, die nicht offensichtlich sind:
 - **Dieselbe Leistung oder derselbe Zähler an zwei Geräten** (Messsteckdose und Gerät dahinter) zählt in
   `consumption()` und `power()` nur einmal, unter dem ersten Gerät der Liste (`firstPerVariable`, wie der Verlauf);
   der Selbsttest nennt solche Variablen. Anlass: Luftentfeuchter im Keller und Steckdose „Entfeuchter“ (build 69).
+- **Zähler mit „gemessen von“** (Typ `meter`, B82, Wunsch Micha87 im Forum 16./17.10.2026: Unterverteilungen, Kinderzimmer
+  mit Terrarium dahinter): Rollen `energy` (Pflicht) und `power`, Raum wahlweise. Ein Zähler zählt nie in einer
+  Gerätesumme; `consumption()` und `power()` nehmen ihn aus den Treffern und geben ihm eine eigene Zeile (`meterLine`).
+  Jede Zeile kann über `MeteredBy` (Energievariable des Zählers darüber, 0 = keiner) an einem Zähler hängen, beliebig tief.
+  `meterTree` baut je Rolle den Baum über alle Einträge (jede Variable einmal wie `firstPerVariable`): je Knoten eigener
+  Wert, Summe der direkten Kinder und der Wert, mit dem er oben zählt (ohne eigenen Wert die Summe darunter, etwa ein
+  Haushaltszähler ohne Leistung bei `period=now`). Die Zeile nennt den Rest „nicht erfasst“ nur, wenn er positiv ist.
+  Fürs Haus zählt mit Zählern die oberste Ebene (`topLevelLine`), ohne Zähler bleibt der alte Satz mit der Gerätesumme.
+  Nur Zähler unter den Treffern: keine Summe, einer kann den anderen enthalten. Vorbild ist `included_in_stat` von Home
+  Assistant (core `energy/data.py`, frontend `common/sankey.ts`, 17.10.2026); anders als dort sperren ein Verweis ins Leere
+  und ein Kreis die Zeile (`DeviceIndex::meterProblems`, geprüft in `findProblems`), und der Selbsttest meldet Zähler, unter
+  denen in den letzten 30 Tagen mehr als 105 % gemessen ist (`meterOverruns`). Der Dialog hat die Auswahl `MeteredBy` mit
+  „-“ und den Zählern der gespeicherten Liste (wie der Raum: ein unbekannter Wert bekommt einen eigenen Eintrag). Die
+  Diagramme kennen Zähler noch nicht, `deviceChart` bekommt nur Geräte. Das Verworfene unter „Teil der Bilanz“ (Zähler der
+  Bilanz als Geräte) bleibt verworfen: Erzeugung gehört in die Bilanz, ein `meter` misst nur Verbrauch. Test
+  `check-zaehler.php` mit `nuc_2026-10-17_zaehler.json` (Werte echt, Verschachtelung angenommen, rechnerisch belegt).
 - **Datum und Uhrzeit** hängt das Modul an jede Antwort von `get_state` (`withNow()` in `module.php`, nicht in
   `DeviceIndex`, damit Skriptfunktionen und Bibliothekstests ohne sie bleiben). In Anleitung oder Werkzeugliste
   veraltete sie, weil Claude-App und HA beides lange zwischenspeichern.
