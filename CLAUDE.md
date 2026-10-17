@@ -187,7 +187,8 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   **Farbmodus** kommt aus einer Variable neben Farbe oder Farbtemperatur, deren Ident auf `color_mode` endet
   (`DeviceBackend::colorMode`, Bedeutung in `colorModeKind`): Zigbee2MQTT `color_mode` COLOR_TEMP/XY, HomeAssistant-Modul
   `light_color_mode` (auch `light_<entität>_color_mode`) color_temp/xy, Matter `ColorControl_ColorMode` 0/1 Farbe, 2
-  Farbtemperatur. Mit bekanntem Modus nennen Zustand (`stateOf`, also auch get_state) und Karte nur den gültigen Wert,
+  Farbtemperatur (Werte nach der Matter-Spezifikation, die Variable hat keine Einträge). Alle drei zeigen den Modus als
+  Wertanzeige ohne eigene Darstellung, deshalb der Ident (geprüft an drei Anlagen, 17.10.2026). Mit bekanntem Modus nennen Zustand (`stateOf`, also auch get_state) und Karte nur den gültigen Wert,
   der andere Teil der Bedienung ist blass (`active`). Anlass an einer betreuten Anlage: Ein weißes Licht hieß „2732 K,
   gelb“ (Zigbee2MQTT rechnet die Farbtemperatur in RGB um), ein rotes „4739 K, rot“. Bewusst keine Rolle „Farbmodus“
   im Dialog, solange alle bekannten Module die Variable so nennen. Test `check-farbmodus.php`.

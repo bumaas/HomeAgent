@@ -2376,7 +2376,9 @@ final class DeviceIndex
      * Bedeutung eines Farbmodus (Burkhard 16.10.2026): „temperature“ (weißes Licht), „color“ oder null (unbekannt, etwa
      * HomeAssistant „brightness“ oder leer bei ausgeschaltetem Licht). Gelesen an den Anlagen: Zigbee2MQTT color_mode
      * COLOR_TEMP/XY, HomeAssistant-Modul light_color_mode color_temp/xy, Matter ColorControl_ColorMode 0 Farbton und
-     * Sättigung, 1 XY, 2 Farbtemperatur (Darstellung des Matter-Moduls).
+     * Sättigung, 1 XY, 2 Farbtemperatur (Matter-Spezifikation, Attribut ColorMode im Cluster Color Control; die Variable
+     * des Matter-Moduls hat keine Einträge, gemessen ist nur 2). Alle drei Module zeigen den Modus als Wertanzeige, eine
+     * Darstellung „Farbmodus“ gibt es nicht; erkennen lässt er sich nur am Ident.
      */
     public static function colorModeKind(string $ident, mixed $value): ?string
     {
