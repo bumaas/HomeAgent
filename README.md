@@ -285,9 +285,11 @@ bekommt der Assistent nur, wenn mindestens ein freigegebenes Gerät einen Zähle
 Energiebilanz eingetragen ist.
 
 Den Verbrauch des ganzen Hauses rechnet das Modul aus der **Energiebilanz**:
-Netzbezug + PV-Ertrag + Batterie entladen − Einspeisung − Batterie geladen. Die fünf Zähler tragen
-Sie im Abschnitt „Energiebilanz“ des Formulars ein, jeder muss als Zähler archiviert sein. Ohne PV und
-Batterie genügt der Netzbezug. Fragt der Assistent ohne Raum, Etage, Typ und Name (bei einem Zugang
+Netzbezug + PV-Ertrag + Batterie entladen − Einspeisung − Batterie geladen. Im Abschnitt „Energiebilanz“
+des Formulars steht dafür die Liste **Quellen**, eine Zeile je Netzanschluss, PV-Anlage und Batterie. Der Dialog
+einer Zeile zeigt je Art die passenden Felder: beim Netz Bezug und Einspeisung, bei der PV-Anlage den Ertrag, bei
+der Batterie entladen und geladen, jeweils als Zähler und wahlweise als Leistung. Jeder Zähler muss als Zähler
+archiviert sein. Ohne PV und Batterie genügt eine Zeile Netz mit dem Bezug. Fragt der Assistent ohne Raum, Etage, Typ und Name (bei einem Zugang
 mit Standardraum mit `room=all`), lautet die erste Zeile
 etwa „Hausverbrauch 774.8 kWh (alle Geräte, period=last_month): Netzbezug 122.7, PV-Ertrag 1356.8,
 Batterie entladen 285, Einspeisung 658.7, Batterie geladen 330.9 kWh.“ Die Geräte mit eigenem Zähler
@@ -299,12 +301,11 @@ Summe der Geräte. Mit PV oder Batterie folgt eine Zeile mit Autarkie und Eigenv
 Verbraucher und fasst den Rest zusammen („5 weitere Gerät(e) zusammen 25.6 kWh.“); nach einem Raum
 gefragt, kommen alle Geräte in der Reihenfolge der Liste.
 
-Haben Sie mehr als eine PV-Anlage oder Batterie oder einen zweiten Netzanschluss, tragen Sie die weiteren in der
-Liste **Weitere Quellen** unter den Feldern ein: je Zeile die Art (Netz, PV, Batterie), einen Namen, die Zähler und
-wahlweise die Leistungen. Die Bilanz zählt jede Zeile mit den Feldern ihrer Art zusammen, auch rückwirkend aus dem
-Archiv, und die Antwort nennt die benannten Quellen in Klammern, etwa „PV-Ertrag … (davon Garage …)“. Eine PV-Anlage
-hat nur den Ertrag. Eine einzelne Leistung mit Vorzeichen zählt wie das Feld, „Vorzeichen umkehren“ dreht sie um, und
-der Selbsttest nennt sie mit dem Namen der Quelle. Hat eine Zeile einen Fehler, ist die ganze Bilanz gesperrt.
+Mehrere PV-Anlagen, Batterien oder Netzanschlüsse bekommen je eine eigene Zeile. Die Bilanz zählt die Zeilen einer
+Art zusammen, auch rückwirkend aus dem Archiv, und die Antwort nennt sie dann mit Namen, etwa „PV-Ertrag …
+(davon Dach …, Garage …)“. Hat eine Zeile einen Fehler, ist die ganze Bilanz gesperrt. Stand die Bilanz bisher in
+einzelnen Feldern, finden Sie sie nach dem Update als Zeilen „Netz“, „PV“ und „Batterie“ in der Liste; die Namen
+dürfen Sie ändern.
 
 Eine Unterverteilung, eine Wallbox oder einen Wohnungszähler tragen Sie als Typ **Zähler** ein, mit dem
 Energiezähler und wahlweise der Leistung. Ein Zähler zählt nie in einer Gerätesumme, er hat seine eigene Zeile.
@@ -338,15 +339,15 @@ ich dieses Jahr an Einspeisevergütung verdient, und wo lande ich am Jahresende?
 
 Mit `period=now` nennt **get_state** die Leistung jetzt in W, aufgebaut wie der Verbrauch: je Gerät mit
 Leistung der aktuelle Wert, dazu die Summe. Fürs ganze Haus rechnet das Modul die Hausleistung aus den
-fünf Leistungsfeldern der Energiebilanz, etwa „Hausleistung 1548 W (alle Geräte, period=now):
+Leistungen der Quellen, etwa „Hausleistung 1548 W (alle Geräte, period=now):
 Netzbezug 27, PV-Ertrag 0, Batterie entladen 1521, Einspeisung 0, Batterie geladen 0 W.“ und „Davon
 750 W durch 11 von 11 Gerät(en) mit Leistungsmessung, 798 W nicht erfasst.“ W, kW und MW werden
 umgerechnet, ohne Einheit gilt W. Haben Sie für das Netz nur einen Sensor mit Vorzeichen, gehört er
-zum Netzbezug (negativ heißt Einspeisung); ebenso ein Batteriesensor zu „Batterie entladen“ (negativ
-heißt laden). Meldet ein Sensor andersherum, etwa eine Batterie, die beim Laden positiv zählt, setzen Sie
-darunter den Haken „Vorzeichen umkehren“. Der Selbsttest nennt dann den aktuellen Wert und wie er zählt
-(„Energiebilanz: Batterie entladen Leistung Battery Power meldet jetzt 1112 W und zählt als Batterie
-geladen 1112 W, durch den Haken umgekehrt“).
+ins Feld „Netzbezug Leistung“ (negativ heißt Einspeisung); ebenso ein Batteriesensor ins Feld „Batterie
+entladen Leistung“ (negativ heißt laden). Meldet ein Sensor andersherum, etwa eine Batterie, die beim Laden
+positiv zählt, setzen Sie in der Zeile den Haken „Vorzeichen umkehren“. Der Selbsttest nennt dann je Quelle den
+aktuellen Wert und wie er zählt („Energiebilanz: Batterie entladen Leistung "Marstek" Battery Power meldet jetzt
+1112 W und zählt als Batterie geladen 1112 W, durch den Haken umgekehrt“).
 
 Für Messwerte (Temperatur, Feuchte, Luftqualität, sonstige Messwerte und die Ist-Temperatur eines
 Thermostats) liefern dieselben Zeiträume den **Verlauf**: je Stunde, Tag oder Monat Minimum, Mittel und
@@ -634,7 +635,7 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
   Skript oder ein anderes Modul, liest sie mit.
 - Das Protokoll zur Fehlersuche enthält Raum- und Gerätenamen und die Antworten an die Assistenten. Wer das
   Log-Verzeichnis von Symcon lesen kann, liest es mit. Tokens und Kopplungscodes stehen nicht darin.
-- Die weiteren Quellen zählen in Diagrammen mit, eine eigene Farbe je Quelle gibt es dort noch nicht.
+- Mehrere Quellen einer Art zählen in Diagrammen zusammen, eine eigene Farbe je Quelle gibt es dort noch nicht.
 - Zähler stehen noch in keinem Diagramm. Das Verbrauchsdiagramm des Hauses zeigt weiter die Geräte und als „nicht
   erfasst“ den Rest gegen alle Geräte.
 - Die Skriptfunktionen kennen weder Standardraum noch Etage. Es gibt sie für Zustand, Schalten,

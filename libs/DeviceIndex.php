@@ -271,7 +271,7 @@ final class DeviceIndex
     private array $invertedPower = [];
 
     /**
-     * Weitere Quellen der Bilanz (B82 Stufe b): Art => Schlüssel des ersten und des zweiten Zählers bzw. der Leistung
+     * Quellen der Bilanz (B82): Art => Schlüssel des ersten und des zweiten Zählers bzw. der Leistung
      * (Netz: Bezug und Einspeisung, Batterie: entladen und geladen, PV hat nur den ersten).
      */
     public const SOURCE_KEYS = ['grid' => ['import', 'export'], 'solar' => ['solar', null], 'battery' => ['discharge', 'charge']];
@@ -5008,7 +5008,7 @@ final class DeviceIndex
      * @param list<string> $keys
      */
     /**
-     * Fehler einer Zeile der Liste „Weitere Quellen“ (B82 Stufe b): unbekannte Art, keine Variable, oder bei PV ein
+     * Fehler einer Zeile der Liste „Quellen“ (B82): unbekannte Art, keine Variable, oder bei PV ein
      * zweiter Zähler bzw. eine zweite Leistung (eine PV-Anlage speist nur ein).
      *
      * @param list<array<string, mixed>> $rows
@@ -5032,10 +5032,10 @@ final class DeviceIndex
     }
 
     /**
-     * Weitere Quellen der Bilanz (B82 Stufe b, Wunsch Micha87 17.10.2026: drei PV-Anlagen): Netzanschlüsse, PV-Anlagen und
-     * Batterien wie im Energie-Dashboard von Home Assistant, je Art zusammengezählt mit den Feldern der Bilanz. Eine
-     * Quelle mit nur der ersten Leistung (Netz, Batterie) ist ein Sensor mit Vorzeichen wie das einzelne Feld, „Invert“
-     * dreht ihn um. Zeilen mit Fehlern (sourceProblems) übergeht die Bilanz; das Modul sperrt sie vorher ganz.
+     * Quellen der Bilanz (B82, Wunsch Micha87 17.10.2026: drei PV-Anlagen): Netzanschlüsse, PV-Anlagen und Batterien wie
+     * im Energie-Dashboard von Home Assistant, je Art zusammengezählt (das Modul übergibt seit build 192 nur noch die
+     * Liste, die Felder des Konstruktors bleiben für die Tests der Bibliothek). Eine Quelle mit nur der ersten Leistung
+     * (Netz, Batterie) ist ein Sensor mit Vorzeichen wie das einzelne Feld, „Invert“ dreht ihn um. Zeilen mit Fehlern (sourceProblems) übergeht die Bilanz; das Modul sperrt sie vorher ganz.
      *
      * @param list<array<string, mixed>> $sources Zeilen mit Type, Name, EnergyIn, EnergyOut, PowerIn, PowerOut, Invert
      */

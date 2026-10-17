@@ -144,13 +144,13 @@ class HomeAgent extends IPSModuleStrict
         // Protokoll zur Fehlersuche, standardmäßig aus (Burkhard 12.10.2026).
         $this->RegisterPropertyBoolean('LogEnabled', false);
         $this->RegisterPropertyInteger('LogLines', 5000);
+        // Die Felder der Bilanz bis build 191; ApplyChanges übernimmt sie in die Liste „Quellen“ und leert sie (B82).
         foreach (array_merge(array_values(DeviceIndex::BALANCE), array_values(DeviceIndex::BALANCE_POWER)) as $property) {
             $this->RegisterPropertyInteger($property, 0);
         }
-        // Vorzeichen eines einzelnen Netz- bzw. Batteriesensors umkehren (B77): Der Marstek Venus E meldet positiv = laden.
         $this->RegisterPropertyBoolean('InvertGridPower', false);
         $this->RegisterPropertyBoolean('InvertBatteryPower', false);
-        // Weitere Quellen der Bilanz (B82 Stufe b): Netzanschlüsse, PV-Anlagen und Batterien neben den Feldern
+        // Energiebilanz (B82, Burkhard 17.10.2026): je Netzanschluss, PV-Anlage und Batterie eine Zeile mit Namen
         $this->RegisterPropertyString('Sources', '[]');
         // Kosten in Euro (B72): Strompreis als archivierte Variable (ct/kWh oder €/kWh) und Einspeisevergütung in ct/kWh
         $this->RegisterPropertyInteger('PriceVariableID', 0);
@@ -179,10 +179,25 @@ class HomeAgent extends IPSModuleStrict
             }
         }
         unset($row);
-        // Übernommen wird über einen einmaligen Timer: Ein IPS_ApplyChanges auf sich selbst lehnt die
-        // Rust-Edition als re-entranten Aufruf ab, die Instanz blieb dann auf 104 (Blindtest 12.10.2026).
         if ($filled) {
             IPS_SetProperty($this->InstanceID, 'Accesses', (string)json_encode($accesses));
+        }
+        // Bis build 191 stand die Bilanz in Einzelfeldern. Sie wandern als benannte Zeilen vor die Liste „Quellen“, die
+        // Felder werden leer (B82, Burkhard 17.10.2026: „Wie kann ich mir Listen und Felder vorstellen? Ist das nicht
+        // verwirrend“). Bis dahin rechnet sources() sie schon mit.
+        $legacy = $this->legacySources();
+        $staleInvert = (bool)@$this->ReadPropertyBoolean('InvertGridPower') || (bool)@$this->ReadPropertyBoolean('InvertBatteryPower');
+        if ($legacy !== [] || $staleInvert) {
+            IPS_SetProperty($this->InstanceID, 'Sources', (string)json_encode(array_merge($legacy, $this->storedSources())));
+            foreach (array_merge(array_values(DeviceIndex::BALANCE), array_values(DeviceIndex::BALANCE_POWER)) as $property) {
+                IPS_SetProperty($this->InstanceID, $property, 0);
+            }
+            IPS_SetProperty($this->InstanceID, 'InvertGridPower', false);
+            IPS_SetProperty($this->InstanceID, 'InvertBatteryPower', false);
+        }
+        // Übernommen wird über einen einmaligen Timer: Ein IPS_ApplyChanges auf sich selbst lehnt die
+        // Rust-Edition als re-entranten Aufruf ab, die Instanz blieb dann auf 104 (Blindtest 12.10.2026).
+        if ($filled || $legacy !== [] || $staleInvert) {
             $this->RegisterOnceTimer('ApplyTokens', 'IPS_ApplyChanges(' . $this->InstanceID . ');');
             return;
         }
@@ -347,16 +362,8 @@ class HomeAgent extends IPSModuleStrict
                 $lines[] = sprintf($this->Translate('Note: %s: the energy meter %s counts in %s, not in kWh, so it is left out of the consumption'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), IPS_GetName($meter), trim($counter['unit']));
             }
         }
-        // Energiebilanz: Jeder Zähler muss als Zähler archiviert sein, sonst gibt es keinen Hausverbrauch.
-        foreach ($this->balance() as $key => $variableId) {
-            $counter = IPS_VariableExists($variableId) ? $backend->counterSum($variableId, 4, 0, 0) : false;
-            if ($counter === null) {
-                $lines[] = sprintf($this->Translate('Note: energy balance: %s %s is not archived as a counter, so there is no house consumption'), $this->balanceCaption($key), IPS_GetName($variableId));
-            } elseif (is_array($counter) && !DeviceIndex::isEnergyUnit($counter['unit'])) {
-                $lines[] = sprintf($this->Translate('Note: energy balance: %s %s counts in %s, not in kWh, so there is no house consumption'), $this->balanceCaption($key), IPS_GetName($variableId), trim($counter['unit']));
-            }
-        }
-        // Weitere Quellen (B82 Stufe b): dieselben Hinweise je Zähler und Leistung, mit dem Namen der Quelle
+        // Energiebilanz: Jeder Zähler muss als Zähler archiviert sein, sonst gibt es keinen Hausverbrauch, und jede
+        // Leistung eine Leistung; die Hinweise nennen die Quelle mit Namen.
         foreach ($this->usableSources() as $source) {
             [$in, $out] = DeviceIndex::SOURCE_KEYS[(string)$source['Type']];
             foreach ([[$in, 'EnergyIn'], [$out, 'EnergyOut']] as [$key, $field]) {
@@ -379,13 +386,7 @@ class HomeAgent extends IPSModuleStrict
                 }
             }
         }
-        // Leistungen der Bilanz: Ein Zähler im Leistungsfeld ergäbe keine Hausleistung.
-        foreach ($this->powerBalance() as $key => $variableId) {
-            $unit = $backend->unit($variableId);
-            if (IPS_VariableExists($variableId) && !DeviceIndex::isPowerUnit($unit)) {
-                $lines[] = sprintf($this->Translate('Note: energy balance: %s %s is in %s, not a power value, so there is no house power'), $this->powerCaption($key), IPS_GetName($variableId), $unit);
-            }
-        }
+
         // Sensoren mit Vorzeichen: wie der aktuelle Wert zählt, damit der Anwender die Richtung am Haus prüft (B77).
         foreach ($this->deviceIndex()->signedPowers() as $signed) {
             $line = sprintf($this->Translate('Energy balance: %s %s reads %s W now and counts as %s %s W'), $this->powerCaption($signed['key']) . ($signed['source'] === '' ? '' : ' "' . $signed['source'] . '"'), IPS_GetName($signed['variable']),
@@ -591,6 +592,11 @@ class HomeAgent extends IPSModuleStrict
                 // Variable oder „-“. Eine Variablenauswahl als Spalte zeigte für jedes leere Feld „Kein(e)“.
                 $list = json_decode($this->ReadPropertyString('Devices'), true);
                 $element['values'] = array_map(fn (array $row): array => $this->deviceLabels($row), is_array($list) ? array_values($list) : []);
+            }
+            // Quellen der Bilanz (B82): Dialog je Art wie bei den Geräten, sichtbar sind die Namen der Variablen
+            if (($element['name'] ?? '') === 'Sources') {
+                $element['form'] = "return json_decode(HAGT_UISourceForm(\$id, \$Sources['Type'] ?? 'grid'), true);";
+                $element['values'] = array_map(fn (array $row): array => $this->sourceLabels($row), $this->storedSources());
             }
             // Räume der Geräteliste, die in der Raumliste fehlen (B75): Die Auswahl im Dialog bietet nur die Raumliste an
             if (($element['name'] ?? '') === 'RoomsMissing') {
@@ -944,6 +950,105 @@ class HomeAgent extends IPSModuleStrict
             return;
         }
         $this->showSecret(sprintf($this->Translate('There is no usable access named "%s"'), $AccessName), '');
+    }
+
+    /**
+     * Nur für das Konfigurationsformular: liefert den Bearbeitungsdialog einer Zeile der Liste „Quellen“ als JSON (B82).
+     * Sichtbar und beschriftet sind die Felder der Art: Netz mit Bezug und Einspeisung, PV nur mit dem Ertrag, Batterie mit
+     * entladen und geladen.
+     */
+    public function UISourceForm(string $Type): string
+    {
+        $type = array_key_exists($Type, DeviceIndex::SOURCE_KEYS) ? $Type : 'grid';
+        $form = json_decode((string)file_get_contents(__DIR__ . '/form.json'), true);
+        $dialog = [];
+        $typeOptions = [];
+        foreach (self::allElements($form['elements']) as $element) {
+            if (($element['name'] ?? '') === 'Sources') {
+                $dialog = $element['form'];
+                $typeOptions = array_column($element['columns'], 'edit', 'name')['Type']['options'];
+            }
+        }
+        $fields = $this->sourceDialogFields($type);
+        foreach ($dialog as &$element) {
+            $name = (string)($element['name'] ?? '');
+            if ($name === 'Type') {
+                $element['options'] = $typeOptions;
+            }
+            if (isset($fields[$name])) {
+                $element['visible'] = $fields[$name]['visible'];
+                $element['caption'] = $fields[$name]['caption'];
+            } elseif (isset($element['caption'])) {
+                $element['caption'] = $this->Translate($element['caption']);
+            }
+            foreach ($element['options'] ?? [] as $index => $option) {
+                $element['options'][$index]['caption'] = $this->Translate($option['caption']);
+            }
+        }
+        unset($element);
+        return (string)json_encode($dialog);
+    }
+
+    /**
+     * Nur für das Konfigurationsformular: Im offenen Dialog einer Quelle folgen die Felder der Art und die Textspalten den
+     * gewählten Variablen. Was die Art nicht hat (bei PV der zweite Zähler, die zweite Leistung, die Umkehr), wird leer.
+     */
+    public function UISourceChanged(string $Type, int $EnergyIn, int $EnergyOut, int $PowerIn, int $PowerOut): void
+    {
+        $type = array_key_exists($Type, DeviceIndex::SOURCE_KEYS) ? $Type : 'grid';
+        $row = ['Type' => $type, 'EnergyIn' => $EnergyIn, 'EnergyOut' => $EnergyOut, 'PowerIn' => $PowerIn, 'PowerOut' => $PowerOut];
+        foreach ($this->sourceDialogFields($type) as $name => $field) {
+            $this->UpdateFormField($name, 'visible', $field['visible']);
+            $this->UpdateFormField($name, 'caption', $field['caption']);
+            if (!$field['visible']) {
+                $this->UpdateFormField($name, 'value', $name === 'Invert' ? false : 0);
+                $row[$name] = 0;
+            }
+        }
+        foreach ($this->sourceLabels($row) as $name => $label) {
+            $this->UpdateFormField($name, 'value', $label);
+        }
+    }
+
+    /**
+     * Felder des Dialogs einer Quelle, die von der Art abhängen.
+     *
+     * @return array<string, array{visible: bool, caption: string}>
+     */
+    private function sourceDialogFields(string $type): array
+    {
+        $captions = match ($type) {
+            'solar'   => ['Solar production (energy meter)', null, 'Solar power', null, null],
+            'battery' => ['Battery discharge (energy meter)', 'Battery charge (energy meter)', 'Battery discharge power (alone with a sign: negative = charging)', 'Battery charge power', 'Reverse sign (positive = charging)'],
+            default   => ['Grid import (energy meter)', 'Grid export (energy meter)', 'Grid import power (alone with a sign: negative = export)', 'Grid export power', 'Reverse sign (positive = grid export)'],
+        };
+        $fields = [];
+        foreach (['EnergyIn', 'EnergyOut', 'PowerIn', 'PowerOut', 'Invert'] as $number => $name) {
+            $fields[$name] = ['visible' => $captions[$number] !== null, 'caption' => $this->Translate($captions[$number] ?? ['Energy meter', 'Second energy meter', 'Power', 'Second power', 'Reverse sign'][$number])];
+        }
+        return $fields;
+    }
+
+    /**
+     * Textspalten einer Quelle: die Namen der Zähler bzw. Leistungen, bei Netz und Batterie beide mit „/“, sonst „-“.
+     *
+     * @return array{EnergyLabel: string, PowerLabel: string}
+     */
+    private function sourceLabels(array $row): array
+    {
+        $nameOf = static function (int $variableId): string {
+            if ($variableId <= 1) {
+                return '-';
+            }
+            return IPS_VariableExists($variableId) ? IPS_GetName($variableId) : '#' . $variableId . ' ?';
+        };
+        $two = (DeviceIndex::SOURCE_KEYS[(string)($row['Type'] ?? '')][1] ?? null) !== null;
+        $labels = [];
+        foreach (['EnergyLabel' => ['EnergyIn', 'EnergyOut'], 'PowerLabel' => ['PowerIn', 'PowerOut']] as $label => [$in, $out]) {
+            $names = $two ? [$nameOf((int)($row[$in] ?? 0)), $nameOf((int)($row[$out] ?? 0))] : [$nameOf((int)($row[$in] ?? 0))];
+            $labels[$label] = array_unique($names) === ['-'] ? '-' : implode(' / ', $names);
+        }
+        return $labels;
     }
 
     /**
@@ -2506,22 +2611,10 @@ class HomeAgent extends IPSModuleStrict
 
     private function deviceIndex(string $defaultRoom = ''): DeviceIndex
     {
-        $index = new DeviceIndex($this->usableDevices(), $this->backend(), $this->roomIndex(), $defaultRoom, $this->usableBalance($this->balance()), $this->usableBalance($this->powerBalance()));
+        $index = new DeviceIndex($this->usableDevices(), $this->backend(), $this->roomIndex(), $defaultRoom);
         $index->addSources($this->usableSources());
         $index->setTariff($this->priceVariable(), (float)@$this->ReadPropertyFloat('FeedInTariff'));
-        $index->setInvertedPower($this->invertedPower());
         return $index;
-    }
-
-    /**
-     * Sensoren der Leistungsbilanz mit umgekehrtem Vorzeichen (B77): Schlüssel aus DeviceIndex::BALANCE_POWER.
-     *
-     * @return list<string>
-     */
-    private function invertedPower(): array
-    {
-        // Vor dem Neuladen der Bibliothek gibt es die Properties bei bestehenden Instanzen noch nicht.
-        return array_keys(array_filter(['import' => (bool)@$this->ReadPropertyBoolean('InvertGridPower'), 'discharge' => (bool)@$this->ReadPropertyBoolean('InvertBatteryPower')]));
     }
 
     private function sceneIndex(): SceneIndex
@@ -2556,13 +2649,6 @@ class HomeAgent extends IPSModuleStrict
         return array_values(array_filter($rows, static fn (array $row, int $index): bool => !in_array($index, $faulty, true), ARRAY_FILTER_USE_BOTH));
     }
 
-    /**
-     * Die Energiebilanz gilt nur vollständig: Fehlt eine ihrer Variablen, wäre der Hausverbrauch
-     * falsch, also ist sie dann ganz gesperrt.
-     *
-     * @param array<string, int> $balance
-     * @return array<string, int>
-     */
     /** Die Variable des Strompreises, wenn sie existiert und eine Bilanz eingetragen ist; sonst 0 (B72). */
     private function priceVariable(): int
     {
@@ -2571,18 +2657,48 @@ class HomeAgent extends IPSModuleStrict
         return $id > 1 && IPS_VariableExists($id) && $this->balanceKeys() !== [] ? $id : 0;
     }
 
-    /** Die Bilanz gilt nur ganz: Fehlt eine Variable oder hat eine weitere Quelle einen Fehler, ist sie gesperrt. */
-    private function usableBalance(array $balance): array
+    /**
+     * Quellen der Bilanz (B82): die alten Felder als Zeilen, solange ApplyChanges sie noch nicht übernommen hat, dann die
+     * Liste „Quellen“.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function sources(): array
     {
-        return array_all($balance, static fn (int $variableId): bool => IPS_VariableExists($variableId)) && $this->sourcesUsable() ? $balance : [];
+        return array_merge($this->legacySources(), $this->storedSources());
     }
 
-    /** Zeilen der Liste „Weitere Quellen“ (B82 Stufe b). @return list<array<string, mixed>> */
-    private function sources(): array
+    /** @return list<array<string, mixed>> */
+    private function storedSources(): array
     {
         // Vor dem Neuladen der Bibliothek gibt es die Property bei bestehenden Instanzen noch nicht.
         $rows = json_decode((string)@$this->ReadPropertyString('Sources'), true);
         return is_array($rows) ? array_values($rows) : [];
+    }
+
+    /** Namen der übernommenen Felder je Art, in der Sprache der Anlage. */
+    private const SOURCE_NAMES = ['grid' => 'Grid', 'solar' => 'Solar', 'battery' => 'Battery'];
+
+    /**
+     * Die Felder der Bilanz bis build 191 als Zeilen der Liste, je Art eine. Die Rechnung bleibt dieselbe: Ein einzelnes
+     * Leistungsfeld ohne Gegenfeld war ein Sensor mit Vorzeichen, wie eine Zeile mit PowerIn ohne PowerOut.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function legacySources(): array
+    {
+        $energy = $this->balance();
+        $power = $this->powerBalance();
+        $invert = ['grid' => (bool)@$this->ReadPropertyBoolean('InvertGridPower'), 'solar' => false, 'battery' => (bool)@$this->ReadPropertyBoolean('InvertBatteryPower')];
+        $rows = [];
+        foreach (DeviceIndex::SOURCE_KEYS as $type => [$in, $out]) {
+            $row = ['Type' => $type, 'Name' => $this->Translate(self::SOURCE_NAMES[$type]), 'EnergyIn' => $energy[$in] ?? 0, 'EnergyOut' => $out === null ? 0 : ($energy[$out] ?? 0),
+                'PowerIn' => $power[$in] ?? 0, 'PowerOut' => $out === null ? 0 : ($power[$out] ?? 0), 'Invert' => $invert[$type]];
+            if (max($row['EnergyIn'], $row['EnergyOut'], $row['PowerIn'], $row['PowerOut']) > 1) {
+                $rows[] = $row;
+            }
+        }
+        return $rows;
     }
 
     private function sourcesUsable(): bool
@@ -2597,13 +2713,13 @@ class HomeAgent extends IPSModuleStrict
     }
 
     /**
-     * Teile der Bilanz, die eingetragen und benutzbar sind, aus den Feldern und der Liste der Quellen.
+     * Teile der Bilanz, die eingetragen und benutzbar sind.
      *
      * @return array<string, true> Schlüssel aus DeviceIndex::BALANCE
      */
     private function balanceKeys(bool $power = false): array
     {
-        $keys = array_fill_keys(array_keys($this->usableBalance($power ? $this->powerBalance() : $this->balance())), true);
+        $keys = [];
         foreach ($this->usableSources() as $source) {
             [$in, $out] = DeviceIndex::SOURCE_KEYS[(string)$source['Type']];
             foreach ([[$in, $power ? 'PowerIn' : 'EnergyIn'], [$out, $power ? 'PowerOut' : 'EnergyOut']] as [$key, $field]) {
@@ -2635,7 +2751,7 @@ class HomeAgent extends IPSModuleStrict
         foreach ($this->GetReferenceList() as $reference) {
             $this->UnregisterReference($reference);
         }
-        $variables = array_merge(array_values($this->balance()), array_values($this->powerBalance()), [$this->priceVariable()]);
+        $variables = [$this->priceVariable()];
         foreach ($this->sources() as $source) {
             foreach (['EnergyIn', 'EnergyOut', 'PowerIn', 'PowerOut'] as $field) {
                 $variables[] = (int)($source[$field] ?? 0);
@@ -3054,17 +3170,7 @@ class HomeAgent extends IPSModuleStrict
             $row = fn (): string => $this->rowLabel('Device', trim((string)($entry['Name'] ?? '')), trim((string)($entry['Room'] ?? '')));
             $add('Devices', $index, $row, $this->Translate($problem === 'cycle' ? 'the meters in "Measured by" measure each other in a circle' : '"Measured by" names no meter of the list'));
         }
-        foreach ($this->balance() as $key => $variableId) {
-            if (!IPS_VariableExists($variableId)) {
-                $errors[] = ['list' => 'Balance', 'index' => 0, 'text' => sprintf($this->Translate('Energy balance: variable for %s does not exist'), $this->balanceCaption($key))];
-            }
-        }
-        foreach ($this->powerBalance() as $key => $variableId) {
-            if (!IPS_VariableExists($variableId)) {
-                $errors[] = ['list' => 'Balance', 'index' => 0, 'text' => sprintf($this->Translate('Energy balance: variable for %s does not exist'), $this->powerCaption($key))];
-            }
-        }
-        // Weitere Quellen (B82 Stufe b): ein Fehler sperrt die ganze Bilanz wie ein fehlendes Feld
+        // Quellen der Bilanz (B82): ein Fehler sperrt die ganze Bilanz, sonst wäre der Hausverbrauch falsch
         $sources = $this->sources();
         $sourceProblems = DeviceIndex::sourceProblems($sources);
         foreach ($sources as $index => $source) {
@@ -3077,10 +3183,12 @@ class HomeAgent extends IPSModuleStrict
                 }));
                 continue;
             }
-            foreach (['EnergyIn' => 'energy (import, production or discharge)', 'EnergyOut' => 'energy (export or charge)', 'PowerIn' => 'power (import, production or discharge)', 'PowerOut' => 'power (export or charge)'] as $field => $caption) {
+            [$in, $out] = DeviceIndex::SOURCE_KEYS[(string)$source['Type']];
+            foreach ([[$in, 'EnergyIn'], [$out, 'EnergyOut'], [$in, 'PowerIn'], [$out, 'PowerOut']] as [$key, $field]) {
                 $variableId = (int)($source[$field] ?? 0);
-                if ($variableId > 1 && !IPS_VariableExists($variableId)) {
-                    $add('Sources', $index, $row, sprintf($this->Translate('variable for %s does not exist'), $this->Translate($caption)));
+                if ($key !== null && $variableId > 1 && !IPS_VariableExists($variableId)) {
+                    $caption = str_starts_with($field, 'Power') ? $this->powerCaption($key) : $this->balanceCaption($key);
+                    $add('Sources', $index, $row, sprintf($this->Translate('variable for %s does not exist'), $caption));
                 }
             }
         }

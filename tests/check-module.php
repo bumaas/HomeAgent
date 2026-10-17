@@ -545,13 +545,11 @@ foreach ([
     'The Claude app signs in with OAuth: a custom connector with the Connect address from the instance Connect Control (or another public HTTPS address) followed by the hook path, without a token, and HAGT_CreatePairingCode for the pairing code; it needs neither InPath nor the token.' => 'Die Claude-App meldet sich per OAuth an: benutzerdefinierter Connector mit der Connect-Adresse aus der Instanz Connect Control (oder einer anderen öffentlichen HTTPS-Adresse), dahinter der Hook-Pfad ohne Token, und HAGT_CreatePairingCode für den Kopplungscode; sie braucht weder InPath noch das Token.',
     'Clients that show MCP Apps, such as the Claude app, also get show_chart (history, consumption and the energy balance as charts) and show_devices (device cards with switches and sliders, operated through control_device, which only the cards see).' => 'Clients, die MCP Apps anzeigen, etwa die Claude-App, bekommen dazu show_chart (Verlauf, Verbrauch und Energiebilanz als Diagramm) und show_devices (Gerätekarten mit Schaltern und Reglern, bedient über control_device, das nur die Karten sehen).',
     'Depending on the released devices set_state also offers humidity, mode, fan_speed, color_temperature, color, volume, volume_change and mute, and the commands play, pause, next and previous.' => 'Je nach freigegebenen Geräten bietet set_state außerdem humidity, mode, fan_speed, color_temperature, color, volume, volume_change und mute sowie die Befehle play, pause, next und previous.',
-    'The energy balance uses the properties GridImportVariableID, GridExportVariableID, SolarVariableID, BatteryChargeVariableID and BatteryDischargeVariableID (energy meters archived as counters), the current power the matching GridImportPowerVariableID and so on; each part is optional.' => 'Die Energiebilanz nutzt die Properties GridImportVariableID, GridExportVariableID, SolarVariableID, BatteryChargeVariableID und BatteryDischargeVariableID (als Zähler archivierte Energiezähler), die aktuelle Leistung die passenden GridImportPowerVariableID und so weiter; jeder Teil ist freiwillig.',
+    // Energiebilanz als Liste der Quellen (B82, Burkhard 17.10.2026), mit Vorzeichen je Zeile (B77)
+    'The energy balance is the property Sources, a JSON list with one row per grid connection, solar plant or battery: Type (grid, solar or battery), Name, EnergyIn and EnergyOut (energy meters archived as counters: grid import and export, solar production, battery discharge and charge), PowerIn and PowerOut (the current power in the same order) and Invert. Solar only has EnergyIn and PowerIn.' => 'Die Energiebilanz ist die Property Sources, eine JSON-Liste mit einer Zeile je Netzanschluss, PV-Anlage oder Batterie: Type (grid, solar oder battery), Name, EnergyIn und EnergyOut (als Zähler archivierte Energiezähler: Netzbezug und Einspeisung, PV-Ertrag, Batterie entladen und geladen), PowerIn und PowerOut (die aktuelle Leistung in derselben Reihenfolge) und Invert. solar hat nur EnergyIn und PowerIn.',
+    'A single signed power in PowerIn counts negative as export or charging, Invert reverses it; HAGT_RunSelfTest shows how the current value counts. The older properties GridImportVariableID and so on are moved into Sources on apply.' => 'Eine einzelne Leistung mit Vorzeichen in PowerIn zählt negativ als Einspeisung bzw. Laden, Invert kehrt sie um; HAGT_RunSelfTest zeigt, wie der aktuelle Wert zählt. Die älteren Properties GridImportVariableID und so weiter übernimmt das Modul beim Übernehmen in Sources.',
     'An access without a token gets one on apply (64 hex characters); a token set by script needs at least 24 characters.'                         => 'Ein Zugang ohne Token bekommt beim Übernehmen eines (64 Hex-Zeichen); ein per Skript gesetztes Token braucht mindestens 24 Zeichen.',
     'Room names are the words the user speaks (Küche, Bad oben), without technical additions.'                                                      => 'Raumnamen sind die Wörter, die der Anwender spricht (Küche, Bad oben), ohne technische Zusätze.',
-    // Vorzeichen umkehren (B77, Burkhard 14.10.2026)
-    'InvertGridPower and InvertBatteryPower reverse the sign of a single signed grid or battery power sensor; HAGT_RunSelfTest shows how the current value counts.' => 'InvertGridPower und InvertBatteryPower kehren das Vorzeichen eines einzelnen Netz- oder Batteriesensors mit Vorzeichen um; HAGT_RunSelfTest zeigt, wie der aktuelle Wert zählt.',
-    // Weitere Quellen der Bilanz (B82 Stufe b, 17.10.2026)
-    'The property Sources is an optional JSON list of further sources (Type grid, solar or battery, Name, EnergyIn, EnergyOut, PowerIn, PowerOut, Invert) that count together with the fields of their kind; solar only has EnergyIn and PowerIn.' => 'Die Property Sources ist eine wahlweise JSON-Liste weiterer Quellen (Type grid, solar oder battery, Name, EnergyIn, EnergyOut, PowerIn, PowerOut, Invert), die mit den Feldern ihrer Art zusammen zählen; solar hat nur EnergyIn und PowerIn.',
     // Zähler mit „gemessen von“ (B82, 17.10.2026)
     'water_leak, temperature, humidity, air_quality, measurement, meter.' => 'water_leak, temperature, humidity, air_quality, measurement, meter.',
     'The type meter (a sub-distribution, wallbox or flat meter) needs EnergyVariableID and never counts in a device total. MeteredBy is the EnergyVariableID of the meter above a device or meter (0 = none); the answers name per meter what is measured below it and the rest.' => 'Der Typ meter (Unterverteilung, Wallbox, Wohnungszähler) braucht EnergyVariableID und zählt nie in einer Gerätesumme. MeteredBy ist die EnergyVariableID des Zählers über einem Gerät oder Zähler (0 = keiner); die Antworten nennen je Zähler, was darunter gemessen ist, und den Rest.',
@@ -602,7 +600,7 @@ pruefe(!in_array('RoomChoice', $spalten, true), 'keine Spalte RoomChoice: ' . im
 $oben = $formular['elements'];
 $bereiche = array_values(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel'));
 $inhalt = array_map(static fn (array $b): array => array_values(array_filter(array_column($b['items'], 'name'))), $bereiche);
-pruefe(count($bereiche) === 6 && $inhalt[0] === ['Accesses', 'ConnectHeading', 'PanelClaude', 'PanelHA', 'PanelOther'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['RoomsMissing', 'Devices'] && $inhalt[3] === ['Scenes'] && in_array('GridImportVariableID', array_column(flach($bereiche[4]['items']), 'name'), true) && in_array('Problems', array_column(flach($bereiche[5]['items']), 'name'), true), 'sechs Bereiche in dieser Reihenfolge, zuletzt „Was nicht geklappt hat“: ' . json_encode($inhalt));
+pruefe(count($bereiche) === 6 && $inhalt[0] === ['Accesses', 'ConnectHeading', 'PanelClaude', 'PanelHA', 'PanelOther'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['RoomsMissing', 'Devices'] && $inhalt[3] === ['Scenes'] && in_array('Sources', array_column(flach($bereiche[4]['items']), 'name'), true) && in_array('Problems', array_column(flach($bereiche[5]['items']), 'name'), true), 'sechs Bereiche in dieser Reihenfolge, zuletzt „Was nicht geklappt hat“: ' . json_encode($inhalt));
 pruefe(array_values(array_filter(array_column(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') !== 'ExpansionPanel'), 'name'))) === [], 'oben steht außer den Bereichen nur Erklärtext, kein Feld: ' . json_encode(array_column($oben, 'name')));
 // Burkhard, 10.10.2026: einheitlich zugeklappt, und jeder Bereich merkt sich seinen Zustand
 $zustand = static fn (): array => array_map(static fn (array $b): bool => ($b['expanded'] ?? false) === true, array_values(array_filter(json_decode($m->GetConfigurationForm(), true)['elements'], static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel')));
@@ -1044,45 +1042,23 @@ AC_AddLoggedValues($archiv, $praesenz, array_map(static fn (int $i): array => ['
 $reihe = oderNull(static fn () => $m->testBackend()->stateSeries($praesenz, $beginn, $beginn + 12000 * 600));
 pruefe(count($reihe['changes'] ?? []) === 12000 && ($reihe['changes'][0] ?? null) === [$beginn + 60, true] && ($reihe['changes'][11999][0] ?? 0) === $beginn + 60 + 11999 * 600, 'stateSeries mit 12000 Änderungen: alle, die erste zuerst: ' . count($reihe['changes'] ?? []) . ' / ' . json_encode($reihe['changes'][0] ?? null));
 
-/* --- Energiebilanz (09.10.2026): fünf Zählerfelder, Hausverbrauch wie bei HA ------------------ */
+/* --- Energiebilanz (09.10.2026, seit B82 als Liste der Quellen): Hausverbrauch wie bei HA ------- */
 
+// Seit B82 (Burkhard 17.10.2026) steht die Bilanz nur noch in der Liste „Quellen“, eine Zeile je Netzanschluss, PV-Anlage
+// oder Batterie. Die Felder der Bilanz gibt es im Formular nicht mehr, die Properties bleiben für die Übernahme.
 $bilanzFelder = ['GridImportVariableID', 'GridExportVariableID', 'SolarVariableID', 'BatteryChargeVariableID', 'BatteryDischargeVariableID'];
-$eigenschaften = [];
-foreach ($bilanzFelder as $feld) {
-    try {
-        $eigenschaften[$feld] = IPS_GetProperty($iid, $feld);
-    } catch (Throwable) {
-        $eigenschaften[$feld] = null;
-    }
-}
-pruefe($eigenschaften === array_fill_keys($bilanzFelder, 0), 'fünf Properties für die Bilanz, anfangs leer: ' . json_encode($eigenschaften));
+$leistungFelder = ['GridImportPowerVariableID', 'GridExportPowerVariableID', 'SolarPowerVariableID', 'BatteryChargePowerVariableID', 'BatteryDischargePowerVariableID'];
 $formular = json_decode($m->GetConfigurationForm(), true);
-$namen = [];
-$sammle = static function (array $liste) use (&$sammle, &$namen): void {
-    foreach ($liste as $e) {
-        if (is_array($e)) {
-            if (isset($e['name']) && is_string($e['name'])) {
-                $namen[] = $e['name'];
-            }
-            $sammle($e['items'] ?? []);
-        }
-    }
-};
-$sammle($formular['elements']);
-pruefe(array_diff($bilanzFelder, $namen) === [], 'das Formular hat die fünf Felder: fehlen ' . implode(', ', array_diff($bilanzFelder, $namen)));
-
-$setzeBilanz = static function (array $werte) use ($iid, $bilanzFelder): void {
-    foreach ($bilanzFelder as $feld) {
-        try {
-            IPS_SetProperty($iid, $feld, $werte[$feld] ?? 0);
-        } catch (Throwable) {
-        }
-    }
+$namen = array_column(flach($formular['elements']), 'name');
+pruefe(in_array('Sources', $namen, true) && array_intersect(array_merge($bilanzFelder, $leistungFelder, ['InvertGridPower', 'InvertBatteryPower']), $namen) === [], 'die Bilanz steht im Formular nur als Liste, ohne die alten Felder: ' . json_encode(array_values(array_intersect(array_merge($bilanzFelder, $leistungFelder, ['InvertGridPower', 'InvertBatteryPower']), $namen))));
+$bilanzZeile = static fn (string $art, string $name, int $ein = 0, int $aus = 0, int $leistungEin = 0, int $leistungAus = 0, bool $umkehren = false): array => ['Type' => $art, 'Name' => $name, 'EnergyIn' => $ein, 'EnergyOut' => $aus, 'PowerIn' => $leistungEin, 'PowerOut' => $leistungAus, 'Invert' => $umkehren];
+$setzeBilanz = static function (array $zeilen) use ($iid): void {
+    IPS_SetProperty($iid, 'Sources', json_encode($zeilen));
     IPS_ApplyChanges($iid);
 };
 // Nur Bilanz, kein Gerät mit Zähler: period gibt es trotzdem, und die Beschreibung nennt das ganze Haus
 IPS_SetProperty($iid, 'Devices', json_encode([['EnergyVariableID' => 0] + $entfeuchter]));
-$setzeBilanz(['GridImportVariableID' => $zaehler]);
+$setzeBilanz([$bilanzZeile('grid', 'Grid', $zaehler)]);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'mit Netzbezug aktiv');
 $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
 $periode = $werkzeuge['get_state']['inputSchema']['properties']['period'] ?? [];
@@ -1100,107 +1076,45 @@ pruefe(($mitApps['show_chart']['inputSchema']['properties']['part']['enum'] ?? n
 // Ringe für Autarkie und Eigenverbrauch (Anregung pitti, t/144633, 13.10.2026)
 pruefe(str_contains($mitApps['show_chart']['description'] ?? '', 'with self-sufficiency and self-consumed solar as rings'), 'show_chart nennt die Ringe: ' . ($mitApps['show_chart']['description'] ?? ''));
 pruefe(!in_array('now', $mitApps['show_chart']['inputSchema']['properties']['period']['enum'] ?? ['now'], true), 'ohne Leistungsbilanz kein now im Diagramm');
-$setzeBilanz(['GridImportVariableID' => $zaehler, 'SolarVariableID' => $leistung]);
-pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: solar production POWER is not archived as a counter, so there is no house consumption'), 'Selbsttest: Bilanzzähler nicht als Zähler archiviert: ' . $m->RunSelfTest());
-$setzeBilanz(['GridImportVariableID' => $zaehler, 'BatteryChargeVariableID' => 59995]);
-pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Energy balance: variable for battery charge does not exist'), 'gelöschter Bilanzzähler: aktiv, das Log nennt ihn');
+$setzeBilanz([$bilanzZeile('grid', 'Grid', $zaehler), $bilanzZeile('solar', 'Solar', $leistung)]);
+pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: solar production "Solar" POWER is not archived as a counter, so there is no house consumption'), 'Selbsttest: Bilanzzähler nicht als Zähler archiviert: ' . $m->RunSelfTest());
+$setzeBilanz([$bilanzZeile('grid', 'Grid', $zaehler), $bilanzZeile('battery', 'Battery', 0, 59995)]);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Source "Battery": variable for battery charge does not exist'), 'gelöschter Bilanzzähler: aktiv, das Log nennt ihn mit Quelle und Teil: ' . implode(' | ', array_slice(array_column($m->logs(), 'Message'), -2)));
 $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
 pruefe(!str_contains($werkzeuge['get_state']['inputSchema']['properties']['period']['description'] ?? '', 'house consumption'), 'eine Bilanz mit gelöschtem Zähler ist gesperrt, period nennt keinen Hausverbrauch mehr: ' . json_encode($werkzeuge['get_state']['inputSchema']['properties']['period'] ?? null));
 pruefe(in_array($zaehler, $m->GetReferenceList(), true), 'die Zähler der Bilanz sind als Referenz gemeldet: ' . json_encode($m->GetReferenceList()));
-// Aktuelle Leistung (09.10.2026): fünf weitere Felder, period=now
+// Aktuelle Leistung (09.10.2026), period=now
 $setzeBilanz([]); // der Abschnitt davor hinterlässt einen gelöschten Bilanzzähler
-$leistungFelder = ['GridImportPowerVariableID', 'GridExportPowerVariableID', 'SolarPowerVariableID', 'BatteryChargePowerVariableID', 'BatteryDischargePowerVariableID'];
-$eigenschaften = [];
-foreach ($leistungFelder as $feld) {
-    try {
-        $eigenschaften[$feld] = IPS_GetProperty($iid, $feld);
-    } catch (Throwable) {
-        $eigenschaften[$feld] = null;
-    }
-}
-pruefe($eigenschaften === array_fill_keys($leistungFelder, 0), 'fünf Properties für die Leistung, anfangs leer: ' . json_encode($eigenschaften));
-pruefe(array_diff($leistungFelder, $namen) === [], 'das Formular hat die fünf Leistungsfelder: fehlen ' . implode(', ', array_diff($leistungFelder, $namen)));
 $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
 $periode = $werkzeuge['get_state']['inputSchema']['properties']['period'] ?? [];
 pruefe(($periode['enum'][0] ?? null) === 'now' && str_contains($periode['description'] ?? '', '"now" gives the current power in W instead.'), 'mit einem Gerät mit Leistung bietet period „now“ an: ' . json_encode($periode));
 pruefe(str_contains($werkzeuge['get_state']['description'] ?? '', '"How much power are we using right now?" → period=now.'), 'die Beschreibung nennt ein Beispiel: ' . ($werkzeuge['get_state']['description'] ?? ''));
 // Mit Leistungsbilanz zeigt show_chart mit period=now die Hausleistung als Ringe (13.10.2026)
-IPS_SetProperty($iid, 'GridImportPowerVariableID', $leistung);
-IPS_ApplyChanges($iid);
+$setzeBilanz([$bilanzZeile('grid', 'Grid', 0, 0, $leistung)]);
 $mitApps = array_column(json_decode((string)json_encode(oderNull(static fn () => \Closure::bind(fn () => $this->tools(null, true), $m, HomeAgent::class)()) ?? []), true), null, 'name');
 pruefe(($mitApps['show_chart']['inputSchema']['properties']['period']['enum'][0] ?? null) === 'now', 'mit Leistungsbilanz: show_chart bietet now an: ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['period'] ?? null));
 pruefe(str_contains($mitApps['show_chart']['description'] ?? '', 'period=now without room, floor, type or name shows the current house power as rings.'), 'show_chart erklärt now: ' . ($mitApps['show_chart']['description'] ?? json_encode(array_keys($mitApps))));
-IPS_SetProperty($iid, 'GridImportPowerVariableID', 0);
-IPS_ApplyChanges($iid);
-foreach ($leistungFelder as $feld) {
-    try {
-        IPS_SetProperty($iid, $feld, $feld === 'GridImportPowerVariableID' ? $zaehler : 0);
-    } catch (Throwable) {
-    }
-}
-IPS_ApplyChanges($iid);
-pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: grid import power ENERGY_COUNTER is in Wh, not a power value, so there is no house power'), 'Selbsttest: ein Zähler im Leistungsfeld: ' . $m->RunSelfTest());
-foreach ($leistungFelder as $feld) {
-    try {
-        IPS_SetProperty($iid, $feld, $feld === 'SolarPowerVariableID' ? 59994 : 0);
-    } catch (Throwable) {
-    }
-}
-IPS_ApplyChanges($iid);
-pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Energy balance: variable for solar power does not exist'), 'gelöschte Leistungsvariable: aktiv, das Log nennt sie');
-foreach ($leistungFelder as $feld) {
-    try {
-        IPS_SetProperty($iid, $feld, 0);
-    } catch (Throwable) {
-    }
-}
-IPS_ApplyChanges($iid);
+$setzeBilanz([$bilanzZeile('grid', 'Grid', 0, 0, $zaehler)]);
+pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: grid import power "Grid" ENERGY_COUNTER is in Wh, not a power value, so there is no house power'), 'Selbsttest: ein Zähler als Leistung: ' . $m->RunSelfTest());
+$setzeBilanz([$bilanzZeile('solar', 'Solar', 0, 0, 59994)]);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Source "Solar": variable for solar power does not exist'), 'gelöschte Leistungsvariable: aktiv, das Log nennt sie');
+$setzeBilanz([]);
 
-// Vorzeichen umkehren (B77, Burkhard 14.10.2026): Der Marstek Venus E meldet positiv = laden. Je ein Haken für den
-// Netzsensor und den Batteriesensor mit Vorzeichen; der Selbsttest nennt den Rohwert und wie er zählt.
-$umkehren = [];
-foreach (['InvertGridPower', 'InvertBatteryPower'] as $feld) {
-    try {
-        $umkehren[$feld] = IPS_GetProperty($iid, $feld);
-    } catch (Throwable) {
-        $umkehren[$feld] = null;
-    }
-}
-pruefe($umkehren === ['InvertGridPower' => false, 'InvertBatteryPower' => false], 'zwei Haken zum Umkehren, anfangs aus: ' . json_encode($umkehren));
-pruefe(array_diff(['InvertGridPower', 'InvertBatteryPower'], $namen) === [], 'das Formular hat beide Haken: fehlen ' . implode(', ', array_diff(['InvertGridPower', 'InvertBatteryPower'], $namen)));
+// Vorzeichen umkehren (B77, Burkhard 14.10.2026): Der Marstek Venus E meldet positiv = laden. Der Haken steht je Zeile;
+// der Selbsttest nennt den Rohwert und wie er zählt.
 $jetzt = static fn (): string => (string)strtok((string)(oderNull(static fn () => \Closure::bind(fn () => $this->deviceIndex()->getState(['period' => 'now'])['text'], $m, HomeAgent::class)()) ?? ''), "\n");
-try {
-    IPS_SetProperty($iid, 'BatteryDischargePowerVariableID', $leistung);
-    IPS_SetProperty($iid, 'InvertBatteryPower', true);
-} catch (Throwable) {
-}
-IPS_ApplyChanges($iid);
+$setzeBilanz([$bilanzZeile('battery', 'Battery', 0, 0, $leistung, 0, true)]);
 $test = $m->RunSelfTest();
-pruefe(str_contains($test, 'Energy balance: battery discharge power POWER reads 26 W now and counts as battery charge 26 W, reversed by the checkbox'), 'Selbsttest: Batterie umgekehrt, positiv zählt als Laden: ' . $test);
+pruefe(str_contains($test, 'Energy balance: battery discharge power "Battery" POWER reads 26 W now and counts as battery charge 26 W, reversed by the checkbox'), 'Selbsttest: Batterie umgekehrt, positiv zählt als Laden: ' . $test);
 pruefe(str_contains($jetzt(), 'battery charge 26 W'), 'get_state period=now zählt die Batterie als Laden: ' . $jetzt());
-try {
-    IPS_SetProperty($iid, 'InvertBatteryPower', false);
-} catch (Throwable) {
-}
-IPS_ApplyChanges($iid);
+$setzeBilanz([$bilanzZeile('battery', 'Battery', 0, 0, $leistung)]);
 $test = $m->RunSelfTest();
-pruefe(str_contains($test, 'Energy balance: battery discharge power POWER reads 26 W now and counts as battery discharge 26 W') && !str_contains($test, 'battery charge 26 W'), 'Selbsttest ohne Haken: positiv zählt als Entladen: ' . $test);
+pruefe(str_contains($test, 'Energy balance: battery discharge power "Battery" POWER reads 26 W now and counts as battery discharge 26 W') && !str_contains($test, 'battery charge 26 W'), 'Selbsttest ohne Haken: positiv zählt als Entladen: ' . $test);
 pruefe(str_contains($jetzt(), 'battery discharge 26 W'), 'get_state ohne Haken: Entladen: ' . $jetzt());
-try {
-    IPS_SetProperty($iid, 'BatteryDischargePowerVariableID', 0);
-    IPS_SetProperty($iid, 'GridImportPowerVariableID', $leistung);
-    IPS_SetProperty($iid, 'InvertGridPower', true);
-} catch (Throwable) {
-}
-IPS_ApplyChanges($iid);
+$setzeBilanz([$bilanzZeile('grid', 'Grid', 0, 0, $leistung, 0, true)]);
 $test = $m->RunSelfTest();
-pruefe(str_contains($test, 'Energy balance: grid import power POWER reads 26 W now and counts as grid export 26 W, reversed by the checkbox'), 'Selbsttest: Netz umgekehrt, positiv zählt als Einspeisung: ' . $test);
-try {
-    IPS_SetProperty($iid, 'GridImportPowerVariableID', 0);
-    IPS_SetProperty($iid, 'InvertGridPower', false);
-} catch (Throwable) {
-}
-IPS_ApplyChanges($iid);
+pruefe(str_contains($test, 'Energy balance: grid import power "Grid" POWER reads 26 W now and counts as grid export 26 W, reversed by the checkbox'), 'Selbsttest: Netz umgekehrt, positiv zählt als Einspeisung: ' . $test);
+$setzeBilanz([]);
 
 // Ein Zähler, der keine Energie zählt (Wasser, Gas), fällt im Selbsttest auf
 $wasser = variable(VARIABLETYPE_FLOAT, 352171.0);
@@ -1211,10 +1125,10 @@ IPS_SetVariableCustomProfile($wasser, 'VoiceControlTest.m3');
 AC_SetLoggingStatus($archiv, $wasser, true);
 AC_SetAggregationType($archiv, $wasser, 1);
 IPS_SetProperty($iid, 'Devices', json_encode([['EnergyVariableID' => $wasser] + $entfeuchter]));
-$setzeBilanz(['GridImportVariableID' => $wasser]);
+$setzeBilanz([$bilanzZeile('grid', 'Grid', $wasser)]);
 $selbsttest = $m->RunSelfTest();
 pruefe(str_contains($selbsttest, 'Note: Keller Entfeuchter: the energy meter WASSER counts in m³, not in kWh, so it is left out of the consumption'), 'Selbsttest: Gerätezähler in m³: ' . $selbsttest);
-pruefe(str_contains($selbsttest, 'Note: energy balance: grid import WASSER counts in m³, not in kWh, so there is no house consumption'), 'Selbsttest: Bilanzzähler in m³: ' . $selbsttest);
+pruefe(str_contains($selbsttest, 'Note: energy balance: grid import "Grid" WASSER counts in m³, not in kWh, so there is no house consumption'), 'Selbsttest: Bilanzzähler in m³: ' . $selbsttest);
 $setzeBilanz([]);
 
 /* --- Heizungs-Sollwert (10.10.2026): Typ thermostat, Bereich aus Profil oder Darstellung ----- */
@@ -3246,56 +3160,108 @@ IPS_ApplyChanges($zid);
 $testZ = $z->RunSelfTest();
 pruefe(str_contains($testZ, 'Device "Schalterleiste" (Wohnzimmer): the meters in "Measured by" measure each other in a circle') && str_contains($testZ, 'Device "Haushalt": the meters in "Measured by" measure each other in a circle'), 'Selbsttest: Kreis: ' . $testZ);
 
-/* --- Weitere Quellen der Energiebilanz (B82 Stufe b) --------------------------------------------- */
+/* --- Quellen der Energiebilanz (B82, Stufe b, als einzige Liste seit 17.10.2026) ----------------- */
 
-// Werte der betreuten Anlage (Fixture betreut_2026-10-14_batterie.json, Zeitpunkt „laden“): Netz 1.077 W, PV 1504 W,
-// Batterie 1112 W (positiv = laden). Hier steht die Batterie nicht im Feld, sondern in der Liste, mit Umkehr.
+// Burkhard 17.10.2026 („Wie kann ich mir Listen und Felder vorstellen? Ist das nicht verwirrend“): ein Ort für alle Quellen,
+// jede mit Namen, der Dialog zeigt je Art die passenden Felder wie der Gerätedialog.
 $q = neueInstanz();
 $qid = (int)(new ReflectionProperty(IPSModuleStrict::class, 'InstanceID'))->getValue($q);
-try {
-    $quellenDa = IPS_GetProperty($qid, 'Sources') === '[]';
-} catch (Throwable) {
-    $quellenDa = false;
+$formularQ = json_decode($q->GetConfigurationForm(), true);
+$bilanzBereich = array_values(array_filter($formularQ['elements'], static fn (array $e): bool => ($e['name'] ?? '') === 'PanelBalance'))[0] ?? [];
+$quellenListe = array_values(array_filter(flach($bilanzBereich['items'] ?? []), static fn (array $e): bool => ($e['name'] ?? '') === 'Sources'))[0] ?? [];
+$spaltenQ = array_column($quellenListe['columns'] ?? [], null, 'name');
+pruefe(($quellenListe['type'] ?? '') === 'List' && array_keys($spaltenQ) === ['Type', 'Name', 'EnergyLabel', 'PowerLabel', 'EnergyIn', 'EnergyOut', 'PowerIn', 'PowerOut', 'Invert'], 'Liste „Quellen“ mit Textspalten und versteckten IDs: ' . json_encode(array_keys($spaltenQ)));
+pruefe(array_keys(array_filter($spaltenQ, static fn (array $c): bool => ($c['visible'] ?? true) !== false)) === ['Type', 'Name', 'EnergyLabel', 'PowerLabel', 'Invert'], 'sichtbar sind Art, Name, Zähler, Leistung und Umkehr: ' . json_encode(array_keys(array_filter($spaltenQ, static fn (array $c): bool => ($c['visible'] ?? true) !== false))));
+pruefe(array_column($spaltenQ['Type']['edit']['options'] ?? [], 'value') === ['grid', 'solar', 'battery'], 'Arten grid, solar, battery');
+pruefe(($quellenListe['form'] ?? null) === "return json_decode(HAGT_UISourceForm(\$id, \$Sources['Type'] ?? 'grid'), true);", 'der Dialog entsteht je Zeile über das Modul: ' . json_encode($quellenListe['form'] ?? null));
+$dialogQ = static fn (string $art): array => array_column(json_decode((string)(oderNull(static fn () => $q->UISourceForm($art)) ?? '[]'), true) ?? [], null, 'name');
+$pv = $dialogQ('solar');
+pruefe(($pv['EnergyIn']['caption'] ?? '') === 'Solar production (energy meter)' && ($pv['PowerIn']['caption'] ?? '') === 'Solar power'
+    && ($pv['EnergyOut']['visible'] ?? true) === false && ($pv['PowerOut']['visible'] ?? true) === false && ($pv['Invert']['visible'] ?? true) === false, 'Dialog PV: nur Ertrag und Leistung: ' . json_encode(array_map(static fn (array $f): array => [$f['caption'] ?? '', $f['visible'] ?? true], $pv)));
+$akku = $dialogQ('battery');
+pruefe(($akku['EnergyIn']['caption'] ?? '') === 'Battery discharge (energy meter)' && ($akku['EnergyOut']['caption'] ?? '') === 'Battery charge (energy meter)'
+    && ($akku['Invert']['visible'] ?? false) === true && str_contains($akku['Invert']['caption'] ?? '', 'positive = charging'), 'Dialog Batterie: entladen, geladen, Umkehr: ' . json_encode(array_map(static fn (array $f): array => [$f['caption'] ?? '', $f['visible'] ?? true], $akku)));
+$netz = $dialogQ('grid');
+pruefe(($netz['EnergyIn']['caption'] ?? '') === 'Grid import (energy meter)' && ($netz['EnergyOut']['caption'] ?? '') === 'Grid export (energy meter)' && str_contains($netz['Invert']['caption'] ?? '', 'positive = grid export')
+    && str_contains($netz['Type']['onChange'] ?? '', 'HAGT_UISourceChanged($id, $Type, $EnergyIn, $EnergyOut, $PowerIn, $PowerOut);') && array_column($netz['Type']['options'] ?? [], 'value') === ['grid', 'solar', 'battery'], 'Dialog Netz: Bezug und Einspeisung, Wechsel der Art meldet sich: ' . json_encode($netz['Type'] ?? null));
+// Wechsel auf PV im offenen Dialog: Felder folgen der Art, die zweiten Werte fallen weg, die Textspalten folgen
+$q->formUpdates = [];
+$bezugQ = variable(VARIABLETYPE_FLOAT, 2000.0);
+IPS_SetName($bezugQ, 'Bezug');
+oderNull(static fn () => $q->UISourceChanged('solar', $bezugQ, $bezugQ, 0, 0));
+pruefe(in_array(['EnergyOut', 'visible', false], $q->formUpdates, true) && in_array(['EnergyOut', 'value', 0], $q->formUpdates, true) && in_array(['EnergyIn', 'caption', 'Solar production (energy meter)'], $q->formUpdates, true)
+    && in_array(['EnergyLabel', 'value', 'Bezug'], $q->formUpdates, true), 'Wechsel auf PV: ' . json_encode($q->formUpdates));
+
+$netzQ = variable(VARIABLETYPE_FLOAT, 1.077);
+$pvQ = variable(VARIABLETYPE_FLOAT, 1504.0);
+$batterieQ = variable(VARIABLETYPE_FLOAT, 1112.0);
+IPS_SetName($batterieQ, 'Battery Power');
+IPS_SetProperty($qid, 'Accesses', json_encode([['Name' => 'Test', 'Token' => str_repeat('d', 32), 'DefaultRoom' => '', 'ReadOnly' => true, 'InPath' => false]]));
+IPS_SetProperty($qid, 'Sources', json_encode([$bilanzZeile('grid', 'Netz', 0, 0, $netzQ), $bilanzZeile('solar', 'Dach', 0, 0, $pvQ), $bilanzZeile('battery', 'Marstek', 0, 0, $batterieQ, 0, true)]));
+IPS_ApplyChanges($qid);
+// Werte der betreuten Anlage (Fixture betreut_2026-10-14_batterie.json, Zeitpunkt „laden“): Netz 1.077 W, PV 1504 W,
+// Batterie 1112 W (positiv = laden).
+$indexQ = oderNull(static fn () => \Closure::bind(fn () => $this->deviceIndex(), $q, HomeAgent::class)());
+$jetztQ = $indexQ instanceof DeviceIndex ? explode("\n", $indexQ->getState(['period' => 'now'])['text'])[0] : '';
+pruefe($jetztQ === 'House power 393 W (all devices, period=now): grid import 1, solar 1504, battery discharge 0, battery charge 1112 W.', 'die Quellen zählen in der Hausleistung, die Batterie umgekehrt: ' . $jetztQ);
+$testQ = $q->RunSelfTest();
+pruefe(str_contains($testQ, 'Energy balance: battery discharge power "Marstek" Battery Power reads 1112 W now and counts as battery charge 1112 W, reversed by the checkbox'), 'der Selbsttest nennt die Quelle mit Namen: ' . $testQ);
+$referenzen = IPS_GetInstance($qid)['References'] ?? oderNull(static fn () => \Closure::bind(fn () => $this->GetReferenceList(), $q, HomeAgent::class)());
+pruefe(is_array($referenzen) && in_array($batterieQ, $referenzen, true), 'die Variable der Liste ist Referenz: ' . json_encode($referenzen));
+$werteQ = array_values(array_filter(flach(json_decode($q->GetConfigurationForm(), true)['elements']), static fn (array $e): bool => ($e['name'] ?? '') === 'Sources'))[0]['values'] ?? [];
+pruefe(($werteQ[2]['PowerLabel'] ?? '') === 'Battery Power / -' && ($werteQ[1]['EnergyLabel'] ?? '') === '-', 'die Textspalten nennen die Variablen: ' . json_encode($werteQ));
+// Nur eine PV-Anlage: show_chart bietet part=pv an
+$zaehlerQ = variable(VARIABLETYPE_FLOAT, 110100.0);
+IPS_SetProperty($qid, 'Sources', json_encode([$bilanzZeile('solar', 'Garage', $zaehlerQ)]));
+IPS_ApplyChanges($qid);
+$werkzeugeQ = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(null, true), $q, HomeAgent::class)()), true), null, 'name');
+pruefe(in_array('pv', $werkzeugeQ['show_chart']['inputSchema']['properties']['part']['enum'] ?? [], true), 'eine PV-Anlage in der Liste: part=pv: ' . json_encode($werkzeugeQ['show_chart']['inputSchema']['properties']['part'] ?? null));
+// Fehler: PV mit zweitem Zähler, gelöschte Variable; dann ist die Bilanz gesperrt
+IPS_SetProperty($qid, 'Sources', json_encode([$bilanzZeile('solar', 'Garage', $zaehlerQ, $zaehlerQ), $bilanzZeile('grid', 'Tibber', 59997)]));
+IPS_ApplyChanges($qid);
+$testQ = $q->RunSelfTest();
+pruefe(str_contains($testQ, 'Source "Garage": a solar plant has only its production, no second meter or power'), 'Selbsttest: PV mit zweitem Zähler: ' . $testQ);
+pruefe(str_contains($testQ, 'Source "Tibber": variable for grid import does not exist'), 'Selbsttest: gelöschte Variable mit dem Teil der Bilanz: ' . $testQ);
+$werkzeugeQ = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(null, true), $q, HomeAgent::class)()), true), null, 'name');
+pruefe(!isset($werkzeugeQ['get_state']['inputSchema']['properties']['period']), 'eine fehlerhafte Quelle sperrt die Bilanz: ' . json_encode(array_keys($werkzeugeQ['get_state']['inputSchema']['properties'] ?? [])));
+
+// Übernahme der alten Felder: Beim Übernehmen wandern sie als benannte Zeilen vor die Liste, die Felder werden leer.
+// Orakel ist die Rechnung der Bibliothek mit den Feldern (Konstruktor wie bis build 191); die Zahlen müssen gleich sein.
+$u = neueInstanz();
+$uid = (int)(new ReflectionProperty(IPSModuleStrict::class, 'InstanceID'))->getValue($u);
+$f = ['GridImportVariableID' => variable(VARIABLETYPE_FLOAT, 100.0), 'GridExportVariableID' => variable(VARIABLETYPE_FLOAT, 50.0), 'SolarVariableID' => variable(VARIABLETYPE_FLOAT, 300.0),
+    'BatteryChargeVariableID' => variable(VARIABLETYPE_FLOAT, 20.0), 'BatteryDischargeVariableID' => variable(VARIABLETYPE_FLOAT, 10.0),
+    'GridImportPowerVariableID' => variable(VARIABLETYPE_FLOAT, -500.0), 'SolarPowerVariableID' => variable(VARIABLETYPE_FLOAT, 1500.0),
+    'BatteryChargePowerVariableID' => variable(VARIABLETYPE_FLOAT, 200.0), 'BatteryDischargePowerVariableID' => variable(VARIABLETYPE_FLOAT, 0.0)];
+$garage = $bilanzZeile('solar', 'Garage', 0, 0, variable(VARIABLETYPE_FLOAT, 700.0));
+$orakel = new DeviceIndex([], $u->testBackend(), null, '', array_combine(array_keys(DeviceIndex::BALANCE), array_map(static fn (string $p): int => $f[$p] ?? 0, DeviceIndex::BALANCE)),
+    array_combine(array_keys(DeviceIndex::BALANCE_POWER), array_map(static fn (string $p): int => $f[$p] ?? 0, DeviceIndex::BALANCE_POWER)));
+$orakel->setInvertedPower(['import']);
+$orakel->addSources([$garage]);
+$zahlen = static fn (string $text): string => (string)preg_replace('/ \(of this [^)]*\)/', '', (string)strtok($text, "\n"));
+$erwartet = $zahlen($orakel->getState(['period' => 'now'])['text']);
+IPS_SetProperty($uid, 'Accesses', json_encode([['Name' => 'Test', 'Token' => str_repeat('e', 32), 'DefaultRoom' => '', 'ReadOnly' => true, 'InPath' => false]]));
+foreach ($f as $property => $variableId) {
+    IPS_SetProperty($uid, $property, $variableId);
 }
-pruefe($quellenDa, 'Property Sources, leer');
-if ($quellenDa) {
-    $formularQ = json_decode($q->GetConfigurationForm(), true);
-    $bilanzBereich = array_values(array_filter($formularQ['elements'], static fn (array $e): bool => ($e['name'] ?? '') === 'PanelBalance'))[0] ?? [];
-    $quellenListe = array_values(array_filter(flach($bilanzBereich['items'] ?? []), static fn (array $e): bool => ($e['name'] ?? '') === 'Sources'))[0] ?? [];
-    pruefe(($quellenListe['type'] ?? '') === 'List' && array_column($quellenListe['columns'] ?? [], 'name') === ['Type', 'Name', 'EnergyIn', 'EnergyOut', 'PowerIn', 'PowerOut', 'Invert']
-        && array_column(array_column($quellenListe['columns'], null, 'name')['Type']['edit']['options'] ?? [], 'value') === ['grid', 'solar', 'battery'], 'Liste „Weitere Quellen“ in der Energiebilanz: ' . json_encode(array_column($quellenListe['columns'] ?? [], 'name')));
-    $netzQ = variable(VARIABLETYPE_FLOAT, 1.077);
-    $pvQ = variable(VARIABLETYPE_FLOAT, 1504.0);
-    $batterieQ = variable(VARIABLETYPE_FLOAT, 1112.0);
-    IPS_SetName($batterieQ, 'Battery Power');
-    IPS_SetProperty($qid, 'Accesses', json_encode([['Name' => 'Test', 'Token' => str_repeat('d', 32), 'DefaultRoom' => '', 'ReadOnly' => true, 'InPath' => false]]));
-    IPS_SetProperty($qid, 'GridImportPowerVariableID', $netzQ);
-    IPS_SetProperty($qid, 'SolarPowerVariableID', $pvQ);
-    IPS_SetProperty($qid, 'Sources', json_encode([['Type' => 'battery', 'Name' => 'Marstek', 'EnergyIn' => 0, 'EnergyOut' => 0, 'PowerIn' => $batterieQ, 'PowerOut' => 0, 'Invert' => true]]));
-    IPS_ApplyChanges($qid);
-    $indexQ = oderNull(static fn () => \Closure::bind(fn () => $this->deviceIndex(), $q, HomeAgent::class)());
-    $jetztQ = $indexQ instanceof DeviceIndex ? explode("\n", $indexQ->getState(['period' => 'now'])['text'])[0] : '';
-    pruefe($jetztQ === 'House power 393 W (all devices, period=now): grid import 1, solar 1504, battery discharge 0, battery charge 1112 W.', 'die Batterie der Liste zählt in der Hausleistung, umgekehrt: ' . $jetztQ);
-    $testQ = $q->RunSelfTest();
-    pruefe(str_contains($testQ, 'Energy balance: battery discharge power "Marstek" Battery Power reads 1112 W now and counts as battery charge 1112 W, reversed by the checkbox'), 'der Selbsttest nennt die Quelle mit Namen: ' . $testQ);
-    $referenzen = IPS_GetInstance($qid)['References'] ?? oderNull(static fn () => \Closure::bind(fn () => $this->GetReferenceList(), $q, HomeAgent::class)());
-    pruefe(is_array($referenzen) && in_array($batterieQ, $referenzen, true), 'die Variable der Liste ist Referenz: ' . json_encode($referenzen));
-    // Nur eine PV-Anlage in der Liste, kein Feld: show_chart bietet part=pv an
-    $zaehlerQ = variable(VARIABLETYPE_FLOAT, 110100.0);
-    IPS_SetProperty($qid, 'Sources', json_encode([['Type' => 'solar', 'Name' => 'Garage', 'EnergyIn' => $zaehlerQ, 'EnergyOut' => 0, 'PowerIn' => 0, 'PowerOut' => 0, 'Invert' => false]]));
-    IPS_ApplyChanges($qid);
-    $werkzeugeQ = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(null, true), $q, HomeAgent::class)()), true), null, 'name');
-    pruefe(in_array('pv', $werkzeugeQ['show_chart']['inputSchema']['properties']['part']['enum'] ?? [], true), 'eine PV-Anlage nur in der Liste: part=pv: ' . json_encode($werkzeugeQ['show_chart']['inputSchema']['properties']['part'] ?? null));
-    // Fehler: PV mit zweitem Zähler, gelöschte Variable; dann ist die Bilanz gesperrt
-    IPS_SetProperty($qid, 'Sources', json_encode([['Type' => 'solar', 'Name' => 'Garage', 'EnergyIn' => $zaehlerQ, 'EnergyOut' => $zaehlerQ, 'PowerIn' => 0, 'PowerOut' => 0, 'Invert' => false],
-        ['Type' => 'grid', 'Name' => 'Tibber', 'EnergyIn' => 59997, 'EnergyOut' => 0, 'PowerIn' => 0, 'PowerOut' => 0, 'Invert' => false]]));
-    IPS_ApplyChanges($qid);
-    $testQ = $q->RunSelfTest();
-    pruefe(str_contains($testQ, 'Source "Garage": a solar plant has only its production, no second meter or power'), 'Selbsttest: PV mit zweitem Zähler: ' . $testQ);
-    pruefe(str_contains($testQ, 'Source "Tibber": variable for energy (import, production or discharge) does not exist'), 'Selbsttest: gelöschte Variable: ' . $testQ);
-    $werkzeugeQ = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(null, true), $q, HomeAgent::class)()), true), null, 'name');
-    pruefe(!isset($werkzeugeQ['get_state']['inputSchema']['properties']['period']), 'eine fehlerhafte Quelle sperrt die Bilanz: ' . json_encode(array_keys($werkzeugeQ['get_state']['inputSchema']['properties'] ?? [])));
-}
+IPS_SetProperty($uid, 'InvertGridPower', true);
+IPS_SetProperty($uid, 'Sources', json_encode([$garage]));
+IPS_ApplyChanges($uid);
+$uebernommen = json_decode((string)IPS_GetProperty($uid, 'Sources'), true);
+pruefe($uebernommen === [
+    $bilanzZeile('grid', 'Grid', $f['GridImportVariableID'], $f['GridExportVariableID'], $f['GridImportPowerVariableID'], 0, true),
+    $bilanzZeile('solar', 'Solar', $f['SolarVariableID'], 0, $f['SolarPowerVariableID']),
+    $bilanzZeile('battery', 'Battery', $f['BatteryDischargeVariableID'], $f['BatteryChargeVariableID'], $f['BatteryDischargePowerVariableID'], $f['BatteryChargePowerVariableID']),
+    $garage,
+], 'Übernahme: die Felder stehen als Zeilen vor der Liste: ' . json_encode($uebernommen));
+$leer = array_filter(array_map(static fn (string $p): mixed => IPS_GetProperty($uid, $p), array_merge(array_keys($f), ['InvertGridPower', 'InvertBatteryPower'])));
+pruefe($leer === [], 'Übernahme: die alten Felder sind danach leer: ' . json_encode($leer));
+$indexU = oderNull(static fn () => \Closure::bind(fn () => $this->deviceIndex(), $u, HomeAgent::class)());
+$gerechnet = $indexU instanceof DeviceIndex ? $zahlen($indexU->getState(['period' => 'now'])['text']) : '';
+pruefe($gerechnet === $erwartet && $erwartet !== '', 'Übernahme ändert die Hausleistung nicht: ' . $gerechnet . ' / Orakel ' . $erwartet);
+IPS_ApplyChanges($uid);
+pruefe(count(json_decode((string)IPS_GetProperty($uid, 'Sources'), true)) === 4, 'ein zweites Übernehmen übernimmt nichts doppelt');
+pruefe(IPS_GetInstance($uid)['InstanceStatus'] === IS_ACTIVE, 'nach der Übernahme aktiv: ' . IPS_GetInstance($uid)['InstanceStatus']);
 
 /* --- Vorlagen am Modul (Prompts, Backlog B63) ---------------------------------------------------- */
 

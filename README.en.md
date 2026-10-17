@@ -273,9 +273,11 @@ the self-test points this out. A counter in a unit other than Wh, kWh or MWh, su
 the parameter if at least one released device has an energy meter or the energy balance is set up.
 
 The module calculates the consumption of the whole house from the **energy balance**:
-grid import + solar production + battery discharge − grid export − battery charge. You
-enter the five counters in the "Energy balance" section of the form; each must be archived as a
-counter. Without solar and battery the grid import is enough. If the assistant asks without room, floor,
+grid import + solar production + battery discharge − grid export − battery charge. The "Energy
+balance" section of the form holds the list **Sources** for this, one row per grid connection, solar plant
+and battery. The dialog of a row shows the fields of its type: import and export for the grid, the production
+for a solar plant, discharge and charge for a battery, each as an energy meter and optionally as a power. Each
+energy meter must be archived as a counter. Without solar and battery one grid row with the import is enough. If the assistant asks without room, floor,
 type and name (with `room=all` for an access with a default room), the first line reads, for example, "House consumption 774.8 kWh (all devices,
 period=last_month): grid import 122.7, solar 1356.8, battery discharge 285, grid export 658.7, battery
 charge 330.9 kWh." Devices with their own energy meter are part of it and are not added: "Of this,
@@ -286,12 +288,10 @@ and self-consumption follows: "Self-sufficiency 84 %, self-consumed solar 51 %."
 answer lists only the five largest consumers and sums up the rest ("5 more device(s) together
 25.6 kWh."); asked for a room, all devices follow in the order of the list.
 
-If you have more than one solar plant or battery or a second grid connection, enter the further ones in the list
-**Further sources** below the fields: per row the type (grid, solar, battery), a name, the energy meters and
-optionally the powers. The balance counts each row together with the fields of its kind, also backwards from the
-archive, and the answer names the named sources in brackets, for example "solar … (of this Garage …)". A solar plant
-only has its production. A single power with a sign counts like the field, "Reverse sign" turns it around, and the
-self test names it with the name of the source. If a row has an error, the whole balance is disabled.
+Several solar plants, batteries or grid connections each get a row of their own. The balance adds up the rows of a
+type, also backwards from the archive, and the answer then names them, for example "solar … (of this Roof …,
+Garage …)". If a row has an error, the whole balance is disabled. If the balance used to be in single fields, you
+will find it as the rows "Grid", "Solar" and "Battery" in the list after the update; you may rename them.
 
 Enter a sub-distribution, a wallbox or a flat meter as type **Meter**, with its energy meter and optionally its
 power. A meter never counts in a device total, it has a line of its own. In the field "Measured by" you choose for
@@ -326,15 +326,15 @@ year?" with a chart.
 
 With `period=now`, **get_state** reports the power right now in W, built like the consumption: the
 current value of each device with power, plus the total. For the whole house the module calculates the
-house power from the five power fields of the energy balance, for example "House power 1548 W (all
+house power from the powers of the sources, for example "House power 1548 W (all
 devices, period=now): grid import 27, solar 0, battery discharge 1521, grid export 0, battery charge
 0 W." and "Of this, 750 W by 11 of 11 device(s) with power measurement, 798 W not metered." W, kW and
-MW are converted; without a unit, W is assumed. If you only have one signed grid sensor, enter it as
-grid import (negative means export); a signed battery sensor goes into battery discharge (negative
-means charging). If a sensor reports the other way round, for example a battery that counts positive
-while charging, tick "Reverse sign" below it. The self-test then shows the current value and how it
-counts ("Energy balance: battery discharge power Battery Power reads 1112 W now and counts as battery
-charge 1112 W, reversed by the checkbox").
+MW are converted; without a unit, W is assumed. If you only have one signed grid sensor, enter it in the
+field "Grid import power" (negative means export); a signed battery sensor goes into "Battery discharge
+power" (negative means charging). If a sensor reports the other way round, for example a battery that counts
+positive while charging, tick "Reverse sign" in its row. The self-test then shows the current value of each
+source and how it counts ("Energy balance: battery discharge power "Marstek" Battery Power reads 1112 W now and
+counts as battery charge 1112 W, reversed by the checkbox").
 
 For measured values (temperature, humidity, air quality, other measurements and the current
 temperature of a thermostat) the same periods return the **history**: minimum, average and maximum per
@@ -613,7 +613,7 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
   for example a script or another module, reads them as well.
 - The protocol for troubleshooting contains room and device names and the answers to the assistants. Whoever
   can read the log directory of Symcon reads it as well. Tokens and pairing codes are not in it.
-- The further sources count in charts, but there is no colour of their own per source yet.
+- Several sources of one type count together in charts, there is no colour of their own per source yet.
 - Meters do not appear in any chart yet. The consumption chart of the house still shows the devices and, as "not
   metered", the rest against all devices.
 - The script functions know neither default room nor floor. They exist for state, switching, setting

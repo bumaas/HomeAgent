@@ -229,8 +229,8 @@ Drei Werkzeuge: `get_state`, `set_state`, `run_scene`. Alle tragen `openWorldHin
   Archiv-Aggregaten, `period=now` die Leistung; fürs ganze Haus aus der Energiebilanz (Bezug + PV +
   Batterie entladen − Einspeisung − Batterie geladen), mit Autarkie und den fünf größten Geräten.
   Ein einzelner Netz- bzw. Batteriesensor mit Vorzeichen zählt wie bei Home Assistant (negativ = Einspeisung bzw.
-  laden); die Haken `InvertGridPower` und `InvertBatteryPower` drehen das um (B77, `DeviceIndex::setInvertedPower`,
-  nur ohne eigenes Gegenfeld). Anlass: Der Marstek Venus E meldet positiv = laden; die Hausleistung lag damit um das
+  laden); der Haken „Vorzeichen umkehren“ der Zeile dreht das um (B77, `Invert` in `Sources`, nur ohne eigenes Gegenfeld;
+  bis build 191 `InvertGridPower`/`InvertBatteryPower`, in der Bibliothek weiter `DeviceIndex::setInvertedPower`). Anlass: Der Marstek Venus E meldet positiv = laden; die Hausleistung lag damit um das
   Doppelte der Ladeleistung zu hoch. Der Selbsttest nennt je Sensor mit Vorzeichen Rohwert und Zählweise
   (`signedPowers`). Test `check-vorzeichen.php`, Orakel ist der Verbrauch aus einem Skript des Anwenders. Seit B77
   gibt es die Hausleistung jetzt auch ohne freigegebene Geräte (`houseOnly` mit `period=now`).
@@ -465,17 +465,25 @@ Weitere Regeln, die nicht offensichtlich sind:
   Diagramme kennen Zähler noch nicht, `deviceChart` bekommt nur Geräte. Das Verworfene unter „Teil der Bilanz“ (Zähler der
   Bilanz als Geräte) bleibt verworfen: Erzeugung gehört in die Bilanz, ein `meter` misst nur Verbrauch. Test
   `check-zaehler.php` mit `nuc_2026-10-17_zaehler.json` (Werte echt, Verschachtelung angenommen, rechnerisch belegt).
-- **Weitere Quellen der Bilanz** (B82 Stufe b, Micha87 17.10.2026: drei PV-Anlagen mit je einem Zähler): Property
+- **Quellen der Bilanz** (B82 Stufe b, Micha87 17.10.2026: drei PV-Anlagen mit je einem Zähler): Property
   `Sources` (Liste mit Type grid/solar/battery, Name, EnergyIn, EnergyOut, PowerIn, PowerOut, Invert), an den Index über
-  `DeviceIndex::addSources`, Zuordnung zu den Schlüsseln in `SOURCE_KEYS`. Die Felder der Bilanz bleiben, wie sie sind
-  (keine Übernahme nötig, wer eine Anlage hat, sieht nur eine leere Liste); geplant waren Listen statt der Felder, der
-  Umbau hätte jede bestehende Instanz umgeschrieben. Intern zählen `balanceVars`/`powerVars` je Schlüssel alle Variablen,
+  `DeviceIndex::addSources`, Zuordnung zu den Schlüsseln in `SOURCE_KEYS`. Seit build 192 ist sie der einzige Ort der
+  Bilanz (Burkhard 17.10.2026 zu build 191 mit Liste neben den Feldern: „Ist das nicht verwirrend“). Die alten Properties
+  (`DeviceIndex::BALANCE`, `BALANCE_POWER`, `InvertGridPower`, `InvertBatteryPower`) bleiben registriert:
+  `legacySources()` macht daraus je Art eine Zeile mit dem Namen der Art (ein einzelnes Leistungsfeld ohne Gegenfeld
+  ist wie eine Zeile mit PowerIn ohne PowerOut ein Sensor mit Vorzeichen, also dieselbe Rechnung), `sources()` rechnet
+  sie mit, und `ApplyChanges` schreibt sie vor die Liste, leert die Felder und übernimmt über den einmaligen Timer
+  erneut (auch ein Skript, das noch die alten Properties setzt, landet so in der Liste). Test in `check-module.php`:
+  Orakel ist die Rechnung der Bibliothek mit den Feldern im Konstruktor. Der Dialog entsteht je Art über
+  `UISourceForm`/`UISourceChanged` wie der Gerätedialog (bei PV werden zweiter Zähler, zweite Leistung und Umkehr
+  geleert), sichtbar sind die Textspalten `EnergyLabel` und `PowerLabel` (`sourceLabels`). Das Modul übergibt dem
+  Index keine Felder mehr. Intern zählen `balanceVars`/`powerVars` je Schlüssel alle Variablen,
   `$this->balance` bleibt die Anwesenheit (das Feld oder die erste Zeile), damit Diagramme, Kosten, Teile und Ringe
   unverändert über `balanceParts`/`houseConsumption`/`housePower` laufen. `partText` nennt bei mehreren Variablen die
-  benannten („Netzbezug 0.2 (davon Tibber 0.1)“). Vorzeichen: Ein Feld zählt wie bisher (Gegenfeld nur unter den Feldern,
-  `powerFields`), eine Zeile mit PowerIn ohne PowerOut ist ein Sensor mit Vorzeichen, Invert je Zeile (`signedOf`);
-  `signedPowers` nennt `source`. Fehler (`sourceProblems`: unknown_type, empty, solar_out, dazu fehlende Variablen) sperren
-  die ganze Bilanz (`usableBalance` prüft `sourcesUsable`), Anwesenheit im Modul über `balanceKeys`. Test
+  benannten („Netzbezug 0.2 (davon Tibber 0.1)“). Vorzeichen: Eine Zeile mit PowerIn ohne PowerOut ist ein Sensor mit
+  Vorzeichen, Invert je Zeile (`signedOf`; Felder im Konstruktor der Bibliothek wie bis build 191 über `powerFields`);
+  `signedPowers` nennt `source`. Fehler (`sourceProblems`: unknown_type, empty, solar_out, dazu fehlende Variablen mit
+  dem Teil der Bilanz) sperren die ganze Bilanz (`sourcesUsable`), Anwesenheit im Modul über `balanceKeys`. Test
   `check-quellen.php`: Orakel „ein Eintrag in der Liste statt im Feld ändert nichts“ (nuc, betreute Anlage), zwei
   Netzanschlüsse mit dem Tibber Pulse (Werte echt, Anordnung angenommen); echte Daten mehrerer PV-Anlagen fehlen noch.
 - **Datum und Uhrzeit** hängt das Modul an jede Antwort von `get_state` (`withNow()` in `module.php`, nicht in
