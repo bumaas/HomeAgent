@@ -494,6 +494,11 @@ Weitere Regeln, die nicht offensichtlich sind:
   Teils die Abschnitte. Im Stapel des Hauses teilt `houseChart` PV direkt auf die Anlagen im Verhältnis ihres Ertrags je
   Abschnitt (wer einspeist oder lädt, misst niemand), mit `part` bekommt jede Quelle eine Reihe; Reihen tragen `source`
   und `shade`, die Seite färbt nach `SOURCE_SHADES` (`DESIGN.md`). Die Ringe bleiben je Art.
+  **Das erste Aggregat eines Zählers trägt den Zeitpunkt seines ersten Satzes** (`AC_GetAggregatedValues`, auf jeder
+  Stufe: Hoymiles Monat ab 14.09.2025 11:00, Batterie Tag ab 20.05.2026 15:45). Mehrere Zähler übereinander bekamen
+  dadurch eine eigene Säule (Hardcopy Burkhard 17.10.2026: 13 Monate, „Warum fehlt hier der Septemberwert für
+  Huawei?“). Deshalb liest `DeviceIndex` Reihen nur über `counterRows` und `historyRows`, die jeden Zeitpunkt auf den
+  Beginn seines Abschnitts setzen (`sectionStart`), nie direkt über `counterSeries`/`history` des Backends.
 - **Datum und Uhrzeit** hängt das Modul an jede Antwort von `get_state` (`withNow()` in `module.php`, nicht in
   `DeviceIndex`, damit Skriptfunktionen und Bibliothekstests ohne sie bleiben). In Anleitung oder Werkzeugliste
   veraltete sie, weil Claude-App und HA beides lange zwischenspeichern.

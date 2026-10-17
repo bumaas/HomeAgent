@@ -1056,7 +1056,7 @@ final class DeviceIndex
                 'labels' => ['minimum' => $this->t('minimum'), 'average' => $this->t('average'), 'maximum' => $this->t('maximum'), 'per' => $this->t($per), 'band' => $this->t('band from minimum to maximum')]];
         }
         foreach ($measured as $entry) {
-            $history = $this->backend->history($entry['roles']['state'], $level, $from, $to);
+            $history = $this->historyRows($entry['roles']['state'], $level, $from, $to);
             if ($history === null) {
                 $lines[] = $this->line($entry, $this->t('no history archived'));
                 continue;
@@ -1200,7 +1200,7 @@ final class DeviceIndex
             $entryOf = fn (int $index): array => $this->entries[$index];
             if ($tree !== null && $metered === [] && count($meters) === 1) {
                 $meter = $meters[0];
-                $own = $this->backend->counterSeries($meter['roles']['energy'], $chartLevel, $from, $to);
+                $own = $this->counterRows($meter['roles']['energy'], $chartLevel, $from, $to);
                 $total = [];
                 foreach ($own === null ? [] : $own['rows'] as $row) {
                     $total[$row['time']] = (float)self::kilowattHours(['sum' => $row['sum'], 'unit' => $own['unit']]);
@@ -1407,7 +1407,7 @@ final class DeviceIndex
             }
             // Mehrere Quellen einer Art (B82 Stufe b) zählen je Abschnitt zusammen
             foreach ($this->balanceVars[$key] ?? [['variable' => $balance[$key]]] as $counter) {
-                $series = $this->backend->counterSeries($counter['variable'], $level, $from, $to);
+                $series = $this->counterRows($counter['variable'], $level, $from, $to);
                 if ($series === null) {
                     return null;
                 }
@@ -1421,6 +1421,59 @@ final class DeviceIndex
     }
 
     /**
+     * Abschnitte eines Zählers wie counterSeries, aber jeder Zeitpunkt auf den Beginn seines Abschnitts gesetzt. Das erste
+     * Aggregat trägt den Zeitpunkt des ersten Satzes (Hoymiles: Monat ab 14.09.2025 11:00 statt 01.09.), und mehrere
+     * Zähler übereinander bekamen dann eigene Säulen (Hardcopy Burkhard 17.10.2026: 13 Monate, der September geteilt).
+     *
+     * @return null|array{rows: list<array{time: int, sum: float}>, unit: string}
+     */
+    private function counterRows(int $variableId, int $level, int $from, int $to): ?array
+    {
+        $series = $this->backend->counterSeries($variableId, $level, $from, $to);
+        if ($series === null) {
+            return null;
+        }
+        $rows = [];
+        foreach ($series['rows'] as $row) {
+            $time = self::sectionStart((int)$row['time'], $level);
+            $rows[$time] = ['time' => $time, 'sum' => ($rows[$time]['sum'] ?? 0.0) + (float)$row['sum']];
+        }
+        ksort($rows);
+        return ['rows' => array_values($rows), 'unit' => $series['unit']];
+    }
+
+    /** Verlauf wie history, die Zeitpunkte auf den Beginn des Abschnitts gesetzt (wie counterRows). */
+    private function historyRows(int $variableId, int $level, int $from, int $to): ?array
+    {
+        $history = $this->backend->history($variableId, $level, $from, $to);
+        if ($history === null) {
+            return null;
+        }
+        $rows = [];
+        foreach ($history['rows'] as $row) {
+            $row['time'] = self::sectionStart((int)$row['time'], $level);
+            $rows[$row['time']] = $row;
+        }
+        ksort($rows);
+        $history['rows'] = array_values($rows);
+        return $history;
+    }
+
+    /** Beginn des Abschnitts (Stunde, Tag, Woche ab Montag, Monat, Jahr) in der Zeitzone der Anlage. */
+    private static function sectionStart(int $time, int $level): int
+    {
+        [$y, $m, $d, $h, $w] = array_map('intval', explode(' ', date('Y n j G N', $time)));
+        return match ($level) {
+            0       => (int)mktime($h, 0, 0, $m, $d, $y),
+            1       => (int)mktime(0, 0, 0, $m, $d, $y),
+            2       => (int)mktime(0, 0, 0, $m, $d - $w + 1, $y),
+            3       => (int)mktime(0, 0, 0, $m, 1, $y),
+            4       => (int)mktime(0, 0, 0, 1, 1, $y),
+            default => $time,
+        };
+    }
+
+    /**
      * kWh je Abschnitt für jede Quelle eines Teils der Bilanz (B82 Stufe c), Quellen mit gleichem Namen zusammen, in der
      * Reihenfolge der Liste; null, wenn ein Zähler keinen Verlauf hat.
      *
@@ -1430,7 +1483,7 @@ final class DeviceIndex
     {
         $sources = [];
         foreach ($this->balanceVars[$key] ?? [] as $counter) {
-            $series = $this->backend->counterSeries($counter['variable'], $level, $from, $to);
+            $series = $this->counterRows($counter['variable'], $level, $from, $to);
             if ($series === null) {
                 return null;
             }
@@ -1460,7 +1513,7 @@ final class DeviceIndex
         $devices = [];
         $times = [];
         foreach ($metered as $entry) {
-            $series = $this->backend->counterSeries($entry['roles']['energy'], $level, $from, $to);
+            $series = $this->counterRows($entry['roles']['energy'], $level, $from, $to);
             if ($series === null || !self::isEnergyUnit($series['unit'])) {
                 continue;
             }
@@ -4929,7 +4982,7 @@ final class DeviceIndex
         $roles = $entry['roles'];
         $label = $entry['Room'] . ' · ' . $entry['Name'];
         $average = function (int $variable) use ($label, $level, $from, $to): ?array {
-            $history = $this->backend->history($variable, $level, $from, $to);
+            $history = $this->historyRows($variable, $level, $from, $to);
             if ($history === null) {
                 return null;
             }
@@ -4943,7 +4996,7 @@ final class DeviceIndex
             return $average($roles['state']);
         }
         if (isset($roles['energy'])) {
-            $series = $this->backend->counterSeries($roles['energy'], $level, $from, $to);
+            $series = $this->counterRows($roles['energy'], $level, $from, $to);
             if ($series === null || !self::isEnergyUnit($series['unit'])) {
                 return null;
             }
@@ -5210,7 +5263,7 @@ final class DeviceIndex
      */
     private function hourlyPrices(int $from, int $to): ?array
     {
-        $history = $this->priceVariable > 0 ? $this->backend->history($this->priceVariable, 0, $from, $to) : null;
+        $history = $this->priceVariable > 0 ? $this->historyRows($this->priceVariable, 0, $from, $to) : null;
         if ($history === null || $history['rows'] === []) {
             return null;
         }

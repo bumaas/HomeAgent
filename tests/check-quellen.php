@@ -225,4 +225,22 @@ pruefe(array_column($teilNetz, 'name') === ['Netz', 'Netz bis 05/2026']
     'part=grid über das Jahr: alter und neuer Netzzähler je als Reihe');
 pruefe(str_contains((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/chart.html'), 'SOURCE_SHADES'), 'die Seite kennt Abstufungen der Farbe je Quelle');
 
+// Das erste Aggregat eines Zählers trägt den Zeitpunkt seines ersten Satzes, nicht den Beginn des Abschnitts: beim
+// Hoymiles 14.09.2025 11:00 statt 01.09. Ohne Ausgleich bekam der September eine eigene Säule nur für den Hoymiles
+// (Hardcopy Burkhard aus der Claude-App 17.10.2026: „Warum fehlt hier der Septemberwert für Huawei?“, 13 Säulen).
+try {
+    $vorjahr = zweiIndex()->chart(['period' => 'last_year', 'part' => 'pv'])['structuredContent'] ?? [];
+} catch (Throwable $e) {
+    $vorjahr = [];
+}
+$sept = array_search((int)strtotime('2025-09-01'), $vorjahr['times'] ?? [], true);
+pruefe(count($vorjahr['times'] ?? []) === 12 && $sept !== false && ($vorjahr['series'][0]['values'][$sept] ?? 0) > 300 && ($vorjahr['series'][1]['values'][$sept] ?? 0) > 50,
+    'part=pv 2025: zwölf Monate, der September mit beiden Anlagen: ' . json_encode(array_map(static fn (int $t): string => date('Y-m-d H:i', $t), $vorjahr['times'] ?? [])));
+try {
+    $mai = zweiIndex()->chart(['from' => '2026-05-01', 'to' => '2026-05-31'])['structuredContent'] ?? [];
+} catch (Throwable $e) {
+    $mai = [];
+}
+pruefe(count($mai['times'] ?? []) === 31, 'Hausstapel Mai 2026: 31 Tage, auch wenn neuer Netzzähler und Batterie mitten am Tag beginnen: ' . count($mai['times'] ?? []));
+
 ende('Weitere Quellen der Energiebilanz');
