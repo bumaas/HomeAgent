@@ -89,7 +89,9 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   ab der letzten Erneuerung; ein schon verbrauchtes widerruft die ganze Familie (Kopplung eines Clients
   mit einem Zugang, Attribut `OAuthGrants`, überlebt einen Neustart). Ausnahme ist das unmittelbar vorige
   Erneuerungstoken (`previous`), solange die letzte Erneuerung unbenutzt ist (`pending`, `OAuthServer::confirm` in
-  `oauthAccess` löscht beides beim ersten Zugriffstoken ab dieser Erneuerung), höchstens `PREVIOUS_SECONDS` (7 Tage):
+  `oauthAccess` löscht beides beim ersten Zugriffstoken ab dieser Erneuerung), höchstens `PREVIOUS_SECONDS` (7 Tage)
+  ab der ersten unbestätigten Erneuerung (`since`; vorher ab der letzten, alle sechs Tage eingelöst galt es beliebig lange,
+  Review 18.10.2026, N1):
   Es bekommt ein neues Paar, das nie zugestellte Token gilt als verbraucht und widerruft, falls es doch noch kommt.
   Anlass (betreute Anlage 16.10.2026, Fixture `oauth_betreut_2026-10-16_antwort_verloren.json`): Die Antwort auf eine
   Erneuerung kam wegen des Connect-Tageslimits nie an, claude.ai erneuerte 3 h 38 min später mit dem alten Token, und die

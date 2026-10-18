@@ -113,6 +113,13 @@ $frist = defined(OAuthServer::class . '::PREVIOUS_SECONDS') ? OAuthServer::PREVI
 pruefe($frist > 4 * 3600, 'Frist deckt den Mitschnitt (3 h 38 min): ' . $frist);
 pruefe($frist > 0 && $erneuern($f, 'A0', 'A2', $t1214 + 3600 + $frist)['error'] === null, 'innerhalb der Frist gilt das vorige');
 pruefe($frist > 0 && $erneuern($f, 'A0', 'A2', $t1214 + 3600 + $frist + 1)['error'] === 'invalid_grant', 'nach der Frist widerruft es');
+// Die Frist zählt ab der ersten unbestätigten Erneuerung, nicht ab der letzten (Review 18.10.2026, N1): Wer das vorige
+// Token alle sechs Tage einlöst, ohne je ein Zugriffstoken zu benutzen, verlängerte sie vorher beliebig.
+$schritt = 6 * 86400;
+$e = $erneuern($f, 'A0', 'A2', $t1214 + 3600 + $schritt);
+pruefe($e['error'] === null, 'nach sechs Tagen gilt das vorige noch');
+$e = $erneuern($e['families'], 'A0', 'A3', $t1214 + 3600 + 2 * $schritt);
+pruefe($e['error'] === 'invalid_grant' && !isset($e['families']['fam-1']), 'nach zwölf Tagen nicht mehr, auch wenn es nach sechs Tagen noch einmal galt: ' . json_encode($e['error']));
 
 // Abgelaufene Zugriffstokens bleiben einen Tag bekannt, danach fallen sie heraus
 $tok = OAuthServer::issueAccessToken([], 'C1', $bindung, $t1214);

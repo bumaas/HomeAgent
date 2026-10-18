@@ -412,7 +412,8 @@ final class OAuthServer
      * verbrauchtes Token widerruft die ganze Familie (RFC 9700, Abschnitt 4.14.2).
      *
      * Ausnahme: das unmittelbar vorige Token, solange die letzte Erneuerung unbenutzt ist (`pending`, gelöscht
-     * von confirm()) und höchstens PREVIOUS_SECONDS lang. Dann ist die Antwort wohl verloren gegangen; die Familie
+     * von confirm()) und höchstens PREVIOUS_SECONDS ab der ersten unbestätigten Erneuerung (`since`; vorher ab der
+     * letzten, alle sechs Tage eingelöst galt es beliebig lange, Review 18.10.2026, N1). Dann ist die Antwort wohl verloren gegangen; die Familie
      * bekommt ein neues Paar, das nie zugestellte Token gilt als verbraucht. Taucht es doch noch auf, fällt die
      * Familie wie bisher. Ein gestohlenes voriges Token nützt nur, bis der Client das neue Zugriffstoken benutzt.
      *
@@ -429,7 +430,7 @@ final class OAuthServer
         $hash = hash('sha256', $text('refresh_token'));
         foreach ($families as $id => $family) {
             $previous = isset($family['previous'], $family['pending']) && hash_equals($family['previous'], $hash)
-                && $now - (int)$family['pending'] <= self::PREVIOUS_SECONDS;
+                && $now - (int)($family['since'] ?? $family['pending']) <= self::PREVIOUS_SECONDS;
             if (!$previous && in_array($hash, $family['used'], true)) {
                 unset($families[$id]);
                 return ['families' => $families, 'family' => null, 'error' => 'invalid_grant'];
@@ -458,6 +459,7 @@ final class OAuthServer
             } else {
                 $family['used'] = array_slice(array_merge($family['used'], [$hash]), -self::MAX_USED_REFRESH);
                 $family['previous'] = $hash;
+                $family['since'] = $now;
             }
             $family['pending'] = $now;
             $family['refresh'] = hash('sha256', $newRefreshToken);
@@ -487,7 +489,7 @@ final class OAuthServer
         if ($issued < (int)$families[$id]['pending'] || $issued > $now) {
             return null;
         }
-        unset($families[$id]['pending'], $families[$id]['previous']);
+        unset($families[$id]['pending'], $families[$id]['previous'], $families[$id]['since']);
         return $families;
     }
 
