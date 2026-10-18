@@ -48,7 +48,7 @@ $konstante = static fn (string $name): mixed => defined(DeviceIndex::class . '::
 pruefe(array_key_exists('thermostat', $konstante('TYPES') ?? []) && $konstante('TYPES')['thermostat'] === null, 'Typ thermostat ohne an/aus-Wörter');
 pruefe(in_array('thermostat', $konstante('CONTROLLABLE') ?? [], true), 'thermostat ist stellbar');
 pruefe(($konstante('ROLES')['setpoint'] ?? null) === 'SetpointVariableID', 'Fähigkeit setpoint in SetpointVariableID');
-pruefe(($konstante('TYPE_ROLES')['thermostat'] ?? null) === ['roles' => ['state', 'setpoint', 'mode', 'fan'], 'required' => ['setpoint']], 'Thermostat: Ist-Temperatur, Modus und Lüfterstufe wahlweise (Klimagerät, B19), Sollwert Pflicht');
+pruefe(($konstante('TYPE_ROLES')['thermostat'] ?? null) === ['roles' => ['state', 'setpoint', 'mode', 'fan', 'power', 'energy'], 'required' => ['setpoint']], 'Thermostat: Ist-Temperatur, Modus und Lüfterstufe wahlweise (Klimagerät, B19), Leistung und Zähler (B85), Sollwert Pflicht');
 $heizung = $liste[5];
 pruefe(DeviceIndex::rolesOf($heizung) === ['state' => 41351, 'setpoint' => 10028], 'rolesOf liest Soll und Ist: ' . json_encode(DeviceIndex::rolesOf($heizung)));
 pruefe(DeviceIndex::abilitiesOf($heizung) === ['temperature'], 'ein Thermostat versteht temperature: ' . json_encode(DeviceIndex::abilitiesOf($heizung)));

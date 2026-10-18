@@ -211,8 +211,8 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 | Schalter, Steckdose | Schaltzustand, wahlweise Leistung und Zähler |
 | Gerät | Schaltzustand oder Leistung, wahlweise der Zähler. Ein Gerät nur mit Leistung, etwa eine Wärmepumpe, lässt sich abfragen, aber nicht schalten. |
 | Rollladen | Position, dazu wahlweise Fahrstatus und Stopp |
-| Thermostat | Sollwert, wahlweise die Ist-Temperatur, Modus und Lüfterstufe (Klimagerät) |
-| Mediaplayer | Ein/Aus, Wiedergabe oder Lautstärke, wahlweise Stumm, Titel und Interpret |
+| Thermostat | Sollwert, wahlweise die Ist-Temperatur, Modus und Lüfterstufe (Klimagerät), Leistung und Zähler |
+| Mediaplayer | Ein/Aus, Wiedergabe oder Lautstärke, wahlweise Stumm, Titel, Interpret, Leistung und Zähler |
 | Luftbe-/entfeuchter | Ein/Aus oder Zielfeuchte, wahlweise Ist-Feuchte, Modus und Lüfterstufe |
 | Lüftung/Ventilator | Ein/Aus oder Lüfterstufe, wahlweise Modus |
 | Fenster | Kontakt, Antrieb oder beides, zum Antrieb wahlweise Fahrstatus und Stopp |

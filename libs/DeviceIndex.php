@@ -126,8 +126,9 @@ final class DeviceIndex
         'socket'      => ['roles' => ['state', 'power', 'energy'], 'required' => ['state']],
         'appliance'   => ['roles' => ['state', 'power', 'energy'], 'required' => ['state', 'power']],
         'blind'       => ['roles' => ['level', 'moving', 'stop'], 'required' => ['level']],
-        'thermostat'  => ['roles' => ['state', 'setpoint', 'mode', 'fan'], 'required' => ['setpoint']],
-        'media'       => ['roles' => ['state', 'playback', 'volume', 'mute', 'title', 'artist'], 'required' => ['state', 'playback', 'volume']],
+        // Klimagerät und AV-Receiver nehmen Strom auf (B85): Leistung und Zähler wahlweise
+        'thermostat'  => ['roles' => ['state', 'setpoint', 'mode', 'fan', 'power', 'energy'], 'required' => ['setpoint']],
+        'media'       => ['roles' => ['state', 'playback', 'volume', 'mute', 'title', 'artist', 'power', 'energy'], 'required' => ['state', 'playback', 'volume']],
         'humidifier'  => ['roles' => ['state', 'humidity', 'setpoint', 'mode', 'fan', 'power', 'energy'], 'required' => ['state', 'setpoint']],
         'fan'         => ['roles' => ['state', 'mode', 'fan', 'power', 'energy'], 'required' => ['state', 'fan']],
         'window'      => ['roles' => ['state', 'level', 'moving', 'stop'], 'required' => ['state', 'level']],
@@ -4029,8 +4030,9 @@ final class DeviceIndex
      */
     private function stateOf(array $entry): array
     {
-        // Ein Gerät nur mit Leistung (Wärmepumpe ohne Schaltzustand): die Leistung ist der Zustand.
-        if (!isset($entry['roles']['state']) && !isset($entry['roles']['level']) && isset($entry['roles']['power'])) {
+        // Ein Gerät nur mit Leistung (Wärmepumpe ohne Schaltzustand): die Leistung ist der Zustand. Ein Klimagerät ohne
+        // Ist-Temperatur hat noch den Sollwert (B85), ein Luftentfeuchter die Zielfeuchte.
+        if (isset($entry['roles']['power']) && array_diff(array_keys($entry['roles']), ['power', 'energy']) === []) {
             $power = $this->backend->read($entry['roles']['power']);
             return ['text' => $power === null ? sprintf($this->t('not available (variable %d is missing)'), $entry['roles']['power']) : $power['formatted'], 'active' => null];
         }
@@ -4058,7 +4060,9 @@ final class DeviceIndex
                 $state = $append($state, $this->t($name));
             }
         }
-        $power = isset($entry['roles']['power']) && $this->backend->read($this->mainVariable($entry)) !== null ? $this->backend->read($entry['roles']['power']) : null;
+        // Fehlt die Hauptvariable, steht das schon im Zustand; ein Klimagerät ohne Ist-Temperatur hat keine (B85)
+        $main = $this->mainVariable($entry);
+        $power = isset($entry['roles']['power']) && ($main === 0 || $this->backend->read($main) !== null) ? $this->backend->read($entry['roles']['power']) : null;
         if ($power === null || $power['formatted'] === '') {
             return $state;
         }

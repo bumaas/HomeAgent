@@ -36,7 +36,7 @@ $zeilen = static fn (array $r): array => explode("\n", $r['text']);
 pruefe(array_key_exists('media', DeviceIndex::TYPES), 'Typ media');
 $rollen = ['playback' => 'PlaybackVariableID', 'volume' => 'VolumeVariableID', 'mute' => 'MuteVariableID', 'title' => 'TitleVariableID', 'artist' => 'ArtistVariableID'];
 pruefe(array_intersect_assoc($rollen, DeviceIndex::ROLES) === $rollen, 'Fähigkeiten mit ihren Schlüsseln: ' . json_encode(DeviceIndex::ROLES));
-pruefe((DeviceIndex::TYPE_ROLES['media'] ?? null) === ['roles' => ['state', 'playback', 'volume', 'mute', 'title', 'artist'], 'required' => ['state', 'playback', 'volume']], 'Mediaplayer: Ein/Aus, Wiedergabe oder Lautstärke ist Pflicht');
+pruefe((DeviceIndex::TYPE_ROLES['media'] ?? null) === ['roles' => ['state', 'playback', 'volume', 'mute', 'title', 'artist', 'power', 'energy'], 'required' => ['state', 'playback', 'volume']], 'Mediaplayer: Ein/Aus, Wiedergabe oder Lautstärke ist Pflicht, Leistung und Zähler wahlweise (B85)');
 pruefe(DeviceIndex::rolesOf($liste[0]) === ['playback' => 11085, 'volume' => 31588, 'mute' => 21842, 'title' => 53862, 'artist' => 12831], 'Zeile liest alle Fähigkeiten: ' . json_encode(DeviceIndex::rolesOf($liste[0])));
 pruefe(DeviceIndex::abilitiesOf($liste[1]) === ['stop', 'play', 'pause', 'next', 'previous', 'volume', 'volume_change', 'mute'], 'seit Stufe 2 versteht ein Mediaplayer die Wiedergabebefehle: ' . json_encode(DeviceIndex::abilitiesOf($liste[1])));
 

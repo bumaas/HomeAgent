@@ -203,8 +203,8 @@ Which variables a device needs depends on its type:
 | Switch, socket | Switching state, optionally power and energy meter |
 | Appliance | Switching state or power, optionally the energy meter. An appliance with power only, such as a heat pump, can be queried but not switched. |
 | Blind | Position, optionally moving state and stop |
-| Thermostat | Setpoint, optionally the current temperature, mode and fan speed (air conditioner) |
-| Media player | On/off, playback or volume, optionally mute, title and artist |
+| Thermostat | Setpoint, optionally the current temperature, mode and fan speed (air conditioner), power and energy meter |
+| Media player | On/off, playback or volume, optionally mute, title, artist, power and energy meter |
 | Humidifier | On/off or target humidity, optionally current humidity, mode and fan speed |
 | Ventilation/fan | On/off or fan speed, optionally mode |
 | Window | Contact, drive or both, optionally moving state and stop for the drive |

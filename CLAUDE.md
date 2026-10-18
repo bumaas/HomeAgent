@@ -410,7 +410,10 @@ Weitere Regeln, die nicht offensichtlich sind:
   brauchten am Entfeuchter über 2 s (gemessen 11.10.2026), die Antwort sagt dann „noch nicht bestätigt“.
 - **Klimagerät** (B19, 13.10.2026): Typ `thermostat` mit den wahlweisen Rollen `mode` und `fan`, Felder `mode` und
   `fan_speed` wie beim Luftentfeuchter (`runOption`), Zeile „Soll 24 °C (derzeit 20.0 °C), Aus, Lüfter Auto“. Ein/Aus geht über
-  den Modus, kein eigener Schaltzustand (die Rolle `state` ist beim Thermostat die Ist-Temperatur). `command=off` setzt
+  den Modus, kein eigener Schaltzustand (die Rolle `state` ist beim Thermostat die Ist-Temperatur). Leistung und Zähler
+  wahlweise wie beim AV-Receiver (Typ `media`, B85, 18.10.2026); die Karte behält die Ist-Temperatur bzw. die Lautstärke als
+  Hauptwert, und die Leistung allein ist nur dann der Zustand, wenn ein Gerät sonst nichts hat (`stateOf`; vorher verdrängte
+  sie den Sollwert eines Klimageräts ohne Ist-Temperatur). Test `check-leistung-typen.php`. `command=off` setzt
   den Eintrag `off` (Wert oder Beschriftung) über `runOption`, ohne diesen Eintrag nennt die Zeile die Einträge; `on` gibt es
   nicht, Heizen, Kühlen und Auto wären alle möglich (Burkhard 13.10.2026). Die Karte hat deshalb keinen Schalter. Gemessen an einem
   Panasonic-Klimagerät über das HomeAssistant-Modul: Modus nach 1,2 bis 1,5 s bestätigt, Lüfterstufe erst nach 2,7 bis 3,2 s

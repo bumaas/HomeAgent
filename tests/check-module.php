@@ -3171,6 +3171,11 @@ pruefe(($auswahl['type'] ?? '') === 'Select' && ($auswahl['visible'] ?? false) =
 $fremdZ = array_column(json_decode((string)oderNull(static fn () => $z->UIDeviceForm('switch', '', 99999)), true) ?? [], null, 'name')['MeteredBy'] ?? [];
 pruefe(array_last($fremdZ['options'] ?? [0]) === ['caption' => '#99999 (no meter in the list)', 'value' => 99999] && ($fremdZ['value'] ?? null) === 99999, 'Dialog: ein Wert ohne Zähler bekommt einen eigenen Eintrag: ' . json_encode($fremdZ['options'] ?? null, JSON_UNESCAPED_UNICODE));
 pruefe((array_column(json_decode((string)oderNull(static fn () => $z->UIDeviceForm('door')), true) ?? [], null, 'name')['MeteredBy']['visible'] ?? null) === false, 'Dialog: bei der Tür ohne Zähler unsichtbar');
+// Klimagerät und Receiver nehmen Strom auf (B85): Leistung, Zähler und „gemessen von“ im Dialog
+foreach (['thermostat', 'media'] as $typB85) {
+    $dialogB85 = array_column(json_decode((string)oderNull(static fn () => $z->UIDeviceForm($typB85)), true) ?? [], null, 'name');
+    pruefe(($dialogB85['PowerVariableID']['visible'] ?? null) === true && ($dialogB85['EnergyVariableID']['visible'] ?? null) === true && ($dialogB85['MeteredBy']['visible'] ?? null) === true, 'Dialog ' . $typB85 . ': Leistung, Zähler und „gemessen von“ sichtbar');
+}
 
 // Verweis ins Leere und Kreis sperren die Zeile
 IPS_SetProperty($zid, 'Devices', json_encode([$leisteZeile, ['MeteredBy' => $truheE] + $waschZeile, ['MeteredBy' => 99999] + $truheZeile]));
