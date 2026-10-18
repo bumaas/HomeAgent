@@ -370,8 +370,8 @@ Nach der **Leistung über einen Zeitraum** fragt `type=power` zusammen mit `peri
 der Trockner letzten Monat am meisten gezogen?“. Gemeint sind alle Treffer mit Leistung, auch Zähler. Je Gerät nennt
 eine Zeile die kleinste und die größte Leistung mit dem Zeitpunkt aus den Rohwerten des Archivs („Minimum 20.8 W
 (2026-10-08 22:40), Maximum 336.9 W (2026-10-01 20:46)“), bei nur einem Gerät folgt die Tabelle je Stunde, Tag oder
-Monat. Bis zu 20 Geräte gehen auf einmal. Ohne Raum und Name steht mit Energiebilanz dort die Hausleistung im
-Stundenmittel aus den Zählern der Bilanz, ihr Minimum ist die Grundlast, dazu Netzbezug und Einspeisung mit ihren
+Monat. Bis zu 20 Geräte gehen auf einmal. Ohne Raum und Name steht mit Energiebilanz dort die Hausleistung aus
+den Zählern der Bilanz mit dem niedrigsten und höchsten Stundenmittel, dazu Netzbezug und Einspeisung mit ihren
 Spitzen in kW. Stunden, in denen die Bilanz einen Hausverbrauch unter 0 ergibt, passen die Zähler nicht zusammen; sie
 zählen nicht mit, und die Antwort nennt ihre Anzahl. Die Spitzen mehrerer Sensoren lassen sich aus dem Archiv nicht sekundengenau zusammenrechnen, deshalb
 gilt fürs Haus das Stundenmittel. Ohne Zeitraum liefert `type=power` die Leistung jetzt. Die Leistung muss im Archiv

@@ -370,7 +370,7 @@ Weitere Regeln, die nicht offensichtlich sind:
   sonst `powerHistory`: je Leistung einmal (wie `firstPerVariable`) dieselben Zeilen wie beim Messwert (`historyLines`),
   die Tabelle nur bei einer Reihe, bis `POWER_HISTORY_MAX` (20) Geräte. Fürs ganze Haus mit Bilanz die Hausleistung im
   Stundenmittel (`housePowerRows`: je Stunde der Hausverbrauch aus `balanceParts`, die laufende Stunde fehlt, ihr Mittel
-  wäre eine falsche Grundlast; ebenso Stunden mit negativem Hausverbrauch, gezählt in `inconsistent` und in der Antwort
+  wäre ein falsches Minimum; ebenso Stunden mit negativem Hausverbrauch, gezählt in `inconsistent` und in der Antwort
   genannt: in der betreuten Anlage zählte der Ladezähler der Batterie an 15 Vormittagen im Oktober mehr, als PV und Netz
   lieferten, gekappt stand dort „Minimum 0 kW“, Fixture `betreut_2026-10-18_hausleistung.json`) und je Netzleistung eine Reihe in kW (`kilowattHistory`, umgekehrte Sensoren gedreht).
   Gleichzeitige Spitzen mehrerer Sensoren gibt kein Aggregat her; 15-Minuten-Aggregate (Stufe 8, laut Doku aus Rohdaten)

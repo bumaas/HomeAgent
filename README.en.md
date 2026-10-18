@@ -359,7 +359,7 @@ did the dryer draw the most power last month?". It covers all matches with a pow
 device a line gives the lowest and highest power with the time from the raw values in the archive ("minimum 20.8 W
 (2026-10-08 22:40), maximum 336.9 W (2026-10-01 20:46)"); with a single device the table per hour, day or month
 follows. Up to 20 devices at a time. Without room and name, and with an energy balance, the line gives the house
-power as an hourly mean from the meters of the balance, its minimum being the base load, plus grid import and grid
+power from the meters of the balance with the lowest and highest hourly mean, plus grid import and grid
 export with their peaks in kW. Hours in which the balance gives a house consumption below 0 have meters that do not
 match; they are left out and the answer gives their number. Peaks of several sensors cannot be added up to the second from the archive, so the
 house uses the hourly mean. Without a period `type=power` gives the current power. The power must be logged in the

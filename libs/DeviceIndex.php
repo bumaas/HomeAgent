@@ -1664,7 +1664,7 @@ final class DeviceIndex
      * kW, je Abschnitt Minimum, Mittel und Maximum mit der Stunde. Die laufende Stunde fehlt, ihr Mittel wäre zu niedrig.
      * Ebenso Stunden mit negativem Hausverbrauch: Dort passen die Zähler nicht zusammen (betreute Anlage, Oktober 2026: an
      * 15 Vormittagen zählte der Ladezähler der Batterie mehr, als PV und Netz lieferten), auf 0 gekappt wären sie eine
-     * falsche Grundlast. Ihre Anzahl steht in „inconsistent“.
+     * falsches Minimum. Ihre Anzahl steht in „inconsistent“.
      *
      * @return null|array{rows: list<array{time: int, min: float, avg: float, max: float, minTime: int, maxTime: int}>, unit: string, inconsistent: int}
      */
