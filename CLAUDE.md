@@ -389,7 +389,10 @@ Weitere Regeln, die nicht offensichtlich sind:
   `INCONSISTENT_DAYS` (5) Tage mit den meisten (`inconsistentLine`). Anlass Micha87 #47 (18.10.2026): ChatGPT antwortete
   auf „höchster 15-Minuten-Wert“ nur „kann ich nicht“, obwohl kein 15-Minuten-Mittel über der Momentanspitze liegt, und
   „42 Stunden ausgelassen“ sagte nicht, wo. 15-Minuten-Mittel selbst (Stufe 8, aus Rohdaten) sind zurückgestellt: am nuc
-  0,14 bis 0,55 s, in der betreuten Anlage 2,5 bis 5,8 s je Sensor und Tag.
+  0,14 bis 0,55 s, in der betreuten Anlage 2,5 bis 5,8 s je Sensor und Tag. Die Hausleistung umfasst höchstens
+  `HOUSE_POWER_DAYS` (400) Tage, geprüft vor den Archivabfragen: `housePowerRows` hält jede Stunde aller Zähler der
+  Bilanz, sechs Jahre mit fünf Zählern brauchten 86 MB (Review 18.10.2026, H1). Ebenso zählt die Gerätegrenze
+  `POWER_HISTORY_MAX` die Leistungen vor den Abfragen (M6).
 - **Uhrzeit in `from`/`to`** (`parseMoment`, Burkhard 12.10.2026: „nicht stundengenau“): JJJJ-MM-TT HH:MM, auch mit T
   oder Sekunden. Ganze Stunden aus den Stundenaggregaten (Stufe 0 auch für Zähler): `from` abgerundet, `to` aufgerundet
   und das Ende (13:00 bis 15:00 sind zwei Stunden), ein `to` ohne Uhrzeit zählt den ganzen Tag, ohne `to` bis jetzt.

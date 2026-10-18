@@ -630,6 +630,7 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
   dem Fahrbefehl nicht, ob er fährt.
 - Fehler innerhalb eines Szenen-Skripts sieht der Assistent nicht, er erfährt nur vom Start.
 - Die Prüfung der Zähler im Selbsttest findet nur Fehlwerte, die wieder verschwinden. Springt ein Zähler dauerhaft nach oben, etwa beim Tausch gegen einen Zähler mit höherem Stand, zählt das Archiv den Sprung als Verbrauch, ohne dass der Selbsttest es merkt. Kleine Fehlwerte unter einem Fünftel eines üblichen Monats und Monate kurz nach einer Rücksetzung prüft er nicht.
+- Die Hausleistung mit `type=power` umfasst höchstens 400 Tage.
 - Die Spitze der Hausleistung ist ein Stundenmittel aus den Zählern der Bilanz. Kurze Spitzen, etwa beim Anlaufen eines Geräts, zeigt nur die Netzleistung oder das einzelne Gerät.
 - Lamellen, deren Variable die Darstellung „Rollladen“ mit Rotation trägt, bekommen nur eine
   Prozentzahl ohne „offen“ oder „geschlossen“.

@@ -209,4 +209,33 @@ pruefe(str_starts_with($z[3] ?? '', '- | grid import (export negative, instantan
 // Am nuc gibt es keine solche Stunde, also keine solche Zeile
 pruefe(!str_contains(frage(['type' => 'power', 'period' => 'this_month'])['text'], 'inconsistent'), 'ohne unstimmige Stunden kein Hinweis');
 
+/* --- Grenzen vor den Archivabfragen (Review 18.10.2026, H1 und M6) ----------------------------- */
+
+// H1: Die Hausleistung hält jede Stunde aller Bilanzzähler; sechs Jahre mit fünf Zählern brauchten 86 MB (SymBox 64 MB).
+$anlage = new FakeBackend($mitschnitt['variablen']);
+$anlage->jetzt = $mitschnitt['jetzt'];
+$haus = new DeviceIndex($mitschnitt['geraete'], $anlage);
+$haus->addSources($mitschnitt['quellen']);
+$r = $haus->getState(['type' => 'power', 'from' => '2020-01-01', 'to' => '2026-10-17']);
+pruefe($r['isError'] && str_contains($r['text'], '400 days'), 'Hausleistung über sechs Jahre: Absage mit der Grenze von 400 Tagen: ' . $r['text']);
+pruefe($anlage->seriesRequests === [] && $anlage->historyRequests === [], 'die Absage kommt vor jeder Archivabfrage: ' . count($anlage->seriesRequests) . ' Zählerreihen, ' . count($anlage->historyRequests) . ' Verläufe');
+$r = frage(['type' => 'power', 'from' => '2025-10-18', 'to' => '2026-10-17']);
+pruefe(!$r['isError'] && str_contains($r['text'], 'house power (hourly mean)'), 'ein Jahr geht weiter: ' . strtok($r['text'], "\n"));
+// Geräte ohne Haus: die Aggregate der Stufe halten wenige Zeilen, dort gilt keine Grenze
+$r = frage(['type' => 'power', 'room' => 'Keller', 'from' => '2020-01-01', 'to' => '2026-10-17']);
+pruefe(!$r['isError'], 'Geräte im Keller über sechs Jahre gehen: ' . strtok($r['text'], "\n"));
+
+// M6: Die Gerätegrenze greift vor den Archivabfragen.
+$vorlage = $mitschnitt['geraete'][1];
+$viele = [];
+$werte = $mitschnitt['variablen'];
+for ($n = 0; $n < 21; $n++) {
+    $viele[] = ['Name' => 'Steckdose ' . $n, 'PowerVariableID' => 69000 + $n, 'EnergyVariableID' => 0] + $vorlage;
+    $werte[(string)(69000 + $n)] = $werte['40189'];
+}
+$anlage = new FakeBackend($werte);
+$anlage->jetzt = $mitschnitt['jetzt'];
+$r = (new DeviceIndex($viele, $anlage))->getState(['type' => 'power', 'room' => 'Keller', 'period' => 'this_month']);
+pruefe($r['isError'] && str_contains($r['text'], 'Too many devices (21)'), '21 Leistungen: Absage: ' . $r['text']);
+pruefe($anlage->historyRequests === [], 'die Absage kommt vor den Archivabfragen: ' . count($anlage->historyRequests) . ' Verläufe');
 ende('Verlauf der Leistung');

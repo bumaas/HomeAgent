@@ -615,6 +615,7 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
 - The meter check of the self-test only finds wrong values that disappear again. If a meter jumps up for good, for
   example when it is replaced by one with a higher reading, the archive counts the jump as consumption without the
   self-test noticing. It does not check small wrong values below a fifth of a usual month or months shortly after a reset.
+- The house power with `type=power` covers at most 400 days.
 - The peak of the house power is an hourly mean from the meters of the balance. Short peaks, such as a device starting up, only show in the grid power or the single device.
 - Slats whose variable carries the "blind" presentation with rotation only get a percentage without
   "open" or "closed".

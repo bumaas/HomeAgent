@@ -210,6 +210,9 @@ final class DeviceIndex
     public const POWER_TYPE = 'power';
     /** So viele Tage nennt der Hinweis auf Stunden mit negativem Hausverbrauch. */
     private const INCONSISTENT_DAYS = 5;
+
+    /** Längster Zeitraum der Hausleistung bei type=power in Tagen (Speicher, Review 18.10.2026). */
+    private const HOUSE_POWER_DAYS = 400;
     private const POWER_HISTORY_MAX = 20;
 
     /** Aggregationsstufe des Archivs (Doku AC_GetAggregatedValues) => Wort und Datumsformat je Zeile. */
@@ -1643,6 +1646,11 @@ final class DeviceIndex
     {
         [$per, $format] = self::HISTORY_LEVELS[$level];
         $series = [];
+        // Die Hausleistung hält jede Stunde aller Zähler der Bilanz: sechs Jahre mit fünf Zählern brauchten 86 MB, eine
+        // SymBox hat 64 MB (Review 18.10.2026, H1). Geprüft vor jeder Archivabfrage.
+        if ($house && $this->balance !== [] && $to - $from > self::HOUSE_POWER_DAYS * 86400) {
+            return $this->fail(sprintf($this->t('The house power covers at most %d days (%s). Give a shorter period.'), self::HOUSE_POWER_DAYS, $filter));
+        }
         if ($house) {
             $title = sprintf($this->t('House power (%s), per %s: minimum / average / maximum.'), $filter, $this->t($per));
             if ($this->balance !== []) {
@@ -1661,17 +1669,17 @@ final class DeviceIndex
                 }
             }
         } else {
-            // Teilen sich zwei Geräte eine Leistung (Messsteckdose und Gerät dahinter), zählt sie einmal, unter dem ersten
-            $seen = [];
+            // Teilen sich zwei Geräte eine Leistung (Messsteckdose und Gerät dahinter), zählt sie einmal, unter dem ersten.
+            // Gezählt wird vor den Archivabfragen (Review 18.10.2026, M6: vorher 40 Abfragen und dann die Absage).
+            $first = [];
             foreach ($matches as $entry) {
-                $variableId = $entry['roles']['power'];
-                if (!isset($seen[$variableId])) {
-                    $seen[$variableId] = true;
-                    $series[] = [$entry, $this->historyRows($variableId, $level, $from, $to)];
-                }
+                $first[$entry['roles']['power']] ??= $entry;
             }
-            if (count($series) > self::POWER_HISTORY_MAX) {
-                return $this->fail(sprintf($this->t('Too many devices (%d) for a power history (%s). Give a room or a name, at most %d at a time.'), count($series), $filter, self::POWER_HISTORY_MAX));
+            if (count($first) > self::POWER_HISTORY_MAX) {
+                return $this->fail(sprintf($this->t('Too many devices (%d) for a power history (%s). Give a room or a name, at most %d at a time.'), count($first), $filter, self::POWER_HISTORY_MAX));
+            }
+            foreach ($first as $variableId => $entry) {
+                $series[] = [$entry, $this->historyRows($variableId, $level, $from, $to)];
             }
             $title = sprintf($this->t('Power of %d device(s) (%s), per %s: minimum / average / maximum.'), count($series), $filter, $this->t($per))
                 . ' ' . $this->t('Minimum and maximum are instantaneous values.');
