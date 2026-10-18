@@ -208,6 +208,8 @@ final class DeviceIndex
      * Leistung nennt je Gerät nur Minimum und Maximum (die Tabelle nur bei einem), deshalb mehr Geräte als beim Messwert.
      */
     public const POWER_TYPE = 'power';
+    /** So viele Tage nennt der Hinweis auf Stunden mit negativem Hausverbrauch. */
+    private const INCONSISTENT_DAYS = 5;
     private const POWER_HISTORY_MAX = 20;
 
     /** Aggregationsstufe des Archivs (Doku AC_GetAggregatedValues) => Wort und Datumsformat je Zeile. */
@@ -1650,7 +1652,10 @@ final class DeviceIndex
                 $variables = $this->powerVars[$key] ?? [];
                 foreach ($variables as $variable) {
                     [$signed, $inverted] = $this->signedOf($key, $variable);
-                    $label = $this->t($word) . ($signed ? ' ' . $this->t('(export negative)') : '') . (count($variables) > 1 && $variable['name'] !== '' ? ' ' . $variable['name'] : '');
+                    // Minimum und Maximum einer Leistung sind Rohwerte (Max/Min der Aggregate), die Hausleistung ein
+                    // Stundenmittel. Ohne den Hinweis sagte ChatGPT auf „höchster 15-Minuten-Wert“ nur „kann ich nicht“,
+                    // obwohl kein Mittel über der Momentanspitze liegen kann (Micha87 t/144611 #47, 18.10.2026).
+                    $label = $this->t($word) . ' ' . $this->t($signed ? '(export negative, instantaneous)' : '(instantaneous)') . (count($variables) > 1 && $variable['name'] !== '' ? ' ' . $variable['name'] : '');
                     $history = $this->historyRows($variable['variable'], $level, $from, $to);
                     $series[] = [['Room' => '', 'Name' => $label, 'Type' => 'grid'], $history === null ? null : self::kilowattHistory($history, $inverted)];
                 }
@@ -1668,14 +1673,15 @@ final class DeviceIndex
             if (count($series) > self::POWER_HISTORY_MAX) {
                 return $this->fail(sprintf($this->t('Too many devices (%d) for a power history (%s). Give a room or a name, at most %d at a time.'), count($series), $filter, self::POWER_HISTORY_MAX));
             }
-            $title = sprintf($this->t('Power of %d device(s) (%s), per %s: minimum / average / maximum.'), count($series), $filter, $this->t($per));
+            $title = sprintf($this->t('Power of %d device(s) (%s), per %s: minimum / average / maximum.'), count($series), $filter, $this->t($per))
+                . ' ' . $this->t('Minimum and maximum are instantaneous values.');
         }
         $this->historyChart($title, $per, $filter);
         $lines = [$title];
         foreach ($series as [$entry, $history]) {
             $lines = array_merge($lines, $this->historyLines($entry, $history, $format, count($series) === 1));
             if (($history['inconsistent'] ?? 0) > 0) {
-                $lines[] = sprintf($this->t('%d hour(s) with inconsistent meters (house consumption below 0) left out.'), $history['inconsistent']);
+                $lines[] = $this->inconsistentLine($history['inconsistent'], $history['inconsistentDays'] ?? []);
             }
         }
         return ['text' => implode("\n", $lines), 'isError' => false];
@@ -1699,6 +1705,7 @@ final class DeviceIndex
         $now = $this->backend->timestamp();
         $sections = [];
         $inconsistent = 0;
+        $days = [];
         foreach ($parts as $time => $part) {
             if ($time + 3600 > $now) {
                 continue;
@@ -1709,6 +1716,7 @@ final class DeviceIndex
             }
             if ($value < 0) {
                 $inconsistent++;
+                $days[date('Y-m-d', $time)] = ($days[date('Y-m-d', $time)] ?? 0) + 1;
                 continue;
             }
             $sections[self::sectionStart($time, $level)][] = [$time, $value];
@@ -1722,7 +1730,25 @@ final class DeviceIndex
             }
             $rows[] = ['time' => $start, 'min' => $low[1], 'avg' => array_sum(array_column($hours, 1)) / count($hours), 'max' => $high[1], 'minTime' => $low[0], 'maxTime' => $high[0]];
         }
-        return ['rows' => $rows, 'unit' => 'kW', 'inconsistent' => $inconsistent];
+        return ['rows' => $rows, 'unit' => 'kW', 'inconsistent' => $inconsistent, 'inconsistentDays' => $days];
+    }
+
+    /**
+     * Hinweis auf Stunden mit negativem Hausverbrauch, mit den Tagen, an denen die meisten lagen (höchstens
+     * INCONSISTENT_DAYS, bei Gleichstand der frühere). Dort kann der Anwender nachsehen, welcher Zähler springt
+     * (Micha87 t/144611 #47: „42 Stunden ausgelassen“ ohne Hinweis, wo).
+     *
+     * @param array<string, int> $days Stunden je Tag (Y-m-d)
+     */
+    private function inconsistentLine(int $hours, array $days): string
+    {
+        uksort($days, static fn (string $a, string $b): int => [$days[$b], $a] <=> [$days[$a], $b]);
+        $named = array_slice($days, 0, self::INCONSISTENT_DAYS, true);
+        $list = implode(', ', array_map(static fn (string $day, int $count): string => sprintf('%s (%d h)', $day, $count), array_keys($named), $named));
+        if (count($days) > count($named)) {
+            $list .= ' ' . sprintf($this->t('and %d more day(s)'), count($days) - count($named));
+        }
+        return sprintf($this->t('%d hour(s) with inconsistent meters (house consumption below 0) left out: %s.'), $hours, $list);
     }
 
     /** Verlauf einer Netzleistung in kW (W und MW umgerechnet); umgekehrt gezählt mit gedrehtem Vorzeichen. */

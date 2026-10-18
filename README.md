@@ -373,7 +373,8 @@ eine Zeile die kleinste und die größte Leistung mit dem Zeitpunkt aus den Rohw
 Monat. Bis zu 20 Geräte gehen auf einmal. Ohne Raum und Name steht mit Energiebilanz dort die Hausleistung aus
 den Zählern der Bilanz mit dem niedrigsten und höchsten Stundenmittel, dazu Netzbezug und Einspeisung mit ihren
 Spitzen in kW. Stunden, in denen die Bilanz einen Hausverbrauch unter 0 ergibt, passen die Zähler nicht zusammen; sie
-zählen nicht mit, und die Antwort nennt ihre Anzahl. Die Spitzen mehrerer Sensoren lassen sich aus dem Archiv nicht sekundengenau zusammenrechnen, deshalb
+zählen nicht mit, und die Antwort nennt ihre Anzahl und die Tage mit den meisten davon. Minimum und Maximum von Geräten,
+Netzbezug und Einspeisung sind als Momentanwerte gekennzeichnet; kein Mittel über 15 Minuten kann darüber liegen. Die Spitzen mehrerer Sensoren lassen sich aus dem Archiv nicht sekundengenau zusammenrechnen, deshalb
 gilt fürs Haus das Stundenmittel. Ohne Zeitraum liefert `type=power` die Leistung jetzt. Die Leistung muss im Archiv
 geloggt sein.
 

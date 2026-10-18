@@ -71,7 +71,7 @@ pruefe($monatsAggregat['max'] === $tag['max'] && $monatsAggregat['maxzeit'] === 
 
 $r = frage(['name' => 'Steckdose Fernseher', 'type' => 'power', 'period' => 'this_month']);
 $z = $zeilen($r);
-pruefe(!$r['isError'] && ($z[0] ?? '') === 'Power of 1 device(s) (type=power, name=Steckdose Fernseher, period=this_month), per day: minimum / average / maximum.', 'Kopfzeile: ' . $r['text']);
+pruefe(!$r['isError'] && ($z[0] ?? '') === 'Power of 1 device(s) (type=power, name=Steckdose Fernseher, period=this_month), per day: minimum / average / maximum. Minimum and maximum are instantaneous values.', 'Kopfzeile: ' . $r['text']);
 $erwartet = sprintf('Wohnzimmer | Steckdose Fernseher | socket | minimum %s W (%s), maximum %s W (%s)', zahl($tag['min']), date('Y-m-d H:i', $tag['minzeit']), zahl($tag['max']), date('Y-m-d H:i', $tag['maxzeit']));
 pruefe(($z[1] ?? '') === $erwartet, 'Minimum und Maximum mit Zeitpunkt aus MinTime/MaxTime: ' . ($z[1] ?? '') . ' statt ' . $erwartet);
 pruefe(count(array_filter($z, static fn (string $l): bool => preg_match('/^\d{4}-\d{2}-\d{2} \S+ \/ \S+ \/ \S+$/', $l) === 1)) === $tag['zeilen'], 'ein Gerät: Tabelle mit einer Zeile je Tag (' . $tag['zeilen'] . ')');
@@ -150,9 +150,9 @@ foreach ($roh as [$zeit, $wert]) {
 }
 $netz = spitzen('24942', '1', $monat);
 pruefe($netz['max'] === round($rohMax, 3) && $netz['maxzeit'] === $rohZeit, 'Orakel: das Maximum der Tage ist das der Rohwerte (' . $rohMax . ' W um ' . date('H:i:s', $rohZeit) . ')');
-pruefe(str_contains($r['text'], sprintf('- | grid import | grid | minimum %s kW (%s), maximum %s kW (%s)', zahl($netz['min'] / 1000), date('Y-m-d H:i', $netz['minzeit']), zahl($rohMax / 1000), date('Y-m-d H:i', $rohZeit))), 'Netzbezug in kW mit dem Zeitpunkt der Rohwerte: ' . $r['text']);
+pruefe(str_contains($r['text'], sprintf('- | grid import (instantaneous) | grid | minimum %s kW (%s), maximum %s kW (%s)', zahl($netz['min'] / 1000), date('Y-m-d H:i', $netz['minzeit']), zahl($rohMax / 1000), date('Y-m-d H:i', $rohZeit))), 'Netzbezug in kW mit dem Zeitpunkt der Rohwerte: ' . $r['text']);
 $ein = spitzen('35568', '1', $monat);
-pruefe(str_contains($r['text'], sprintf('- | grid export | grid | minimum %s kW (%s), maximum %s kW (%s)', zahl($ein['min'] / 1000), date('Y-m-d H:i', $ein['minzeit']), zahl($ein['max'] / 1000), date('Y-m-d H:i', $ein['maxzeit']))), 'Einspeisung in kW');
+pruefe(str_contains($r['text'], sprintf('- | grid export (instantaneous) | grid | minimum %s kW (%s), maximum %s kW (%s)', zahl($ein['min'] / 1000), date('Y-m-d H:i', $ein['minzeit']), zahl($ein['max'] / 1000), date('Y-m-d H:i', $ein['maxzeit']))), 'Einspeisung in kW');
 pruefe(count($z) === 4, 'Haus: drei Zeilen ohne Tabelle: ' . count($z));
 
 /* --- Diagramm ------------------------------------------------------------------------------------- */
@@ -194,8 +194,18 @@ $r = $idx->getState(['type' => 'power', 'period' => 'this_month']);
 $z = $zeilen($r);
 $haus = sprintf('- | house power (hourly mean) | house | minimum %s kW (%s), maximum %s kW (%s)', zahl(min($gueltig)), date('Y-m-d H:i', (int)array_search(min($gueltig), $gueltig, true)), zahl(max($gueltig)), date('Y-m-d H:i', (int)array_search(max($gueltig), $gueltig, true)));
 pruefe(($z[1] ?? '') === $haus, 'Grundlast ohne die unstimmigen Stunden: ' . ($z[1] ?? '') . ' statt ' . $haus);
-pruefe(($z[2] ?? '') === '15 hour(s) with inconsistent meters (house consumption below 0) left out.', 'die Zeile darunter nennt sie: ' . ($z[2] ?? $r['text']));
-pruefe(str_starts_with($z[3] ?? '', '- | grid import (export negative) | grid | minimum -'), 'ein Netzsensor mit Vorzeichen: eine Zeile, die Einspeisung negativ: ' . ($z[3] ?? ''));
+// Die Zeile nennt die Tage mit den meisten solchen Stunden (höchstens fünf, bei Gleichstand der frühere), damit der Anwender
+// dort nachsehen kann, welcher Zähler springt (Micha87 #47: „42 Stunden ausgelassen“ ohne Hinweis, wo).
+$tage = [];
+foreach (array_filter($roh, static fn (float $w): bool => $w < 0) as $beginn => $w) {
+    $tage[date('Y-m-d', $beginn)] = ($tage[date('Y-m-d', $beginn)] ?? 0) + 1;
+}
+uksort($tage, static fn (string $a, string $b): int => [$tage[$b], $a] <=> [$tage[$a], $b]);
+$genannt = array_map(static fn (string $tag, int $n): string => sprintf('%s (%d h)', $tag, $n), array_keys(array_slice($tage, 0, 5, true)), array_slice($tage, 0, 5, true));
+$soll = '15 hour(s) with inconsistent meters (house consumption below 0) left out: ' . implode(', ', $genannt) . (count($tage) > 5 ? sprintf(' and %d more day(s)', count($tage) - 5) : '') . '.';
+pruefe(count($tage) > 5, 'Orakel: die unstimmigen Stunden liegen an mehr als fünf Tagen: ' . json_encode($tage));
+pruefe(($z[2] ?? '') === $soll, 'die Zeile darunter nennt sie mit den Tagen: ' . ($z[2] ?? $r['text']) . ' statt ' . $soll);
+pruefe(str_starts_with($z[3] ?? '', '- | grid import (export negative, instantaneous) | grid | minimum -'), 'ein Netzsensor mit Vorzeichen: eine Zeile, die Einspeisung negativ, als Momentanwert: ' . ($z[3] ?? ''));
 // Am nuc gibt es keine solche Stunde, also keine solche Zeile
 pruefe(!str_contains(frage(['type' => 'power', 'period' => 'this_month'])['text'], 'inconsistent'), 'ohne unstimmige Stunden kein Hinweis');
 

@@ -361,7 +361,8 @@ device a line gives the lowest and highest power with the time from the raw valu
 follows. Up to 20 devices at a time. Without room and name, and with an energy balance, the line gives the house
 power from the meters of the balance with the lowest and highest hourly mean, plus grid import and grid
 export with their peaks in kW. Hours in which the balance gives a house consumption below 0 have meters that do not
-match; they are left out and the answer gives their number. Peaks of several sensors cannot be added up to the second from the archive, so the
+match; they are left out and the answer gives their number and the days with most of them. Minimum and maximum of
+devices, grid import and grid export are marked as instantaneous values; no 15-minute mean can be above them. Peaks of several sensors cannot be added up to the second from the archive, so the
 house uses the hourly mean. Without a period `type=power` gives the current power. The power must be logged in the
 archive.
 

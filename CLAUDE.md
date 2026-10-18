@@ -384,7 +384,12 @@ Weitere Regeln, die nicht offensichtlich sind:
   `nuc_2026-10-18_leistung.json`). Die Beschreibung von `get_state` nennt dafür ein Beispiel fürs Haus („Minimum and maximum
   power in October?“) und die von `period` den Hinweis auf `type=power`: Die Claude-App holte am 18.10.2026 die neue
   Werkzeugliste, beantwortete Micha87s Satz aber mit 17 Abfragen je Tag und nannte Tagesverbräuche in kWh als Minimum und
-  Maximum.
+  Maximum. Minimum und Maximum von Geräten und Netzleistung heißen in der Antwort Momentanwerte (Kopfzeile bzw.
+  „(instantaneous)“ an der Zeile), die Hausleistung Stundenmittel; der Hinweis auf unstimmige Stunden nennt bis zu
+  `INCONSISTENT_DAYS` (5) Tage mit den meisten (`inconsistentLine`). Anlass Micha87 #47 (18.10.2026): ChatGPT antwortete
+  auf „höchster 15-Minuten-Wert“ nur „kann ich nicht“, obwohl kein 15-Minuten-Mittel über der Momentanspitze liegt, und
+  „42 Stunden ausgelassen“ sagte nicht, wo. 15-Minuten-Mittel selbst (Stufe 8, aus Rohdaten) sind zurückgestellt: am nuc
+  0,14 bis 0,55 s, in der betreuten Anlage 2,5 bis 5,8 s je Sensor und Tag.
 - **Uhrzeit in `from`/`to`** (`parseMoment`, Burkhard 12.10.2026: „nicht stundengenau“): JJJJ-MM-TT HH:MM, auch mit T
   oder Sekunden. Ganze Stunden aus den Stundenaggregaten (Stufe 0 auch für Zähler): `from` abgerundet, `to` aufgerundet
   und das Ende (13:00 bis 15:00 sind zwei Stunden), ein `to` ohne Uhrzeit zählt den ganzen Tag, ohne `to` bis jetzt.
