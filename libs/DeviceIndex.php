@@ -1790,12 +1790,16 @@ final class DeviceIndex
         return $history;
     }
 
-    /** Beginn des Abschnitts (Stunde, Tag, Woche ab Montag, Monat, Jahr) in der Zeitzone der Anlage. */
+    /**
+     * Beginn des Abschnitts (Stunde, Tag, Woche ab Montag, Monat, Jahr) in der Zeitzone der Anlage. Die Stunde rechnet
+     * mit dem Versatz zu UTC statt mit mktime(): Am Tag der Umstellung auf Winterzeit gibt es 02:00 zweimal, und mktime()
+     * legte die zweite auf die erste (Review 18.10.2026).
+     */
     private static function sectionStart(int $time, int $level): int
     {
-        [$y, $m, $d, $h, $w] = array_map('intval', explode(' ', date('Y n j G N', $time)));
+        [$y, $m, $d, $w] = array_map('intval', explode(' ', date('Y n j N', $time)));
         return match ($level) {
-            0       => (int)mktime($h, 0, 0, $m, $d, $y),
+            0       => $time - ($time + (int)date('Z', $time)) % 3600,
             1       => (int)mktime(0, 0, 0, $m, $d, $y),
             2       => (int)mktime(0, 0, 0, $m, $d - $w + 1, $y),
             3       => (int)mktime(0, 0, 0, $m, 1, $y),

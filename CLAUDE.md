@@ -527,7 +527,10 @@ Weitere Regeln, die nicht offensichtlich sind:
   Stufe: Hoymiles Monat ab 14.09.2025 11:00, Batterie Tag ab 20.05.2026 15:45). Mehrere Zähler übereinander bekamen
   dadurch eine eigene Säule (Hardcopy Burkhard 17.10.2026: 13 Monate, „Warum fehlt hier der Septemberwert für
   Huawei?“). Deshalb liest `DeviceIndex` Reihen nur über `counterRows` und `historyRows`, die jeden Zeitpunkt auf den
-  Beginn seines Abschnitts setzen (`sectionStart`), nie direkt über `counterSeries`/`history` des Backends.
+  Beginn seines Abschnitts setzen (`sectionStart`), nie direkt über `counterSeries`/`history` des Backends. Die Stunde
+  rechnet `sectionStart` mit dem Versatz zu UTC (`date('Z')`), nicht mit `mktime()`: Am Tag der Umstellung auf Winterzeit
+  liefert das Archiv 02:00 zweimal, und `mktime()` legte die zweite auf die erste (Review 18.10.2026, Mitschnitt vom
+  26.10.2025, Test `check-zeitumstellung.php`).
 - **Plausibilität der Energiezähler im Selbsttest** (B78, Burkhard 14.10.2026; Anlass ein ModBus-Fehlwert in einer betreuten
   Anlage, der in der Punktwolke 32,8 Mio. kWh ergab): `DeviceIndex::counterJumps` prüft jeden Zähler der Bilanz und der Geräte
   einmal (die der Bilanz zuerst). Das Archiv summiert nur positive Sprünge, ein Fehlwert nach oben und zurück zählt also als
