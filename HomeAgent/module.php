@@ -2001,7 +2001,7 @@ class HomeAgent extends IPSModuleStrict
                     ? ' A meter (type meter) never counts in a device total; its line names what is measured below it and the rest that is not metered.' : '')
             : '';
         $period = $hasMeters || $hasBalance || $hasPower || $hasHistory || $hasTimeline ? ['period' => ['type' => 'string', 'enum' => array_merge($hasPower ? [DeviceIndex::NOW] : [], DeviceIndex::PERIODS), 'description' => trim($consumption
-            . ($hasPower ? ' "now" gives the current power in W instead.' : '')
+            . ($hasPower ? ' "now" gives the current power in W instead. For minimum and maximum power over a period add type=power (one call, not one per day).' : '')
             . ($hasHistory ? ' For measured values such as temperature or humidity: the history per hour, day or month (minimum / average / maximum).' : '')
             . ($hasTimeline ? ' For devices with on/off, open/closed or a selection: when and how long each state lasted (archived states only).' : ''))]] : [];
         // Freie Zeiträume für Verbrauch, Verlauf und Zeitleiste; das heutige Datum braucht das Modell für „im Januar“.
@@ -2019,7 +2019,10 @@ class HomeAgent extends IPSModuleStrict
                     . '"How much did the washing machine use in January?" → name=washing machine, from=' . date('Y') . '-01-01, to=' . date('Y') . '-01-31. ' : '')
                 . ($hasBalance ? '"How much electricity did we use yesterday?" → period=yesterday. ' : '')
                 . ($hasPower ? '"How much power are we using right now?" → period=now. '
-                    . '"What was the highest power of the dryer last month?" → name=dryer, type=power, period=last_month. ' : '')
+                    . '"What was the highest power of the dryer last month?" → name=dryer, type=power, period=last_month. '
+                    // Die Claude-App beantwortete „min und max Werte der Leistung für Oktober“ ohne dieses Beispiel mit 17
+                    // Abfragen je Tag und Tagesverbräuchen in kWh (nuc, 18.10.2026)
+                    . '"Minimum and maximum power in October?" → type=power, from=' . date('Y') . '-10-01, to=' . date('Y') . '-10-31. ' : '')
                 . ($hasHistory ? '"How warm was it in the guest room over the last 30 days?" → room=Gast, type=temperature, from=' . date('Y-m-d', strtotime('-29 days')) . ', to=' . date('Y-m-d') . '. ' : '')
                 . (array_any($this->usableDevices(), static fn (array $row): bool => ($row['Type'] ?? '') === 'window' && in_array('open', DeviceIndex::abilitiesOf($row), true))
                     ? 'Windows marked "with drive" can be opened and closed with set_state, the others only report their state. ' : '')

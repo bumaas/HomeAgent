@@ -381,7 +381,10 @@ Weitere Regeln, die nicht offensichtlich sind:
   Maximum tragen seitdem den Zeitpunkt aus `MinTime`/`MaxTime` der Aggregate (Doku AC_GetAggregatedValues), auch bei
   Messwerten; Backends ohne diese Felder behalten den Beginn des Abschnitts. Am nuc gemessen: das Monatsaggregat der
   Netzleistung in 1 ms, sein Maximum gleich dem der Rohwerte (Test `check-leistungsverlauf.php`, Fixture
-  `nuc_2026-10-18_leistung.json`).
+  `nuc_2026-10-18_leistung.json`). Die Beschreibung von `get_state` nennt dafür ein Beispiel fürs Haus („Minimum and maximum
+  power in October?“) und die von `period` den Hinweis auf `type=power`: Die Claude-App holte am 18.10.2026 die neue
+  Werkzeugliste, beantwortete Micha87s Satz aber mit 17 Abfragen je Tag und nannte Tagesverbräuche in kWh als Minimum und
+  Maximum.
 - **Uhrzeit in `from`/`to`** (`parseMoment`, Burkhard 12.10.2026: „nicht stundengenau“): JJJJ-MM-TT HH:MM, auch mit T
   oder Sekunden. Ganze Stunden aus den Stundenaggregaten (Stufe 0 auch für Zähler): `from` abgerundet, `to` aufgerundet
   und das Ende (13:00 bis 15:00 sind zwei Stunden), ein `to` ohne Uhrzeit zählt den ganzen Tag, ohne `to` bis jetzt.

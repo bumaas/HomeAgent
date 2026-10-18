@@ -1073,6 +1073,10 @@ pruefe(isset($mitApps['show_chart']) && str_contains($mitApps['show_chart']['des
 // Ohne Messwert und Zähler bleibt vom Feld type nur power, weil der Entfeuchter eine Leistung hat (B84)
 pruefe(($mitApps['show_chart']['inputSchema']['properties']['type']['enum'] ?? null) === ['power'], 'ohne Messwert und Zähler nur type=power: ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['type'] ?? null));
 pruefe(in_array('power', $werkzeuge['get_state']['inputSchema']['properties']['type']['enum'] ?? [], true) && str_contains($werkzeuge['get_state']['inputSchema']['properties']['type']['description'] ?? '', 'minimum and maximum power'), 'get_state bietet type=power an, wenn ein Gerät eine Leistung hat: ' . json_encode($werkzeuge['get_state']['inputSchema']['properties']['type'] ?? null));
+// Die Claude-App beantwortete „min und max Werte der Leistung für Oktober“ trotz type=power in der Liste mit 17 Abfragen je
+// Tag und nannte Tagesverbräuche in kWh (nuc, 18.10.2026). Beispiel fürs Haus und Hinweis bei period führen zu type=power.
+pruefe(str_contains($werkzeuge['get_state']['description'] ?? '', '"Minimum and maximum power in October?" → type=power, from=' . date('Y') . '-10-01, to=' . date('Y') . '-10-31.'), 'get_state nennt ein Beispiel für Minimum und Maximum der Leistung: ' . ($werkzeuge['get_state']['description'] ?? ''));
+pruefe(str_contains($werkzeuge['get_state']['inputSchema']['properties']['period']['description'] ?? '', 'For minimum and maximum power over a period add type=power (one call, not one per day).'), 'period verweist für Minimum und Maximum der Leistung auf type=power: ' . ($werkzeuge['get_state']['inputSchema']['properties']['period']['description'] ?? ''));
 // Teil der Bilanz (B74, 13.10.2026): part nennt nur die eingetragenen Zähler
 pruefe(($mitApps['show_chart']['inputSchema']['properties']['part']['enum'] ?? null) === ['grid'], 'show_chart bietet part nur mit den Teilen der Bilanz an: ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['part'] ?? null));
 // Ringe für Autarkie und Eigenverbrauch (Anregung pitti, t/144633, 13.10.2026)
