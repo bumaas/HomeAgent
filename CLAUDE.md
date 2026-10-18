@@ -519,7 +519,7 @@ Weitere Regeln, die nicht offensichtlich sind:
   unverändert über `balanceParts`/`houseConsumption`/`housePower` laufen. `partText` nennt bei mehreren Variablen die
   benannten („Netzbezug 0.2 (davon Tibber 0.1)“). Vorzeichen: Eine Zeile mit PowerIn ohne PowerOut ist ein Sensor mit
   Vorzeichen, Invert je Zeile (`signedOf`; Felder im Konstruktor der Bibliothek wie bis build 191 über `powerFields`);
-  `signedPowers` nennt `source`. Fehler (`sourceProblems`: unknown_type, empty, solar_out, dazu fehlende Variablen mit
+  `signedPowers` nennt `source`. Fehler (`sourceProblems`: unknown_type, empty, solar_out, duplicate für eine Variable, die schon in einer früheren Zeile oder einem anderen Feld steht (Review 18.10.2026, M4), dazu fehlende Variablen mit
   dem Teil der Bilanz) sperren die ganze Bilanz (`sourcesUsable`), Anwesenheit im Modul über `balanceKeys`. Test
   `check-quellen.php`: Orakel „ein Eintrag in der Liste statt im Feld ändert nichts“ (nuc, betreute Anlage), zwei
   Netzanschlüsse mit dem Tibber Pulse (Werte echt, Anordnung angenommen), dazu `betreut_2026-10-17_quellen.json` mit

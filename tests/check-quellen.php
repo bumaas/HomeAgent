@@ -134,6 +134,11 @@ pruefe($pruefe([['Type' => 'solar', 'Name' => 'Garage', 'EnergyIn' => 10639, 'En
 pruefe($pruefe([['Type' => 'solar', 'Name' => 'Garage', 'PowerIn' => 14114, 'PowerOut' => 35568]]) === [0 => 'solar_out'], 'PV hat keine zweite Leistung');
 pruefe($pruefe([['Type' => 'grid', 'Name' => 'leer']]) === [0 => 'empty'], 'eine Quelle ohne Variable');
 pruefe($pruefe([['Type' => 'wind', 'Name' => 'Rad', 'EnergyIn' => 10639]]) === [0 => 'unknown_type'], 'unbekannte Art');
+// Dieselbe Variable in zwei Zeilen zählte doppelt, ohne Hinweis (Review 18.10.2026, M4: Hausverbrauch 1231,8 statt 441,1 kWh).
+// Gemeldet wird die spätere Zeile; ebenso zwei Felder einer Zeile mit derselben Variable.
+pruefe($pruefe([['Type' => 'solar', 'Name' => 'Dach', 'EnergyIn' => 10639], $tibber, ['Type' => 'solar', 'Name' => 'Dach nochmal', 'EnergyIn' => 10639]]) === [2 => 'duplicate'], 'dieselbe PV in zwei Zeilen: ' . json_encode($pruefe([['Type' => 'solar', 'Name' => 'Dach', 'EnergyIn' => 10639], $tibber, ['Type' => 'solar', 'Name' => 'Dach nochmal', 'EnergyIn' => 10639]])));
+pruefe($pruefe([['Type' => 'grid', 'Name' => 'Netz', 'EnergyIn' => 43989, 'EnergyOut' => 43989]]) === [0 => 'duplicate'], 'Bezug und Einspeisung mit derselben Variable');
+pruefe($pruefe([['Type' => 'grid', 'Name' => 'Netz', 'EnergyIn' => 43989, 'PowerIn' => 24942], ['Type' => 'battery', 'Name' => 'Akku', 'PowerIn' => 24942]]) === [1 => 'duplicate'], 'dieselbe Leistung an Netz und Batterie');
 
 /* --- Mehrere PV-Anlagen und zwei Netzzähler nacheinander (betreute Anlage, Stufe c) -------------- */
 

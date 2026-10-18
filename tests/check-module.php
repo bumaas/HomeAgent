@@ -3339,6 +3339,13 @@ pruefe(str_contains($testQ, 'Source "Garage": a solar plant has only its product
 pruefe(str_contains($testQ, 'Source "Tibber": variable for grid import does not exist'), 'Selbsttest: gelöschte Variable mit dem Teil der Bilanz: ' . $testQ);
 $werkzeugeQ = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(null, true), $q, HomeAgent::class)()), true), null, 'name');
 pruefe(!isset($werkzeugeQ['get_state']['inputSchema']['properties']['period']), 'eine fehlerhafte Quelle sperrt die Bilanz: ' . json_encode(array_keys($werkzeugeQ['get_state']['inputSchema']['properties'] ?? [])));
+// Dieselbe Variable in zwei Zeilen (Review 18.10.2026, M4): Meldung an der späteren Zeile, die Bilanz ist gesperrt
+IPS_SetProperty($qid, 'Sources', json_encode([$bilanzZeile('solar', 'Garage', $zaehlerQ), $bilanzZeile('solar', 'Garage nochmal', $zaehlerQ)]));
+IPS_ApplyChanges($qid);
+$testQ = $q->RunSelfTest();
+pruefe(str_contains($testQ, 'Source "Garage nochmal": a variable of this row is already used in the balance, it would count twice'), 'Selbsttest: doppelte Variable: ' . $testQ);
+$werkzeugeQ = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(null, true), $q, HomeAgent::class)()), true), null, 'name');
+pruefe(!isset($werkzeugeQ['get_state']['inputSchema']['properties']['period']), 'eine doppelte Variable sperrt die Bilanz: ' . json_encode(array_keys($werkzeugeQ['get_state']['inputSchema']['properties'] ?? [])));
 
 // Übernahme der alten Felder: Beim Übernehmen wandern sie als benannte Zeilen vor die Liste, die Felder werden leer.
 // Orakel ist die Rechnung der Bibliothek mit den Feldern (Konstruktor wie bis build 191); die Zahlen müssen gleich sein.

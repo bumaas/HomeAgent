@@ -277,7 +277,7 @@ grid import + solar production + battery discharge − grid export − battery c
 balance" section of the form holds the list **Sources** for this, one row per grid connection, solar plant
 and battery. The dialog of a row shows the fields of its type: import and export for the grid, the production
 for a solar plant, discharge and charge for a battery, each as an energy meter and optionally as a power. Each
-energy meter must be archived as a counter. Without solar and battery one grid row with the import is enough. If the assistant asks without room, floor,
+energy meter must be archived as a counter. Each variable may appear only once in the list, otherwise the balance is locked. Without solar and battery one grid row with the import is enough. If the assistant asks without room, floor,
 type and name (with `room=all` for an access with a default room), the first line reads, for example, "House consumption 774.8 kWh (all devices,
 period=last_month): grid import 122.7, solar 1356.8, battery discharge 285, grid export 658.7, battery
 charge 330.9 kWh." Devices with their own energy meter are part of it and are not added: "Of this,

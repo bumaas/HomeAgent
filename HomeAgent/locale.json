@@ -49,6 +49,7 @@
             "Source \"%s\"": "Quelle „%s“",
             "Source without a name": "Quelle ohne Namen",
             "no variable selected": "keine Variable gewählt",
+            "a variable of this row is already used in the balance, it would count twice": "eine Variable dieser Zeile steht schon in der Bilanz, sie würde doppelt zählen",
             "a solar plant has only its production, no second meter or power": "eine PV-Anlage hat nur ihren Ertrag, keinen zweiten Zähler und keine zweite Leistung",
             "%s (of this %s)": "%s (davon %s)",
             "Measured by (meter above it)": "Gemessen von (Zähler darüber)",

@@ -5516,24 +5516,32 @@ final class DeviceIndex
      * @param list<string> $keys
      */
     /**
-     * Fehler einer Zeile der Liste „Quellen“ (B82): unbekannte Art, keine Variable, oder bei PV ein
-     * zweiter Zähler bzw. eine zweite Leistung (eine PV-Anlage speist nur ein).
+     * Fehler einer Zeile der Liste „Quellen“ (B82): unbekannte Art, keine Variable, bei PV ein zweiter Zähler bzw. eine
+     * zweite Leistung (eine PV-Anlage speist nur ein), oder eine Variable, die schon in einer früheren Zeile oder einem
+     * anderen Feld steht (Review 18.10.2026, M4: dieselbe PV zweimal ergab 1231,8 statt 441,1 kWh, ohne Hinweis).
      *
      * @param list<array<string, mixed>> $rows
-     * @return array<int, string> Zeile => unknown_type | empty | solar_out
+     * @return array<int, string> Zeile => unknown_type | empty | solar_out | duplicate
      */
     public static function sourceProblems(array $rows): array
     {
         $problems = [];
+        $used = [];
         foreach ($rows as $index => $row) {
             $type = (string)($row['Type'] ?? '');
             $ids = array_map(static fn (string $field): int => (int)($row[$field] ?? 0), ['EnergyIn', 'EnergyOut', 'PowerIn', 'PowerOut']);
+            $valid = array_values(array_filter($ids, static fn (int $id): bool => $id > 1));
             if (!isset(self::SOURCE_KEYS[$type])) {
                 $problems[$index] = 'unknown_type';
             } elseif (max($ids) <= 1) {
                 $problems[$index] = 'empty';
             } elseif ($type === 'solar' && ($ids[1] > 1 || $ids[3] > 1)) {
                 $problems[$index] = 'solar_out';
+            } elseif (count(array_unique($valid)) < count($valid) || array_intersect_key($used, array_flip($valid)) !== []) {
+                $problems[$index] = 'duplicate';
+            }
+            foreach ($valid as $id) {
+                $used[$id] = true;
             }
         }
         return $problems;

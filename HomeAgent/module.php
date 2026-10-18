@@ -3216,6 +3216,7 @@ class HomeAgent extends IPSModuleStrict
                 $add('Sources', $index, $row, $this->Translate(match ($sourceProblems[$index]) {
                     'unknown_type' => 'unknown type',
                     'empty'        => 'no variable selected',
+                    'duplicate'    => 'a variable of this row is already used in the balance, it would count twice',
                     default        => 'a solar plant has only its production, no second meter or power',
                 }));
                 continue;

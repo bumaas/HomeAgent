@@ -289,7 +289,7 @@ Netzbezug + PV-Ertrag + Batterie entladen − Einspeisung − Batterie geladen. 
 des Formulars steht dafür die Liste **Quellen**, eine Zeile je Netzanschluss, PV-Anlage und Batterie. Der Dialog
 einer Zeile zeigt je Art die passenden Felder: beim Netz Bezug und Einspeisung, bei der PV-Anlage den Ertrag, bei
 der Batterie entladen und geladen, jeweils als Zähler und wahlweise als Leistung. Jeder Zähler muss als Zähler
-archiviert sein. Ohne PV und Batterie genügt eine Zeile Netz mit dem Bezug. Fragt der Assistent ohne Raum, Etage, Typ und Name (bei einem Zugang
+archiviert sein. Jede Variable darf nur einmal in der Liste stehen, sonst ist die Bilanz gesperrt. Ohne PV und Batterie genügt eine Zeile Netz mit dem Bezug. Fragt der Assistent ohne Raum, Etage, Typ und Name (bei einem Zugang
 mit Standardraum mit `room=all`), lautet die erste Zeile
 etwa „Hausverbrauch 774.8 kWh (alle Geräte, period=last_month): Netzbezug 122.7, PV-Ertrag 1356.8,
 Batterie entladen 285, Einspeisung 658.7, Batterie geladen 330.9 kWh.“ Die Geräte mit eigenem Zähler
