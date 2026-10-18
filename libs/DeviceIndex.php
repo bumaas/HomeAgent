@@ -1633,7 +1633,7 @@ final class DeviceIndex
      * Verlauf der Leistung (B84): je Gerät Minimum und Maximum aus den Aggregaten der Leistung, wie beim Messwert, die
      * Tabelle nur bei einer Reihe. Fürs Haus die Hausleistung im Stundenmittel aus den Zählern der Bilanz (gleichzeitige
      * Spitzen mehrerer Sensoren liefert kein Aggregat; 15-Minuten-Aggregate scheiterten am nuc schon über 17 Tage an
-     * „Zu viele Werte (>150000)“) und die Netzleistung je Richtung mit dem Zeitpunkt der Rohwerte.
+     * „Zu viele Werte (>150000)“, der Spezialschalter ArchiveRecordLimit, Standard 50000) und die Netzleistung je Richtung mit dem Zeitpunkt der Rohwerte.
      *
      * @return array{text: string, isError: bool}
      */

@@ -374,7 +374,8 @@ Weitere Regeln, die nicht offensichtlich sind:
   genannt: in der betreuten Anlage zählte der Ladezähler der Batterie an 15 Vormittagen im Oktober mehr, als PV und Netz
   lieferten, gekappt stand dort „Minimum 0 kW“, Fixture `betreut_2026-10-18_hausleistung.json`) und je Netzleistung eine Reihe in kW (`kilowattHistory`, umgekehrte Sensoren gedreht).
   Gleichzeitige Spitzen mehrerer Sensoren gibt kein Aggregat her; 15-Minuten-Aggregate (Stufe 8, laut Doku aus Rohdaten)
-  scheiterten am nuc schon über 17 Tage an „Zu viele Werte (>150000)“, eine Grenze, die die Doku nicht nennt. Minimum und
+  scheiterten am nuc schon über 17 Tage an „Zu viele Werte (>150000)“: Rohwerte liest das Archiv dafür höchstens bis zum
+  Spezialschalter `ArchiveRecordLimit` (Standard 50000, am nuc 150000, in der betreuten Anlage 50000). Minimum und
   Maximum tragen seitdem den Zeitpunkt aus `MinTime`/`MaxTime` der Aggregate (Doku AC_GetAggregatedValues), auch bei
   Messwerten; Backends ohne diese Felder behalten den Beginn des Abschnitts. Am nuc gemessen: das Monatsaggregat der
   Netzleistung in 1 ms, sein Maximum gleich dem der Rohwerte (Test `check-leistungsverlauf.php`, Fixture
