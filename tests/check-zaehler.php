@@ -257,4 +257,15 @@ pruefe(array_column($diagramm['series'] ?? [], 'name') === ['Haushalt', 'Wallbox
     && stapelAbweichung($diagramm, array_map(static fn (float $v): float => max(0.0, $v), $hausStunden), [stunden(40308), stunden(36579)]) <= 0.002,
     'Haus je Gerät mit Zählern: oberste Ebene und Rest der Bilanz: ' . json_encode($diagramm['fehler'] ?? array_column($diagramm['series'] ?? [], 'name'), JSON_UNESCAPED_UNICODE));
 
+/* --- Gerät mit der Energievariable eines Zählers (Review 18.10.2026, M3) ------------------------- */
+
+// Die Wallbox #36579 ist Zähler; dieselbe Variable an einem Gerät „Auto laden“ (angenommen, Messsteckdose und Gerät
+// dahinter) zählte doppelt, wenn das Gerät vor dem Zähler stand. Die Variable zählt einmal, beim Zähler, in jeder Reihenfolge.
+$auto = ['Room' => 'Garage', 'Name' => 'Auto laden', 'Aliases' => '', 'Type' => 'socket', 'EnergyVariableID' => 36579, 'PowerVariableID' => 0, 'MeteredBy' => 0, 'Invert' => false];
+$oben = static fn (string $text): string => array_values(array_filter(explode("\n", $text), static fn (string $z): bool => str_contains($z, 'at the top level')))[0] ?? '';
+$ohne = $oben(frage($alle, ['period' => 'this_month']));
+foreach (['vor' => array_merge([$auto], $alle), 'nach' => array_merge($alle, [$auto])] as $wo => $liste) {
+    $mit = $oben(frage($liste, ['period' => 'this_month']));
+    pruefe($mit === $ohne, 'Gerät mit der Variable der Wallbox ' . $wo . ' dem Zähler: oberste Ebene unverändert, ' . $mit . ' statt ' . $ohne);
+}
 ende('Zähler mit „gemessen von“');

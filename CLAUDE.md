@@ -487,7 +487,7 @@ Weitere Regeln, die nicht offensichtlich sind:
   mit Terrarium dahinter): Rollen `energy` (Pflicht) und `power`, Raum wahlweise. Ein Zähler zählt nie in einer
   Gerätesumme; `consumption()` und `power()` nehmen ihn aus den Treffern und geben ihm eine eigene Zeile (`meterLine`).
   Jede Zeile kann über `MeteredBy` (Energievariable des Zählers darüber, 0 = keiner) an einem Zähler hängen, beliebig tief.
-  `meterTree` baut je Rolle den Baum über alle Einträge (jede Variable einmal wie `firstPerVariable`): je Knoten eigener
+  `meterTree` baut je Rolle den Baum über alle Einträge (jede Variable einmal wie `firstPerVariable`; die Variable eines Zählers zählt bei ihm, nie zusätzlich an einem Gerät, in jeder Reihenfolge, Review 18.10.2026, M3): je Knoten eigener
   Wert, Summe der direkten Kinder und der Wert, mit dem er oben zählt (ohne eigenen Wert die Summe darunter, etwa ein
   Haushaltszähler ohne Leistung bei `period=now`). Die Zeile nennt den Rest „nicht erfasst“ nur, wenn er positiv ist.
   Fürs Haus zählt mit Zählern die oberste Ebene (`topLevelLine`), ohne Zähler bleibt der alte Satz mit der Gerätesumme.

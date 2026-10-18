@@ -682,16 +682,22 @@ final class DeviceIndex
     private function meterTree(string $role, callable $valueOf): array
     {
         $meterOf = [];
+        // Eine Variable, die ein Zähler trägt, zählt bei ihm und nie zusätzlich an einem Gerät, gleich in welcher
+        // Reihenfolge (Review 18.10.2026, M3: ein Gerät vor dem Zähler zählte oben doppelt)
+        $meterVariables = [];
         foreach ($this->entries as $index => $entry) {
             if ($entry['Type'] === 'meter' && isset($entry['roles']['energy'])) {
                 $meterOf[$entry['roles']['energy']] = $index;
+            }
+            if ($entry['Type'] === 'meter' && isset($entry['roles'][$role])) {
+                $meterVariables[$entry['roles'][$role]] = true;
             }
         }
         $nodes = [];
         $seen = [];
         foreach ($this->entries as $index => $entry) {
             $id = $entry['roles'][$role] ?? 0;
-            if ($entry['Type'] !== 'meter' && ($id === 0 || isset($seen[$id]))) {
+            if ($entry['Type'] !== 'meter' && ($id === 0 || isset($seen[$id]) || isset($meterVariables[$id]))) {
                 continue;
             }
             if ($id !== 0) {
