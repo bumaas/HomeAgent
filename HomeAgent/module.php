@@ -1084,6 +1084,10 @@ class HomeAgent extends IPSModuleStrict
         foreach ($this->deviceDialogFields($type) as $name => $field) {
             $this->UpdateFormField($name, 'visible', $field['visible']);
             $this->UpdateFormField($name, 'caption', $field['caption']);
+            // Ein ausgeblendetes „gemessen von“ wird geleert, sonst bliebe ein alter Wert unsichtbar stehen (Review M5)
+            if ($name === 'MeteredBy' && !$field['visible']) {
+                $this->UpdateFormField($name, 'value', 0);
+            }
         }
         foreach ($this->deviceLabels(['Type' => $type, 'StateVariableID' => $StateVariableID, 'LevelVariableID' => $LevelVariableID, 'MovingVariableID' => $MovingVariableID, 'PowerVariableID' => $PowerVariableID, 'EnergyVariableID' => $EnergyVariableID, 'StopVariableID' => $StopVariableID, 'SetpointVariableID' => $SetpointVariableID, 'ColorTempVariableID' => $ColorTempVariableID, 'ColorVariableID' => $ColorVariableID,
             'PlaybackVariableID' => $PlaybackVariableID, 'VolumeVariableID' => $VolumeVariableID, 'MuteVariableID' => $MuteVariableID, 'TitleVariableID' => $TitleVariableID, 'ArtistVariableID' => $ArtistVariableID, 'HumidityVariableID' => $HumidityVariableID, 'ModeVariableID' => $ModeVariableID, 'FanVariableID' => $FanVariableID]) as $name => $label) {

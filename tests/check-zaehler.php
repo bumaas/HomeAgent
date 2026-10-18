@@ -267,5 +267,11 @@ $ohne = $oben(frage($alle, ['period' => 'this_month']));
 foreach (['vor' => array_merge([$auto], $alle), 'nach' => array_merge($alle, [$auto])] as $wo => $liste) {
     $mit = $oben(frage($liste, ['period' => 'this_month']));
     pruefe($mit === $ohne, 'Gerät mit der Variable der Wallbox ' . $wo . ' dem Zähler: oberste Ebene unverändert, ' . $mit . ' statt ' . $ohne);
-}
+}// Ein Typ ohne Energie und Leistung hat kein „gemessen von“; ein alter Wert aus der Zeit als Steckdose sperrte die Tür,
+// und das Feld war im Dialog unsichtbar (Review 18.10.2026, M5)
+$tuer = ['Room' => 'Flur', 'Name' => 'Haustür', 'Aliases' => '', 'Type' => 'door', 'StateVariableID' => 51561, 'MeteredBy' => 99999, 'Invert' => false];
+pruefe($pruefeListe(array_merge($alle, [$tuer])) === [], 'Tür mit altem „gemessen von“ auf einen fehlenden Zähler ist nicht gesperrt: ' . json_encode($pruefeListe(array_merge($alle, [$tuer]))));
+$tuer['MeteredBy'] = 40308;
+pruefe($oben(frage(array_merge($alle, [$tuer]), ['period' => 'this_month'])) === $ohne, 'Tür mit „gemessen von“ auf den Haushalt ändert die oberste Ebene nicht');
+
 ende('Zähler mit „gemessen von“');

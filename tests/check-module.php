@@ -758,6 +758,13 @@ IPS_DeleteInstance($rp);
 $m->formUpdates = [];
 oderNull(static fn () => $m->UIDeviceChanged('blind', 0, 0));
 pruefe(in_array(['StateVariableID', 'visible', false], $m->formUpdates, true) && in_array(['LevelVariableID', 'visible', true], $m->formUpdates, true) && in_array(['LevelVariableID', 'caption', 'Position'], $m->formUpdates, true) && in_array(['Invert', 'caption', 'Reverse direction (if open and closed are swapped)'], $m->formUpdates, true), 'Typwechsel auf Rollladen passt den offenen Dialog an: ' . json_encode($m->formUpdates));
+// Ein Typ ohne Energie und Leistung blendet „gemessen von“ aus und leert es (Review 18.10.2026, M5)
+$m->formUpdates = [];
+oderNull(static fn () => $m->UIDeviceChanged('door', 0, 0));
+pruefe(in_array(['MeteredBy', 'visible', false], $m->formUpdates, true) && in_array(['MeteredBy', 'value', 0], $m->formUpdates, true), 'Typwechsel auf Tür leert „gemessen von“: ' . json_encode(array_values(array_filter($m->formUpdates, static fn (array $u): bool => $u[0] === 'MeteredBy'))));
+$m->formUpdates = [];
+oderNull(static fn () => $m->UIDeviceChanged('socket', 0, 0));
+pruefe(!in_array(['MeteredBy', 'value', 0], $m->formUpdates, true), 'Typwechsel auf Steckdose behält „gemessen von“');
 $m->formUpdates = [];
 oderNull(static fn () => $m->UIDeviceChanged('humidity', 0, 0));
 pruefe(in_array(['Invert', 'visible', false], $m->formUpdates, true) && in_array(['StateVariableID', 'caption', 'Measured value'], $m->formUpdates, true), 'Typwechsel auf Messwert blendet die Umkehr aus: ' . json_encode($m->formUpdates));

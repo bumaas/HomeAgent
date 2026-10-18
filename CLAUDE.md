@@ -495,7 +495,9 @@ Weitere Regeln, die nicht offensichtlich sind:
   Assistant (core `energy/data.py`, frontend `common/sankey.ts`, 17.10.2026); anders als dort sperren ein Verweis ins Leere
   und ein Kreis die Zeile (`DeviceIndex::meterProblems`, geprüft in `findProblems`), und der Selbsttest meldet Zähler, unter
   denen in den letzten 30 Tagen mehr als 105 % gemessen ist (`meterOverruns`). Der Dialog hat die Auswahl `MeteredBy` mit
-  „-“ und den Zählern der gespeicherten Liste (wie der Raum: ein unbekannter Wert bekommt einen eigenen Eintrag). Diagramme
+  „-“ und den Zählern der gespeicherten Liste (wie der Raum: ein unbekannter Wert bekommt einen eigenen Eintrag). Nur Typen mit Energie oder Leistung haben
+  „gemessen von“ (`meteredByOf`); `UIDeviceChanged` leert das Feld beim Ausblenden (Review 18.10.2026, M5: ein alter Wert
+  aus der Zeit als Steckdose sperrte eine Tür, das Feld war unsichtbar). Diagramme
   (Stufe c): Ein einzelner Zähler unter den Treffern zeigt in `deviceChart` seine direkten Kinder (`meterTree` liefert
   `children`) und als `unmetered` sich selbst minus die Kinder (Parameter `$total`), das Haus je Gerät mit Zählern die
   oberste Ebene gegen die Bilanz; vorher stand der Rest gegen alle Geräte, Geräte unter einem Zähler zählten doppelt. Das Verworfene unter „Teil der Bilanz“ (Zähler der

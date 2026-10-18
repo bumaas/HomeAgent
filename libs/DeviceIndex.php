@@ -378,7 +378,7 @@ final class DeviceIndex
             'Tilt'     => (bool)($e['Tilt'] ?? false),
             'roles'    => self::rolesOf($e),
             // Zähler, an dem das Gerät hängt (B82): seine Energievariable, 0 = keiner
-            'MeteredBy' => (int)($e['MeteredBy'] ?? 0),
+            'MeteredBy' => self::meteredByOf($e),
         ], $entries);
         // Stelle in der Liste, damit ein Treffer aus find() seinen Knoten im Zählerbaum wiederfindet
         foreach ($this->entries as $index => &$entry) {
@@ -625,6 +625,16 @@ final class DeviceIndex
     }
 
     /**
+     * „gemessen von“ einer Zeile, nur bei Typen mit Energie oder Leistung (wie der Dialog das Feld zeigt). Ein alter Wert
+     * aus der Zeit als Steckdose sperrte eine Tür, deren Dialog das Feld nicht mehr zeigt (Review 18.10.2026, M5).
+     */
+    private static function meteredByOf(array $row): int
+    {
+        $roles = self::TYPE_ROLES[(string)($row['Type'] ?? '')]['roles'] ?? [];
+        return array_intersect(['energy', 'power'], $roles) !== [] ? (int)($row['MeteredBy'] ?? 0) : 0;
+    }
+
+    /**
      * Fehler in „gemessen von“ je Zeile der Freigabeliste (B82). MeteredBy ist die Energievariable eines Zählers der
      * Liste; ein Verweis auf etwas anderes (unknown_meter) und ein Kreis über Zähler (cycle, auch auf sich selbst)
      * sperren die Zeile. Home Assistant übergeht solche Verweise still, dann stimmt der Rest „nicht erfasst“ nicht mehr.
@@ -643,7 +653,7 @@ final class DeviceIndex
         }
         $problems = [];
         foreach ($rows as $index => $row) {
-            $parent = (int)($row['MeteredBy'] ?? 0);
+            $parent = self::meteredByOf($row);
             if ($parent <= 1) {
                 continue;
             }
