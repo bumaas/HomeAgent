@@ -274,7 +274,9 @@ Weitere Regeln, die nicht offensichtlich sind:
   einer betreuten Anlage mit Einträgen 15 bis 24 und „On“ bei 30,5, vorher bis 30,5, 16.10.2026). Batteriegeräte melden den neuen Sollwert oft schon über die Zentrale,
   bevor das Gerät ihn übernimmt. Hat das Profil keine Schrittweite, gilt der kleinste Abstand seiner Einträge mit Zahlen
   (B81, 18.10.2026: dasselbe Homematic-IP-Profil hat Einträge im Abstand von 0,5; der Selbsttest meldete „in Schritten
-  von 0“, `set_state` rundete nicht). Ohne solche Einträge bleibt sie 0, der Selbsttest sagt „ohne feste Schrittweite“.
+  von 0“, `set_state` rundete nicht). Das gilt nur für dichte Einträge (`associationStep`: mindestens drei Abstände, jeder
+  ein Vielfaches des kleinsten, höchstens 1; Review 18.10.2026, M2: zwei Zahlen an den Rändern ergaben Schrittweite 24, und
+  21 °C wurde 30 °C). Sonst bleibt sie 0, der Selbsttest sagt „ohne feste Schrittweite“.
 - **Stopp:** über eine Stoppvariable (Wahrheitswert oder Eintrag „Stop“), sonst über das Modul des
   Geräts (`SymconDeviceBackend::STOP_MODULES`, Homematic und Velux KLF200).
 - **Zeitleiste für Zustände** (B69, Burkhard 13.10.2026: „was hat es mit der Zeitleiste auf sich?“): Zustände (`hasTimeline`:

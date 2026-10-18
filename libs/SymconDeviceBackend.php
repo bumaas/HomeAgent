@@ -352,18 +352,7 @@ final class SymconDeviceBackend implements DeviceBackend
         // mit Einträgen 15,0 bis 24,0 im Abstand von 0,5; der Selbsttest meldete „in Schritten von 0“, set_state rundete
         // nicht, die Karte nahm 0,5)
         if ($step <= 0) {
-            $values = [];
-            foreach ($data['Associations'] as $association) {
-                if (is_numeric(str_replace(',', '.', trim((string)$association['Name'])))) {
-                    $values[] = round((float)$association['Value'], 3);
-                }
-            }
-            $values = array_values(array_unique($values));
-            sort($values);
-            for ($i = 1; $i < count($values); $i++) {
-                $gap = round($values[$i] - $values[$i - 1], 3);
-                $step = $step <= 0 ? $gap : min($step, $gap);
-            }
+            $step = self::associationStep($data['Associations']);
         }
         // Ein Rand mit Text statt Zahl ist ein Sonderwert (Homematic: 30,5 „On“, 4,5 „Off“). Ohne Schrittweite
         // zählt das Raster der Karte (0,5); vorher blieb der Sonderwert dann im Bereich (betreute Anlage 16.10.2026).
@@ -379,6 +368,38 @@ final class SymconDeviceBackend implements DeviceBackend
             }
         }
         return $max > $min ? ['min' => $min, 'max' => $max, 'step' => $step] : null;
+    }
+
+    /**
+     * Raster aus den Einträgen mit Zahlen: der kleinste Abstand, aber nur bei dichten Einträgen (mindestens drei Abstände,
+     * jeder ein Vielfaches des kleinsten, höchstens 1). Grobe Einträge sind Beschriftungen, kein Raster: zwei Zahlen an den
+     * Rändern ergaben 24 (21 °C wurde 30 °C), Farbbänder bei 5, 18, 22, 26 ergaben 4 (Review 18.10.2026, M2).
+     */
+    private static function associationStep(array $associations): float
+    {
+        $values = [];
+        foreach ($associations as $association) {
+            if (is_numeric(str_replace(',', '.', trim((string)$association['Name'])))) {
+                $values[] = round((float)$association['Value'], 3);
+            }
+        }
+        $values = array_values(array_unique($values));
+        sort($values);
+        $gaps = [];
+        for ($i = 1; $i < count($values); $i++) {
+            $gaps[] = round($values[$i] - $values[$i - 1], 3);
+        }
+        if (count($gaps) < 3 || min($gaps) <= 0 || min($gaps) > 1) {
+            return 0.0;
+        }
+        $step = min($gaps);
+        foreach ($gaps as $gap) {
+            $multiple = $gap / $step;
+            if (abs($multiple - round($multiple)) > 0.001) {
+                return 0.0;
+            }
+        }
+        return $step;
     }
 
     public function colorMode(int $variableId): ?array

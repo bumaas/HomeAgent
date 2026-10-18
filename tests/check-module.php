@@ -252,7 +252,7 @@ $rolloHm = variable(VARIABLETYPE_FLOAT, 0.0);
 IPS_SetVariableCustomProfile($rolloHm, 'Rollladen.Reversed');
 $r = $anlage->range($rolloHm);
 pruefe($richtung($r) === ['open' => 1.0, 'closed' => 0.0, 'source' => 'reversed'] && ($r['profile'] ?? '') === 'Rollladen.Reversed', 'Profil mit .Reversed (wie Homematic LEVEL): größter Wert offen: ' . json_encode($r));
-// Fehlende Variablen heißen hier 69995 bis 69999: Der Kernel-Stub vergibt IDs zufällig aus 10000 bis 59999, mit 59999
+// Fehlende Variablen heißen hier 69993 bis 69999: Der Kernel-Stub vergibt IDs zufällig aus 10000 bis 59999, mit 59999
 // traf es in der CI am 18.10.2026 eine echte Variable mit Rollladen-Darstellung, und der Lauf brach ab.
 pruefe($anlage->range($licht) === null && $anlage->range(69999) === null, 'ohne Bereich und ohne Variable: unbekannt');
 
@@ -1149,7 +1149,7 @@ pruefe(($mitApps['show_chart']['inputSchema']['properties']['period']['enum'][0]
 pruefe(str_contains($mitApps['show_chart']['description'] ?? '', 'period=now without room, floor, type or name shows the current house power as rings.'), 'show_chart erklärt now: ' . ($mitApps['show_chart']['description'] ?? json_encode(array_keys($mitApps))));
 $setzeBilanz([$bilanzZeile('grid', 'Grid', 0, 0, $zaehler)]);
 pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: grid import power "Grid" ENERGY_COUNTER is in Wh, not a power value, so there is no house power'), 'Selbsttest: ein Zähler als Leistung: ' . $m->RunSelfTest());
-$setzeBilanz([$bilanzZeile('solar', 'Solar', 0, 0, 59994)]);
+$setzeBilanz([$bilanzZeile('solar', 'Solar', 0, 0, 69994)]);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Source "Solar": variable for solar power does not exist'), 'gelöschte Leistungsvariable: aktiv, das Log nennt sie');
 $setzeBilanz([]);
 
@@ -1246,6 +1246,27 @@ IPS_SetVariableProfileValues('HomeAgentTest.SollOhneRaster', 6, 30, 0);
 $sollOhneRaster = variable(VARIABLETYPE_FLOAT, 21.0);
 IPS_SetVariableCustomProfile($sollOhneRaster, 'HomeAgentTest.SollOhneRaster');
 pruefe($sollbereich($sollOhneRaster) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.0], 'ohne Schrittweite und ohne Einträge bleibt sie 0: ' . json_encode($sollbereich($sollOhneRaster)));
+// Grobe Einträge sind kein Raster (Review 18.10.2026, M2): Zwei Zahlen an den Rändern ergaben Schrittweite 24 (21 °C wurde
+// 30 °C), Farbbänder bei 5, 18, 22 und 26 ergaben 4. Ein Raster braucht mindestens drei Abstände, alle ein Vielfaches des
+// kleinsten, und höchstens 1.
+$grob = static function (string $name, array $eintraege) use ($sollbereich): ?array {
+    IPS_CreateVariableProfile($name, VARIABLETYPE_FLOAT);
+    IPS_SetVariableProfileValues($name, 5, 30, 0);
+    foreach ($eintraege as [$wert, $text]) {
+        IPS_SetVariableProfileAssociation($name, $wert, $text, '', -1);
+    }
+    $id = variable(VARIABLETYPE_FLOAT, 21.0);
+    IPS_SetVariableCustomProfile($id, $name);
+    return $sollbereich($id);
+};
+$r = $grob('HomeAgentTest.Raender', [[6, '6,0'], [30, '30,0']]);
+pruefe(($r['step'] ?? null) === 0.0, 'zwei Einträge an den Rändern sind kein Raster: ' . json_encode($r));
+$r = $grob('HomeAgentTest.Farbband', [[5, '5'], [18, '18'], [22, '22'], [26, '26']]);
+pruefe(($r['step'] ?? null) === 0.0, 'Farbbänder 5, 18, 22, 26 sind kein Raster: ' . json_encode($r));
+$r = $grob('HomeAgentTest.Luecke', [[15, '15,0'], [15.5, '15,5'], [16, '16,0'], [17.25, '17,25']]);
+pruefe(($r['step'] ?? null) === 0.0, 'ein Abstand, der kein Vielfaches des kleinsten ist, ergibt kein Raster: ' . json_encode($r));
+$r = $grob('HomeAgentTest.Dicht', [[15, '15,0'], [15.5, '15,5'], [16, '16,0'], [17, '17,0']]);
+pruefe(($r['step'] ?? null) === 0.5, 'dichte Einträge mit einer Lücke bleiben ein Raster von 0,5: ' . json_encode($r));
 
 // Farbmodus neben der Farbvariable (16.10.2026): Ident endet auf color_mode, wie bei Zigbee2MQTT, dem
 // HomeAssistant-Modul (auch mit Entitätsnamen davor) und Matter; andere Geschwister zählen nicht.
@@ -1797,7 +1818,7 @@ IPS_ApplyChanges($iid);
 pruefe($status() === IS_ACTIVE && str_contains($logText(), 'Faulty entries are disabled until they are corrected: Device "Zwischenstecker" (Keller)'), 'beim Übernehmen: aktiv, Warnung im Log: ' . $logText());
 pruefe(!in_array($weg, $m->GetReferenceList(), true) && in_array($licht, $m->GetReferenceList(), true), 'die gelöschte Variable ist keine Referenz mehr: ' . json_encode($m->GetReferenceList()));
 $kino = IPS_CreateScript(SCRIPTTYPE_PHP);
-$setze('Scenes', [['Room' => '', 'Name' => 'Kino', 'Aliases' => '', 'ScriptID' => $kino], ['Room' => '', 'Name' => 'Party', 'Aliases' => '', 'ScriptID' => 59993]]);
+$setze('Scenes', [['Room' => '', 'Name' => 'Kino', 'Aliases' => '', 'ScriptID' => $kino], ['Room' => '', 'Name' => 'Party', 'Aliases' => '', 'ScriptID' => 69993]]);
 pruefe($status() === IS_ACTIVE && in_array($kino, $m->GetReferenceList(), true), 'Szene mit gelöschtem Skript: aktiv, das gültige Skript ist Referenz');
 pruefe(str_starts_with($m->RunScene('', 'Party'), 'Nothing was started'), 'die gesperrte Szene startet nicht: ' . $m->RunScene('', 'Party'));
 pruefe($m->RunScene('', 'Kino') === 'Scene "Kino" was started.', 'die gültige startet: ' . $m->RunScene('', 'Kino'));
