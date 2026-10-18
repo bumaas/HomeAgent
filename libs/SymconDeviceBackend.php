@@ -348,6 +348,23 @@ final class SymconDeviceBackend implements DeviceBackend
         $min = (float)$data['MinValue'];
         $max = (float)$data['MaxValue'];
         $step = (float)$data['StepSize'];
+        // Ohne Schrittweite gilt der kleinste Abstand der Einträge mit Zahlen (B81, betreute Anlage: Homematic-IP-Profil
+        // mit Einträgen 15,0 bis 24,0 im Abstand von 0,5; der Selbsttest meldete „in Schritten von 0“, set_state rundete
+        // nicht, die Karte nahm 0,5)
+        if ($step <= 0) {
+            $values = [];
+            foreach ($data['Associations'] as $association) {
+                if (is_numeric(str_replace(',', '.', trim((string)$association['Name'])))) {
+                    $values[] = round((float)$association['Value'], 3);
+                }
+            }
+            $values = array_values(array_unique($values));
+            sort($values);
+            for ($i = 1; $i < count($values); $i++) {
+                $gap = round($values[$i] - $values[$i - 1], 3);
+                $step = $step <= 0 ? $gap : min($step, $gap);
+            }
+        }
         // Ein Rand mit Text statt Zahl ist ein Sonderwert (Homematic: 30,5 „On“, 4,5 „Off“). Ohne Schrittweite
         // zählt das Raster der Karte (0,5); vorher blieb der Sonderwert dann im Bereich (betreute Anlage 16.10.2026).
         $edge = $step > 0 ? $step : 0.5;

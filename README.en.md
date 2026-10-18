@@ -437,7 +437,8 @@ Values are sent in the step size of the variable, half dB for the Denon.
 
 The module checks a temperature against the range of the setpoint, which it reads from the presentation
 or the profile of the variable. Outside of it nothing is sent, and the answer names the range. Odd values
-go to the step size, with steps of 0.5 21.3 becomes 21.5, and the answer names the value sent. Entries
+go to the step size, with steps of 0.5 21.3 becomes 21.5, and the answer names the value sent. If the profile has no
+step size, the spacing of its entries counts, for example 15.0, 15.5, 16.0. Entries
 such as "On" at the edge of a Homematic profile do not count as part of the range. The button **Run
 self-test** shows the range for each thermostat.
 

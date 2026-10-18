@@ -264,6 +264,7 @@
             "Nothing was changed: give a command (%s), a percent value or a temperature.": "Nichts geändert: Es fehlt ein Befehl (%s), ein Prozentwert oder eine Temperatur.",
             "Note: %s has no action on its setpoint, the assistant can read it but not set it": "Hinweis: %s hat keine Aktion am Sollwert, der Assistent kann ihn lesen, aber nicht stellen",
             "Thermostat %s: %s to %s %s in steps of %s": "Thermostat %s: %s bis %s %s in Schritten von %s",
+            "Thermostat %s: %s to %s %s without a fixed step": "Thermostat %s: %s bis %s %s ohne feste Schrittweite",
             "Note: thermostat %s has no known value range, temperatures are sent unchecked": "Hinweis: Thermostat %s hat keinen bekannten Wertebereich, Temperaturen gehen ungeprüft hinaus",
             "Alexa instance": "Alexa-Instanz",
             "Propose devices from Alexa": "Geräte aus Alexa vorschlagen",

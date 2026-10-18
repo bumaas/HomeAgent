@@ -453,7 +453,7 @@ Denon-Receiver von -80 bis 18 dB. Dort sind 50 % also -31 dB, und die Abfrage ne
 Eine Temperatur prüft das Modul gegen den Bereich des Sollwerts, den es aus der Darstellung oder dem
 Profil der Variable liest. Liegt sie außerhalb, geht nichts hinaus, und die Antwort nennt den Bereich.
 Krumme Werte gehen auf die Schrittweite, aus 21,3 wird bei 0,5er-Schritten 21,5, und die Antwort nennt
-den gesendeten Wert. Einträge wie „On“ am Rand eines Homematic-Profils zählen nicht zum Bereich. Der
+den gesendeten Wert. Hat das Profil keine Schrittweite, gilt der Abstand seiner Einträge, etwa 15,0, 15,5, 16,0. Einträge wie „On“ am Rand eines Homematic-Profils zählen nicht zum Bereich. Der
 Knopf **Selbsttest ausführen** zeigt den Bereich je Thermostat.
 
 Die Farbtemperatur nimmt der Assistent in Kelvin an. Zählt die Variable in Mired (Bereich bis 1000, so

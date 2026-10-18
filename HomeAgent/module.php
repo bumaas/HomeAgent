@@ -488,7 +488,10 @@ class HomeAgent extends IPSModuleStrict
             }
             $unit = trim($backend->unit($setpoint));
             $number = static fn (float $value): string => rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
-            $lines[] = sprintf($this->Translate('Thermostat %s: %s to %s %s in steps of %s'), $label, $number($range['min']), $number($range['max']), $unit === '' ? '°C' : $unit, $number($range['step']));
+            // Ohne bekannte Schrittweite nicht „in Schritten von 0“ (B81)
+            $lines[] = $range['step'] > 0
+                ? sprintf($this->Translate('Thermostat %s: %s to %s %s in steps of %s'), $label, $number($range['min']), $number($range['max']), $unit === '' ? '°C' : $unit, $number($range['step']))
+                : sprintf($this->Translate('Thermostat %s: %s to %s %s without a fixed step'), $label, $number($range['min']), $number($range['max']), $unit === '' ? '°C' : $unit);
         }
         // Dieselbe Leistung oder derselbe Zähler an zwei Geräten (Messsteckdose und Gerät dahinter) zählt nur einmal.
         foreach (['power', 'energy'] as $role) {

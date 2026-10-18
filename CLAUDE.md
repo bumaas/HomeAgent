@@ -272,7 +272,9 @@ Weitere Regeln, die nicht offensichtlich sind:
 - **Sollwert:** Bereich und Schrittweite aus Darstellung oder Profil, Sonderwerte mit Text am Rand
   („On“) zählen nicht dazu, bei einem Profil ohne Schrittweite um 0,5 (das Raster der Karte; Homematic-IP-Profil
   einer betreuten Anlage mit Einträgen 15 bis 24 und „On“ bei 30,5, vorher bis 30,5, 16.10.2026). Batteriegeräte melden den neuen Sollwert oft schon über die Zentrale,
-  bevor das Gerät ihn übernimmt.
+  bevor das Gerät ihn übernimmt. Hat das Profil keine Schrittweite, gilt der kleinste Abstand seiner Einträge mit Zahlen
+  (B81, 18.10.2026: dasselbe Homematic-IP-Profil hat Einträge im Abstand von 0,5; der Selbsttest meldete „in Schritten
+  von 0“, `set_state` rundete nicht). Ohne solche Einträge bleibt sie 0, der Selbsttest sagt „ohne feste Schrittweite“.
 - **Stopp:** über eine Stoppvariable (Wahrheitswert oder Eintrag „Stop“), sonst über das Modul des
   Geräts (`SymconDeviceBackend::STOP_MODULES`, Homematic und Velux KLF200).
 - **Zeitleiste für Zustände** (B69, Burkhard 13.10.2026: „was hat es mit der Zeitleiste auf sich?“): Zustände (`hasTimeline`:

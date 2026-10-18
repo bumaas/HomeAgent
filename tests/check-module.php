@@ -1227,7 +1227,14 @@ foreach ([[15, '15,0'], [16, '16,0'], [17, '17,0'], [18, '18,0'], [19, '19,0'], 
 }
 $sollOhneSchritt = variable(VARIABLETYPE_FLOAT, 22.0);
 IPS_SetVariableCustomProfile($sollOhneSchritt, 'Temperature.HM_my');
-pruefe($sollbereich($sollOhneSchritt) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.0], 'ohne Schrittweite: „On“ bei 30,5 fällt heraus, Ende 30: ' . json_encode($sollbereich($sollOhneSchritt)));
+// Ohne Schrittweite gilt der kleinste Abstand der Einträge mit Zahlen als Raster (B81, Burkhard 18.10.2026): Der Selbsttest
+// meldete dort „in Schritten von 0“, set_state rundete gar nicht, die Karte nahm stillschweigend 0,5.
+pruefe($sollbereich($sollOhneSchritt) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.5], 'ohne Schrittweite: „On“ bei 30,5 fällt heraus, Ende 30, Raster aus den Einträgen 0,5: ' . json_encode($sollbereich($sollOhneSchritt)));
+IPS_CreateVariableProfile('HomeAgentTest.SollOhneRaster', VARIABLETYPE_FLOAT);
+IPS_SetVariableProfileValues('HomeAgentTest.SollOhneRaster', 6, 30, 0);
+$sollOhneRaster = variable(VARIABLETYPE_FLOAT, 21.0);
+IPS_SetVariableCustomProfile($sollOhneRaster, 'HomeAgentTest.SollOhneRaster');
+pruefe($sollbereich($sollOhneRaster) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.0], 'ohne Schrittweite und ohne Einträge bleibt sie 0: ' . json_encode($sollbereich($sollOhneRaster)));
 
 // Farbmodus neben der Farbvariable (16.10.2026): Ident endet auf color_mode, wie bei Zigbee2MQTT, dem
 // HomeAssistant-Modul (auch mit Entitätsnamen davor) und Matter; andere Geschwister zählen nicht.
@@ -1272,6 +1279,14 @@ $r = oderNull(static fn () => $aufruf->invoke($m, 'set_state', ['room' => 'Gast'
 pruefe(is_array($r) && GetValue($soll) === 22.5, 'Stellen über das Werkzeug schreibt den Sollwert: ' . json_encode(GetValue($soll)) . ' ' . json_encode($r, JSON_UNESCAPED_UNICODE));
 $test = $m->RunSelfTest();
 pruefe(str_contains($test, 'Thermostat Gast Heizung: 6 to 30 °C in steps of 0.5'), 'der Selbsttest nennt den Bereich des Sollwerts: ' . $test);
+// Ohne bekannte Schrittweite sagt der Selbsttest das, statt „in Schritten von 0“ (B81)
+IPS_SetVariableCustomProfile($soll, 'HomeAgentTest.SollOhneRaster');
+pruefe(str_contains($m->RunSelfTest(), 'Thermostat Gast Heizung: 6 to 30 °C without a fixed step'), 'ohne Schrittweite: ' . $m->RunSelfTest());
+// Mit dem Profil der betreuten Anlage rundet set_state auf das Raster der Einträge (0,5)
+IPS_SetVariableCustomProfile($soll, 'Temperature.HM_my');
+oderNull(static fn () => $aufruf->invoke($m, 'set_state', ['room' => 'Gast', 'temperature' => 21.3], null));
+pruefe(GetValue($soll) === 21.5, 'set_state rundet 21,3 auf 21,5: ' . json_encode(GetValue($soll)));
+IPS_SetVariableCustomProfile($soll, 'Temperature.HM_30.5');
 pruefe(!str_contains($test, 'Gast Heizung has no action'), 'die Ist-Temperatur braucht keine Aktion: ' . $test);
 $m->formUpdates = [];
 oderNull(static fn () => $m->UIDeviceChanged('thermostat', $ist, 0, 0, 0, 0, 0, $soll));
