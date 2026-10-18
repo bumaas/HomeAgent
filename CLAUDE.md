@@ -530,7 +530,14 @@ Weitere Regeln, die nicht offensichtlich sind:
   `mix_2026-10-17_zaehlerstand.json`): Homematic-`ENERGY_COUNTER` setzen nach Stromausfällen auf 0 zurück (am nuc eine
   Kühltruhe in 34 Monaten, eine Fernsehsteckdose im Sommer 2023 mit doppeltem Verbrauch), die Wallbox sprang an einem Tag
   41-mal hin und her, die Wärmepumpe lieferte Milliarden kWh. Nicht erkannt wird ein dauerhafter Sprung nach oben (der Zähler
-  geht dann auf). Am nuc dauert der ganze Selbsttest damit 2,2 s statt rund 0,5 s.
+  geht dann auf). Laufzeit (betreute Anlage, 18.10.2026: Selbsttest 8,2 s, davon 5,5 s in `counterReadings`): Eine Ablesung
+  kurz vor jetzt kostete bei Netzzählern, die alle paar Sekunden schreiben, 0,9 bis 1,4 s, eine an einer alten Monatsgrenze
+  2 bis 100 ms; die Startzeit der Abfrage ändert daran nichts. Deshalb ist der Stand nach jetzt der Wert der Variable, wenn
+  sie im letzten Tag aktualisiert wurde (`FRESH_SECONDS`; ein stillgelegter Zähler kann nach einer Reparatur neuere Sätze im
+  Archiv haben, so der alte Netzzähler dort nach dem Auffüllen vom 12. bis 14.05.), die Monatsprüfung liest nur die Grenzen
+  der Monate, die überhaupt auffallen können (Summe um mehr als `JUMP_ABOVE` mal die Schwelle über dem Median, folgt aus den
+  Bedingungen), und fehlt mit „Nullen ignorieren“ der Stand vor dem ersten Satz, beginnt die Gesamtprobe mit dem zweiten
+  Monat. Die Zählerprüfung dort danach 1,3 bis 1,6 s statt 5,1 bis 7,2 s, gleicher Befund.
 - **Datum und Uhrzeit** hängt das Modul an jede Antwort von `get_state` (`withNow()` in `module.php`, nicht in
   `DeviceIndex`, damit Skriptfunktionen und Bibliothekstests ohne sie bleiben). In Anleitung oder Werkzeugliste
   veraltete sie, weil Claude-App und HA beides lange zwischenspeichern.

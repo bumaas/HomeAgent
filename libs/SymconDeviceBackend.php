@@ -507,6 +507,9 @@ final class SymconDeviceBackend implements DeviceBackend
     /** So viele Rohwerte vor einem Zeitpunkt werden nach einem Wert über 0 durchsucht. */
     private const READING_DEPTH = 20;
 
+    /** Eine Variable, die so lange nicht aktualisiert wurde, gilt beim Zählerstand nach jetzt als stillgelegt. */
+    private const FRESH_SECONDS = 86400;
+
     public function counterReadings(int $variableId, array $times): ?array
     {
         $archives = IPS_GetInstanceListByModuleID(self::ARCHIVE_CONTROL);
@@ -520,8 +523,18 @@ final class SymconDeviceBackend implements DeviceBackend
             }
             // Laut Doku AC_GetLoggedValues die neuesten zuerst; Startzeit 0 heißt von Anfang an.
             $readings = [];
+            $now = time();
             foreach ($times as $time) {
                 $readings[$time] = null;
+                // Nach jetzt ist der letzte Satz der Wert der Variable. Aus dem Archiv kostete er in einer betreuten Anlage
+                // bei Netzzählern, die alle paar Sekunden schreiben, 0,9 bis 1,4 s (Selbsttest 8,2 s, 18.10.2026). Nur
+                // bei einer Variable, die im letzten Tag aktualisiert wurde: Ein stillgelegter Zähler kann nach einer
+                // Reparatur neuere Sätze im Archiv haben als in der Variable, und bei ihm ist die Abfrage billig.
+                $value = $time > $now && IPS_GetVariable($variableId)['VariableUpdated'] >= $now - self::FRESH_SECONDS ? GetValue($variableId) : null;
+                if ((is_int($value) || is_float($value)) && $value > 0) {
+                    $readings[$time] = (float)$value;
+                    continue;
+                }
                 foreach (AC_GetLoggedValues($archive, $variableId, 0, $time - 1, self::READING_DEPTH) as $row) {
                     if ((float)$row['Value'] > 0) {
                         $readings[$time] = (float)$row['Value'];

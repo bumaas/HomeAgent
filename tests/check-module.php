@@ -1100,6 +1100,22 @@ AC_AddLoggedValues($archiv, $verbrauch, array_map(static fn (array $r): array =>
 $ablesung = oderNull(static fn () => $m->testBackend()->counterReadings($verbrauch, [$verbrauchQuelle['ablesungen'][1][0], $verbrauchQuelle['ablesungen'][1][0] + 1, 1000]));
 pruefe($ablesung === [$verbrauchQuelle['ablesungen'][1][0] => (float)$verbrauchQuelle['ablesungen'][0][1], $verbrauchQuelle['ablesungen'][1][0] + 1 => (float)$verbrauchQuelle['ablesungen'][1][1], 1000 => null], 'counterReadings: der letzte Satz vor dem Zeitpunkt, vor dem ersten keiner: ' . json_encode($ablesung));
 pruefe(oderNull(static fn () => $m->testBackend()->counterReadings($leistung, [1000])) === null, 'counterReadings ohne Zähler im Archiv: null');
+// Nach jetzt ist der Zählerstand der Wert der Variable, ohne Archiv: In einer betreuten Anlage brauchte die Abfrage des
+// letzten Satzes eines Netzzählers, der alle paar Sekunden schreibt, 0,9 bis 1,4 s je Zähler (Selbsttest 8,2 s, 18.10.2026).
+SetValue($verbrauch, $verbrauchQuelle['wert'] + 1.5);
+$spaeter = time() + 60;
+pruefe(oderNull(static fn () => $m->testBackend()->counterReadings($verbrauch, [$spaeter])) === [$spaeter => (float)$verbrauchQuelle['wert'] + 1.5], 'counterReadings nach jetzt: der Wert der Variable');
+SetValue($verbrauch, 0.0);
+pruefe(oderNull(static fn () => $m->testBackend()->counterReadings($verbrauch, [$spaeter])) === [$spaeter => (float)$verbrauchQuelle['ablesungen'][count($verbrauchQuelle['ablesungen']) - 1][1]], 'nach jetzt mit 0 in der Variable: der letzte Satz über 0 aus dem Archiv');
+// Ein stillgelegter Zähler geht übers Archiv: Nach einer Reparatur kann es neuere Sätze haben als die Variable (alter
+// Netzzähler der betreuten Anlage, nach dem 12.05.2026 unverändert, im Archiv aufgefüllt bis zum 14.05.)
+SetValue($verbrauch, $verbrauchQuelle['wert'] + 1.5);
+$variablen = new ReflectionProperty(\IPS\VariableManager::class, 'variables');
+$liste = $variablen->getValue();
+$liste[$verbrauch]['VariableUpdated'] = time() - 2 * 86400;
+$variablen->setValue(null, $liste);
+pruefe(oderNull(static fn () => $m->testBackend()->counterReadings($verbrauch, [$spaeter])) === [$spaeter => (float)$verbrauchQuelle['ablesungen'][count($verbrauchQuelle['ablesungen']) - 1][1]], 'nach jetzt mit seit zwei Tagen unveränderter Variable: der letzte Satz aus dem Archiv');
+SetValue($verbrauch, $verbrauchQuelle['wert']);
 $setzeBilanz([$bilanzZeile('grid', 'Netz', $verbrauch)]);
 $test = $m->RunSelfTest();
 pruefe(str_contains($test, 'Note: grid import "Netz" Verbrauch: the archive counts more than the meter reading rose (01/2024 +659.8 kWh). Usually that is a single wrong value'), 'Selbsttest nennt den Monat mit Fehlwert, nicht den Neustart im Mai 2026: ' . $test);

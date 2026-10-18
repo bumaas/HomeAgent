@@ -883,17 +883,39 @@ final class DeviceIndex
             return [];
         }
         $rows = $this->backend->counterSeries($variableId, 3, 0, 0)['rows'] ?? [];
-        $bounds = [];
-        foreach ($rows as $i => $row) {
-            $bounds[$i] = [$i === 0 ? (int)$row['time'] + 1 : (int)$row['time'], isset($rows[$i + 1]) ? (int)$rows[$i + 1]['time'] : $now + 1];
+        // Mit „Nullen ignorieren“ und einem ersten Satz 0 gibt es vor dem ersten Satz keinen Stand über 0; dann beginnt die
+        // Probe mit dem zweiten Monat (den ersten prüft auch die Monatsprüfung nicht). Alter Einspeisezähler einer betreuten
+        // Anlage: Seine Sommermonate liegen weit über dem Median, die Monatsprüfung kostete 1,9 s (18.10.2026).
+        if ($total !== null && $total[$first] === null && $total[$now + 1] !== null && count($rows) > 1) {
+            $second = (int)$rows[1]['time'];
+            $start = $this->backend->counterReadings($variableId, [$second])[$second] ?? null;
+            if ($start !== null && $kwh($sum - (float)$rows[0]['sum'] - ($total[$now + 1] - $start)) <= self::JUMP_KWH) {
+                return [];
+            }
         }
-        $readings = $this->backend->counterReadings($variableId, array_values(array_unique(array_merge(...array_values($bounds ?: [[]]))))) ?? [];
         $sums = array_map(static fn (array $row): float => $kwh((float)$row['sum']), $rows);
         $sorted = $sums;
         sort($sorted);
         $median = $sorted === [] ? 0.0 : $sorted[intdiv(count($sorted), 2)];
+        // Auffallen kann nur ein Monat, dessen Summe um mehr als JUMP_ABOVE mal die Schwelle über dem Median liegt (folgt aus
+        // den beiden Bedingungen unten). Nur dessen Grenzen werden abgelesen: In einer betreuten Anlage kostete jede Ablesung
+        // bei einem Zähler, der alle paar Sekunden schreibt, bis zu 35 ms, der Selbsttest brauchte 8,2 s (18.10.2026).
+        $threshold = max(self::JUMP_KWH, self::JUMP_SHARE * $median);
+        $bounds = [];
+        foreach ($rows as $i => $row) {
+            if ($sums[$i] - $median > self::JUMP_ABOVE * $threshold) {
+                $bounds[$i] = [$i === 0 ? (int)$row['time'] + 1 : (int)$row['time'], isset($rows[$i + 1]) ? (int)$rows[$i + 1]['time'] : $now + 1];
+            }
+        }
+        if ($bounds === []) {
+            return [];
+        }
+        $readings = $this->backend->counterReadings($variableId, array_values(array_unique(array_merge(...array_values($bounds))))) ?? [];
         $months = [];
         foreach ($rows as $i => $row) {
+            if (!isset($bounds[$i])) {
+                continue;
+            }
             $start = $readings[$bounds[$i][0]] ?? null;
             $end = $readings[$bounds[$i][1]] ?? null;
             if ($start === null || $end === null) {
@@ -907,7 +929,7 @@ final class DeviceIndex
             // Ein Zählerstand unter zwei üblichen Monaten hat kurz vorher neu angefangen; auch dann zählt das Archiv richtig
             // (nuc: Steckdose Fernseher im August 2023, Rücksetzungen am 31.07. und 01.08. bei doppeltem Sommerverbrauch).
             $restarted = min($kwh($start), $kwh($end)) < self::RESTART_MONTHS * $median;
-            if (!$restarted && $excess > max(self::JUMP_KWH, self::JUMP_SHARE * $median) && $sums[$i] - $median >= self::JUMP_ABOVE * $excess) {
+            if (!$restarted && $excess > $threshold && $sums[$i] - $median >= self::JUMP_ABOVE * $excess) {
                 $months[self::sectionStart((int)$row['time'], 3)] = $excess;
             }
         }

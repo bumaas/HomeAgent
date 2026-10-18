@@ -1,5 +1,5 @@
 {
-    "_quelle": "B78, 17.10.2026, nur gelesen. Je Zähler die Aggregate der Stufen 3 (Monat) und 4 (Jahr) wie AC_GetAggregatedValues sie liefert (das erste trägt den Zeitpunkt des ersten Satzes) und je Grenze der letzte Satz über 0 davor (AC_GetLoggedValues, „ablesungen“). Betreute Anlage (9.0 C++): „Verbrauch“ eines Anwenderskripts mit zwei eigenen Ausreißern im Januar 2024 (06.01. und 13.01.) und einem Neustart des Zählers im Mai 2026 (Tausch des Netzzählers, Stand fiel einmal von 27121.8 auf 10617.0); PV-Zähler und Einspeisung wurden am 17.10.2026 repariert und sind sauber. nuc (9.1 Rust): Ertragszähler Heizen der Wärmepumpe mit Fehlwerten seit Juli 2026 (Backlog B40, Milliarden kWh), Einspeisung sauber (November 2024 2.5 kWh Abweichung bei 119 kWh), EVCC in Wh mit 41 Rücksprüngen am 08.05.2026 (der Wert springt hin und her) und einem einzelnen Rücksprung am 20.08.2026, Schalterleiste, Kühltruhe und Steckdose Fernseher (Homematic ENERGY_COUNTER, Wh) mit Rücksetzungen auf 0 bis 125 Wh, nach denen der Zähler weiterzählt; der Fernseher brauchte im Sommer 2023 doppelt so viel wie sonst und setzte am 31.07. und 01.08.2023 zurück. Echt sind alle Werte; angenommen ist nur, welche Variable in welcher Zeile steht (der Wärmeertrag als Zähler, „Verbrauch“ als Zähler).",
+    "_quelle": "B78, 17.10.2026, nur gelesen. Je Zähler die Aggregate der Stufen 3 (Monat) und 4 (Jahr) wie AC_GetAggregatedValues sie liefert (das erste trägt den Zeitpunkt des ersten Satzes) und je Grenze der letzte Satz über 0 davor (AC_GetLoggedValues, „ablesungen“). Betreute Anlage (9.0 C++): „Verbrauch“ eines Anwenderskripts mit zwei eigenen Ausreißern im Januar 2024 (06.01. und 13.01.) und einem Neustart des Zählers im Mai 2026 (Tausch des Netzzählers, Stand fiel einmal von 27121.8 auf 10617.0); PV-Zähler und Einspeisung wurden am 17.10.2026 repariert und sind sauber. nuc (9.1 Rust): Ertragszähler Heizen der Wärmepumpe mit Fehlwerten seit Juli 2026 (Backlog B40, Milliarden kWh), Einspeisung sauber (November 2024 2.5 kWh Abweichung bei 119 kWh), EVCC in Wh mit 41 Rücksprüngen am 08.05.2026 (der Wert springt hin und her) und einem einzelnen Rücksprung am 20.08.2026, Schalterleiste, Kühltruhe und Steckdose Fernseher (Homematic ENERGY_COUNTER, Wh) mit Rücksetzungen auf 0 bis 125 Wh, nach denen der Zähler weiterzählt; der Fernseher brauchte im Sommer 2023 doppelt so viel wie sonst und setzte am 31.07. und 01.08.2023 zurück. Echt sind alle Werte; angenommen ist nur, welche Variable in welcher Zeile steht (der Wärmeertrag als Zähler, „Verbrauch“ als Zähler). Nachtrag 18.10.2026 (gleiche Aufnahme): die Einspeisung des ausgebauten Netzzählers der betreuten Anlage (#18681, „Nullen ignorieren“, erster Satz 0, Sommermonate weit über dem Median, sauber), abgelesen am 18.10.2026 mit neuer Zeit „jetzt“.",
     "zeitzone": "Europe/Berlin",
     "betreut": {
         "jetzt": 1792268693,
@@ -18,6 +18,15 @@
                 "Name": "Huawei",
                 "EnergyIn": 25173,
                 "EnergyOut": 0,
+                "PowerIn": 0,
+                "PowerOut": 0,
+                "Invert": false
+            },
+            {
+                "Type": "grid",
+                "Name": "Netz bis 05/2026",
+                "EnergyIn": 0,
+                "EnergyOut": 18681,
                 "PowerIn": 0,
                 "PowerOut": 0,
                 "Invert": false
@@ -763,6 +772,314 @@
                     [
                         1792255135,
                         1217.5018921327041
+                    ]
+                ]
+            },
+            "18681": {
+                "name": "Netzeinspeisung Zähler",
+                "einheit": "kWh",
+                "archiviert": true,
+                "aggregationstyp": 1,
+                "ignoreZeros": true,
+                "wert": 4667.08,
+                "aggregate": {
+                    "3": [
+                        {
+                            "zeit": 1698139462,
+                            "summe": 9.35
+                        },
+                        {
+                            "zeit": 1698793200,
+                            "summe": 4.2
+                        },
+                        {
+                            "zeit": 1701385200,
+                            "summe": 1.06
+                        },
+                        {
+                            "zeit": 1704063600,
+                            "summe": 12.25
+                        },
+                        {
+                            "zeit": 1706742000,
+                            "summe": 39.5
+                        },
+                        {
+                            "zeit": 1709247600,
+                            "summe": 149.58
+                        },
+                        {
+                            "zeit": 1711922400,
+                            "summe": 236.76
+                        },
+                        {
+                            "zeit": 1714514400,
+                            "summe": 311.01
+                        },
+                        {
+                            "zeit": 1717192800,
+                            "summe": 312.54
+                        },
+                        {
+                            "zeit": 1719784800,
+                            "summe": 335.51
+                        },
+                        {
+                            "zeit": 1722463200,
+                            "summe": 377.33
+                        },
+                        {
+                            "zeit": 1725141600,
+                            "summe": 182.72
+                        },
+                        {
+                            "zeit": 1727733600,
+                            "summe": 60.54
+                        },
+                        {
+                            "zeit": 1730415600,
+                            "summe": 3.37
+                        },
+                        {
+                            "zeit": 1733007600,
+                            "summe": 13.08
+                        },
+                        {
+                            "zeit": 1735686000,
+                            "summe": 7.73
+                        },
+                        {
+                            "zeit": 1738364400,
+                            "summe": 36.2
+                        },
+                        {
+                            "zeit": 1740783600,
+                            "summe": 216.65
+                        },
+                        {
+                            "zeit": 1743458400,
+                            "summe": 321.74
+                        },
+                        {
+                            "zeit": 1746050400,
+                            "summe": 439.38
+                        },
+                        {
+                            "zeit": 1748728800,
+                            "summe": 332.44
+                        },
+                        {
+                            "zeit": 1751320800,
+                            "summe": 265.77
+                        },
+                        {
+                            "zeit": 1753999200,
+                            "summe": 194.81
+                        },
+                        {
+                            "zeit": 1756677600,
+                            "summe": 125.14
+                        },
+                        {
+                            "zeit": 1759269600,
+                            "summe": 112.56
+                        },
+                        {
+                            "zeit": 1761951600,
+                            "summe": 18.25
+                        },
+                        {
+                            "zeit": 1764543600,
+                            "summe": 3.15
+                        },
+                        {
+                            "zeit": 1767222000,
+                            "summe": 0.79
+                        },
+                        {
+                            "zeit": 1769900400,
+                            "summe": 22.96
+                        },
+                        {
+                            "zeit": 1772319600,
+                            "summe": 109.67
+                        },
+                        {
+                            "zeit": 1774994400,
+                            "summe": 337
+                        },
+                        {
+                            "zeit": 1777586400,
+                            "summe": 82.5
+                        },
+                        {
+                            "zeit": 1780264800,
+                            "summe": 0
+                        },
+                        {
+                            "zeit": 1782856800,
+                            "summe": 0
+                        },
+                        {
+                            "zeit": 1785535200,
+                            "summe": 0
+                        },
+                        {
+                            "zeit": 1788213600,
+                            "summe": 0
+                        },
+                        {
+                            "zeit": 1790805600,
+                            "summe": 0
+                        }
+                    ],
+                    "4": [
+                        {
+                            "zeit": 1698139462,
+                            "summe": 14.61
+                        },
+                        {
+                            "zeit": 1704063600,
+                            "summe": 2034.19
+                        },
+                        {
+                            "zeit": 1735686000,
+                            "summe": 2073.82
+                        },
+                        {
+                            "zeit": 1767222000,
+                            "summe": 552.92
+                        }
+                    ]
+                },
+                "ablesungen": [
+                    [
+                        1698765816,
+                        9.35
+                    ],
+                    [
+                        1700915733,
+                        13.55
+                    ],
+                    [
+                        1703939763,
+                        14.61
+                    ],
+                    [
+                        1706699940,
+                        26.86
+                    ],
+                    [
+                        1709220183,
+                        66.36
+                    ],
+                    [
+                        1711899113,
+                        215.94
+                    ],
+                    [
+                        1714497586,
+                        452.7
+                    ],
+                    [
+                        1717176046,
+                        763.71
+                    ],
+                    [
+                        1719766755,
+                        1076.25
+                    ],
+                    [
+                        1722442124,
+                        1411.76
+                    ],
+                    [
+                        1725116994,
+                        1789.0900000000001
+                    ],
+                    [
+                        1727703473,
+                        1971.81
+                    ],
+                    [
+                        1730297678,
+                        2032.3500000000001
+                    ],
+                    [
+                        1732972238,
+                        2035.72
+                    ],
+                    [
+                        1735650310,
+                        2048.8
+                    ],
+                    [
+                        1738333709,
+                        2056.53
+                    ],
+                    [
+                        1740755907,
+                        2092.73
+                    ],
+                    [
+                        1743434832,
+                        2309.38
+                    ],
+                    [
+                        1746034678,
+                        2631.12
+                    ],
+                    [
+                        1748713964,
+                        3070.5
+                    ],
+                    [
+                        1751297639,
+                        3402.94
+                    ],
+                    [
+                        1753995600,
+                        3668.71
+                    ],
+                    [
+                        1756659824,
+                        3863.52
+                    ],
+                    [
+                        1759245695,
+                        3988.6600000000003
+                    ],
+                    [
+                        1761921747,
+                        4101.22
+                    ],
+                    [
+                        1763818278,
+                        4119.47
+                    ],
+                    [
+                        1767007709,
+                        4122.62
+                    ],
+                    [
+                        1769433202,
+                        4123.41
+                    ],
+                    [
+                        1772286408,
+                        4146.37
+                    ],
+                    [
+                        1774970142,
+                        4256.04
+                    ],
+                    [
+                        1777567998,
+                        4593.04
+                    ],
+                    [
+                        1778751094,
+                        4675.54
                     ]
                 ]
             }

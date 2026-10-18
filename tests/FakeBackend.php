@@ -476,8 +476,12 @@ final class FakeBackend implements DeviceBackend
         return ['sum' => $sum, 'unit' => (string)($v['einheit'] ?? '')];
     }
 
+    /** @var list<array{0: int, 1: int}> abgefragte Zählerreihen als [Variable, Stufe], für Prüfungen der Laufzeit */
+    public array $seriesRequests = [];
+
     public function counterSeries(int $variableId, int $level, int $from, int $to): ?array
     {
+        $this->seriesRequests[] = [$variableId, $level];
         $v = $this->variables[$variableId] ?? null;
         if ($v === null || ($v['archiviert'] ?? false) !== true || ($v['aggregationstyp'] ?? 0) !== 1) {
             return null;
@@ -493,9 +497,13 @@ final class FakeBackend implements DeviceBackend
         return ['rows' => $rows, 'unit' => (string)($v['einheit'] ?? '')];
     }
 
+    /** @var array<int, int> abgefragte Zeitpunkte je Variable (counterReadings), für Prüfungen der Laufzeit */
+    public array $readingRequests = [];
+
     /** Zählerstand vor jedem Zeitpunkt aus den mitgeschnittenen Rohwerten („ablesungen“ als [zeit, wert]), Nullen übergangen. */
     public function counterReadings(int $variableId, array $times): ?array
     {
+        $this->readingRequests[$variableId] = ($this->readingRequests[$variableId] ?? 0) + count($times);
         $v = $this->variables[$variableId] ?? null;
         if ($v === null || ($v['archiviert'] ?? false) !== true || ($v['aggregationstyp'] ?? 0) !== 1) {
             return null;

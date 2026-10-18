@@ -23,9 +23,14 @@ require_once __DIR__ . '/FakeBackend.php';
 $mitschnitt = fixture('mix_2026-10-17_zaehlerstand.json');
 date_default_timezone_set($mitschnitt['zeitzone']);
 
+/** @var array<int, int> abgefragte Zählerstände je Variable beim letzten Aufruf von sprunge() */
+$abgelesen = [];
+/** @var list<array{0: int, 1: int}> abgefragte Zählerreihen [Variable, Stufe] beim letzten Aufruf von sprunge() */
+$reihen = [];
+
 function sprunge(string $anlage, ?array $geraete = null, ?array $quellen = null): array
 {
-    global $mitschnitt;
+    global $mitschnitt, $abgelesen, $reihen;
     $a = $mitschnitt[$anlage];
     $backend = new FakeBackend($a['variablen']);
     $backend->jetzt = $a['jetzt'];
@@ -38,6 +43,8 @@ function sprunge(string $anlage, ?array $geraete = null, ?array $quellen = null)
     foreach ($index->counterJumps() as $sprung) {
         $liste[$sprung['variable']] = $sprung;
     }
+    $abgelesen = $backend->readingRequests;
+    $reihen = $backend->seriesRequests;
     return $liste;
 }
 
@@ -60,6 +67,10 @@ pruefe(($b[14339]['label'] ?? '') === 'Verbrauch' && ($b[14339]['key'] ?? null) 
 pruefe(!isset($b[25173]), 'der reparierte PV-Zähler geht auf: ' . json_encode(monate($b[25173] ?? null)));
 pruefe(!isset($b[11314]), 'die Einspeisung (Nullen ignoriert, der erste Satz 0) geht auf: ' . json_encode(monate($b[11314] ?? null)));
 pruefe(count($b) === 1, 'nur der Verbrauch fällt auf: ' . json_encode(array_keys($b)));
+// Mit „Nullen ignorieren“ und einem ersten Satz 0 fehlt der Stand vor dem ersten Satz; die Gesamtprobe beginnt dann mit
+// dem zweiten Monat und erspart die Monatsprüfung (alter Einspeisezähler der betreuten Anlage, Sommermonate weit über dem
+// Median: 1,9 s, 18.10.2026)
+pruefe(!isset($b[18681]) && ($abgelesen[18681] ?? 99) <= 3, 'alte Einspeisung mit erstem Satz 0: kein Befund, die Gesamtprobe ab dem zweiten Monat reicht: ' . ($abgelesen[18681] ?? 0) . ' Zeitpunkte abgelesen');
 
 /* --- nuc ------------------------------------------------------------------------------------------ */
 
@@ -72,6 +83,13 @@ pruefe(monate($n[36579] ?? null) === ['2026-05' => 27.2], 'Wallbox in Wh, gerech
 pruefe(!isset($n[16183]), 'Schalterleiste: Rücksetzungen auf 0 in 2023 und 2024 sind kein Befund: ' . json_encode(monate($n[16183] ?? null)));
 pruefe(!isset($n[37729]), 'Steckdose Fernseher: Rücksetzungen im August 2023 bei doppeltem Sommerverbrauch sind kein Befund: ' . json_encode(monate($n[37729] ?? null)));
 pruefe(!isset($n[17393]),'Kühltruhe: 34 Monate mit Rücksetzung, keiner ein Befund: ' . json_encode(monate($n[17393] ?? null)));
+// Abgelesen werden nur die Monate, deren Summe überhaupt auffallen kann (mehr als drei Viertel der Schwelle über dem
+// Median): In einer betreuten Anlage kostete jede Ablesung bei einem Zähler, der alle paar Sekunden schreibt, bis zu 35 ms,
+// der Selbsttest brauchte 8,2 s (18.10.2026).
+// Vorher 111 bzw. 75 Zeitpunkte (je Monat beide Grenzen), jetzt die Gesamtprobe (bei der Kühltruhe mit erstem Satz 0 auch
+// ab dem zweiten Monat) und die Grenzen der auffälligen Monate.
+pruefe(($abgelesen[17393] ?? 0) <= 17, 'Kühltruhe: nur die Grenzen auffälliger Monate abgelesen: ' . ($abgelesen[17393] ?? 0));
+pruefe(($abgelesen[37729] ?? 0) <= 40, 'Steckdose Fernseher (Sommermonate über dem Median): ebenso: ' . ($abgelesen[37729] ?? 0));
 
 /* --- Bilanz: Teil und Name der Quelle ------------------------------------------------------------- */
 
