@@ -252,7 +252,9 @@ $rolloHm = variable(VARIABLETYPE_FLOAT, 0.0);
 IPS_SetVariableCustomProfile($rolloHm, 'Rollladen.Reversed');
 $r = $anlage->range($rolloHm);
 pruefe($richtung($r) === ['open' => 1.0, 'closed' => 0.0, 'source' => 'reversed'] && ($r['profile'] ?? '') === 'Rollladen.Reversed', 'Profil mit .Reversed (wie Homematic LEVEL): größter Wert offen: ' . json_encode($r));
-pruefe($anlage->range($licht) === null && $anlage->range(59999) === null, 'ohne Bereich und ohne Variable: unbekannt');
+// Fehlende Variablen heißen hier 69995 bis 69999: Der Kernel-Stub vergibt IDs zufällig aus 10000 bis 59999, mit 59999
+// traf es in der CI am 18.10.2026 eine echte Variable mit Rollladen-Darstellung, und der Lauf brach ab.
+pruefe($anlage->range($licht) === null && $anlage->range(69999) === null, 'ohne Bereich und ohne Variable: unbekannt');
 
 // Rollläden aus dem HomeAssistant-Modul: Die Position (Ident cover_status) ist dort ein Schieberegler 0 bis 100 %
 // ohne Rollladen-Darstellung, und Home Assistant zählt 100 als offen (Blindtest 11.10.2026, Mitschnitt Testbox).
@@ -281,7 +283,7 @@ $haHelligkeit = $haVariable($haMitschnitt['rolllaeden'][0], $haGeraet($haMitschn
 pruefe(($anlage->range($haHelligkeit)['source'] ?? null) === 'default', 'HomeAssistant-Modul, keine Rollladen-Position: Standard bleibt: ' . json_encode($anlage->range($haHelligkeit)));
 $fremd = $haVariable($haMitschnitt['rolllaeden'][0], $haGeraet(['ModuleID' => '{00000000-0000-0000-0000-000000000001}', 'ModuleName' => 'Anderes', 'ModuleType' => 3]), 'cover_status');
 pruefe(($anlage->range($fremd)['source'] ?? null) === 'default', 'anderes Modul mit demselben Ident: Standard bleibt: ' . json_encode($anlage->range($fremd)));
-pruefe($anlage->hasAction($licht) === false && $anlage->read(59999) === null, 'keine Aktion, fehlende Variable');
+pruefe($anlage->hasAction($licht) === false && $anlage->read(69999) === null, 'keine Aktion, fehlende Variable');
 
 // Profil mit leerem Suffix: Symcon hängt ein Leerzeichen an, die Antwort soll es nicht tragen
 IPS_CreateVariableProfile('Test.Position', VARIABLETYPE_INTEGER);
@@ -452,7 +454,7 @@ $skript = IPS_CreateScript(SCRIPTTYPE_PHP);
 IPS_SetProperty($iid, 'Scenes', json_encode([['Room' => 'Küche', 'Name' => 'Kochen', 'Aliases' => 'Kochlicht', 'ScriptID' => $skript]]));
 IPS_ApplyChanges($iid);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'gültige Szenenliste: aktiv');
-pruefe($anlage->scriptExists($skript) && !$anlage->scriptExists(59999) && !$anlage->scriptExists(0), 'scriptExists kennt das Skript, 0 und Fremdes nicht');
+pruefe($anlage->scriptExists($skript) && !$anlage->scriptExists(69999) && !$anlage->scriptExists(0), 'scriptExists kennt das Skript, 0 und Fremdes nicht');
 pruefe($m->RunScene('', 'kochlicht') === 'Scene "Kochen" was started.', 'RunScene über den Alias: ' . $m->RunScene('', 'kochlicht'));
 pruefe(str_starts_with($m->RunScene('', ''), '1 scene(s) available, none was started') && str_contains($m->RunScene('', ''), "\nKüche | Kochen"), 'RunScene ohne Namen nennt die Szenen: ' . $m->RunScene('', ''));
 pruefe(str_contains($m->RunSelfTest(), '2 released device(s), 1 scene(s), endpoint'), 'Selbsttest zählt die Szenen: ' . $m->RunSelfTest());
@@ -497,9 +499,9 @@ IPS_SetProperty($iid, 'Scenes', '[]');
 IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => $licht, 'LevelVariableID' => 0, 'Invert' => false],
     ['Room' => 'Küche', 'Name' => 'Lampe', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 0, 'LevelVariableID' => 1, 'Invert' => false],
-    ['Room' => 'Küche', 'Name' => 'Dimmer', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $licht, 'LevelVariableID' => 59999, 'Invert' => false],
-    ['Room' => 'Küche', 'Name' => 'Tür', 'Aliases' => '', 'Type' => 'door', 'StateVariableID' => $licht, 'LevelVariableID' => 59999, 'Invert' => false],
-    ['Room' => 'Küche', 'Name' => 'Temperatur', 'Aliases' => '', 'Type' => 'temperature', 'StateVariableID' => 59998, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Dimmer', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $licht, 'LevelVariableID' => 69999, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Tür', 'Aliases' => '', 'Type' => 'door', 'StateVariableID' => $licht, 'LevelVariableID' => 69999, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Temperatur', 'Aliases' => '', 'Type' => 'temperature', 'StateVariableID' => 69998, 'LevelVariableID' => 0, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Zeilen ohne die Fähigkeit ihres Typs sperren nur sich selbst: aktiv');
@@ -517,7 +519,7 @@ $dimmerStufe = variable(VARIABLETYPE_INTEGER, 40); // ohne Darstellung: Die Schi
 IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'Invert' => false],
     ['Room' => 'Küche', 'Name' => 'Dimmer', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 0, 'LevelVariableID' => $dimmerStufe, 'Invert' => false],
-    ['Room' => 'Küche', 'Name' => 'Tür', 'Aliases' => '', 'Type' => 'door', 'StateVariableID' => $licht, 'LevelVariableID' => 59999, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Tür', 'Aliases' => '', 'Type' => 'door', 'StateVariableID' => $licht, 'LevelVariableID' => 69999, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Rollladen mit Position, Licht nur mit Helligkeit, Fenster mit Kontakt: aktiv');
@@ -713,11 +715,11 @@ IPS\InstanceManager::createInstance($rp, ['ModuleID' => HomeAgentHarness::MODULE
 $raumProbe = IPS\InstanceManager::getInstanceInterface($rp);
 IPS_SetProperty($rp, 'Rooms', json_encode([['Name' => 'Küche', 'Aliases' => 'Kochen', 'Floor' => ''], ['Name' => 'Bad oben', 'Aliases' => 'Bad_DG', 'Floor' => '']]));
 IPS_SetProperty($rp, 'Devices', json_encode([
-    ['Room' => 'Wohnzimmer', 'Name' => 'Stehlampe', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 59999, 'LevelVariableID' => 0, 'Invert' => false],
-    ['Room' => 'Bad_DG', 'Name' => 'Spiegel', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 59995, 'LevelVariableID' => 0, 'Invert' => false],
-    ['Room' => 'Küche', 'Name' => 'Ofen', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => 59998, 'LevelVariableID' => 0, 'Invert' => false],
-    ['Room' => 'Küche ', 'Name' => 'Spüle', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => 59997, 'LevelVariableID' => 0, 'Invert' => false],
-    ['Room' => '', 'Name' => 'Ohne Raum', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => 59996, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => 'Wohnzimmer', 'Name' => 'Stehlampe', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 69999, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => 'Bad_DG', 'Name' => 'Spiegel', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 69995, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Ofen', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => 69998, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => 'Küche ', 'Name' => 'Spüle', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => 69997, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => '', 'Name' => 'Ohne Raum', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => 69996, 'LevelVariableID' => 0, 'Invert' => false],
 ]));
 IPS_ApplyChanges($rp);
 $raumFeld = static function (string $raum) use ($raumProbe): array {
@@ -745,8 +747,8 @@ $fehlend = $raumFormular['RoomsMissing'] ?? [];
 pruefe(($fehlend['visible'] ?? false) === true && str_contains((string)($fehlend['caption'] ?? ''), 'Wohnzimmer') && !str_contains((string)($fehlend['caption'] ?? ''), 'Küche') && !str_contains((string)($fehlend['caption'] ?? ''), 'Bad'), 'über der Liste stehen die Räume, die in der Raumliste fehlen: ' . ($fehlend['caption'] ?? '–'));
 // Ein Alias zählt als Raum der Raumliste
 IPS_SetProperty($rp, 'Devices', json_encode([
-    ['Room' => 'Bad_DG', 'Name' => 'Spiegel', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 59995, 'LevelVariableID' => 0, 'Invert' => false],
-    ['Room' => '', 'Name' => 'Ohne Raum', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => 59996, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => 'Bad_DG', 'Name' => 'Spiegel', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 69995, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => '', 'Name' => 'Ohne Raum', 'Aliases' => '', 'Type' => 'switch', 'StateVariableID' => 69996, 'LevelVariableID' => 0, 'Invert' => false],
 ]));
 IPS_ApplyChanges($rp);
 $raumHinweis = array_column(flach(json_decode($raumProbe->GetConfigurationForm(), true)['elements']), null, 'name')['RoomsMissing'] ?? [];
@@ -761,7 +763,7 @@ oderNull(static fn () => $m->UIDeviceChanged('humidity', 0, 0));
 pruefe(in_array(['Invert', 'visible', false], $m->formUpdates, true) && in_array(['StateVariableID', 'caption', 'Measured value'], $m->formUpdates, true), 'Typwechsel auf Messwert blendet die Umkehr aus: ' . json_encode($m->formUpdates));
 
 IPS_SetProperty($iid, 'Devices', json_encode([
-    ['Room' => 'Küche', 'Name' => '', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 59999, 'LevelVariableID' => 0, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => '', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 69999, 'LevelVariableID' => 0, 'Invert' => false],
     ['Room' => 'Küche', 'Name' => 'Ofen', 'Aliases' => '', 'Type' => 'herd', 'StateVariableID' => $licht, 'LevelVariableID' => 0, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
@@ -789,7 +791,7 @@ $schalter = variable(VARIABLETYPE_BOOLEAN, false);
 IPS_SetName($schalter, 'Status');
 IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Küche', 'Name' => 'Lampe', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $schalter, 'LevelVariableID' => 1, 'Invert' => false],
-    ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => $schalter, 'LevelVariableID' => 59998, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => $schalter, 'LevelVariableID' => 69998, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
 $formular = json_decode($m->GetConfigurationForm(), true);
@@ -799,7 +801,7 @@ pruefe(isset($spalten['StateLabel'], $spalten['LevelLabel']) && !isset($spalten[
 pruefe(($spalten['StateVariableID']['visible'] ?? true) === false && ($spalten['LevelVariableID']['visible'] ?? true) === false && isset($spalten['StateVariableID']['edit']), 'die Variablen selbst bleiben als unsichtbare, gespeicherte Spalten in der Zeile');
 $werte = $geraete['values'] ?? [];
 pruefe(($werte[0] ?? null) === ['StateLabel' => 'Status', 'LevelLabel' => '-', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'ColorTempLabel' => '-', 'ColorLabel' => '-', 'PlaybackLabel' => '-', 'VolumeLabel' => '-', 'MuteLabel' => '-', 'TitleLabel' => '-', 'ArtistLabel' => '-', 'HumidityLabel' => '-', 'ModeLabel' => '-', 'FanLabel' => '-', 'rowColor' => ''], 'Licht ohne Helligkeit: Name der Variable und „-“: ' . json_encode($werte[0] ?? null, JSON_UNESCAPED_UNICODE));
-pruefe(($werte[1] ?? null) === ['StateLabel' => '-', 'LevelLabel' => '#59998 ?', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'ColorTempLabel' => '-', 'ColorLabel' => '-', 'PlaybackLabel' => '-', 'VolumeLabel' => '-', 'MuteLabel' => '-', 'TitleLabel' => '-', 'ArtistLabel' => '-', 'HumidityLabel' => '-', 'ModeLabel' => '-', 'FanLabel' => '-', 'rowColor' => '#FFC0C0'], 'Rollladen: der Zustand zählt nicht zum Typ, eine gelöschte Variable ist kenntlich und die Zeile rot: ' . json_encode($werte[1] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($werte[1] ?? null) === ['StateLabel' => '-', 'LevelLabel' => '#69998 ?', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'ColorTempLabel' => '-', 'ColorLabel' => '-', 'PlaybackLabel' => '-', 'VolumeLabel' => '-', 'MuteLabel' => '-', 'TitleLabel' => '-', 'ArtistLabel' => '-', 'HumidityLabel' => '-', 'ModeLabel' => '-', 'FanLabel' => '-', 'rowColor' => '#FFC0C0'], 'Rollladen: der Zustand zählt nicht zum Typ, eine gelöschte Variable ist kenntlich und die Zeile rot: ' . json_encode($werte[1] ?? null, JSON_UNESCAPED_UNICODE));
 
 $m->formUpdates = [];
 oderNull(static fn () => $m->UIDeviceChanged('light', $schalter, 0));
@@ -840,7 +842,7 @@ pruefe(!str_contains($werkzeuge['set_state']['description'] ?? '', 'Tilt windows
 /* --- Fahrstatus: Validierung, Selbsttest, Fahrtmerker im Buffer (Rollladen-Paket 09.10.2026) --- */
 
 IPS_SetProperty($iid, 'Devices', json_encode([
-    ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'MovingVariableID' => 59997, 'Invert' => false],
+    ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'MovingVariableID' => 69997, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'gelöschte Fahrstatus-Variable sperrt nur das Gerät: aktiv');
@@ -939,7 +941,7 @@ pruefe(str_contains($m->RunSelfTest(), 'Note: blind Gast Rollladen: the stop var
 $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
 pruefe(!in_array('stop', $werkzeuge['set_state']['inputSchema']['properties']['command']['enum'] ?? [], true) && isset($werkzeuge['set_state']), 'dann bietet das Schema kein stop an');
 IPS_SetProperty($iid, 'Devices', json_encode([
-    ['Room' => 'Gast', 'Name' => 'Rollladen', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $position, 'StopVariableID' => 59996, 'Invert' => false],
+    ['Room' => 'Gast', 'Name' => 'Rollladen', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $position, 'StopVariableID' => 69996, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Device "Rollladen" (Gast): variable for Stop does not exist'), 'gelöschte Stoppvariable: aktiv, das Log nennt sie');
@@ -969,7 +971,7 @@ oderNull(static fn () => $m->UIDeviceChanged('socket', $steckdose, 0, 0, $leistu
 pruefe(in_array(['PowerLabel', 'value', 'POWER'], $m->formUpdates, true) && in_array(['EnergyLabel', 'value', 'ENERGY_COUNTER'], $m->formUpdates, true), 'die Wahl von Leistung und Zähler zieht die Texte nach: ' . json_encode($m->formUpdates, JSON_UNESCAPED_UNICODE));
 
 $entfeuchter = ['Room' => 'Keller', 'Name' => 'Entfeuchter', 'Aliases' => '', 'Type' => 'socket', 'StateVariableID' => $steckdose, 'PowerVariableID' => $leistung, 'EnergyVariableID' => $zaehler, 'Invert' => false];
-IPS_SetProperty($iid, 'Devices', json_encode([['EnergyVariableID' => 59996] + $entfeuchter]));
+IPS_SetProperty($iid, 'Devices', json_encode([['EnergyVariableID' => 69996] + $entfeuchter]));
 IPS_ApplyChanges($iid);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Device "Entfeuchter" (Keller): variable for Energy meter (archived as counter) does not exist'), 'gelöschter Zähler: aktiv, das Log nennt ihn');
 
@@ -1124,7 +1126,7 @@ $setzeBilanz([$bilanzZeile('grid', 'Netz', $verbrauch)]);
 $test = $m->RunSelfTest();
 pruefe(str_contains($test, 'Note: grid import "Netz" Verbrauch: the archive counts more than the meter reading rose (01/2024 +659.8 kWh). Usually that is a single wrong value'), 'Selbsttest nennt den Monat mit Fehlwert, nicht den Neustart im Mai 2026: ' . $test);
 date_default_timezone_set($alteZone);
-$setzeBilanz([$bilanzZeile('grid', 'Grid', $zaehler), $bilanzZeile('battery', 'Battery', 0, 59995)]);
+$setzeBilanz([$bilanzZeile('grid', 'Grid', $zaehler), $bilanzZeile('battery', 'Battery', 0, 69995)]);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Source "Battery": variable for battery charge does not exist'), 'gelöschter Bilanzzähler: aktiv, das Log nennt ihn mit Quelle und Teil: ' . implode(' | ', array_slice(array_column($m->logs(), 'Message'), -2)));
 $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
 pruefe(!str_contains($werkzeuge['get_state']['inputSchema']['properties']['period']['description'] ?? '', 'house consumption'), 'eine Bilanz mit gelöschtem Zähler ist gesperrt, period nennt keinen Hausverbrauch mehr: ' . json_encode($werkzeuge['get_state']['inputSchema']['properties']['period'] ?? null));
@@ -1253,11 +1255,11 @@ $modus = variable(VARIABLETYPE_STRING, 'XY');
 IPS_SetParent($modus, $lampe);
 IPS_SetIdent($modus, 'light_wohnzimmer_licht_esstisch_color_mode');
 pruefe(oderNull(static fn () => $anlage->colorMode($farbe)) === ['ident' => 'light_wohnzimmer_licht_esstisch_color_mode', 'value' => 'XY'], 'Farbmodus neben der Farbe gefunden: ' . json_encode(oderNull(static fn () => $anlage->colorMode($farbe))));
-pruefe(oderNull(static fn () => $anlage->colorMode(59998)) === null, 'unbekannte Variable: null');
+pruefe(oderNull(static fn () => $anlage->colorMode(69998)) === null, 'unbekannte Variable: null');
 $haSoll = variable(VARIABLETYPE_FLOAT, 21.5);
 IPS_SetVariableCustomPresentation($haSoll, ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'MIN' => 6, 'MAX' => 30, 'STEP_SIZE' => 0.5, 'SUFFIX' => ' °C']);
 pruefe($sollbereich($haSoll) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.5], 'Darstellung Schieberegler (HomeAssistant-Modul): ' . json_encode($sollbereich($haSoll)));
-pruefe($sollbereich(variable(VARIABLETYPE_FLOAT, 20.0)) === null && $sollbereich(59999) === null, 'ohne Profil und Darstellung oder ohne Variable: unbekannt');
+pruefe($sollbereich(variable(VARIABLETYPE_FLOAT, 20.0)) === null && $sollbereich(69999) === null, 'ohne Profil und Darstellung oder ohne Variable: unbekannt');
 
 // Freigabeliste mit Thermostat: Schema, Abfrage, Stellen, Selbsttest, Validierung
 IPS_CreateVariableProfile('~Temperature', VARIABLETYPE_FLOAT);
@@ -3284,7 +3286,7 @@ IPS_ApplyChanges($qid);
 $werkzeugeQ = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(null, true), $q, HomeAgent::class)()), true), null, 'name');
 pruefe(in_array('pv', $werkzeugeQ['show_chart']['inputSchema']['properties']['part']['enum'] ?? [], true), 'eine PV-Anlage in der Liste: part=pv: ' . json_encode($werkzeugeQ['show_chart']['inputSchema']['properties']['part'] ?? null));
 // Fehler: PV mit zweitem Zähler, gelöschte Variable; dann ist die Bilanz gesperrt
-IPS_SetProperty($qid, 'Sources', json_encode([$bilanzZeile('solar', 'Garage', $zaehlerQ, $zaehlerQ), $bilanzZeile('grid', 'Tibber', 59997)]));
+IPS_SetProperty($qid, 'Sources', json_encode([$bilanzZeile('solar', 'Garage', $zaehlerQ, $zaehlerQ), $bilanzZeile('grid', 'Tibber', 69997)]));
 IPS_ApplyChanges($qid);
 $testQ = $q->RunSelfTest();
 pruefe(str_contains($testQ, 'Source "Garage": a solar plant has only its production, no second meter or power'), 'Selbsttest: PV mit zweitem Zähler: ' . $testQ);
