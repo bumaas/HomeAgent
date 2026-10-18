@@ -203,6 +203,13 @@ final class DeviceIndex
     /** Höchstens so viele Messwerte je Verlauf, sonst wird die Antwort zu lang. */
     private const HISTORY_MAX = 5;
 
+    /**
+     * type=power (B84) ist kein Gerätetyp: mit Zeitraum der Verlauf der Leistung, sonst die Leistung jetzt. Ein Verlauf der
+     * Leistung nennt je Gerät nur Minimum und Maximum (die Tabelle nur bei einem), deshalb mehr Geräte als beim Messwert.
+     */
+    public const POWER_TYPE = 'power';
+    private const POWER_HISTORY_MAX = 20;
+
     /** Aggregationsstufe des Archivs (Doku AC_GetAggregatedValues) => Wort und Datumsformat je Zeile. */
     private const HISTORY_LEVELS = [0 => ['hour', 'Y-m-d H:i'], 1 => ['day', 'Y-m-d'], 3 => ['month', 'Y-m']];
 
@@ -474,7 +481,8 @@ final class DeviceIndex
             }
         }
 
-        if ($type !== '' && !array_key_exists($type, self::TYPES)) {
+        $powerMode = $type === self::POWER_TYPE;
+        if ($type !== '' && !$powerMode && !array_key_exists($type, self::TYPES)) {
             return $this->fail(sprintf($this->t('Unknown type "%s". Allowed: %s.'), $type, implode(', ', array_keys(self::TYPES))));
         }
         if ($period !== '' && $period !== self::NOW && !in_array($period, self::PERIODS, true)) {
@@ -486,7 +494,10 @@ final class DeviceIndex
 
         $room = $this->effectiveRoom($room, $name, $floor);
         $filter = $this->describeFilter($room, $type, $name, $floor);
-        $matches = $this->find($room, $type, $name, $floor);
+        $matches = $this->find($room, $powerMode ? '' : $type, $name, $floor);
+        if ($powerMode) {
+            return $this->powerState($matches, $room === '' && $floor === '' && $name === '', $filter, $range, $rangeLabel, $rangeLevel, $period);
+        }
         // Ein Haus mit Energiebilanz braucht für den Hausverbrauch über einen Zeitraum keine freigegebenen Geräte (gefunden
         // am Mitschnitt nur mit Bilanzzählern, 13.10.2026)
         // Ebenso die Hausleistung jetzt mit einer Leistungsbilanz (B77, Test mit einer Bilanz ohne Geräte).
@@ -1155,49 +1166,9 @@ final class DeviceIndex
         }
         [$per, $format] = self::HISTORY_LEVELS[$level];
         $lines = [sprintf($this->t('History of %d measured value(s) (%s), per %s: minimum / average / maximum.'), count($measured), $filter, $this->t($per))];
-        if ($this->chart !== null) {
-            $this->chart += ['kind' => 'history', 'title' => $lines[0], 'per' => $per, 'filter' => $filter,
-                'labels' => ['minimum' => $this->t('minimum'), 'average' => $this->t('average'), 'maximum' => $this->t('maximum'), 'per' => $this->t($per), 'band' => $this->t('band from minimum to maximum')]];
-        }
+        $this->historyChart($lines[0], $per, $filter);
         foreach ($measured as $entry) {
-            $history = $this->historyRows($entry['roles']['state'], $level, $from, $to);
-            if ($history === null) {
-                $lines[] = $this->line($entry, $this->t('no history archived'));
-                continue;
-            }
-            $unit = trim($history['unit']);
-            if ($history['rows'] === []) {
-                $lines[] = $this->line($entry, $unit === '' ? '-' : $unit);
-                $lines[] = $this->t('no values in this period');
-            } else {
-                // Minimum und Maximum über den ganzen Zeitraum mit Zeitpunkt, damit das Modell nicht selbst in der
-                // Tabelle sucht (Bedienungs-Blindtest 12.10.2026, Leitbild „Das Werkzeug zählt“). Bei gleichen
-                // Werten zählt der erste.
-                $low = $high = $history['rows'][0];
-                foreach ($history['rows'] as $row) {
-                    $low = $row['min'] < $low['min'] ? $row : $low;
-                    $high = $row['max'] > $high['max'] ? $row : $high;
-                }
-                $suffix = $unit === '' ? '' : ' ' . $unit;
-                $lines[] = $this->line($entry, sprintf(
-                    $this->t('minimum %s (%s), maximum %s (%s)'),
-                    self::formatNumber($low['min']) . $suffix,
-                    date($format, $low['time']),
-                    self::formatNumber($high['max']) . $suffix,
-                    date($format, $high['time'])
-                ));
-            }
-            if ($this->chart !== null) {
-                // Fürs Diagramm gehen die Werte an die Seite, nicht ans Modell
-                if ($history['rows'] !== []) {
-                    $this->chart['series'][] = ['room' => $entry['Room'], 'name' => $entry['Name'], 'unit' => $unit,
-                        'points' => array_map(static fn (array $row): array => [$row['time'], $row['min'], $row['avg'], $row['max']], $history['rows'])];
-                }
-                continue;
-            }
-            foreach ($history['rows'] as $row) {
-                $lines[] = date($format, $row['time']) . ' ' . self::formatNumber($row['min']) . ' / ' . self::formatNumber($row['avg']) . ' / ' . self::formatNumber($row['max']);
-            }
+            $lines = array_merge($lines, $this->historyLines($entry, $this->historyRows($entry['roles']['state'], $level, $from, $to), $format, true));
         }
         if ($timed !== []) {
             $lines = array_merge($lines, $this->timelineLines($timed, $filter));
@@ -1547,6 +1518,203 @@ final class DeviceIndex
     }
 
     /** Verlauf wie history, die Zeitpunkte auf den Beginn des Abschnitts gesetzt (wie counterRows). */
+    /** Art, Titel und Beschriftungen eines Verlaufsdiagramms (Messwerte und Leistung). */
+    private function historyChart(string $title, string $per, string $filter): void
+    {
+        if ($this->chart !== null) {
+            $this->chart += ['kind' => 'history', 'title' => $title, 'per' => $per, 'filter' => $filter,
+                'labels' => ['minimum' => $this->t('minimum'), 'average' => $this->t('average'), 'maximum' => $this->t('maximum'), 'per' => $this->t($per), 'band' => $this->t('band from minimum to maximum')]];
+        }
+    }
+
+    /**
+     * Zeilen eines Verlaufs: Minimum und Maximum über den ganzen Zeitraum mit Zeitpunkt, mit $table dazu die Werte je
+     * Abschnitt. Mit Diagramm gehen die Werte an die Seite, nicht ans Modell.
+     *
+     * @param array<string, mixed> $entry Gerät oder eine Reihe des Hauses (Room, Name, Type)
+     * @return list<string>
+     */
+    private function historyLines(array $entry, ?array $history, string $format, bool $table): array
+    {
+        if ($history === null) {
+            return [$this->line($entry, $this->t('no history archived'))];
+        }
+        $unit = trim($history['unit']);
+        $lines = [];
+        if ($history['rows'] === []) {
+            $lines[] = $this->line($entry, $unit === '' ? '-' : $unit);
+            $lines[] = $this->t('no values in this period');
+        } else {
+            // Minimum und Maximum über den ganzen Zeitraum mit Zeitpunkt, damit das Modell nicht selbst in der
+            // Tabelle sucht (Bedienungs-Blindtest 12.10.2026, Leitbild „Das Werkzeug zählt“). Bei gleichen
+            // Werten zählt der erste.
+            $low = $high = $history['rows'][0];
+            foreach ($history['rows'] as $row) {
+                $low = $row['min'] < $low['min'] ? $row : $low;
+                $high = $row['max'] > $high['max'] ? $row : $high;
+            }
+            // Der Zeitpunkt aus MinTime/MaxTime der Aggregate (B84), sonst der Beginn des Abschnitts
+            $when = static fn (array $row, string $key): string => isset($row[$key]) ? date('Y-m-d H:i', (int)$row[$key]) : date($format, $row['time']);
+            $suffix = $unit === '' ? '' : ' ' . $unit;
+            $lines[] = $this->line($entry, sprintf(
+                $this->t('minimum %s (%s), maximum %s (%s)'),
+                self::formatNumber($low['min']) . $suffix,
+                $when($low, 'minTime'),
+                self::formatNumber($high['max']) . $suffix,
+                $when($high, 'maxTime')
+            ));
+        }
+        if ($this->chart !== null) {
+            if ($history['rows'] !== []) {
+                $this->chart['series'][] = ['room' => $entry['Room'], 'name' => $entry['Name'], 'unit' => $unit,
+                    'points' => array_map(static fn (array $row): array => [$row['time'], $row['min'], $row['avg'], $row['max']], $history['rows'])];
+            }
+            return $lines;
+        }
+        if ($table) {
+            foreach ($history['rows'] as $row) {
+                $lines[] = date($format, $row['time']) . ' ' . self::formatNumber($row['min']) . ' / ' . self::formatNumber($row['avg']) . ' / ' . self::formatNumber($row['max']);
+            }
+        }
+        return $lines;
+    }
+
+    /**
+     * get_state mit type=power (B84, Wunsch Micha87 im Forum 17.10.2026: „min und max Werte der Leistung“): ohne Zeitraum
+     * die Leistung jetzt, mit Zeitraum der Verlauf der Leistung. Fürs ganze Haus mit Energiebilanz die Hausleistung und
+     * die Netzleistung, sonst die Geräte mit Leistung.
+     *
+     * @param null|array{0: int, 1: int, 2: int} $range
+     * @return array{text: string, isError: bool}
+     */
+    private function powerState(array $matches, bool $wholeHouse, string $filter, ?array $range, string $rangeLabel, int $rangeLevel, string $period): array
+    {
+        $now = $range === null && ($period === '' || $period === self::NOW);
+        $house = $wholeHouse && ($now ? $this->powerBalance !== [] : ($this->balance !== [] || $this->powerVars !== []));
+        $matches = array_values(array_filter($matches, static fn (array $entry): bool => isset($entry['roles']['power'])));
+        if ($matches === [] && !$house) {
+            $this->problem = 'not_understood';
+            return $this->fail(sprintf($this->t('None of the matching devices measures power (%s).'), $filter));
+        }
+        if ($now) {
+            return $this->power($matches, $filter . ', period=' . self::NOW, $wholeHouse);
+        }
+        if ($range !== null) {
+            [, $from, $to] = $range;
+            return $this->powerHistory($matches, $rangeLevel, $from, $to, $filter . $rangeLabel, $house);
+        }
+        [, $from, $to] = self::periodBounds($period, $this->backend->timestamp());
+        return $this->powerHistory($matches, $this->chartLevel($period, $from, $to), $from, $to, $filter . ', period=' . $period, $house);
+    }
+
+    /**
+     * Verlauf der Leistung (B84): je Gerät Minimum und Maximum aus den Aggregaten der Leistung, wie beim Messwert, die
+     * Tabelle nur bei einer Reihe. Fürs Haus die Hausleistung im Stundenmittel aus den Zählern der Bilanz (gleichzeitige
+     * Spitzen mehrerer Sensoren liefert kein Aggregat; 15-Minuten-Aggregate scheiterten am nuc schon über 17 Tage an
+     * „Zu viele Werte (>150000)“) und die Netzleistung je Richtung mit dem Zeitpunkt der Rohwerte.
+     *
+     * @return array{text: string, isError: bool}
+     */
+    private function powerHistory(array $matches, int $level, int $from, int $to, string $filter, bool $house): array
+    {
+        [$per, $format] = self::HISTORY_LEVELS[$level];
+        $series = [];
+        if ($house) {
+            $title = sprintf($this->t('House power (%s), per %s: minimum / average / maximum.'), $filter, $this->t($per));
+            if ($this->balance !== []) {
+                $series[] = [['Room' => '', 'Name' => $this->t('house power (hourly mean)'), 'Type' => 'house'], $this->housePowerRows($level, $from, $to)];
+            }
+            foreach (['import' => 'grid import', 'export' => 'grid export'] as $key => $word) {
+                $variables = $this->powerVars[$key] ?? [];
+                foreach ($variables as $variable) {
+                    [$signed, $inverted] = $this->signedOf($key, $variable);
+                    $label = $this->t($word) . ($signed ? ' ' . $this->t('(export negative)') : '') . (count($variables) > 1 && $variable['name'] !== '' ? ' ' . $variable['name'] : '');
+                    $history = $this->historyRows($variable['variable'], $level, $from, $to);
+                    $series[] = [['Room' => '', 'Name' => $label, 'Type' => 'grid'], $history === null ? null : self::kilowattHistory($history, $inverted)];
+                }
+            }
+        } else {
+            // Teilen sich zwei Geräte eine Leistung (Messsteckdose und Gerät dahinter), zählt sie einmal, unter dem ersten
+            $seen = [];
+            foreach ($matches as $entry) {
+                $variableId = $entry['roles']['power'];
+                if (!isset($seen[$variableId])) {
+                    $seen[$variableId] = true;
+                    $series[] = [$entry, $this->historyRows($variableId, $level, $from, $to)];
+                }
+            }
+            if (count($series) > self::POWER_HISTORY_MAX) {
+                return $this->fail(sprintf($this->t('Too many devices (%d) for a power history (%s). Give a room or a name, at most %d at a time.'), count($series), $filter, self::POWER_HISTORY_MAX));
+            }
+            $title = sprintf($this->t('Power of %d device(s) (%s), per %s: minimum / average / maximum.'), count($series), $filter, $this->t($per));
+        }
+        $this->historyChart($title, $per, $filter);
+        $lines = [$title];
+        foreach ($series as [$entry, $history]) {
+            $lines = array_merge($lines, $this->historyLines($entry, $history, $format, count($series) === 1));
+        }
+        return ['text' => implode("\n", $lines), 'isError' => false];
+    }
+
+    /**
+     * Hausleistung je Abschnitt aus den Zählern der Bilanz: je Stunde der Hausverbrauch in kWh, also das Stundenmittel in
+     * kW, je Abschnitt Minimum, Mittel und Maximum mit der Stunde. Die laufende Stunde fehlt, ihr Mittel wäre zu niedrig.
+     *
+     * @return null|array{rows: list<array{time: int, min: float, avg: float, max: float, minTime: int, maxTime: int}>, unit: string}
+     */
+    private function housePowerRows(int $level, int $from, int $to): ?array
+    {
+        $parts = $this->balanceParts($this->balance, 0, $from, $to);
+        if ($parts === null) {
+            return null;
+        }
+        $now = $this->backend->timestamp();
+        $sections = [];
+        foreach ($parts as $time => $part) {
+            if ($time + 3600 > $now) {
+                continue;
+            }
+            $value = 0.0;
+            foreach (self::BALANCE_TERMS as $key => [$sign]) {
+                $value += $sign * ($part[$key] ?? 0.0);
+            }
+            $sections[self::sectionStart($time, $level)][] = [$time, max(0.0, $value)];
+        }
+        $rows = [];
+        foreach ($sections as $start => $hours) {
+            $low = $high = $hours[0];
+            foreach ($hours as $hour) {
+                $low = $hour[1] < $low[1] ? $hour : $low;
+                $high = $hour[1] > $high[1] ? $hour : $high;
+            }
+            $rows[] = ['time' => $start, 'min' => $low[1], 'avg' => array_sum(array_column($hours, 1)) / count($hours), 'max' => $high[1], 'minTime' => $low[0], 'maxTime' => $high[0]];
+        }
+        return ['rows' => $rows, 'unit' => 'kW'];
+    }
+
+    /** Verlauf einer Netzleistung in kW (W und MW umgerechnet); umgekehrt gezählt mit gedrehtem Vorzeichen. */
+    private static function kilowattHistory(array $history, bool $inverted): array
+    {
+        $factor = match (strtolower(trim($history['unit']))) {
+            'w'     => 0.001,
+            'kw'    => 1.0,
+            'mw'    => 1000.0,
+            default => null,
+        };
+        $sign = $inverted ? -1.0 : 1.0;
+        $scale = ($factor ?? 1.0) * $sign;
+        $history['rows'] = array_map(static function (array $row) use ($scale, $inverted): array {
+            $min = $row['min'] * $scale;
+            $max = $row['max'] * $scale;
+            $out = ['time' => $row['time'], 'min' => $inverted ? $max : $min, 'avg' => $row['avg'] * $scale, 'max' => $inverted ? $min : $max];
+            $minTime = $inverted ? ($row['maxTime'] ?? null) : ($row['minTime'] ?? null);
+            $maxTime = $inverted ? ($row['minTime'] ?? null) : ($row['maxTime'] ?? null);
+            return $out + array_filter(['minTime' => $minTime, 'maxTime' => $maxTime], static fn (?int $time): bool => $time !== null);
+        }, $history['rows']);
+        $history['unit'] = $factor === null ? $history['unit'] : 'kW';
+        return $history;
+    }
+
     private function historyRows(int $variableId, int $level, int $from, int $to): ?array
     {
         $history = $this->backend->history($variableId, $level, $from, $to);

@@ -552,7 +552,9 @@ final class SymconDeviceBackend implements DeviceBackend
             return null;
         }
         return [
-            'rows' => array_map(static fn (array $r): array => ['time' => (int)$r['TimeStamp'], 'min' => (float)$r['Min'], 'avg' => (float)$r['Avg'], 'max' => (float)$r['Max']], $rows),
+            // MinTime/MaxTime: Zeitpunkt von Minimum und Maximum der Rohwerte (Doku AC_GetAggregatedValues, B84)
+            'rows' => array_map(static fn (array $r): array => ['time' => (int)$r['TimeStamp'], 'min' => (float)$r['Min'], 'avg' => (float)$r['Avg'], 'max' => (float)$r['Max']]
+                + (isset($r['MinTime'], $r['MaxTime']) ? ['minTime' => (int)$r['MinTime'], 'maxTime' => (int)$r['MaxTime']] : []), $rows),
             'unit' => self::unitOf($variableId),
         ];
     }

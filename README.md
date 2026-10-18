@@ -10,7 +10,7 @@ die Geräte, die Sie freigeben.
 
 > **Stand:** frühe Vorschau. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Farbe, Position,
 > Heizungs-Sollwert und Zielfeuchte, Betriebsart und Lüfterstufe von Luftentfeuchtern und Lüftungen, das
-> Anhalten von Rollläden, Verbrauch und Leistung auch hinter Zählern und Unterzählern, der Verlauf von Messwerten, Zeitleisten von Zuständen, das Starten von Szenen sowie
+> Anhalten von Rollläden, Verbrauch und Leistung auch hinter Zählern und Unterzählern, der Verlauf von Messwerten und Leistungen, Zeitleisten von Zuständen, das Starten von Szenen sowie
 > Wiedergabe und Lautstärke von Mediaplayern gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz
 > vorschlagen. Die Claude-App meldet sich auf Wunsch per OAuth an. Was nicht geklappt hat, zeigt das
 > Formular, ein Protokoll zur Fehlersuche lässt sich einschalten. Erprobt ist das Modul bisher auf drei Anlagen.
@@ -357,7 +357,7 @@ Thermostats) liefern dieselben Zeiträume den **Verlauf**: je Stunde, Tag oder M
 Maximum, etwa „Wie warm war es die letzten 30 Tage im Gästezimmer?“. Die erste Zeile lautet dann
 „Verlauf von 1 Messwert(en) (room=Gast, type=temperature, from=2026-09-10, to=2026-10-09), je Tag:
 Minimum / Mittel / Maximum.“, darunter je Messwert eine Zeile mit dem tiefsten und höchsten Wert des ganzen
-Zeitraums samt Zeitpunkt („Minimum 20.6 °C (2026-09-30), Maximum 23.4 °C (2026-10-02)“) und je Zeitraum eine Zeile
+Zeitraums samt Zeitpunkt („Minimum 20.6 °C (2026-09-30 05:40), Maximum 23.4 °C (2026-10-02 16:15)“) und je Zeitraum eine Zeile
 wie „2026-09-28 22.2 / 22.6 / 23.1“. Heute und gestern kommen stündlich, Wochen und Monate täglich,
 Jahre monatlich; bei `from` und `to` bis zu zwei Tage stündlich, bis zu 100 Tage täglich, darüber
 monatlich. Der Verlauf gilt, wenn nach einem Messwert-Typ gefragt wird oder unter den Treffern kein
@@ -365,6 +365,16 @@ Gerät mit Zähler ist; fürs ganze Haus bleibt es beim Verbrauch. Höchstens f�
 einmal, sonst bittet die Antwort um einen Raum oder Namen. Liest ein Thermostat denselben Fühler wie
 ein Temperaturgerät, kommt der Verlauf nur einmal. Der Messwert muss im Archiv geloggt sein, sonst sagt
 die Zeile „kein Verlauf archiviert“.
+
+Nach der **Leistung über einen Zeitraum** fragt `type=power` zusammen mit `period` oder `from`/`to`, etwa „Wann hat
+der Trockner letzten Monat am meisten gezogen?“. Gemeint sind alle Treffer mit Leistung, auch Zähler. Je Gerät nennt
+eine Zeile die kleinste und die größte Leistung mit dem Zeitpunkt aus den Rohwerten des Archivs („Minimum 20.8 W
+(2026-10-08 22:40), Maximum 336.9 W (2026-10-01 20:46)“), bei nur einem Gerät folgt die Tabelle je Stunde, Tag oder
+Monat. Bis zu 20 Geräte gehen auf einmal. Ohne Raum und Name steht mit Energiebilanz dort die Hausleistung im
+Stundenmittel aus den Zählern der Bilanz, ihr Minimum ist die Grundlast, dazu Netzbezug und Einspeisung mit ihren
+Spitzen in kW. Die Spitzen mehrerer Sensoren lassen sich aus dem Archiv nicht sekundengenau zusammenrechnen, deshalb
+gilt fürs Haus das Stundenmittel. Ohne Zeitraum liefert `type=power` die Leistung jetzt. Die Leistung muss im Archiv
+geloggt sein.
 
 Für Geräte mit einem Zustand (an/aus, offen/zu, Bewegung, eine Auswahl wie die Betriebsart einer Batterie)
 liefern dieselben Zeiträume eine **Zeitleiste**: wie lange jeder Zustand galt und, bei bis zu zwölf Abschnitten,
@@ -519,7 +529,7 @@ Fragt man die Claude-App nach einem Diagramm, etwa „Zeig mir die Temperatur im
 als Diagramm“, zeichnet das Modul den Verlauf direkt im Chat: je Einheit ein Diagramm, ein Band von Minimum bis
 Maximum und eine Linie für das Mittel. Bei mehreren Linien in einem Diagramm fehlt das Band anfangs, ein Haken unter
 dem Diagramm blendet es ein und aus. Die Werte gehen nur an das Diagramm, das Sprachmodell bekommt Minimum und
-Maximum. Mehrere Räume lassen sich in einem Diagramm vergleichen, etwa „Vergleiche die Temperatur im Gästezimmer
+Maximum. Mit `type=power` zeichnet es ebenso die Leistung. Mehrere Räume lassen sich in einem Diagramm vergleichen, etwa „Vergleiche die Temperatur im Gästezimmer
 und draußen in der letzten Woche“. Zustände wie an/aus, offen/zu oder ein Batteriemodus erscheinen als Bänder
 über der Zeitachse, gefärbt nach Zustand, etwa bei „Zeig mir, wann die Haustür heute offen war“. Zwei Zeiträume
 lassen sich vergleichen, etwa „Hausverbrauch heute im Vergleich zu gestern“ oder „Temperatur im Gästezimmer diesen
@@ -618,6 +628,7 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
   dem Fahrbefehl nicht, ob er fährt.
 - Fehler innerhalb eines Szenen-Skripts sieht der Assistent nicht, er erfährt nur vom Start.
 - Die Prüfung der Zähler im Selbsttest findet nur Fehlwerte, die wieder verschwinden. Springt ein Zähler dauerhaft nach oben, etwa beim Tausch gegen einen Zähler mit höherem Stand, zählt das Archiv den Sprung als Verbrauch, ohne dass der Selbsttest es merkt. Kleine Fehlwerte unter einem Fünftel eines üblichen Monats und Monate kurz nach einer Rücksetzung prüft er nicht.
+- Die Spitze der Hausleistung ist ein Stundenmittel aus den Zählern der Bilanz. Kurze Spitzen, etwa beim Anlaufen eines Geräts, zeigt nur die Netzleistung oder das einzelne Gerät.
 - Lamellen, deren Variable die Darstellung „Rollladen“ mit Rotation trägt, bekommen nur eine
   Prozentzahl ohne „offen“ oder „geschlossen“.
 - Der Endpunkt spricht MCP über einfache HTTP-Anfragen und bietet keinen Datenstrom an. Clients, die

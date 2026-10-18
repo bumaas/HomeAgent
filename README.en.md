@@ -9,7 +9,7 @@ unambiguous answer. It only sees and switches the devices you release.
 
 > **Status:** early preview. Querying, switching, setting brightness, colour temperature, colour, position,
 > heating setpoint and target humidity, operating mode and fan speed of dehumidifiers and ventilation units,
-> stopping blinds, consumption and power also behind meters and sub-meters, the history of measured values, timelines of states, starting scenes as well as playback
+> stopping blinds, consumption and power also behind meters and sub-meters, the history of measured values and power, timelines of states, starting scenes as well as playback
 > and volume of media players work. The device list can be proposed from an Alexa instance. The Claude app can
 > sign in with OAuth. The form shows what did not work, a protocol for troubleshooting can be switched on. So far
 > the module has been tried on three systems.
@@ -345,14 +345,24 @@ temperature of a thermostat) the same periods return the **history**: minimum, a
 hour, day or month, for example "How warm was it in the guest room over the last 30 days?". The first
 line then reads "History of 1 measured value(s) (room=Gast, type=temperature, from=2026-09-10,
 to=2026-10-09), per day: minimum / average / maximum.", followed by a line per measured value with the
-lowest and highest value of the whole period and when it occurred ("minimum 20.6 °C (2026-09-30), maximum 23.4 °C
-(2026-10-02)") and a line per interval such as "2026-09-28 22.2 / 22.6 / 23.1". Today and yesterday come hourly,
+lowest and highest value of the whole period and when it occurred ("minimum 20.6 °C (2026-09-30 05:40), maximum 23.4 °C
+(2026-10-02 16:15)") and a line per interval such as "2026-09-28 22.2 / 22.6 / 23.1". Today and yesterday come hourly,
 weeks and months daily, years monthly; with `from` and `to` up to two days hourly, up to 100 days daily,
 beyond that monthly. The history applies when a measured-value type is asked for or when none of the
 matches has a meter; for the whole house it stays with consumption. At most five measured values at a
 time, otherwise the answer asks for a room or name. If a thermostat reads the same sensor as a
 temperature device, the history comes only once. The measured value must be logged in the archive,
 otherwise the line says "no history archived".
+
+The **power over a period** is asked for with `type=power` together with `period` or `from`/`to`, for example "When
+did the dryer draw the most power last month?". It covers all matches with a power value, meters included. Per
+device a line gives the lowest and highest power with the time from the raw values in the archive ("minimum 20.8 W
+(2026-10-08 22:40), maximum 336.9 W (2026-10-01 20:46)"); with a single device the table per hour, day or month
+follows. Up to 20 devices at a time. Without room and name, and with an energy balance, the line gives the house
+power as an hourly mean from the meters of the balance, its minimum being the base load, plus grid import and grid
+export with their peaks in kW. Peaks of several sensors cannot be added up to the second from the archive, so the
+house uses the hourly mean. Without a period `type=power` gives the current power. The power must be logged in the
+archive.
 
 For devices with a state (on/off, open/closed, motion, a selection such as the operating mode of a battery)
 the same periods return a **timeline**: how long each state lasted and, with up to twelve sections, when.
@@ -501,7 +511,8 @@ echo HAGT_SetLevel($InstanceID, '', '', 'Deckenpanel', 30);
 Asking the Claude app for a chart, for example "Show me the temperature in the guest room over the last 30 days
 as a chart", makes the module draw the history right in the chat: one chart per unit, a band from minimum to
 maximum and a line for the average. With several lines in one chart the band starts hidden, a checkbox below the
-chart shows and hides it. The values only go to the chart, the language model gets minimum and maximum.
+chart shows and hides it. The values only go to the chart, the language model gets minimum and maximum. With
+`type=power` it draws the power the same way.
 Several rooms can be compared in one chart, for example "Compare the temperature in the guest room and outside
 last week". States such as on/off, open/closed or a battery mode appear as bands along the time axis, coloured by
 state, for example with "Show me when the front door was open today". Two periods can be compared, for example
@@ -601,6 +612,7 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
 - The meter check of the self-test only finds wrong values that disappear again. If a meter jumps up for good, for
   example when it is replaced by one with a higher reading, the archive counts the jump as consumption without the
   self-test noticing. It does not check small wrong values below a fifth of a usual month or months shortly after a reset.
+- The peak of the house power is an hourly mean from the meters of the balance. Short peaks, such as a device starting up, only show in the grid power or the single device.
 - Slats whose variable carries the "blind" presentation with rotation only get a percentage without
   "open" or "closed".
 - The endpoint speaks MCP over plain HTTP requests and offers no event stream. Clients that require

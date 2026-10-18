@@ -2002,7 +2002,7 @@ class HomeAgent extends IPSModuleStrict
             . ($hasHistory ? ' For measured values such as temperature or humidity: the history per hour, day or month (minimum / average / maximum).' : '')
             . ($hasTimeline ? ' For devices with on/off, open/closed or a selection: when and how long each state lasted (archived states only).' : ''))]] : [];
         // Freie Zeiträume für Verbrauch, Verlauf und Zeitleiste; das heutige Datum braucht das Modell für „im Januar“.
-        if ($hasMeters || $hasBalance || $hasHistory || $hasTimeline) {
+        if ($hasMeters || $hasBalance || $hasHistory || $hasTimeline || $hasPower) {
             $period['from'] = ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD, or a start hour, YYYY-MM-DD HH:MM. Today is ' . date('Y-m-d') . '.'];
             $period['to'] = ['type' => 'string', 'description' => 'Last day, inclusive; without it only the day given in from. With HH:MM the end hour, exclusive; without it a from with time runs until now. At most 48 hours with times.'];
         }
@@ -2015,7 +2015,8 @@ class HomeAgent extends IPSModuleStrict
                 . ($hasMeters ? '"How much did the washing machine use last month?" → name=washing machine, period=last_month. '
                     . '"How much did the washing machine use in January?" → name=washing machine, from=' . date('Y') . '-01-01, to=' . date('Y') . '-01-31. ' : '')
                 . ($hasBalance ? '"How much electricity did we use yesterday?" → period=yesterday. ' : '')
-                . ($hasPower ? '"How much power are we using right now?" → period=now. ' : '')
+                . ($hasPower ? '"How much power are we using right now?" → period=now. '
+                    . '"What was the highest power of the dryer last month?" → name=dryer, type=power, period=last_month. ' : '')
                 . ($hasHistory ? '"How warm was it in the guest room over the last 30 days?" → room=Gast, type=temperature, from=' . date('Y-m-d', strtotime('-29 days')) . ', to=' . date('Y-m-d') . '. ' : '')
                 . (array_any($this->usableDevices(), static fn (array $row): bool => ($row['Type'] ?? '') === 'window' && in_array('open', DeviceIndex::abilitiesOf($row), true))
                     ? 'Windows marked "with drive" can be opened and closed with set_state, the others only report their state. ' : '')
@@ -2028,7 +2029,9 @@ class HomeAgent extends IPSModuleStrict
                 'properties'           => [
                     'room'        => ['type' => 'string', 'description' => 'Room as the user calls it, e.g. Küche. ' . $roomsText . ($defaultRule === '' ? 'Empty = all rooms.' : $defaultRule)],
                 ] + $floor + [
-                    'type'        => ['type' => 'string', 'enum' => array_keys(DeviceIndex::TYPES), 'description' => 'Device type. Empty = all types.'],
+                    // type=power ist kein Gerätetyp (B84): Verlauf der Leistung mit Zeitraum, sonst die Leistung jetzt
+                    'type'        => ['type' => 'string', 'enum' => array_merge(array_keys(DeviceIndex::TYPES), $hasPower ? [DeviceIndex::POWER_TYPE] : []), 'description' => 'Device type. Empty = all types.'
+                        . ($hasPower ? ' power is not a device type: all matching devices with a power value; with a period the minimum and maximum power with their time, for the whole house the house power per hour and the grid power; without a period the current power.' : '')],
                     'name'        => ['type' => 'string', 'description' => 'Device name or alias, a partial word is enough.'],
                     'active_only' => ['type' => 'boolean', 'description' => 'Only devices that are on, open or report presence.'],
                 ] + $period,
@@ -2040,11 +2043,14 @@ class HomeAgent extends IPSModuleStrict
         // Diagramm als MCP App, nur für Clients, die Apps anmelden, und nur mit einem Gerät, das einen Verlauf haben kann
         // (Leitbild: angeboten wird nur, was es gibt; andere Clients zahlen keine Tokens dafür).
         // Mit der Energiebilanz auch der Hausverbrauch als Stapeldiagramm (Burkhard 12.10.2026).
-        if ($apps && ($hasHistory || $hasTimeline || $hasBalance || $hasMeters || $hasPowerBalance)) {
+        if ($apps && ($hasHistory || $hasTimeline || $hasBalance || $hasMeters || $hasPower)) {
             $historyTypes = array_values(array_unique(array_column(array_filter($this->usableDevices(), static fn (array $row): bool => DeviceIndex::isMeasured($row)), 'Type')));
-            // Verbrauch je Gerät heißt im Diagramm type=energy; als Gerätetyp gibt es das nicht
+            // Verbrauch je Gerät heißt im Diagramm type=energy, der Verlauf der Leistung type=power; Gerätetypen sind das nicht
             if ($hasMeters) {
                 $historyTypes[] = 'energy';
+            }
+            if ($hasPower) {
+                $historyTypes[] = DeviceIndex::POWER_TYPE;
             }
             $tools[] = [
                 'name'        => 'show_chart',
@@ -2066,7 +2072,8 @@ class HomeAgent extends IPSModuleStrict
                     'properties'           => [
                         'room' => ['type' => 'string', 'description' => 'Room as the user calls it, or several rooms separated by commas to compare them in one chart. ' . $roomsText],
                     ] + $floor + ($historyTypes === [] ? [] : [
-                        'type'   => ['type' => 'string', 'enum' => $historyTypes, 'description' => 'Type of measured value' . ($hasMeters ? ', or energy for the consumption per device' : '') . '. Empty = all measured values that match.'],
+                        'type'   => ['type' => 'string', 'enum' => $historyTypes, 'description' => 'Type of measured value' . ($hasMeters ? ', or energy for the consumption per device' : '')
+                            . ($hasPower ? ', or power for the power of the matching devices over the period (without room or name the house power per hour and the grid power)' : '') . '. Empty = all measured values that match.'],
                     ]) + [
                         'name'   => ['type' => 'string', 'description' => 'Device name or alias, a partial word is enough.'],
                         'period' => ['type' => 'string', 'enum' => array_merge($hasPowerBalance ? [DeviceIndex::NOW] : [], DeviceIndex::PERIODS), 'description' => 'Period of the chart, per hour for today and yesterday, per day for weeks and months, per month for years.'],

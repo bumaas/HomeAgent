@@ -141,10 +141,10 @@ interface DeviceBackend
 
     /**
      * Verlauf eines Messwerts aus den Aggregaten des Archivs, aufsteigend: je Zeitraum der Stufe
-     * (0 Stunde, 1 Tag, 3 Monat) Beginn, Minimum, Mittel und Maximum. $to = 0 heißt bis jetzt.
-     * null = nicht archiviert oder als Zähler aggregiert.
+     * (0 Stunde, 1 Tag, 3 Monat) Beginn, Minimum, Mittel und Maximum, wenn bekannt mit dem Zeitpunkt von Minimum und
+     * Maximum (MinTime/MaxTime). $to = 0 heißt bis jetzt. null = nicht archiviert oder als Zähler aggregiert.
      *
-     * @return null|array{rows: list<array{time: int, min: float, avg: float, max: float}>, unit: string}
+     * @return null|array{rows: list<array{time: int, min: float, avg: float, max: float, minTime?: int, maxTime?: int}>, unit: string}
      */
     public function history(int $variableId, int $level, int $from, int $to): ?array;
 

@@ -1070,7 +1070,9 @@ pruefe(!str_contains($m->RunSelfTest(), 'energy balance'), 'archivierter Netzbez
 // Hausverbrauch als Stapeldiagramm (Burkhard 12.10.2026): show_chart gibt es mit Bilanz auch ohne Messwert
 $mitApps = array_column(json_decode((string)json_encode(oderNull(static fn () => \Closure::bind(fn () => $this->tools(null, true), $m, HomeAgent::class)()) ?? []), true), null, 'name');
 pruefe(isset($mitApps['show_chart']) && str_contains($mitApps['show_chart']['description'] ?? '', 'stacked bars'), 'mit Bilanz: show_chart nennt den Hausverbrauch als Stapel: ' . ($mitApps['show_chart']['description'] ?? json_encode(array_keys($mitApps))));
-pruefe(!isset($mitApps['show_chart']['inputSchema']['properties']['type']), 'ohne Messwert kein Feld type (leere Liste): ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['type'] ?? null));
+// Ohne Messwert und Zähler bleibt vom Feld type nur power, weil der Entfeuchter eine Leistung hat (B84)
+pruefe(($mitApps['show_chart']['inputSchema']['properties']['type']['enum'] ?? null) === ['power'], 'ohne Messwert und Zähler nur type=power: ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['type'] ?? null));
+pruefe(in_array('power', $werkzeuge['get_state']['inputSchema']['properties']['type']['enum'] ?? [], true) && str_contains($werkzeuge['get_state']['inputSchema']['properties']['type']['description'] ?? '', 'minimum and maximum power'), 'get_state bietet type=power an, wenn ein Gerät eine Leistung hat: ' . json_encode($werkzeuge['get_state']['inputSchema']['properties']['type'] ?? null));
 // Teil der Bilanz (B74, 13.10.2026): part nennt nur die eingetragenen Zähler
 pruefe(($mitApps['show_chart']['inputSchema']['properties']['part']['enum'] ?? null) === ['grid'], 'show_chart bietet part nur mit den Teilen der Bilanz an: ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['part'] ?? null));
 // Ringe für Autarkie und Eigenverbrauch (Anregung pitti, t/144633, 13.10.2026)

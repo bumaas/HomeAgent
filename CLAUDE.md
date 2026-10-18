@@ -364,6 +364,19 @@ Weitere Regeln, die nicht offensichtlich sind:
   Die Gerätezeile nennt Minimum und Maximum über den ganzen Zeitraum mit Zeitpunkt (bei Gleichstand der erste), damit
   das Modell nicht selbst in der Tabelle sucht (Bedienungs-Blindtest 12.10.2026); das Mittel bewusst nicht (Tokens,
   über ungleich lange Abschnitte nur ungefähr).
+- **Verlauf der Leistung** (B84, Micha87 im Forum 17.10.2026: „min und max Werte der Leistung“ für Oktober, ChatGPT bekam
+  nur kWh): `type=power` (`DeviceIndex::POWER_TYPE`) ist kein Gerätetyp, wie `type=energy` beim Diagramm. `powerState`
+  nimmt die Treffer mit Rolle `power` (auch Zähler); ohne Zeitraum oder mit `period=now` die Leistung jetzt (`power()`),
+  sonst `powerHistory`: je Leistung einmal (wie `firstPerVariable`) dieselben Zeilen wie beim Messwert (`historyLines`),
+  die Tabelle nur bei einer Reihe, bis `POWER_HISTORY_MAX` (20) Geräte. Fürs ganze Haus mit Bilanz die Hausleistung im
+  Stundenmittel (`housePowerRows`: je Stunde der Hausverbrauch aus `balanceParts`, die laufende Stunde fehlt, ihr Mittel
+  wäre eine falsche Grundlast) und je Netzleistung eine Reihe in kW (`kilowattHistory`, umgekehrte Sensoren gedreht).
+  Gleichzeitige Spitzen mehrerer Sensoren gibt kein Aggregat her; 15-Minuten-Aggregate (Stufe 8, laut Doku aus Rohdaten)
+  scheiterten am nuc schon über 17 Tage an „Zu viele Werte (>150000)“, eine Grenze, die die Doku nicht nennt. Minimum und
+  Maximum tragen seitdem den Zeitpunkt aus `MinTime`/`MaxTime` der Aggregate (Doku AC_GetAggregatedValues), auch bei
+  Messwerten; Backends ohne diese Felder behalten den Beginn des Abschnitts. Am nuc gemessen: das Monatsaggregat der
+  Netzleistung in 1 ms, sein Maximum gleich dem der Rohwerte (Test `check-leistungsverlauf.php`, Fixture
+  `nuc_2026-10-18_leistung.json`).
 - **Uhrzeit in `from`/`to`** (`parseMoment`, Burkhard 12.10.2026: „nicht stundengenau“): JJJJ-MM-TT HH:MM, auch mit T
   oder Sekunden. Ganze Stunden aus den Stundenaggregaten (Stufe 0 auch für Zähler): `from` abgerundet, `to` aufgerundet
   und das Ende (13:00 bis 15:00 sind zwei Stunden), ein `to` ohne Uhrzeit zählt den ganzen Tag, ohne `to` bis jetzt.

@@ -339,6 +339,16 @@ final class FakeBackend implements DeviceBackend
     {
         $this->historyRequests[] = [$variableId, $level];
         $v = $this->variables[$variableId] ?? null;
+        // Neuere Mitschnitte wie bei den Zählern: „archiviert“, „aggregationstyp“ 0 und „aggregate“ je Stufe mit min,
+        // mittel, max und dem Zeitpunkt von Minimum und Maximum (B84)
+        if ($v !== null && isset($v['aggregate']) && ($v['archiviert'] ?? false) === true && ($v['aggregationstyp'] ?? 0) === 0) {
+            $rows = array_values(array_filter($v['aggregate'][(string)$level] ?? [], static fn (array $a): bool => $a['zeit'] >= $from && ($to === 0 || $a['zeit'] <= $to)));
+            return [
+                'rows' => array_map(static fn (array $a): array => ['time' => (int)$a['zeit'], 'min' => (float)$a['min'], 'avg' => (float)$a['mittel'], 'max' => (float)$a['max'],
+                    'minTime' => (int)$a['minzeit'], 'maxTime' => (int)$a['maxzeit']], $rows),
+                'unit' => (string)($v['einheit'] ?? ''),
+            ];
+        }
         if ($v === null || ($v['geloggt'] ?? false) !== true || ($v['aggregation'] ?? 0) === 1) {
             return null;
         }
