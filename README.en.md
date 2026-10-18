@@ -387,7 +387,7 @@ when querying and adds a command or a percent value:
 
 | Input | Effect |
 |---|---|
-| `on`, `off` | switches lights, switches, sockets, appliances, media players, dehumidifiers and ventilation on or off |
+| `on`, `off` | switches lights, switches, sockets, appliances, media players, dehumidifiers and ventilation on or off; a media player without power switch (such as one from the Sonos module) resumes or pauses ("music off") |
 | `open`, `close` | moves blinds and windows with a drive fully open or fully closed |
 | `stop` | stops blinds and windows that are moving and ends playback of a media player |
 | `play`, `pause` | resumes or pauses playback of a media player |

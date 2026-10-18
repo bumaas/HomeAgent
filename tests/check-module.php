@@ -1079,6 +1079,11 @@ pruefe(in_array('power', $werkzeuge['get_state']['inputSchema']['properties']['t
 // Tag und nannte Tagesverbräuche in kWh (nuc, 18.10.2026). Beispiel fürs Haus und Hinweis bei period führen zu type=power.
 pruefe(str_contains($werkzeuge['get_state']['description'] ?? '', '"Minimum and maximum power in October?" → type=power, from=' . date('Y') . '-10-01, to=' . date('Y') . '-10-31.'), 'get_state nennt ein Beispiel für Minimum und Maximum der Leistung: ' . ($werkzeuge['get_state']['description'] ?? ''));
 pruefe(str_contains($werkzeuge['get_state']['inputSchema']['properties']['period']['description'] ?? '', 'For minimum and maximum power over a period add type=power (one call, not one per day).'), 'period verweist für Minimum und Maximum der Leistung auf type=power: ' . ($werkzeuge['get_state']['inputSchema']['properties']['period']['description'] ?? ''));
+// B87 (Vergleichslauf 18.10.2026): „Ist die Fußbodenheizung an?“ ergab in 2 von 13 Läufen type=thermostat und „keine
+// Fußbodenheizung“, die Geräte sind Schalter. Ein genanntes Gerät gehört in name.
+$genannt = 'A device the user names (e.g. floor heating) goes into name; leave type empty unless the type is clear.';
+pruefe(str_contains($werkzeuge['get_state']['inputSchema']['properties']['type']['description'] ?? '', $genannt), 'get_state: type schickt genannte Geräte zu name: ' . json_encode($werkzeuge['get_state']['inputSchema']['properties']['type']['description'] ?? null));
+pruefe(str_contains($werkzeuge['set_state']['inputSchema']['properties']['type']['description'] ?? '', $genannt), 'set_state: type schickt genannte Geräte zu name: ' . json_encode($werkzeuge['set_state']['inputSchema']['properties']['type']['description'] ?? null));
 // Teil der Bilanz (B74, 13.10.2026): part nennt nur die eingetragenen Zähler
 pruefe(($mitApps['show_chart']['inputSchema']['properties']['part']['enum'] ?? null) === ['grid'], 'show_chart bietet part nur mit den Teilen der Bilanz an: ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['part'] ?? null));
 // Ringe für Autarkie und Eigenverbrauch (Anregung pitti, t/144633, 13.10.2026)
@@ -1686,8 +1691,8 @@ IPS_ApplyChanges($iid);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Mediaplayer nur mit Wiedergabe ist gültig');
 $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
 $schema = $werkzeuge['set_state']['inputSchema']['properties'] ?? [];
-pruefe(($schema['command']['enum'] ?? null) === ['stop', 'play', 'pause', 'next', 'previous'] && ($schema['type']['enum'] ?? null) === ['media'], 'set_state bietet die Wiedergabebefehle an: ' . json_encode($schema['command'] ?? null));
-pruefe(str_contains($schema['command']['description'] ?? '', 'play/pause/next/previous control a media player') && str_contains($schema['command']['description'] ?? '', 'Stop ends playback'), 'die Beschreibung erklärt die Befehle: ' . ($schema['command']['description'] ?? ''));
+pruefe(($schema['command']['enum'] ?? null) === ['on', 'off', 'stop', 'play', 'pause', 'next', 'previous'] && ($schema['type']['enum'] ?? null) === ['media'], 'set_state bietet die Wiedergabebefehle an: ' . json_encode($schema['command'] ?? null));
+pruefe(str_contains($schema['command']['description'] ?? '', 'play/pause/next/previous control a media player') && str_contains($schema['command']['description'] ?? '', 'stop ends playback') && str_contains($schema['command']['description'] ?? '', 'off pauses and on resumes a media player without power switch'), 'die Beschreibung erklärt die Befehle: ' . ($schema['command']['description'] ?? ''));
 pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', '"Pause the music in the conservatory" → room=Wintergarten, type=media, command=pause.'), 'mit Beispielsatz: ' . ($werkzeuge['set_state']['description'] ?? ''));
 
 pruefe(($werkzeuge['set_state']['annotations']['idempotentHint'] ?? null) === true && !isset($schema['volume']), 'ohne Lautstärke bleibt set_state idempotent');

@@ -2468,10 +2468,17 @@ final class DeviceIndex
         // hat, geht auf 100 % bzw. 0 %.
         $on = $command === 'on';
         $word = $this->t($on ? 'on' : 'off');
+        // Ein Mediaplayer ohne schaltbares Ein/Aus (Wahrheitswert mit Aktion) pausiert bzw. setzt fort (B86).
+        $players = array_filter($understand, fn (array $e): bool => $e['Type'] === 'media' && isset($e['roles']['playback']) && !$this->switchableState($e));
+        $understand = array_diff_key($understand, $players);
+        $result = $players === [] ? null : $this->runPlayback($players, $on ? 'play' : 'pause');
+        if ($understand === []) {
+            return $this->switchAnswer($result, $this->t($on ? 'playing back' : 'paused'), $filter, $closing);
+        }
         // Ein Klimagerät geht über den Modus aus; seine Rolle „state“ ist die Ist-Temperatur (Burkhard 13.10.2026).
         $climate = array_filter($understand, static fn (array $e): bool => $e['Type'] === 'thermostat');
         $understand = array_diff_key($understand, $climate);
-        $result = $climate === [] ? null : $this->runOption($climate, 'mode', 'off');
+        $result = $climate === [] ? $result : self::mergeResults($result, $this->runOption($climate, 'mode', 'off'));
         $withState = array_filter($understand, static fn (array $e): bool => isset($e['roles']['state']));
         $levelOnly = array_diff_key($understand, $withState);
         if ($withState !== []) {
@@ -2584,9 +2591,11 @@ final class DeviceIndex
         }
         // Ein Mediaplayer versteht die Wiedergabebefehle; welche das Gerät kennt, sagt erst sein Profil.
         if ($type === 'media') {
-            // Ein/Aus nur mit Schaltzustand; ein Statustext ohne Aktion (HomeAssistant-Modul) wird beim Schalten abgewiesen.
+            // Ein/Aus mit Schaltzustand; ohne ihn pausiert off und on setzt fort (B86, Vergleichslauf 18.10.2026:
+            // „Musik aus“ am Sonos kostete sonst eine zweite Runde mit stop). Ein Statustext ohne Aktion
+            // (HomeAssistant-Modul) wird nie geschaltet.
             return array_merge(
-                isset($roles['state']) ? ['on', 'off'] : [],
+                isset($roles['state']) || isset($roles['playback']) ? ['on', 'off'] : [],
                 isset($roles['playback']) ? ['stop', 'play', 'pause', 'next', 'previous'] : [],
                 isset($roles['volume']) ? ['volume', 'volume_change'] : [],
                 isset($roles['mute']) ? ['mute'] : []
@@ -3870,6 +3879,13 @@ final class DeviceIndex
      * @param array<int, array<string, mixed>> $entries
      * @return array{lines: array<int, string>, total: int, reached: int, pending: int, failed: int}
      */
+    /** Ein Schaltzustand, den runSwitch schalten kann: Wahrheitswert mit Aktion (wie dort geprüft). */
+    private function switchableState(array $entry): bool
+    {
+        $state = $entry['roles']['state'] ?? 0;
+        return $state > 0 && is_bool($this->backend->read($state)['value'] ?? null) && $this->backend->hasAction($state);
+    }
+
     private function runPlayback(array $entries, string $command): array
     {
         $snapshot = function (array $entry): array {

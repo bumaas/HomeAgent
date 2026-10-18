@@ -2036,7 +2036,7 @@ class HomeAgent extends IPSModuleStrict
                     'room'        => ['type' => 'string', 'description' => 'Room as the user calls it, e.g. Küche. ' . $roomsText . ($defaultRule === '' ? 'Empty = all rooms.' : $defaultRule)],
                 ] + $floor + [
                     // type=power ist kein Gerätetyp (B84): Verlauf der Leistung mit Zeitraum, sonst die Leistung jetzt
-                    'type'        => ['type' => 'string', 'enum' => array_merge(array_keys(DeviceIndex::TYPES), $hasPower ? [DeviceIndex::POWER_TYPE] : []), 'description' => 'Device type. Empty = all types.'
+                    'type'        => ['type' => 'string', 'enum' => array_merge(array_keys(DeviceIndex::TYPES), $hasPower ? [DeviceIndex::POWER_TYPE] : []), 'description' => 'Device type. Empty = all types. A device the user names (e.g. floor heating) goes into name; leave type empty unless the type is clear.'
                         . ($hasPower ? ' power is not a device type: all matching devices with a power value; with a period the minimum and maximum power with their time, for the whole house the house power per hour and the grid power; without a period the current power.' : '')],
                     'name'        => ['type' => 'string', 'description' => 'Device name or alias, a partial word is enough.'],
                     'active_only' => ['type' => 'boolean', 'description' => 'Only devices that are on, open or report presence.'],
@@ -2182,14 +2182,20 @@ class HomeAgent extends IPSModuleStrict
             $properties = [
                 'room' => ['type' => 'string', 'description' => rtrim('Room as the user calls it, e.g. Küche. ' . $roomsText . $defaultRule)],
             ] + $floor + [
-                'type' => ['type' => 'string', 'enum' => $types, 'description' => 'Device type, for groups such as all lights of a room.'],
+                'type' => ['type' => 'string', 'enum' => $types, 'description' => 'Device type, for groups such as all lights of a room. A device the user names (e.g. floor heating) goes into name; leave type empty unless the type is clear.'],
                 'name' => ['type' => 'string', 'description' => 'Name or alias of one single device, a partial word is enough.'],
             ];
             if ($commands !== []) {
                 // Jeder Teil nur, wenn ein freigegebenes Gerät ihn versteht.
                 $hasMedia = in_array('play', $offered, true);
+                // B86: Ein Mediaplayer ohne Ein/Aus pausiert bei off und setzt bei on fort.
+                $pausesOnOff = $hasMedia && array_any($this->usableDevices(), static function (array $row): bool {
+                    $roles = DeviceIndex::rolesOf($row);
+                    return ($row['Type'] ?? '') === 'media' && isset($roles['playback']) && !isset($roles['state']) && DeviceIndex::abilitiesOf($row) !== [];
+                });
                 $parts = array_filter([
                     in_array('on', $commands, true) ? 'on/off switch a device' : '',
+                    $pausesOnOff ? 'off pauses and on resumes a media player without power switch' : '',
                     $hasBlinds ? 'open/close move a blind or window all the way' : '',
                     $hasStop && $hasBlinds ? ($hasMedia ? 'stop halts a moving blind or window and ends playback of a media player' : 'stop halts a moving blind or window') : ($hasMedia ? 'stop ends playback' : ''),
                     $hasMedia ? 'play/pause/next/previous control a media player' : '',

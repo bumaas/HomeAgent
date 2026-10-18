@@ -49,7 +49,7 @@ $spielen['45169']['wert'] = 'playing';
 
 pruefe(array_slice(DeviceIndex::COMMANDS, -4) === ['play', 'pause', 'next', 'previous'], 'neue Befehle hinten in der Liste: ' . json_encode(DeviceIndex::COMMANDS));
 pruefe(in_array('media', DeviceIndex::CONTROLLABLE, true), 'ein Mediaplayer ist steuerbar');
-pruefe(DeviceIndex::abilitiesOf($liste[0]) === ['stop', 'play', 'pause', 'next', 'previous', 'volume', 'volume_change', 'mute'], 'mit Wiedergabe: ' . json_encode(DeviceIndex::abilitiesOf($liste[0])));
+pruefe(DeviceIndex::abilitiesOf($liste[0]) === ['on', 'off', 'stop', 'play', 'pause', 'next', 'previous', 'volume', 'volume_change', 'mute'], 'mit Wiedergabe, on und off über die Wiedergabe (B86): ' . json_encode(DeviceIndex::abilitiesOf($liste[0])));
 pruefe(DeviceIndex::abilitiesOf(['ReadOnly' => true] + $liste[0]) === [], 'nur abfragen versteht nichts');
 pruefe(DeviceIndex::offeredAbilities($liste) === ['on', 'off', 'stop', 'play', 'pause', 'next', 'previous', 'volume', 'volume_change', 'mute'], 'das Schema bietet die Befehle an, on/off wegen des Statustexts als Ein/Aus: ' . json_encode(DeviceIndex::offeredAbilities($liste)));
 
@@ -103,8 +103,9 @@ pruefe($zeile($r, 0) === '0 of 1 devices are now at the previous track, 1 not co
 
 /* --- Absagen -------------------------------------------------------------------------------------- */
 
+// Ohne Ein/Aus setzt on die Wiedergabe fort (B86, check-musik-aus.php).
 $r = rufe($werte, 'set', ['name' => 'Sonos', 'command' => 'on']);
-pruefe($r['isError'] && $anlage->requests === [] && str_contains($r['text'], 'cannot do "on"'), 'ein- und ausschalten kommt erst mit Stufe 3: ' . $r['text']);
+pruefe(!$r['isError'] && $anlage->requests === [[27341, 2]], 'on ohne Ein/Aus setzt fort: ' . $r['text']);
 $fremd = $werte;
 $fremd['27341']['bereich']['profil'] = 'SONOS.Status';
 $r = rufe($fremd, 'set', ['name' => 'Sonos', 'command' => 'play']);

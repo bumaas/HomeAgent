@@ -44,8 +44,8 @@ $ha = ['name' => 'Sonos über HA'];
 
 /* --- Angebot -------------------------------------------------------------------------------------- */
 
-pruefe(DeviceIndex::abilitiesOf($liste[0]) === ['stop', 'play', 'pause', 'next', 'previous', 'volume', 'volume_change', 'mute'], 'mit Lautstärke und Stumm: ' . json_encode(DeviceIndex::abilitiesOf($liste[0])));
-pruefe(DeviceIndex::abilitiesOf($liste[2]) === ['stop', 'play', 'pause', 'next', 'previous', 'volume', 'volume_change'], 'Bad ohne Stumm: ' . json_encode(DeviceIndex::abilitiesOf($liste[2])));
+pruefe(DeviceIndex::abilitiesOf($liste[0]) === ['on', 'off', 'stop', 'play', 'pause', 'next', 'previous', 'volume', 'volume_change', 'mute'], 'mit Lautstärke und Stumm: ' . json_encode(DeviceIndex::abilitiesOf($liste[0])));
+pruefe(DeviceIndex::abilitiesOf($liste[2]) === ['on', 'off', 'stop', 'play', 'pause', 'next', 'previous', 'volume', 'volume_change'], 'Bad ohne Stumm: ' . json_encode(DeviceIndex::abilitiesOf($liste[2])));
 $nurLaut = ['Room' => 'Bad', 'Name' => 'Box', 'Type' => 'media', 'Invert' => false, 'VolumeVariableID' => 47436];
 pruefe(DeviceIndex::abilitiesOf($nurLaut) === ['volume', 'volume_change'], 'nur Lautstärke: ' . json_encode(DeviceIndex::abilitiesOf($nurLaut)));
 pruefe(array_slice(DeviceIndex::offeredAbilities($liste), -3) === ['volume', 'volume_change', 'mute'], 'das Schema bietet die Felder an: ' . json_encode(DeviceIndex::offeredAbilities($liste)));
