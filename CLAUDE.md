@@ -516,7 +516,8 @@ Weitere Regeln, die nicht offensichtlich sind:
   erneut (auch ein Skript, das noch die alten Properties setzt, landet so in der Liste). Test in `check-module.php`:
   Orakel ist die Rechnung der Bibliothek mit den Feldern im Konstruktor. Der Dialog entsteht je Art über
   `UISourceForm`/`UISourceChanged` wie der Gerätedialog (bei PV werden zweiter Zähler, zweite Leistung und Umkehr
-  geleert), sichtbar sind die Textspalten `EnergyLabel` und `PowerLabel` (`sourceLabels`; eine Leistung allein im ersten Feld steht dort als „… (mit Vorzeichen)“
+  geleert, mit zweiter Leistung auch die Umkehr, die dann nichts dreht; ein unbekannter Typ bekommt in der Auswahl einen
+  eigenen Eintrag, sonst verweigert die Konsole das Übernehmen; Review 18.10.2026, N9 und N10), sichtbar sind die Textspalten `EnergyLabel` und `PowerLabel` (`sourceLabels`; eine Leistung allein im ersten Feld steht dort als „… (mit Vorzeichen)“
   statt „… / -“, das nach einem fehlenden Feld aussah, Burkhard 17.10.2026). Das Modul übergibt dem
   Index keine Felder mehr. Intern zählen `balanceVars`/`powerVars` je Schlüssel alle Variablen,
   `$this->balance` bleibt die Anwesenheit (das Feld oder die erste Zeile), damit Diagramme, Kosten, Teile und Ringe

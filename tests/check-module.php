@@ -3298,7 +3298,7 @@ $spaltenQ = array_column($quellenListe['columns'] ?? [], null, 'name');
 pruefe(($quellenListe['type'] ?? '') === 'List' && array_keys($spaltenQ) === ['Type', 'Name', 'EnergyLabel', 'PowerLabel', 'EnergyIn', 'EnergyOut', 'PowerIn', 'PowerOut', 'Invert'], 'Liste „Quellen“ mit Textspalten und versteckten IDs: ' . json_encode(array_keys($spaltenQ)));
 pruefe(array_keys(array_filter($spaltenQ, static fn (array $c): bool => ($c['visible'] ?? true) !== false)) === ['Type', 'Name', 'EnergyLabel', 'PowerLabel', 'Invert'], 'sichtbar sind Art, Name, Zähler, Leistung und Umkehr: ' . json_encode(array_keys(array_filter($spaltenQ, static fn (array $c): bool => ($c['visible'] ?? true) !== false))));
 pruefe(array_column($spaltenQ['Type']['edit']['options'] ?? [], 'value') === ['grid', 'solar', 'battery'], 'Arten grid, solar, battery');
-pruefe(($quellenListe['form'] ?? null) === "return json_decode(HAGT_UISourceForm(\$id, \$Sources['Type'] ?? 'grid'), true);", 'der Dialog entsteht je Zeile über das Modul: ' . json_encode($quellenListe['form'] ?? null));
+pruefe(($quellenListe['form'] ?? null) === "return json_decode(HAGT_UISourceForm(\$id, \$Sources['Type'] ?? 'grid', \$Sources['PowerOut'] ?? 0), true);", 'der Dialog entsteht je Zeile über das Modul: ' . json_encode($quellenListe['form'] ?? null));
 $dialogQ = static fn (string $art): array => array_column(json_decode((string)(oderNull(static fn () => $q->UISourceForm($art)) ?? '[]'), true) ?? [], null, 'name');
 $pv = $dialogQ('solar');
 pruefe(($pv['EnergyIn']['caption'] ?? '') === 'Solar production (energy meter)' && ($pv['PowerIn']['caption'] ?? '') === 'Solar power'
@@ -3309,6 +3309,20 @@ pruefe(($akku['EnergyIn']['caption'] ?? '') === 'Battery discharge (energy meter
 $netz = $dialogQ('grid');
 pruefe(($netz['EnergyIn']['caption'] ?? '') === 'Grid import (energy meter)' && ($netz['EnergyOut']['caption'] ?? '') === 'Grid export (energy meter)' && str_contains($netz['Invert']['caption'] ?? '', 'positive = grid export')
     && str_contains($netz['Type']['onChange'] ?? '', 'HAGT_UISourceChanged($id, $Type, $EnergyIn, $EnergyOut, $PowerIn, $PowerOut);') && array_column($netz['Type']['options'] ?? [], 'value') === ['grid', 'solar', 'battery'], 'Dialog Netz: Bezug und Einspeisung, Wechsel der Art meldet sich: ' . json_encode($netz['Type'] ?? null));
+// Ein unbekannter Typ (per Skript gesetzt) bekommt einen eigenen Eintrag, sonst verweigert die Konsole das Übernehmen
+// („Aktueller Wert ist nicht verfügbar“; Review 18.10.2026, N9)
+$wind = $dialogQ('wind');
+pruefe(in_array('wind', array_column($wind['Type']['options'] ?? [], 'value'), true) && str_contains((string)(array_column($wind['Type']['options'] ?? [], 'caption', 'value')['wind'] ?? ''), 'wind'), 'unbekannter Typ hat einen Eintrag: ' . json_encode($wind['Type']['options'] ?? null));
+pruefe(array_column($netz['Type']['options'] ?? [], 'value') === ['grid', 'solar', 'battery'], 'bekannter Typ: keine zusätzlichen Einträge');
+// Mit zweiter Leistung hat „Umgekehrt“ keine Wirkung und ist ausgeblendet (N10)
+$zweiLeistungen = array_column(json_decode((string)(oderNull(static fn () => $q->UISourceForm('grid', 12345)) ?? '[]'), true) ?? [], null, 'name');
+pruefe(($zweiLeistungen['Invert']['visible'] ?? true) === false, 'Netz mit zwei Leistungen: kein Haken „Umgekehrt“');
+$q->formUpdates = [];
+oderNull(static fn () => $q->UISourceChanged('battery', 0, 0, 12345, 23456));
+pruefe(in_array(['Invert', 'visible', false], $q->formUpdates, true) && in_array(['Invert', 'value', false], $q->formUpdates, true), 'zweite Leistung im offenen Dialog: Umkehr ausgeblendet und aus: ' . json_encode(array_values(array_filter($q->formUpdates, static fn (array $u): bool => $u[0] === 'Invert'))));
+$q->formUpdates = [];
+oderNull(static fn () => $q->UISourceChanged('battery', 0, 0, 12345, 0));
+pruefe(in_array(['Invert', 'visible', true], $q->formUpdates, true), 'eine Leistung mit Vorzeichen: Umkehr sichtbar');
 // Wechsel auf PV im offenen Dialog: Felder folgen der Art, die zweiten Werte fallen weg, die Textspalten folgen
 $q->formUpdates = [];
 $bezugQ = variable(VARIABLETYPE_FLOAT, 2000.0);

@@ -612,7 +612,7 @@ class HomeAgent extends IPSModuleStrict
             }
             // Quellen der Bilanz (B82): Dialog je Art wie bei den Geräten, sichtbar sind die Namen der Variablen
             if (($element['name'] ?? '') === 'Sources') {
-                $element['form'] = "return json_decode(HAGT_UISourceForm(\$id, \$Sources['Type'] ?? 'grid'), true);";
+                $element['form'] = "return json_decode(HAGT_UISourceForm(\$id, \$Sources['Type'] ?? 'grid', \$Sources['PowerOut'] ?? 0), true);";
                 $element['values'] = array_map(fn (array $row): array => $this->sourceLabels($row), $this->storedSources());
             }
             // Räume der Geräteliste, die in der Raumliste fehlen (B75): Die Auswahl im Dialog bietet nur die Raumliste an
@@ -974,7 +974,7 @@ class HomeAgent extends IPSModuleStrict
      * Sichtbar und beschriftet sind die Felder der Art: Netz mit Bezug und Einspeisung, PV nur mit dem Ertrag, Batterie mit
      * entladen und geladen.
      */
-    public function UISourceForm(string $Type): string
+    public function UISourceForm(string $Type, int $PowerOut = 0): string
     {
         $type = array_key_exists($Type, DeviceIndex::SOURCE_KEYS) ? $Type : 'grid';
         $form = json_decode((string)file_get_contents(__DIR__ . '/form.json'), true);
@@ -986,7 +986,7 @@ class HomeAgent extends IPSModuleStrict
                 $typeOptions = array_column($element['columns'], 'edit', 'name')['Type']['options'];
             }
         }
-        $fields = $this->sourceDialogFields($type);
+        $fields = $this->sourceDialogFields($type, $PowerOut);
         foreach ($dialog as &$element) {
             $name = (string)($element['name'] ?? '');
             if ($name === 'Type') {
@@ -1001,6 +1001,11 @@ class HomeAgent extends IPSModuleStrict
             foreach ($element['options'] ?? [] as $index => $option) {
                 $element['options'][$index]['caption'] = $this->Translate($option['caption']);
             }
+            // Ein unbekannter Typ (per Skript gesetzt) braucht einen Eintrag, sonst verweigert die Konsole das Übernehmen
+            // („Aktueller Wert ist nicht verfügbar“; Review 18.10.2026, N9). Die Zeile ist ohnehin gesperrt und rot.
+            if ($name === 'Type' && $Type !== '' && !array_key_exists($Type, DeviceIndex::SOURCE_KEYS)) {
+                $element['options'][] = ['caption' => sprintf($this->Translate('%s (unknown type)'), $Type), 'value' => $Type];
+            }
         }
         unset($element);
         return (string)json_encode($dialog);
@@ -1014,7 +1019,7 @@ class HomeAgent extends IPSModuleStrict
     {
         $type = array_key_exists($Type, DeviceIndex::SOURCE_KEYS) ? $Type : 'grid';
         $row = ['Type' => $type, 'EnergyIn' => $EnergyIn, 'EnergyOut' => $EnergyOut, 'PowerIn' => $PowerIn, 'PowerOut' => $PowerOut];
-        foreach ($this->sourceDialogFields($type) as $name => $field) {
+        foreach ($this->sourceDialogFields($type, $PowerOut) as $name => $field) {
             $this->UpdateFormField($name, 'visible', $field['visible']);
             $this->UpdateFormField($name, 'caption', $field['caption']);
             if (!$field['visible']) {
@@ -1032,7 +1037,7 @@ class HomeAgent extends IPSModuleStrict
      *
      * @return array<string, array{visible: bool, caption: string}>
      */
-    private function sourceDialogFields(string $type): array
+    private function sourceDialogFields(string $type, int $powerOut = 0): array
     {
         $captions = match ($type) {
             'solar'   => ['Solar production (energy meter)', null, 'Solar power', null, null],
@@ -1043,6 +1048,8 @@ class HomeAgent extends IPSModuleStrict
         foreach (['EnergyIn', 'EnergyOut', 'PowerIn', 'PowerOut', 'Invert'] as $number => $name) {
             $fields[$name] = ['visible' => $captions[$number] !== null, 'caption' => $this->Translate($captions[$number] ?? ['Energy meter', 'Second energy meter', 'Power', 'Second power', 'Reverse sign'][$number])];
         }
+        // Mit zweiter Leistung gibt es kein Vorzeichen zu drehen; der Haken wirkte nicht (Review 18.10.2026, N10)
+        $fields['Invert']['visible'] = $fields['Invert']['visible'] && $powerOut <= 1;
         return $fields;
     }
 
