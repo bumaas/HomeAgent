@@ -891,26 +891,25 @@ final class DeviceIndex
      */
     private function counterExcess(int $variableId): array
     {
-        $now = $this->backend->timestamp();
         $years = $this->backend->counterSeries($variableId, 4, 0, 0);
         if ($years === null || $years['rows'] === [] || !self::isEnergyUnit($years['unit'])) {
             return [];
         }
         $kwh = static fn (float $value): float => (float)self::kilowattHours(['sum' => $value, 'unit' => $years['unit']]);
         $first = (int)$years['rows'][0]['time'] + 1;
-        $total = $this->backend->counterReadings($variableId, [$first, $now + 1]);
+        $total = $this->backend->counterReadings($variableId, [$first, DeviceBackend::LATEST]);
         $sum = array_sum(array_column($years['rows'], 'sum'));
-        if ($total !== null && $total[$first] !== null && $total[$now + 1] !== null && $kwh($sum - ($total[$now + 1] - $total[$first])) <= self::JUMP_KWH) {
+        if ($total !== null && $total[$first] !== null && $total[DeviceBackend::LATEST] !== null && $kwh($sum - ($total[DeviceBackend::LATEST] - $total[$first])) <= self::JUMP_KWH) {
             return [];
         }
         $rows = $this->backend->counterSeries($variableId, 3, 0, 0)['rows'] ?? [];
         // Mit „Nullen ignorieren“ und einem ersten Satz 0 gibt es vor dem ersten Satz keinen Stand über 0; dann beginnt die
         // Probe mit dem zweiten Monat (den ersten prüft auch die Monatsprüfung nicht). Alter Einspeisezähler einer betreuten
         // Anlage: Seine Sommermonate liegen weit über dem Median, die Monatsprüfung kostete 1,9 s (18.10.2026).
-        if ($total !== null && $total[$first] === null && $total[$now + 1] !== null && count($rows) > 1) {
+        if ($total !== null && $total[$first] === null && $total[DeviceBackend::LATEST] !== null && count($rows) > 1) {
             $second = (int)$rows[1]['time'];
             $start = $this->backend->counterReadings($variableId, [$second])[$second] ?? null;
-            if ($start !== null && $kwh($sum - (float)$rows[0]['sum'] - ($total[$now + 1] - $start)) <= self::JUMP_KWH) {
+            if ($start !== null && $kwh($sum - (float)$rows[0]['sum'] - ($total[DeviceBackend::LATEST] - $start)) <= self::JUMP_KWH) {
                 return [];
             }
         }
@@ -925,7 +924,7 @@ final class DeviceIndex
         $bounds = [];
         foreach ($rows as $i => $row) {
             if ($sums[$i] - $median > self::JUMP_ABOVE * $threshold) {
-                $bounds[$i] = [$i === 0 ? (int)$row['time'] + 1 : (int)$row['time'], isset($rows[$i + 1]) ? (int)$rows[$i + 1]['time'] : $now + 1];
+                $bounds[$i] = [$i === 0 ? (int)$row['time'] + 1 : (int)$row['time'], isset($rows[$i + 1]) ? (int)$rows[$i + 1]['time'] : DeviceBackend::LATEST];
             }
         }
         if ($bounds === []) {

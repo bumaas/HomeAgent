@@ -100,4 +100,15 @@ pruefe(($alsQuelle[14339]['key'] ?? '') === 'import' && ($alsQuelle[14339]['labe
 $doppelt = sprunge('betreut', null, [['Type' => 'grid', 'Name' => 'Netz', 'EnergyIn' => 14339, 'EnergyOut' => 0, 'PowerIn' => 0, 'PowerOut' => 0, 'Invert' => false]]);
 pruefe(count($doppelt) === 1 && ($doppelt[14339]['key'] ?? '') === 'import', 'derselbe Zähler zweimal: ein Befund, unter der Bilanz: ' . json_encode(array_map(static fn (mixed $s): string => is_array($s) ? $s['key'] . ' ' . $s['label'] : (string)$s, $doppelt), JSON_UNESCAPED_UNICODE));
 
+// Der Stand „jetzt“ geht als DeviceBackend::LATEST ans Backend, nicht als Uhrzeit (Review 18.10.2026, N3): Das Backend
+// vergleicht mit seiner eigenen, späteren Uhr, und eine Sekunde später kam der Satz wieder teuer aus dem Archiv.
+$a = $mitschnitt['nuc'];
+$backend = new FakeBackend($a['variablen']);
+$backend->jetzt = $a['jetzt'];
+$index = new DeviceIndex($a['geraete'], $backend);
+$index->addSources($a['quellen']);
+$index->counterJumps();
+$latest = defined('DeviceBackend::LATEST') ? constant('DeviceBackend::LATEST') : -1;
+pruefe(in_array($latest, $backend->readingTimes, true) && !in_array($a['jetzt'] + 1, $backend->readingTimes, true), 'der Selbsttest fragt den Stand jetzt als LATEST ab: ' . json_encode(array_values(array_unique(array_filter($backend->readingTimes, static fn (int $t): bool => $t >= $a['jetzt'])))));
+
 ende('Plausibilität der Zähler');

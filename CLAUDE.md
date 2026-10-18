@@ -556,7 +556,8 @@ Weitere Regeln, die nicht offensichtlich sind:
   geht dann auf). Laufzeit (betreute Anlage, 18.10.2026: Selbsttest 8,2 s, davon 5,5 s in `counterReadings`): Eine Ablesung
   kurz vor jetzt kostete bei Netzzählern, die alle paar Sekunden schreiben, 0,9 bis 1,4 s, eine an einer alten Monatsgrenze
   2 bis 100 ms; die Startzeit der Abfrage ändert daran nichts. Deshalb ist der Stand nach jetzt der Wert der Variable, wenn
-  sie im letzten Tag aktualisiert wurde (`FRESH_SECONDS`; ein stillgelegter Zähler kann nach einer Reparatur neuere Sätze im
+  sie im letzten Tag aktualisiert wurde (`DeviceBackend::LATEST` als Zeitpunkt, nicht die Uhrzeit + 1, sonst fiel eine Sekunde später
+  der Satz wieder teuer aus dem Archiv, Review 18.10.2026, N3; `FRESH_SECONDS`; ein stillgelegter Zähler kann nach einer Reparatur neuere Sätze im
   Archiv haben, so der alte Netzzähler dort nach dem Auffüllen vom 12. bis 14.05.), die Monatsprüfung liest nur die Grenzen
   der Monate, die überhaupt auffallen können (Summe um mehr als `JUMP_ABOVE` mal die Schwelle über dem Median, folgt aus den
   Bedingungen), und fehlt mit „Nullen ignorieren“ der Stand vor dem ersten Satz, beginnt die Gesamtprobe mit dem zweiten

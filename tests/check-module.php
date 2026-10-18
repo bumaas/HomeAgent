@@ -1123,6 +1123,10 @@ pruefe(oderNull(static fn () => $m->testBackend()->counterReadings($leistung, [1
 SetValue($verbrauch, $verbrauchQuelle['wert'] + 1.5);
 $spaeter = time() + 60;
 pruefe(oderNull(static fn () => $m->testBackend()->counterReadings($verbrauch, [$spaeter])) === [$spaeter => (float)$verbrauchQuelle['wert'] + 1.5], 'counterReadings nach jetzt: der Wert der Variable');
+// „Jetzt“ als festes Zeichen (Review 18.10.2026, N3): Die Bibliothek übergab $now + 1, und war die Uhr im Backend schon eine
+// Sekunde weiter, kam der Satz doch aus dem Archiv
+$jetzt = defined('DeviceBackend::LATEST') ? constant('DeviceBackend::LATEST') : -1;
+pruefe($jetzt > 0 && oderNull(static fn () => $m->testBackend()->counterReadings($verbrauch, [$jetzt])) === [$jetzt => (float)$verbrauchQuelle['wert'] + 1.5], 'counterReadings mit DeviceBackend::LATEST: der Wert der Variable');
 SetValue($verbrauch, 0.0);
 pruefe(oderNull(static fn () => $m->testBackend()->counterReadings($verbrauch, [$spaeter])) === [$spaeter => (float)$verbrauchQuelle['ablesungen'][count($verbrauchQuelle['ablesungen']) - 1][1]], 'nach jetzt mit 0 in der Variable: der letzte Satz über 0 aus dem Archiv');
 // Ein stillgelegter Zähler geht übers Archiv: Nach einer Reparatur kann es neuere Sätze haben als die Variable (alter

@@ -573,7 +573,8 @@ final class SymconDeviceBackend implements DeviceBackend
                     $readings[$time] = (float)$value;
                     continue;
                 }
-                foreach (AC_GetLoggedValues($archive, $variableId, 0, $time - 1, self::READING_DEPTH) as $row) {
+                // LATEST (jetzt) als Ende der Abfrage wäre PHP_INT_MAX; die eigene Uhr reicht
+                foreach (AC_GetLoggedValues($archive, $variableId, 0, min($time, $now + 1) - 1, self::READING_DEPTH) as $row) {
                     if ((float)$row['Value'] > 0) {
                         $readings[$time] = (float)$row['Value'];
                         break;

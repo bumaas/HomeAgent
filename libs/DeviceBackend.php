@@ -134,10 +134,18 @@ interface DeviceBackend
      * (null, wenn es keinen gibt). Nullen fallen weg, wie bei „Nullen ignorieren“ des Archivs. null = nicht archiviert
      * oder nicht als Zähler aggregiert.
      *
+     * LATEST als Zeitpunkt heißt „jetzt“, unabhängig von der Uhr des Backends.
+     *
      * @param list<int> $times
      * @return null|array<int, null|float> Zeitpunkt => Zählerstand
      */
     public function counterReadings(int $variableId, array $times): ?array;
+
+    /**
+     * Zeitpunkt „jetzt“ für counterReadings. Vorher übergab DeviceIndex seine Uhrzeit + 1; war die Uhr im Backend schon
+     * eine Sekunde weiter, kam der Stand teuer aus dem Archiv (Review 18.10.2026, N3).
+     */
+    public const LATEST = PHP_INT_MAX;
 
     /**
      * Verlauf eines Messwerts aus den Aggregaten des Archivs, aufsteigend: je Zeitraum der Stufe

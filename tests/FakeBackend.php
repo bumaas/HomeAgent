@@ -500,10 +500,14 @@ final class FakeBackend implements DeviceBackend
     /** @var array<int, int> abgefragte Zeitpunkte je Variable (counterReadings), für Prüfungen der Laufzeit */
     public array $readingRequests = [];
 
+    /** @var list<int> alle abgefragten Zeitpunkte (counterReadings) */
+    public array $readingTimes = [];
+
     /** Zählerstand vor jedem Zeitpunkt aus den mitgeschnittenen Rohwerten („ablesungen“ als [zeit, wert]), Nullen übergangen. */
     public function counterReadings(int $variableId, array $times): ?array
     {
         $this->readingRequests[$variableId] = ($this->readingRequests[$variableId] ?? 0) + count($times);
+        $this->readingTimes = array_merge($this->readingTimes, $times);
         $v = $this->variables[$variableId] ?? null;
         if ($v === null || ($v['archiviert'] ?? false) !== true || ($v['aggregationstyp'] ?? 0) !== 1) {
             return null;
