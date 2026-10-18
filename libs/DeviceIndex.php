@@ -1652,6 +1652,9 @@ final class DeviceIndex
         $lines = [$title];
         foreach ($series as [$entry, $history]) {
             $lines = array_merge($lines, $this->historyLines($entry, $history, $format, count($series) === 1));
+            if (($history['inconsistent'] ?? 0) > 0) {
+                $lines[] = sprintf($this->t('%d hour(s) with inconsistent meters (house consumption below 0) left out.'), $history['inconsistent']);
+            }
         }
         return ['text' => implode("\n", $lines), 'isError' => false];
     }
@@ -1659,8 +1662,11 @@ final class DeviceIndex
     /**
      * Hausleistung je Abschnitt aus den Zählern der Bilanz: je Stunde der Hausverbrauch in kWh, also das Stundenmittel in
      * kW, je Abschnitt Minimum, Mittel und Maximum mit der Stunde. Die laufende Stunde fehlt, ihr Mittel wäre zu niedrig.
+     * Ebenso Stunden mit negativem Hausverbrauch: Dort passen die Zähler nicht zusammen (betreute Anlage, Oktober 2026: an
+     * 15 Vormittagen zählte der Ladezähler der Batterie mehr, als PV und Netz lieferten), auf 0 gekappt wären sie eine
+     * falsche Grundlast. Ihre Anzahl steht in „inconsistent“.
      *
-     * @return null|array{rows: list<array{time: int, min: float, avg: float, max: float, minTime: int, maxTime: int}>, unit: string}
+     * @return null|array{rows: list<array{time: int, min: float, avg: float, max: float, minTime: int, maxTime: int}>, unit: string, inconsistent: int}
      */
     private function housePowerRows(int $level, int $from, int $to): ?array
     {
@@ -1670,6 +1676,7 @@ final class DeviceIndex
         }
         $now = $this->backend->timestamp();
         $sections = [];
+        $inconsistent = 0;
         foreach ($parts as $time => $part) {
             if ($time + 3600 > $now) {
                 continue;
@@ -1678,7 +1685,11 @@ final class DeviceIndex
             foreach (self::BALANCE_TERMS as $key => [$sign]) {
                 $value += $sign * ($part[$key] ?? 0.0);
             }
-            $sections[self::sectionStart($time, $level)][] = [$time, max(0.0, $value)];
+            if ($value < 0) {
+                $inconsistent++;
+                continue;
+            }
+            $sections[self::sectionStart($time, $level)][] = [$time, $value];
         }
         $rows = [];
         foreach ($sections as $start => $hours) {
@@ -1689,7 +1700,7 @@ final class DeviceIndex
             }
             $rows[] = ['time' => $start, 'min' => $low[1], 'avg' => array_sum(array_column($hours, 1)) / count($hours), 'max' => $high[1], 'minTime' => $low[0], 'maxTime' => $high[0]];
         }
-        return ['rows' => $rows, 'unit' => 'kW'];
+        return ['rows' => $rows, 'unit' => 'kW', 'inconsistent' => $inconsistent];
     }
 
     /** Verlauf einer Netzleistung in kW (W und MW umgerechnet); umgekehrt gezählt mit gedrehtem Vorzeichen. */

@@ -163,4 +163,40 @@ pruefe(!$r['isError'] && ($r['structuredContent']['kind'] ?? '') === 'history' &
 $r = frage(['type' => 'power', 'period' => 'this_month'], null, true);
 pruefe(!$r['isError'] && array_column($r['structuredContent']['series'] ?? [], 'unit') === ['kW', 'kW', 'kW'], 'Haus im Diagramm: drei Reihen in kW: ' . json_encode(array_column($r['structuredContent']['series'] ?? [], 'name'), JSON_UNESCAPED_UNICODE));
 
+/* --- Grundlast mit unstimmigen Zählern ------------------------------------------------------------ */
+
+// Betreute Anlage (betreut_2026-10-18_hausleistung.json): An Vormittagen, an denen die Batterie lädt, zählt der Ladezähler
+// mehr, als PV und Netz liefern, der Hausverbrauch der Bilanz wird negativ. Solche Stunden zählen nicht als Grundlast
+// (Burkhard 18.10.2026: Möglichkeit 1), die Zeile sagt, wie viele es waren. Vorher stand dort „Minimum 0 kW“.
+$betreut = fixture('betreut_2026-10-18_hausleistung.json');
+$anlage = new FakeBackend($betreut['variablen']);
+$anlage->jetzt = $betreut['jetzt'];
+$idx = new DeviceIndex([], $anlage);
+$idx->addSources($betreut['quellen']);
+$roh = [];
+foreach ($betreut['quellen'] as $q) {
+    foreach (['EnergyIn' => 1, 'EnergyOut' => -1] as $feld => $vorzeichen) {
+        $id = (string)($q[$feld] ?? 0);
+        if ((int)$id <= 1) {
+            continue;
+        }
+        foreach ($betreut['variablen'][$id]['aggregate']['0'] as $a) {
+            $roh[$a['zeit']] = ($roh[$a['zeit']] ?? 0.0) + $vorzeichen * $a['summe'];
+        }
+    }
+}
+$roh = array_filter($roh, static fn (int $beginn): bool => $beginn + 3600 <= $betreut['jetzt'], ARRAY_FILTER_USE_KEY);
+ksort($roh);
+$unstimmig = count(array_filter($roh, static fn (float $w): bool => $w < 0));
+$gueltig = array_filter($roh, static fn (float $w): bool => $w >= 0);
+pruefe($unstimmig === 15, 'Orakel: 15 Stunden mit negativem Hausverbrauch: ' . $unstimmig);
+$r = $idx->getState(['type' => 'power', 'period' => 'this_month']);
+$z = $zeilen($r);
+$haus = sprintf('- | house power (hourly mean) | house | minimum %s kW (%s), maximum %s kW (%s)', zahl(min($gueltig)), date('Y-m-d H:i', (int)array_search(min($gueltig), $gueltig, true)), zahl(max($gueltig)), date('Y-m-d H:i', (int)array_search(max($gueltig), $gueltig, true)));
+pruefe(($z[1] ?? '') === $haus, 'Grundlast ohne die unstimmigen Stunden: ' . ($z[1] ?? '') . ' statt ' . $haus);
+pruefe(($z[2] ?? '') === '15 hour(s) with inconsistent meters (house consumption below 0) left out.', 'die Zeile darunter nennt sie: ' . ($z[2] ?? $r['text']));
+pruefe(str_starts_with($z[3] ?? '', '- | grid import (export negative) | grid | minimum -'), 'ein Netzsensor mit Vorzeichen: eine Zeile, die Einspeisung negativ: ' . ($z[3] ?? ''));
+// Am nuc gibt es keine solche Stunde, also keine solche Zeile
+pruefe(!str_contains(frage(['type' => 'power', 'period' => 'this_month'])['text'], 'inconsistent'), 'ohne unstimmige Stunden kein Hinweis');
+
 ende('Verlauf der Leistung');
