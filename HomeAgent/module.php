@@ -2161,7 +2161,8 @@ class HomeAgent extends IPSModuleStrict
         // ohne schaltbares Gerät gar kein Werkzeug. Ein neues Feld (Uhrzeit, Sollwert, Farbe) kommt
         // hier als weitere Eigenschaft dazu, sobald DeviceIndex::abilitiesOf() es kennt. Die
         // Einträge der Freigabeliste tragen den Stoppweg, den erst die Anlage kennt.
-        $devices = $this->deviceIndex()->entries();
+        $index = $this->deviceIndex();
+        $devices = $index->entries();
         $offered = DeviceIndex::offeredAbilities($devices);
         if ($offered !== []) {
             $commands = array_values(array_intersect(DeviceIndex::COMMANDS, $offered));
@@ -2188,14 +2189,12 @@ class HomeAgent extends IPSModuleStrict
             if ($commands !== []) {
                 // Jeder Teil nur, wenn ein freigegebenes Gerät ihn versteht.
                 $hasMedia = in_array('play', $offered, true);
-                // B86: Ein Mediaplayer ohne Ein/Aus pausiert bei off und setzt bei on fort.
-                $pausesOnOff = $hasMedia && array_any($this->usableDevices(), static function (array $row): bool {
-                    $roles = DeviceIndex::rolesOf($row);
-                    return ($row['Type'] ?? '') === 'media' && isset($roles['playback']) && !isset($roles['state']) && DeviceIndex::abilitiesOf($row) !== [];
-                });
+                // B86: Ein Mediaplayer ohne schaltbares Ein/Aus pausiert bei off und setzt bei on mit type=media fort; dieselbe
+                // Prüfung wie in setState, auch ein Statustext ohne Aktion zählt (Review 18.10.2026, N11).
+                $pausesOnOff = $hasMedia && array_any($devices, static fn (array $e): bool => !$e['ReadOnly'] && $index->pausesOnOff($e));
                 $parts = array_filter([
                     in_array('on', $commands, true) ? 'on/off switch a device' : '',
-                    $pausesOnOff ? 'off pauses and on resumes a media player without power switch' : '',
+                    $pausesOnOff ? 'off pauses a media player without power switch, on with type=media resumes it' : '',
                     $hasBlinds ? 'open/close move a blind or window all the way' : '',
                     $hasStop && $hasBlinds ? ($hasMedia ? 'stop halts a moving blind or window and ends playback of a media player' : 'stop halts a moving blind or window') : ($hasMedia ? 'stop ends playback' : ''),
                     $hasMedia ? 'play/pause/next/previous control a media player' : '',

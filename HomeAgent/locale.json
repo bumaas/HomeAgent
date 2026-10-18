@@ -227,6 +227,7 @@
             "Nothing was changed: give a command (%s) or a percent value.": "Nichts geändert: Es fehlt ein Befehl (%s) oder ein Prozentwert.",
             "Nothing was changed: command \"%s\" and percent %s contradict each other. Give only one of them.": "Nichts geändert: Der Befehl „%s“ und percent %s widersprechen sich. Gib nur eines von beiden an.",
             "Nothing was changed: %s cannot do \"%s\". It understands: %s.": "Nichts geändert: %s kann „%s“ nicht. Es versteht: %s.",
+            "Nothing was changed: \"on\" resumes a media player without power switch only with type=media (%s).": "Nichts geändert: „on“ setzt einen Mediaplayer ohne Ein/Aus nur mit type=media fort (%s).",
             "Nothing was changed: no device matching %s understands \"%s\". They understand: %s.": "Nichts geändert: Kein Gerät zu %s versteht „%s“. Sie verstehen: %s.",
             "Nothing was changed: percent would set lights and blinds at once (%s). Give the type.": "Nichts geändert: percent würde Lichter und Rollläden zugleich stellen (%s). Gib den Typ an.",
             "%d device(s) of the selection do not understand \"%s\" and were left out.": "%d Gerät(e) der Auswahl kennen „%s“ nicht und wurden ausgelassen.",

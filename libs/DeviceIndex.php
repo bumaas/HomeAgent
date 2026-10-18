@@ -2403,7 +2403,15 @@ final class DeviceIndex
         // Was verlangt ist, heißt wie das Feld des Werkzeugs; so kann der Assistent es korrigieren.
         $ability = $mode !== null ? 'mode' : ($fanSpeed !== null ? 'fan_speed' : ($mute !== null ? 'mute' : ($volumeChange !== null ? 'volume_change' : ($volume !== null ? 'volume' : ($color !== null ? 'color' : ($kelvin !== null ? 'color_temperature' : ($humidity !== null ? 'humidity' : ($temperature !== null ? 'temperature' : ($percent !== null ? 'percent' : $command)))))))));
         $understand = array_filter($selection['entries'], static fn (array $e): bool => in_array($ability, self::abilitiesOf($e), true) && (!$withPlayback || in_array($command, self::abilitiesOf($e), true)));
+        // „an“ setzt einen Mediaplayer ohne schaltbares Ein/Aus nur mit type=media fort (B86); „Wintergarten an“ soll keine
+        // Musik starten (Burkhard 18.10.2026, Review Frage 1).
+        $resumeOnly = $command === 'on' && $type !== 'media' ? array_filter($understand, fn (array $e): bool => $this->pausesOnOff($e)) : [];
+        $understand = array_diff_key($understand, $resumeOnly);
         $skipped = count($selection['entries']) - count($understand) + ($selection['windowsWithoutDrive'] ?? 0);
+        if ($understand === [] && $resumeOnly !== []) {
+            $this->problem = 'not_understood';
+            return $this->fail(sprintf($this->t('Nothing was changed: "on" resumes a media player without power switch only with type=media (%s).'), $filter));
+        }
         if ($understand === []) {
             $this->problem = 'not_understood';
             $known = self::offeredAbilities($selection['entries']);
@@ -2499,7 +2507,7 @@ final class DeviceIndex
         $on = $command === 'on';
         $word = $this->t($on ? 'on' : 'off');
         // Ein Mediaplayer ohne schaltbares Ein/Aus (Wahrheitswert mit Aktion) pausiert bzw. setzt fort (B86).
-        $players = array_filter($understand, fn (array $e): bool => $e['Type'] === 'media' && isset($e['roles']['playback']) && !$this->switchableState($e));
+        $players = array_filter($understand, fn (array $e): bool => $this->pausesOnOff($e));
         $understand = array_diff_key($understand, $players);
         $result = $players === [] ? null : $this->runPlayback($players, $on ? 'play' : 'pause');
         if ($understand === []) {
@@ -3900,6 +3908,19 @@ final class DeviceIndex
         return null;
     }
 
+    /** Ein Schaltzustand, den runSwitch schalten kann: Wahrheitswert mit Aktion (wie dort geprüft). */
+    private function switchableState(array $entry): bool
+    {
+        $state = $entry['roles']['state'] ?? 0;
+        return $state > 0 && is_bool($this->backend->read($state)['value'] ?? null) && $this->backend->hasAction($state);
+    }
+
+    /** Ein Mediaplayer, der bei off pausiert und bei on (mit type=media) fortsetzt: Wiedergabe ohne schaltbares Ein/Aus (B86). */
+    public function pausesOnOff(array $entry): bool
+    {
+        return $entry['Type'] === 'media' && isset($entry['roles']['playback']) && !$this->switchableState($entry);
+    }
+
     /**
      * Wiedergabebefehl an Mediaplayer: Play, Pause und Stop gelten als bestätigt, wenn die Phase
      * stimmt, Weiter und Zurück, wenn sich Wiedergabewert, Titel oder Interpret ändern. Gemessen am
@@ -3909,13 +3930,6 @@ final class DeviceIndex
      * @param array<int, array<string, mixed>> $entries
      * @return array{lines: array<int, string>, total: int, reached: int, pending: int, failed: int}
      */
-    /** Ein Schaltzustand, den runSwitch schalten kann: Wahrheitswert mit Aktion (wie dort geprüft). */
-    private function switchableState(array $entry): bool
-    {
-        $state = $entry['roles']['state'] ?? 0;
-        return $state > 0 && is_bool($this->backend->read($state)['value'] ?? null) && $this->backend->hasAction($state);
-    }
-
     private function runPlayback(array $entries, string $command): array
     {
         $snapshot = function (array $entry): array {

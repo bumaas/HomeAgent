@@ -61,8 +61,21 @@ pruefe(!$r['isError'] && $anlage->requests === [] && $zeile($r, 1) === 'Winterga
 
 /* --- on setzt fort -------------------------------------------------------------------------------- */
 
+$r = rufe($liste, $werte, ['name' => 'Sonos', 'type' => 'media', 'command' => 'on']);
+pruefe(!$r['isError'] && $gesendet(27341) === [2] && $zeile($r, 0) === '1 of 1 devices are now playing back (type=media, name=Sonos).', 'on mit type=media schickt Play (2): ' . $r['text']);
+
+// Nur mit type=media (Burkhard 18.10.2026): „Wintergarten an“ soll keine Musik starten (Review 18.10.2026, Frage 1).
 $r = rufe($liste, $werte, ['name' => 'Sonos', 'command' => 'on']);
-pruefe(!$r['isError'] && $gesendet(27341) === [2] && $zeile($r, 0) === '1 of 1 devices are now playing back (name=Sonos).', 'on schickt Play (2): ' . $r['text']);
+pruefe($r['isError'] && $anlage->requests === [] && str_contains($r['text'], 'type=media'), 'on ohne type setzt nicht fort und nennt type=media: ' . $r['text']);
+$r = rufe($liste, $werte, ['name' => 'Sonos', 'command' => 'on'], $de);
+pruefe($r['isError'] && str_contains($r['text'], 'type=media') && !str_contains($r['text'], 'Nothing'), 'auf Deutsch: ' . $r['text']);
+$raum = array_merge($liste, $receiver['geraete']);
+$raum[count($raum) - 1]['Room'] = 'Wintergarten';
+$r = rufe($raum, array_replace($werte, $receiver['variablen']), ['room' => 'Wintergarten', 'command' => 'on']);
+pruefe($gesendet(27341) === [] && $gesendet(11085) === [] && $gesendet(35575) === [true], 'room=Wintergarten command=on schaltet den Receiver ein, die Player ohne Ein/Aus spielen nicht: ' . json_encode($anlage->requests) . ' ' . $r['text']);
+pruefe(str_contains($r['text'], '2 device(s) of the selection do not understand "on" and were left out.'), 'die zwei Player sind ausgelassen und gezählt: ' . $r['text']);
+$r = rufe($liste, $spielen, ['room' => 'Wintergarten', 'command' => 'off']);
+pruefe($gesendet(27341) === [3] && $gesendet(11085) === [3], 'off ohne type pausiert weiter: ' . json_encode($anlage->requests));
 
 /* --- Statustext des HomeAssistant-Moduls ---------------------------------------------------------- */
 

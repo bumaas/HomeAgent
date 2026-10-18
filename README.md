@@ -400,7 +400,7 @@ aus und gibt dazu einen Befehl oder einen Prozentwert an:
 
 | Angabe | Wirkung |
 |---|---|
-| `on`, `off` | schaltet Lichter, Schalter, Steckdosen, Geräte, Mediaplayer, Luftentfeuchter und Lüftungen ein oder aus; ein Mediaplayer ohne Ein/Aus (etwa über das Sonos-Modul) setzt fort bzw. pausiert („Musik aus“) |
+| `on`, `off` | schaltet Lichter, Schalter, Steckdosen, Geräte, Mediaplayer, Luftentfeuchter und Lüftungen ein oder aus; ein Mediaplayer ohne Ein/Aus (etwa über das Sonos-Modul) pausiert bei `off` („Musik aus“) und setzt bei `on` nur mit `type=media` fort, damit „Wintergarten an“ keine Musik startet |
 | `open`, `close` | fährt Rollläden und Fenster mit Antrieb ganz auf oder ganz zu |
 | `stop` | hält Rollläden und Fenster an, die gerade fahren, und beendet die Wiedergabe eines Mediaplayers |
 | `play`, `pause` | setzt die Wiedergabe eines Mediaplayers fort oder hält sie an |

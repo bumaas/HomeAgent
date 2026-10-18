@@ -103,9 +103,9 @@ pruefe($zeile($r, 0) === '0 of 1 devices are now at the previous track, 1 not co
 
 /* --- Absagen -------------------------------------------------------------------------------------- */
 
-// Ohne Ein/Aus setzt on die Wiedergabe fort (B86, check-musik-aus.php).
-$r = rufe($werte, 'set', ['name' => 'Sonos', 'command' => 'on']);
-pruefe(!$r['isError'] && $anlage->requests === [[27341, 2]], 'on ohne Ein/Aus setzt fort: ' . $r['text']);
+// Ohne Ein/Aus setzt on mit type=media die Wiedergabe fort (B86, check-musik-aus.php).
+$r = rufe($werte, 'set', ['name' => 'Sonos', 'type' => 'media', 'command' => 'on']);
+pruefe(!$r['isError'] && $anlage->requests === [[27341, 2]], 'on mit type=media ohne Ein/Aus setzt fort: ' . $r['text']);
 $fremd = $werte;
 $fremd['27341']['bereich']['profil'] = 'SONOS.Status';
 $r = rufe($fremd, 'set', ['name' => 'Sonos', 'command' => 'play']);

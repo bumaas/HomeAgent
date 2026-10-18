@@ -557,10 +557,12 @@ Weitere Regeln, die nicht offensichtlich sind:
   veraltete sie, weil Claude-App und HA beides lange zwischenspeichern.
 - **Mediaplayer ein/aus** über den Schaltzustand, wenn er ein Wahrheitswert mit Aktion ist (Denon-Receiver am nuc:
   an nach 0,5 s, aus nach 0,1 s); der Statustext des HomeAssistant-Moduls wird nie geschaltet. Ohne solchen Schaltzustand,
-  aber mit Wiedergabe pausiert `off` und `on` setzt fort (`switchableState`, `runPlayback`; B86): Im Vergleichslauf gegen HA
+  aber mit Wiedergabe pausiert `off` und `on` mit `type=media` setzt fort (`pausesOnOff`, `runPlayback`; B86): Im Vergleichslauf gegen HA
   (18.10.2026) wies `set_state` „Musik im Wintergarten aus“ am Sonos ab, das Modell brauchte dreimal von drei eine zweite
   Runde mit `stop`. Pause statt Stopp, damit `play` ohne Raum ihn wiederfindet (Burkhard). Die Beschreibung von `command`
-  nennt das nur, wenn es so einen Player gibt. Test `check-musik-aus.php`.
+  nennt das nur, wenn es so einen Player gibt (dieselbe Prüfung `pausesOnOff`, auch ein Statustext ohne Aktion). Ohne
+  `type=media` lässt `on` solche Player aus und zählt sie, „Wintergarten an“ startet keine Musik (Burkhard 18.10.2026 nach
+  dem Review); trifft `on` nur solche Player, nennt die Absage `type=media`. Test `check-musik-aus.php`.
 - **Genannte Geräte gehören in `name`** (B87): Die Beschreibung von `type` in `get_state` und `set_state` sagt es. „Ist die
   Fußbodenheizung an?“ ergab vorher in 2 von 13 Läufen `type=thermostat` und „keine Fußbodenheizung“ (die Geräte sind Schalter).
 - **Ein neues Feld** von `set_state` kostet: eine Fähigkeit in `ROLES`/`TYPE_ROLES`, einen Eintrag in

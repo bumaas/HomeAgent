@@ -1692,9 +1692,29 @@ pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Mediaplayer nur m
 $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
 $schema = $werkzeuge['set_state']['inputSchema']['properties'] ?? [];
 pruefe(($schema['command']['enum'] ?? null) === ['on', 'off', 'stop', 'play', 'pause', 'next', 'previous'] && ($schema['type']['enum'] ?? null) === ['media'], 'set_state bietet die Wiedergabebefehle an: ' . json_encode($schema['command'] ?? null));
-pruefe(str_contains($schema['command']['description'] ?? '', 'play/pause/next/previous control a media player') && str_contains($schema['command']['description'] ?? '', 'stop ends playback') && str_contains($schema['command']['description'] ?? '', 'off pauses and on resumes a media player without power switch'), 'die Beschreibung erklärt die Befehle: ' . ($schema['command']['description'] ?? ''));
+pruefe(str_contains($schema['command']['description'] ?? '', 'play/pause/next/previous control a media player') && str_contains($schema['command']['description'] ?? '', 'stop ends playback') && str_contains($schema['command']['description'] ?? '', 'off pauses a media player without power switch, on with type=media resumes it'), 'die Beschreibung erklärt die Befehle: ' . ($schema['command']['description'] ?? ''));
 pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', '"Pause the music in the conservatory" → room=Wintergarten, type=media, command=pause.'), 'mit Beispielsatz: ' . ($werkzeuge['set_state']['description'] ?? ''));
 
+// Review 18.10.2026 (N11): Pausiert wird jeder Player ohne schaltbares Ein/Aus, auch einer mit Statustext (HomeAssistant-Modul,
+// Zeichenkette ohne Aktion); mit Wahrheitswert und Aktion schaltet off aus, dann steht der Satz nicht da.
+$beschreibung = static function (int $zustand) use ($iid, $m, $wiedergabe): string {
+    IPS_SetProperty($iid, 'Devices', json_encode([
+        ['Room' => 'Wintergarten', 'Name' => 'Sonos', 'Aliases' => '', 'Type' => 'media', 'StateVariableID' => $zustand, 'PlaybackVariableID' => $wiedergabe, 'Invert' => false],
+    ]));
+    IPS_ApplyChanges($iid);
+    $liste = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+    return $liste['set_state']['inputSchema']['properties']['command']['description'] ?? '';
+};
+$text = $beschreibung(variable(VARIABLETYPE_STRING, 'playing'));
+pruefe(str_contains($text, 'off pauses a media player'), 'Statustext ohne Aktion: off pausiert, die Beschreibung sagt es: ' . $text);
+$schalter = variable(VARIABLETYPE_BOOLEAN, true);
+IPS_SetVariableCustomAction($schalter, $antriebAktion);
+$text = $beschreibung($schalter);
+pruefe(!str_contains($text, 'off pauses'), 'Ein/Aus mit Aktion: off schaltet aus, kein Satz zum Pausieren: ' . $text);
+IPS_SetProperty($iid, 'Devices', json_encode([
+    ['Room' => 'Wintergarten', 'Name' => 'Sonos', 'Aliases' => '', 'Type' => 'media', 'PlaybackVariableID' => $wiedergabe, 'Invert' => false],
+]));
+IPS_ApplyChanges($iid);
 pruefe(($werkzeuge['set_state']['annotations']['idempotentHint'] ?? null) === true && !isset($schema['volume']), 'ohne Lautstärke bleibt set_state idempotent');
 
 /* --- Lautstärke und Stumm im Werkzeugschema (build 62) ------------------------------------------- */
