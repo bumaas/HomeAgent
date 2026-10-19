@@ -272,7 +272,7 @@ Weitere Regeln, die nicht offensichtlich sind:
   Felder von `set_state` und die Properties der Energiebilanz.
 - **Prozent beim Licht rechnet das Modul selbst**; der Anzeigetext von Symcon schneidet ab.
 - **Sollwert:** Bereich und Schrittweite aus Darstellung oder Profil, Sonderwerte mit Text am Rand
-  („On“) zählen nicht dazu, bei einem Profil ohne Schrittweite um 0,5 (das Raster der Karte; Homematic-IP-Profil
+  („On“; nicht ein Eintrag ohne Text oder mit Formatnamen wie „%d“, Review 18.10.2026, N7) zählen nicht dazu, bei einem Profil ohne Schrittweite um 0,5 (das Raster der Karte; Homematic-IP-Profil
   einer betreuten Anlage mit Einträgen 15 bis 24 und „On“ bei 30,5, vorher bis 30,5, 16.10.2026). Batteriegeräte melden den neuen Sollwert oft schon über die Zentrale,
   bevor das Gerät ihn übernimmt. Hat das Profil keine Schrittweite, gilt der kleinste Abstand seiner Einträge mit Zahlen
   (B81, 18.10.2026: dasselbe Homematic-IP-Profil hat Einträge im Abstand von 0,5; der Selbsttest meldete „in Schritten

@@ -1278,6 +1278,22 @@ $r = $grob('HomeAgentTest.Luecke', [[15, '15,0'], [15.5, '15,5'], [16, '16,0'], 
 pruefe(($r['step'] ?? null) === 0.0, 'ein Abstand, der kein Vielfaches des kleinsten ist, ergibt kein Raster: ' . json_encode($r));
 $r = $grob('HomeAgentTest.Dicht', [[15, '15,0'], [15.5, '15,5'], [16, '16,0'], [17, '17,0']]);
 pruefe(($r['step'] ?? null) === 0.5, 'dichte Einträge mit einer Lücke bleiben ein Raster von 0,5: ' . json_encode($r));
+// Ein Eintrag ohne Text (nur Farbe) oder mit Formatnamen zeigt den Wert selbst und ist kein Sonderwert (Review 18.10.2026,
+// N7). Echt vom nuc gelesen (19.10.2026): „Bodenfeuchte“ 0 bis 100, Schritt 1, Einträge „%d“ ab 0; vorher begann der
+// Bereich bei 1. Der Eintrag nur aus einem Leerzeichen ist angenommen (Farbband ohne Beschriftung; ein leerer Name löscht den Eintrag).
+IPS_CreateVariableProfile('Bodenfeuchte', VARIABLETYPE_INTEGER);
+IPS_SetVariableProfileValues('Bodenfeuchte', 0, 100, 1);
+IPS_SetVariableProfileText('Bodenfeuchte', '', ' %');
+foreach ([[0, 16711680], [8, 16743936], [25, 16776960], [30, 8322816], [35, 65280], [40, 65406], [45, 65535], [48, 32511]] as [$wert, $farbe]) {
+    IPS_SetVariableProfileAssociation('Bodenfeuchte', $wert, '%d', '', $farbe);
+}
+$feuchteFormat = variable(VARIABLETYPE_INTEGER, 40);
+IPS_SetVariableCustomProfile($feuchteFormat, 'Bodenfeuchte');
+pruefe($sollbereich($feuchteFormat) === ['min' => 0.0, 'max' => 100.0, 'step' => 1.0], 'Formatname „%d“ am Rand ist kein Sonderwert: ' . json_encode($sollbereich($feuchteFormat)));
+$r = $grob('HomeAgentTest.FarbeAmRand', [[5, ' '], [30, ' ']]);
+pruefe(($r['min'] ?? null) === 5.0 && ($r['max'] ?? null) === 30.0, 'Einträge ohne Text an den Rändern sind keine Sonderwerte: ' . json_encode($r));
+$r = $grob('HomeAgentTest.OnAmRand', [[30, 'On']]);
+pruefe(($r['max'] ?? null) === 29.5, 'ein Text am Rand bleibt ein Sonderwert: ' . json_encode($r));
 
 // Farbmodus neben der Farbvariable (16.10.2026): Ident endet auf color_mode, wie bei Zigbee2MQTT, dem
 // HomeAssistant-Modul (auch mit Entitätsnamen davor) und Matter; andere Geschwister zählen nicht.
