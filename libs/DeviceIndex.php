@@ -1559,7 +1559,6 @@ final class DeviceIndex
         return ['rows' => array_values($rows), 'unit' => $series['unit']];
     }
 
-    /** Verlauf wie history, die Zeitpunkte auf den Beginn des Abschnitts gesetzt (wie counterRows). */
     /** Art, Titel und Beschriftungen eines Verlaufsdiagramms (Messwerte und Leistung). */
     private function historyChart(string $title, string $per, string $filter): void
     {
@@ -1797,6 +1796,7 @@ final class DeviceIndex
         return $history;
     }
 
+    /** Verlauf wie history, die Zeitpunkte auf den Beginn des Abschnitts gesetzt (wie counterRows). */
     private function historyRows(int $variableId, int $level, int $from, int $to): ?array
     {
         $history = $this->backend->history($variableId, $level, $from, $to);
@@ -5519,12 +5519,6 @@ final class DeviceIndex
     }
 
     /**
-     * Sensoren der Leistungsbilanz, deren Vorzeichen umgekehrt gilt (B77): 'import' (positiv = Einspeisung) und
-     * 'discharge' (positiv = laden, so meldet der Marstek Venus E). Andere Schlüssel haben kein Vorzeichen.
-     *
-     * @param list<string> $keys
-     */
-    /**
      * Fehler einer Zeile der Liste „Quellen“ (B82): unbekannte Art, keine Variable, bei PV ein zweiter Zähler bzw. eine
      * zweite Leistung (eine PV-Anlage speist nur ein), oder eine Variable, die schon in einer früheren Zeile oder einem
      * anderen Feld steht (Review 18.10.2026, M4: dieselbe PV zweimal ergab 1231,8 statt 441,1 kWh, ohne Hinweis).
@@ -5617,6 +5611,12 @@ final class DeviceIndex
         return sprintf($this->t('%s (of this %s)'), $text, $list);
     }
 
+    /**
+     * Sensoren der Leistungsbilanz, deren Vorzeichen umgekehrt gilt (B77): 'import' (positiv = Einspeisung) und
+     * 'discharge' (positiv = laden, so meldet der Marstek Venus E). Andere Schlüssel haben kein Vorzeichen.
+     *
+     * @param list<string> $keys
+     */
     public function setInvertedPower(array $keys): void
     {
         $this->invertedPower = array_values(array_intersect(array_keys(self::SIGNED_POWER), $keys));
