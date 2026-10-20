@@ -227,8 +227,6 @@ $stufe = variable(VARIABLETYPE_INTEGER, 254);
 IPS_SetVariableCustomPresentation($stufe, ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'MIN' => 1, 'MAX' => 254, 'PERCENTAGE' => true]);
 $bereich = static fn (?array $r): ?array => $r === null ? null : ['min' => $r['min'], 'max' => $r['max']];
 pruefe($bereich($anlage->range($stufe)) === ['min' => 1.0, 'max' => 254.0], 'Bereich aus der Darstellung (wie Hue Aurelle): ' . json_encode($anlage->range($stufe)));
-IPS_CreateVariableProfile('~Shutter', VARIABLETYPE_INTEGER);
-IPS_SetVariableProfileValues('~Shutter', 0, 100, 1);
 $rollo = variable(VARIABLETYPE_INTEGER, 0);
 IPS_SetVariableCustomProfile($rollo, '~Shutter');
 pruefe($bereich($anlage->range($rollo)) === ['min' => 0.0, 'max' => 100.0], 'Bereich aus dem Legacy-Profil: ' . json_encode($anlage->range($rollo)));
@@ -1225,8 +1223,6 @@ $sollAktion = IPS_CreateScript(0);
 IPS_SetScriptContent($sollAktion, '<?php SetValue($_IPS["VARIABLE"], $_IPS["VALUE"]);');
 IPS_SetVariableCustomAction($soll, $sollAktion);
 pruefe($sollbereich($soll) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.5], 'Profil wie am nuc: 30,5 „On“ ist ein Sonderwert, „16,0“ eine Zahl: ' . json_encode($sollbereich($soll)));
-IPS_CreateVariableProfile('~Temperature.HM', VARIABLETYPE_FLOAT);
-IPS_SetVariableProfileValues('~Temperature.HM', 6, 30, 0.5);
 $sollAlt = variable(VARIABLETYPE_FLOAT, 100.0);
 IPS_SetVariableCustomProfile($sollAlt, '~Temperature.HM');
 pruefe($sollbereich($sollAlt) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.5], '~Temperature.HM (HM-CC-TC): 6 bis 30: ' . json_encode($sollbereich($sollAlt)));
@@ -1315,9 +1311,6 @@ pruefe($sollbereich($haSoll) === ['min' => 6.0, 'max' => 30.0, 'step' => 0.5], '
 pruefe($sollbereich(variable(VARIABLETYPE_FLOAT, 20.0)) === null && $sollbereich(69999) === null, 'ohne Profil und Darstellung oder ohne Variable: unbekannt');
 
 // Freigabeliste mit Thermostat: Schema, Abfrage, Stellen, Selbsttest, Validierung
-IPS_CreateVariableProfile('~Temperature', VARIABLETYPE_FLOAT);
-IPS_SetVariableProfileText('~Temperature', '', ' °C');
-IPS_SetVariableProfileDigits('~Temperature', 1);
 $ist = variable(VARIABLETYPE_FLOAT, 21.7);
 IPS_SetVariableCustomProfile($ist, '~Temperature');
 IPS_SetProperty($iid, 'Devices', json_encode([
