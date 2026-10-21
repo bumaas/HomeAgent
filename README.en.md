@@ -345,6 +345,12 @@ as well ("performance factor 6.9 from heat output and power"), so both values co
 estimate the heat and book their meters at midnight. On a Stiebel Eltron the heat meter showed 1.5 to 2.5 times the heat
 output calculated from flow rate and temperature difference at part load. Leave the heat meter empty in such a case.
 
+If heat output and power exist only once for heating and hot water, you have two options. One line for both gives the
+performance factor over everything, that is the seasonal performance factor. For separate lines a small script on your
+system splits both values by operating mode, for example by a "hot water mode" variable of the controller: in hot
+water mode into "heat output hot water" and "power hot water", otherwise into the two variables for heating, the other
+ones set to 0. All four must be archived.
+
 With `period=now`, **get_state** reports the power right now in W, built like the consumption: the
 current value of each device with power, plus the total. For the whole house the module calculates the
 house power from the powers of the sources, for example "House power 1548 W (all

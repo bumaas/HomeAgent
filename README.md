@@ -356,6 +356,12 @@ aus Wärmeleistung und Leistung“), beide Werte gelten dann für dieselben Stun
 buchen ihre Zähler erst um Mitternacht. Bei einer Stiebel Eltron lag der Wärmezähler bei Teillast beim 1,5- bis 2,5-Fachen
 der aus Volumenstrom und Spreizung gerechneten Wärmeleistung. Lassen Sie den Wärmezähler in so einem Fall leer.
 
+Gibt es Wärmeleistung und Leistung nur einmal für Heizen und Warmwasser, haben Sie zwei Möglichkeiten. Eine Zeile für
+beides nennt die Arbeitszahl über alles, also die Jahresarbeitszahl. Für getrennte Zeilen teilt ein kleines Skript auf
+Ihrer Anlage beide Werte nach der Betriebsart auf, etwa nach einer Variable „Warmwasserbetrieb“ des Reglers: im
+Warmwasserbetrieb in „Wärmeleistung Warmwasser“ und „Leistung Warmwasser“, sonst in die beiden Variablen fürs Heizen,
+die jeweils anderen auf 0. Alle vier müssen archiviert sein.
+
 Mit `period=now` nennt **get_state** die Leistung jetzt in W, aufgebaut wie der Verbrauch: je Gerät mit
 Leistung der aktuelle Wert, dazu die Summe. Fürs ganze Haus rechnet das Modul die Hausleistung aus den
 Leistungen der Quellen, etwa „Hausleistung 1548 W (alle Geräte, period=now):
