@@ -10,7 +10,7 @@ die Geräte, die Sie freigeben.
 
 > **Stand:** frühe Vorschau. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Farbe, Position,
 > Heizungs-Sollwert und Zielfeuchte, Betriebsart und Lüfterstufe von Luftentfeuchtern und Lüftungen, das
-> Anhalten von Rollläden, Verbrauch und Leistung auch hinter Zählern und Unterzählern, der Verlauf von Messwerten und Leistungen, Zeitleisten von Zuständen, das Starten von Szenen sowie
+> Anhalten von Rollläden, Verbrauch und Leistung auch hinter Zählern und Unterzählern, Wärme und Arbeitszahl von Wärmepumpen, der Verlauf von Messwerten und Leistungen, Zeitleisten von Zuständen, das Starten von Szenen sowie
 > Wiedergabe und Lautstärke von Mediaplayern gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz
 > vorschlagen. Die Claude-App meldet sich auf Wunsch per OAuth an. Was nicht geklappt hat, zeigt das
 > Formular, ein Protokoll zur Fehlersuche lässt sich einschalten. Erprobt ist das Modul bisher auf drei Anlagen.
@@ -198,6 +198,8 @@ zeigt der Dialog nur die Variablen, die zu diesem Typ gehören.
 | Stopp | Nur bei Rollladen und Fenster mit Antrieb, wahlweise: eine Variable, die die Fahrt anhält, also ein Wahrheitswert mit Aktion oder eine Auswahl mit dem Eintrag „Stop“ (etwa „Aktion“ beim HomeAssistant-Modul). Homematic- und Velux-KLF200-Geräte hält das Modul auch ohne sie an. |
 | Leistung | Nur bei Licht, Schalter, Steckdose, Gerät, Luftbe-/entfeuchter und Lüftung, wahlweise: die aktuelle Leistung, etwa `POWER` eines Homematic-Messkanals. Sie steht in jeder Antwort hinter dem Zustand, zum Beispiel „an (26.1 W)“. |
 | Zähler | Ebenso wahlweise: der Energiezähler, etwa `ENERGY_COUNTER`. Für den Verbrauch über Zeiträume muss er im Archiv als Zähler aggregiert werden. Hängt ein Gerät an einer Messsteckdose, dürfen beide Zeilen dieselbe Leistung und denselben Zähler tragen; Verbrauch und Leistung eines Raums oder des Hauses zählen jede Variable nur einmal, und der Selbsttest weist darauf hin. |
+| Wärmezähler | Nur beim Gerät, wahlweise: der Wärmemengenzähler einer Wärmepumpe, im Archiv als Zähler aggregiert. Er zählt nie im Stromverbrauch. |
+| Wärmeleistung | Nur beim Gerät, wahlweise: die Wärmeleistung jetzt, in W oder kW. Mit der Leistung des Geräts ergibt sie die Leistungszahl. |
 | Gemessen von | Bei allem mit Leistung oder Zähler, wahlweise: der Zähler, hinter dem das Gerät oder der Zähler hängt, etwa die Unterverteilung OG. Zur Auswahl stehen die Zähler der gespeicherten Liste, ein neuer also erst nach dem Übernehmen. |
 | Umgekehrt | Haken setzen, wenn `true` „zu“ oder „aus“ bedeutet. Viele Fensterkontakte melden `true` für geschlossen. Bei Fenster, Tür und Meldern mit einer Zahl gilt sonst alles über 0 als offen bzw. erkannt, mit dem Haken nur die 0; so passt etwa der Türstatus von Matter (0 Geöffnet, 1 Geschlossen). Weitere Einträge wie „Angelehnt“ nennt die Antwort in Klammern. Bei Rollläden erkennt das Modul selbst, welcher Wert „offen“ bedeutet; der Haken dreht das um, falls auf und zu vertauscht sind. |
 | Kippfenster | Nur beim Fenster mit Antrieb: Haken setzen, wenn der Antrieb das Fenster nur kippt. Die Antwort sagt dann „gekippt“ und „50 % gekippt“ statt „offen“ und „50 % offen“. |
@@ -209,7 +211,7 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 |---|---|
 | Licht | Schaltzustand, Helligkeit oder beides. Ein Dimmer ohne eigenen Schalter hat nur die Helligkeit. Wahlweise Leistung, Zähler, Farbtemperatur und Farbe. |
 | Schalter, Steckdose | Schaltzustand, wahlweise Leistung und Zähler |
-| Gerät | Schaltzustand oder Leistung, wahlweise der Zähler. Ein Gerät nur mit Leistung, etwa eine Wärmepumpe, lässt sich abfragen, aber nicht schalten. |
+| Gerät | Schaltzustand oder Leistung, wahlweise Zähler, Wärmezähler und Wärmeleistung. Ein Gerät nur mit Leistung, etwa eine Wärmepumpe, lässt sich abfragen, aber nicht schalten. |
 | Rollladen | Position, dazu wahlweise Fahrstatus und Stopp |
 | Thermostat | Sollwert, wahlweise die Ist-Temperatur, Modus und Lüfterstufe (Klimagerät), Leistung und Zähler |
 | Mediaplayer | Ein/Aus, Wiedergabe oder Lautstärke, wahlweise Stumm, Titel, Interpret, Leistung und Zähler |
@@ -339,6 +341,14 @@ Mit `part` zeigt das Diagramm statt des Hausverbrauchs nur einen Zähler der Ene
 (Einspeisung), `pv`, `battery_charge` oder `battery_discharge`. Das geht als Balken, Summenkurve, Heatmap und mit
 Vergleich, mit `costs` bei `grid` in Euro und bei `feed_in` als Vergütung. So beantwortet der Assistent etwa „Was habe
 ich dieses Jahr an Einspeisevergütung verdient, und wo lande ich am Jahresende?“ mit einem Diagramm.
+
+Bei einer Wärmepumpe (Typ Gerät) tragen Sie dazu den Wärmezähler und wahlweise die Wärmeleistung ein. Der Wärmezähler
+muss wie der Stromzähler als Zähler archiviert sein und zählt nie im Stromverbrauch. Die Zeile nennt dann für den
+Zeitraum die Wärme und die Arbeitszahl, also Wärme geteilt durch Strom, etwa „Heizungsraum | Wärmepumpe | appliance |
+1397 kWh, Wärme 5161 kWh, Arbeitszahl 3.7“. Haben mehrere Zeilen einen Wärmezähler, etwa Heizen und Warmwasser, steht die
+Arbeitszahl aller zusammen darüber. Mit `period=now` und Wärmeleistung kommt die Leistungszahl von jetzt dazu („500 W,
+Wärme 4188 W, Leistungszahl 8.4“). Die Arbeitszahl ist so gut wie die Zähler. Zählt der Stromzähler nur den Verdichter,
+wie die Verbrauchswerte im Regler mancher Wärmepumpen, fehlen Umwälzpumpen und Heizstab, und sie fällt zu gut aus.
 
 Mit `period=now` nennt **get_state** die Leistung jetzt in W, aufgebaut wie der Verbrauch: je Gerät mit
 Leistung der aktuelle Wert, dazu die Summe. Fürs ganze Haus rechnet das Modul die Hausleistung aus den
@@ -631,6 +641,9 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
 - Fehler innerhalb eines Szenen-Skripts sieht der Assistent nicht, er erfährt nur vom Start.
 - Die Prüfung der Zähler im Selbsttest findet nur Fehlwerte, die wieder verschwinden. Springt ein Zähler dauerhaft nach oben, etwa beim Tausch gegen einen Zähler mit höherem Stand, zählt das Archiv den Sprung als Verbrauch, ohne dass der Selbsttest es merkt. Kleine Fehlwerte unter einem Fünftel eines üblichen Monats und Monate kurz nach einer Rücksetzung prüft er nicht.
 - Die Hausleistung mit `type=power` umfasst höchstens 400 Tage.
+- Wärme, Arbeitszahl und Leistungszahl gibt es nur als Text, nicht im Diagramm und nicht mit `type=power`. Zählt der
+  Regler einer Wärmepumpe nur einmal am Tag weiter, steht der ganze Vortag kurz nach Mitternacht im Archiv; „gestern“
+  meint dann den Tag davor.
 - Die Spitze der Hausleistung ist ein Stundenmittel aus den Zählern der Bilanz. Kurze Spitzen, etwa beim Anlaufen eines Geräts, zeigt nur die Netzleistung oder das einzelne Gerät.
 - Lamellen, deren Variable die Darstellung „Rollladen“ mit Rotation trägt, bekommen nur eine
   Prozentzahl ohne „offen“ oder „geschlossen“.

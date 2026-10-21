@@ -44,7 +44,8 @@ final class DeviceIndex
      * „level“ die Helligkeit oder Position, „power“ die aktuelle Leistung, „energy“ der Zähler,
      * der im Archiv als Zähler aggregiert wird, „stop“ eine eigene Stoppvariable (ohne sie sucht
      * das Backend einen Weg über das Modul des Geräts), „setpoint“ der Sollwert eines Thermostats
-     * (beim Thermostat ist „state“ die Ist-Temperatur). Eine neue Fähigkeit kostet einen Eintrag hier,
+     * (beim Thermostat ist „state“ die Ist-Temperatur), „heat“ ein Wärmezähler und „heatpower“ die Wärmeleistung einer
+     * Wärmepumpe (B83; beide zählen nie in einer Stromsumme). Eine neue Fähigkeit kostet einen Eintrag hier,
      * einen in TYPE_ROLES und ein Feld im Bearbeitungsdialog des Moduls.
      */
     public const ROLES = [
@@ -65,6 +66,8 @@ final class DeviceIndex
         'humidity'  => 'HumidityVariableID',
         'mode'      => 'ModeVariableID',
         'fan'       => 'FanVariableID',
+        'heat'      => 'HeatVariableID',
+        'heatpower' => 'HeatPowerVariableID',
     ];
 
     /**
@@ -124,7 +127,8 @@ final class DeviceIndex
         'light'       => ['roles' => ['state', 'level', 'power', 'energy', 'colortemp', 'color'], 'required' => ['state', 'level']],
         'switch'      => ['roles' => ['state', 'power', 'energy'], 'required' => ['state']],
         'socket'      => ['roles' => ['state', 'power', 'energy'], 'required' => ['state']],
-        'appliance'   => ['roles' => ['state', 'power', 'energy'], 'required' => ['state', 'power']],
+        // Wärmepumpe (B83): Wärmezähler und Wärmeleistung wahlweise, daraus Arbeitszahl und Leistungszahl
+        'appliance'   => ['roles' => ['state', 'power', 'energy', 'heat', 'heatpower'], 'required' => ['state', 'power']],
         'blind'       => ['roles' => ['level', 'moving', 'stop'], 'required' => ['level']],
         // Klimagerät und AV-Receiver nehmen Strom auf (B85): Leistung und Zähler wahlweise
         'thermostat'  => ['roles' => ['state', 'setpoint', 'mode', 'fan', 'power', 'energy'], 'required' => ['setpoint']],
@@ -521,7 +525,7 @@ final class DeviceIndex
             && (($this->chart !== null && !$this->chartByDevice
                     && (array_any($matches, static fn (array $e): bool => self::isMeasured($e)) || !array_any($matches, static fn (array $e): bool => isset($e['roles']['energy']))))
                 || in_array($type, self::HISTORY_TYPES, true)
-                || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy'])) && array_any($matches, fn (array $e): bool => self::isMeasured($e) || $this->isTimed($e))))) {
+                || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy']) || isset($e['roles']['heat'])) && array_any($matches, fn (array $e): bool => self::isMeasured($e) || $this->isTimed($e))))) {
             if ($range !== null) {
                 [, $from, $to] = $range;
                 return $this->history($matches, $rangeLevel, $from, $to, $filter . $rangeLabel);
@@ -1228,8 +1232,10 @@ final class DeviceIndex
         $meters = array_values(array_filter($matches, static fn (array $entry): bool => $entry['Type'] === 'meter'));
         $matches = self::firstPerVariable(array_values(array_filter($matches, static fn (array $entry): bool => $entry['Type'] !== 'meter')), 'energy');
         $metered = array_values(array_filter($matches, static fn (array $entry): bool => isset($entry['roles']['energy'])));
+        // Wärme zählt nie in einer Stromsumme (B83); ein Wärmezähler ohne Stromzähler steht nur mit seiner Wärme da
+        $heatOnly = array_values(array_filter(self::firstPerVariable($matches, 'heat'), static fn (array $entry): bool => isset($entry['roles']['heat']) && !isset($entry['roles']['energy'])));
         $balance = $wholeHouse ? $this->balance : [];
-        if ($metered === [] && $balance === [] && $meters === []) {
+        if ($metered === [] && $heatOnly === [] && $balance === [] && $meters === []) {
             return $this->fail(sprintf($this->t('None of the matching devices measures energy (%s).'), $filter));
         }
         [$level, $from, $to] = $bounds;
@@ -1252,6 +1258,8 @@ final class DeviceIndex
         foreach ($timed as $item) {
             $timeOf[self::cardKey($item['entry'])] = ', ' . $item['summary'] . ($item['sections'] === null ? '' : "\n" . $item['sections']);
         }
+        $heat = ['devices' => 0, 'heat' => 0.0, 'electricity' => 0.0, 'complete' => true];
+        $seenHeat = [];
         foreach ($metered as $entry) {
             $counter = $this->backend->counterSum($entry['roles']['energy'], $level, $from, $to);
             // Ein Wasser- oder Gaszähler ist kein Energiezähler; vorher stand er als kWh in der Summe.
@@ -1266,19 +1274,47 @@ final class DeviceIndex
             }
             $total += $kwh;
             $withHistory++;
-            $rows[] = ['line' => $this->line($entry, self::formatNumber($kwh) . ' kWh') . ($timeOf[self::cardKey($entry)] ?? ''), 'value' => $kwh];
+            $heatText = '';
+            $heatId = $entry['roles']['heat'] ?? 0;
+            if ($heatId > 0 && !isset($seenHeat[$heatId])) {
+                $seenHeat[$heatId] = true;
+                $heatKwh = $this->heatKilowattHours($heatId, $level, $from, $to);
+                $heatText = ', ' . (is_string($heatKwh) ? sprintf($this->t('heat: %s'), $heatKwh) : $this->heatText($heatKwh, $kwh));
+                if (is_float($heatKwh)) {
+                    $heat['devices']++;
+                    $heat['heat'] += $heatKwh;
+                    $heat['electricity'] += $kwh;
+                }
+            }
+            $rows[] = ['line' => $this->line($entry, self::formatNumber($kwh) . ' kWh' . $heatText) . ($timeOf[self::cardKey($entry)] ?? ''), 'value' => $kwh];
+        }
+        foreach ($heatOnly as $entry) {
+            $heatKwh = $this->heatKilowattHours($entry['roles']['heat'], $level, $from, $to);
+            if (is_float($heatKwh)) {
+                $heat['devices']++;
+                $heat['heat'] += $heatKwh;
+                $heat['complete'] = false;
+            }
+            $rows[] = ['line' => $this->line($entry, is_string($heatKwh) ? sprintf($this->t('heat: %s'), $heatKwh) : $this->heatText($heatKwh, null)) . ($timeOf[self::cardKey($entry)] ?? ''), 'value' => null];
         }
         $lines = $this->rankedLines($rows, $wholeHouse, static fn (float $kwh): string => self::formatNumber($kwh) . ' kWh');
-        $unmetered = array_values(array_filter($timed, static fn (array $item): bool => !isset($item['entry']['roles']['energy'])));
+        $unmetered = array_values(array_filter($timed, static fn (array $item): bool => !isset($item['entry']['roles']['energy']) && !isset($item['entry']['roles']['heat'])));
         foreach ($unmetered as $item) {
             $lines[] = $this->line($item['entry'], $item['summary']);
             if ($item['sections'] !== null) {
                 $lines[] = $item['sections'];
             }
         }
-        $skipped = count($matches) - count($metered) - count($unmetered);
+        $skipped = count($matches) - count($metered) - count($unmetered) - count($heatOnly);
         if ($skipped > 0) {
             $lines[] = sprintf($this->t('%d device(s) without energy meter were left out.'), $skipped);
+        }
+        // Mehrere Wärmezähler (Heizen und Warmwasser): die Arbeitszahl aller zusammen, gerechnet aus den Summen
+        $heatLine = null;
+        if ($heat['devices'] > 1) {
+            $heatLine = $heat['complete'] && $heat['electricity'] > 0
+                ? sprintf($this->t('Heat %s kWh from %s kWh electricity, performance factor %s (%d device(s) with heat meter).'), self::formatNumber($heat['heat']), self::formatNumber($heat['electricity']), self::formatNumber($heat['heat'] / $heat['electricity']), $heat['devices'])
+                : sprintf($this->t('Heat %s kWh (%d device(s) with heat meter).'), self::formatNumber($heat['heat']), $heat['devices']);
         }
         $head = [sprintf($this->t('%s kWh consumed by %d of %d metered device(s) (%s).'), self::formatNumber($total), $withHistory, count($metered), $filter)];
         if ($metered === [] && $meters !== []) {
@@ -1329,7 +1365,30 @@ final class DeviceIndex
                 $this->deviceChart($metered, $chartLevel, $from, $to, $head[0], $filter, $balance);
             }
         }
-        return ['text' => implode("\n", array_merge($head, $meterLines, $lines)), 'isError' => false];
+        return ['text' => implode("\n", array_merge($head, $heatLine === null ? [] : [$heatLine], $meterLines, $lines)), 'isError' => false];
+    }
+
+    /** Wärme eines Wärmezählers im Zeitraum in kWh, sonst der Grund als Text (B83). */
+    private function heatKilowattHours(int $variableId, int $level, int $from, int $to): float|string
+    {
+        $counter = $this->backend->counterSum($variableId, $level, $from, $to);
+        if ($counter !== null && !self::isEnergyUnit($counter['unit'])) {
+            return sprintf($this->t('not an energy meter (unit %s)'), trim($counter['unit']));
+        }
+        return self::kilowattHours($counter) ?? $this->t('no history archived');
+    }
+
+    /**
+     * „heat 409 kWh, performance factor 14.6“: die Arbeitszahl als Wärme ÷ Strom des Zeitraums, nie als Mittel von
+     * Momentanwerten. Ohne Strom (kein Zähler oder 0 kWh, der Regler zählt etwa erst um Mitternacht) keine Arbeitszahl.
+     */
+    private function heatText(float $heatKwh, ?float $electricityKwh): string
+    {
+        $text = sprintf($this->t('heat %s kWh'), self::formatNumber($heatKwh));
+        if ($electricityKwh !== null && $electricityKwh > 0) {
+            $text .= sprintf($this->t(', performance factor %s'), self::formatNumber($heatKwh / $electricityKwh));
+        }
+        return $text;
     }
 
     /**
@@ -2045,6 +2104,7 @@ final class DeviceIndex
         $meters = array_values(array_filter($matches, static fn (array $entry): bool => $entry['Type'] === 'meter'));
         $matches = self::firstPerVariable(array_values(array_filter($matches, static fn (array $entry): bool => $entry['Type'] !== 'meter')), 'power');
         $measured = array_values(array_filter($matches, static fn (array $entry): bool => isset($entry['roles']['power'])));
+        $heatOnly = array_values(array_filter($matches, static fn (array $entry): bool => isset($entry['roles']['heatpower']) && !isset($entry['roles']['power'])));
         $balance = $wholeHouse ? $this->powerBalance : [];
         $tree = $meters === [] && !($wholeHouse && $this->hasMeters()) ? null : $this->meterTree('power', function (array $entry): float|string {
             $watts = $this->wattsOf($entry['roles']['power']);
@@ -2055,7 +2115,7 @@ final class DeviceIndex
         });
         $wattText = static fn (float $watts): string => self::formatWatts($watts) . ' W';
         $meterLines = $tree === null ? [] : array_values(array_filter(array_map(fn (array $meter): ?string => $this->meterLine($meter, $tree, $wattText), $meters)));
-        if ($measured === [] && $balance === [] && $meterLines === []) {
+        if ($measured === [] && $heatOnly === [] && $balance === [] && $meterLines === []) {
             return $this->fail(sprintf($this->t('None of the matching devices measures power (%s).'), $filter));
         }
         $total = 0.0;
@@ -2071,10 +2131,14 @@ final class DeviceIndex
             }
             $total += $watts;
             $withValue++;
-            $rows[] = ['line' => $this->line($entry, self::formatWatts($watts) . ' W'), 'value' => $watts];
+            $heat = isset($entry['roles']['heatpower']) ? ', ' . $this->heatPowerText($entry['roles']['heatpower'], $watts) : '';
+            $rows[] = ['line' => $this->line($entry, self::formatWatts($watts) . ' W' . $heat), 'value' => $watts];
+        }
+        foreach ($heatOnly as $entry) {
+            $rows[] = ['line' => $this->line($entry, $this->heatPowerText($entry['roles']['heatpower'], null)), 'value' => null];
         }
         $lines = $this->rankedLines($rows, $wholeHouse, static fn (float $watts): string => self::formatWatts($watts) . ' W');
-        $skipped = count($matches) - count($measured);
+        $skipped = count($matches) - count($measured) - count($heatOnly);
         if ($skipped > 0) {
             $lines[] = sprintf($this->t('%d device(s) without power measurement were left out.'), $skipped);
         }
@@ -2206,6 +2270,25 @@ final class DeviceIndex
         $unit = trim($this->backend->unit($variableId));
         $factor = self::POWER_UNITS[strtolower($unit)] ?? null;
         return $factor === null ? ['unit' => $unit] : $reading['value'] * $factor;
+    }
+
+    /**
+     * „heat 4188 W, COP 8.4“: Wärmeleistung und Leistungszahl von jetzt (B83). Die Leistungszahl schwankt mit Vorlauf und
+     * Außentemperatur; über einen Zeitraum gilt die Arbeitszahl aus den Zählern.
+     */
+    private function heatPowerText(int $variableId, ?float $electricWatts): string
+    {
+        $heat = $this->wattsOf($variableId);
+        if (is_array($heat)) {
+            return sprintf($this->t('heat: %s'), $heat['unit'] === null
+                ? sprintf($this->t('not available (variable %d is missing)'), $variableId)
+                : sprintf($this->t('not a power value (unit %s)'), $heat['unit']));
+        }
+        $text = sprintf($this->t('heat %s W'), self::formatWatts($heat));
+        if ($electricWatts !== null && $electricWatts > 0) {
+            $text .= sprintf($this->t(', COP %s'), self::formatNumber($heat / $electricWatts));
+        }
+        return $text;
     }
 
     /** Zählt eine Variable mit dieser Einheit Leistung (W, kW, MW oder ohne Einheit)? */

@@ -452,6 +452,18 @@ Weitere Regeln, die nicht offensichtlich sind:
   Panasonic-Klimagerät über das HomeAssistant-Modul: Modus nach 1,2 bis 1,5 s bestätigt, Lüfterstufe erst nach 2,7 bis 3,2 s
   (nach der Wartezeit, also „noch nicht bestätigt“); Test `check-klima.php`. Homematic-Wandthermostate haben an
   `CONTROL_MODE` keine Aktion (Modus über `AUTO_MODE`, `MANU_MODE` …), das geht so nicht.
+- **Wärmepumpe** (B83, Nachfrage aus einer betreuten Anlage 21.10.2026: „mein Claude hat keinen Zugriff auf den
+  Wärmemengenzähler“): Rollen `heat` (Wärmezähler, als Zähler archiviert) und `heatpower` (Wärmeleistung), nur beim Typ
+  `appliance`. Beide zählen nie in einer Stromsumme. `consumption()` hängt an die Zeile „heat … kWh, performance factor …“
+  (Wärme ÷ Strom des Zeitraums, `heatText`; ohne Strom keine Arbeitszahl, nie als Mittel der Leistungszahl), bei mehr als
+  einem Wärmezähler steht die Arbeitszahl aller unter der Kopfzeile; ein Wärmezähler ohne Stromzähler hat nur seine Wärme.
+  `power()` hängt „heat … W, COP …“ an (`heatPowerText`). Die Beschreibung von `get_state` nennt ein Beispiel nur, wenn ein
+  Gerät einen Wärmezähler hat; der Selbsttest meldet einen, der nicht als Zähler archiviert ist. Noch nicht: Diagramme,
+  `type=power`, die Zählerprüfung aus B78. Gemessen an einer Stiebel Eltron über ModBus (Fixture
+  `betreut_2026-10-21_waermepumpe.json`): Wärme- und Stromzähler des Reglers springen nur um 0 Uhr und zählen dann den
+  Vortag, der Strom ist der des Verdichters, und seit Juni 2026 liegt der Wärmezähler beim 2- bis 2,4-Fachen der aus dem
+  Volumenstrom gerechneten Wärmeleistung (im Winter 1 bis 4 %). Im Oktober ergaben die Zähler eine Arbeitszahl von 14,8.
+  Das Modul gibt sie aus, wie sie gemessen ist. Test `check-waermepumpe.php`.
 - **Lüftung** (Typ `fan`, build 90): `state`, `mode`, `fan`, wahlweise `power`/`energy`; Pflicht Ein/Aus oder
   Lüfterstufe. Zeile und Befehle wie beim Luftbe-/entfeuchter (`humidifierText`, `runOption`), hier mit Ganzzahlwerten aus
   den Profilzuordnungen. Gemessen an einer Ambientika (12.10.2026): `RequestAction` blockiert 2,2 bis 2,4 s, das Modul

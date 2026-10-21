@@ -9,7 +9,7 @@ unambiguous answer. It only sees and switches the devices you release.
 
 > **Status:** early preview. Querying, switching, setting brightness, colour temperature, colour, position,
 > heating setpoint and target humidity, operating mode and fan speed of dehumidifiers and ventilation units,
-> stopping blinds, consumption and power also behind meters and sub-meters, the history of measured values and power, timelines of states, starting scenes as well as playback
+> stopping blinds, consumption and power also behind meters and sub-meters, heat and performance factor of heat pumps, the history of measured values and power, timelines of states, starting scenes as well as playback
 > and volume of media players work. The device list can be proposed from an Alexa instance. The Claude app can
 > sign in with OAuth. The form shows what did not work, a protocol for troubleshooting can be switched on. So far
 > the module has been tried on three systems.
@@ -190,6 +190,8 @@ then shows only the variables that belong to this type.
 | Stop | Only for blinds and windows with a drive, optional: a variable that stops the travel, that is a boolean with an action or a selection with the entry "Stop" (such as "Aktion" in the HomeAssistant module). Homematic and Velux KLF200 devices are stopped by the module even without it. |
 | Power | Only for lights, switches, sockets, appliances, humidifiers and ventilation, optional: the current power, for example `POWER` of a Homematic metering channel. It follows the state in every answer, for example "on (26.1 W)". |
 | Energy meter | Also optional: the energy counter, for example `ENERGY_COUNTER`. For consumption over periods it must be aggregated as a counter in the archive. If a device hangs on a metering socket, both rows may carry the same power and energy meter; consumption and power of a room or the house count each variable only once, and the self test points it out. |
+| Heat meter | Appliance only, optional: the heat meter of a heat pump, aggregated as a counter in the archive. It never counts in the electricity consumption. |
+| Heat output | Appliance only, optional: the current heat output, in W or kW. Together with the power of the appliance it gives the COP. |
 | Measured by | For everything with power or an energy meter, optional: the meter the device or meter hangs on, for example the sub-distribution of the upper floor. The choice lists the meters of the saved list, so a new one appears after Apply. |
 | Inverted | Tick this if `true` means "closed" or "off". Many window contacts report `true` for closed. For windows, doors and sensors with a number, anything above 0 otherwise counts as open or detected, with the tick only 0; this fits the Matter door state, for example (0 open, 1 closed). Further entries such as "ajar" appear in brackets in the answer. For blinds the module finds out by itself which value means "open"; the tick reverses that if open and closed are swapped. |
 | Tilt window | Only for a window with a drive: tick this if the drive only tilts the window. The answer then says "tilted" and "50 % tilted" instead of "open" and "50 % open". |
@@ -201,7 +203,7 @@ Which variables a device needs depends on its type:
 |---|---|
 | Light | Switching state, brightness or both. A dimmer without a separate switch only has the brightness. Optionally power, energy meter, colour temperature and colour. |
 | Switch, socket | Switching state, optionally power and energy meter |
-| Appliance | Switching state or power, optionally the energy meter. An appliance with power only, such as a heat pump, can be queried but not switched. |
+| Appliance | Switching state or power, optionally energy meter, heat meter and heat output. An appliance with power only, such as a heat pump, can be queried but not switched. |
 | Blind | Position, optionally moving state and stop |
 | Thermostat | Setpoint, optionally the current temperature, mode and fan speed (air conditioner), power and energy meter |
 | Media player | On/off, playback or volume, optionally mute, title, artist, power and energy meter |
@@ -327,6 +329,15 @@ import), `feed_in` (grid export), `pv`, `battery_charge` or `battery_discharge`.
 heatmap and with a comparison, with `costs` in euros for `grid` and as feed-in revenue for `feed_in`. So the assistant
 answers for example "How much feed-in revenue have I earned this year, and where will I end up by the end of the
 year?" with a chart.
+
+For a heat pump (type appliance) you also enter the heat meter and, optionally, the heat output. Like the energy meter,
+the heat meter must be archived as a counter, and it never counts in the electricity consumption. The line then gives the
+heat and the performance factor for the period, that is heat divided by electricity, for example "Heizungsraum |
+Wärmepumpe | appliance | 1397 kWh, heat 5161 kWh, performance factor 3.7". If several lines have a heat meter, for
+example heating and hot water, the performance factor of all of them stands above. With `period=now` and a heat output
+the COP of the moment is added ("500 W, heat 4188 W, COP 8.4"). The performance factor is only as good as the meters. If
+the energy meter only counts the compressor, like the consumption values in the controller of some heat pumps, the
+circulation pumps and the heating element are missing and it comes out too good.
 
 With `period=now`, **get_state** reports the power right now in W, built like the consumption: the
 current value of each device with power, plus the total. For the whole house the module calculates the
@@ -616,6 +627,9 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
   example when it is replaced by one with a higher reading, the archive counts the jump as consumption without the
   self-test noticing. It does not check small wrong values below a fifth of a usual month or months shortly after a reset.
 - The house power with `type=power` covers at most 400 days.
+- Heat, performance factor and COP are only given as text, not in charts and not with `type=power`. If the controller of
+  a heat pump only counts on once a day, the whole previous day lands in the archive shortly after midnight; "yesterday"
+  then means the day before.
 - The peak of the house power is an hourly mean from the meters of the balance. Short peaks, such as a device starting up, only show in the grid power or the single device.
 - Slats whose variable carries the "blind" presentation with rotation only get a percentage without
   "open" or "closed".

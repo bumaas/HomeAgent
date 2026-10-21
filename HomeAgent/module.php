@@ -361,6 +361,14 @@ class HomeAgent extends IPSModuleStrict
             } elseif (is_array($counter) && !DeviceIndex::isEnergyUnit($counter['unit'])) {
                 $lines[] = sprintf($this->Translate('Note: %s: the energy meter %s counts in %s, not in kWh, so it is left out of the consumption'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), IPS_GetName($meter), trim($counter['unit']));
             }
+            // Wärmezähler (B83) ebenso, sonst fehlen Wärme und Arbeitszahl ohne Hinweis
+            $heat = DeviceIndex::rolesOf($entry)['heat'] ?? 0;
+            $counter = $heat > 0 && IPS_VariableExists($heat) ? $backend->counterSum($heat, 4, 0, 0) : false;
+            if ($counter === null) {
+                $lines[] = sprintf($this->Translate('Note: %s: the heat meter %s is not archived as a counter, so there is no heat over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), IPS_GetName($heat));
+            } elseif (is_array($counter) && !DeviceIndex::isEnergyUnit($counter['unit'])) {
+                $lines[] = sprintf($this->Translate('Note: %s: the heat meter %s counts in %s, not in kWh, so there is no heat over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), IPS_GetName($heat), trim($counter['unit']));
+            }
         }
         // Energiebilanz: Jeder Zähler muss als Zähler archiviert sein, sonst gibt es keinen Hausverbrauch, und jede
         // Leistung eine Leistung; die Hinweise nennen die Quelle mit Namen.
@@ -1085,7 +1093,7 @@ class HomeAgent extends IPSModuleStrict
      * ein anderer Gerätetyp oder eine andere Variable gewählt wird. Die Felder folgen dem Typ, und
      * die Texte für die Spalten der Liste folgen den gewählten Variablen.
      */
-    public function UIDeviceChanged(string $Type, int $StateVariableID, int $LevelVariableID, int $MovingVariableID = 0, int $PowerVariableID = 0, int $EnergyVariableID = 0, int $StopVariableID = 0, int $SetpointVariableID = 0, int $ColorTempVariableID = 0, int $ColorVariableID = 0, int $PlaybackVariableID = 0, int $VolumeVariableID = 0, int $MuteVariableID = 0, int $TitleVariableID = 0, int $ArtistVariableID = 0, int $HumidityVariableID = 0, int $ModeVariableID = 0, int $FanVariableID = 0): void
+    public function UIDeviceChanged(string $Type, int $StateVariableID, int $LevelVariableID, int $MovingVariableID = 0, int $PowerVariableID = 0, int $EnergyVariableID = 0, int $StopVariableID = 0, int $SetpointVariableID = 0, int $ColorTempVariableID = 0, int $ColorVariableID = 0, int $PlaybackVariableID = 0, int $VolumeVariableID = 0, int $MuteVariableID = 0, int $TitleVariableID = 0, int $ArtistVariableID = 0, int $HumidityVariableID = 0, int $ModeVariableID = 0, int $FanVariableID = 0, int $HeatVariableID = 0, int $HeatPowerVariableID = 0): void
     {
         $type = array_key_exists($Type, DeviceIndex::TYPES) ? $Type : array_key_first(DeviceIndex::TYPES);
         foreach ($this->deviceDialogFields($type) as $name => $field) {
@@ -1097,7 +1105,8 @@ class HomeAgent extends IPSModuleStrict
             }
         }
         foreach ($this->deviceLabels(['Type' => $type, 'StateVariableID' => $StateVariableID, 'LevelVariableID' => $LevelVariableID, 'MovingVariableID' => $MovingVariableID, 'PowerVariableID' => $PowerVariableID, 'EnergyVariableID' => $EnergyVariableID, 'StopVariableID' => $StopVariableID, 'SetpointVariableID' => $SetpointVariableID, 'ColorTempVariableID' => $ColorTempVariableID, 'ColorVariableID' => $ColorVariableID,
-            'PlaybackVariableID' => $PlaybackVariableID, 'VolumeVariableID' => $VolumeVariableID, 'MuteVariableID' => $MuteVariableID, 'TitleVariableID' => $TitleVariableID, 'ArtistVariableID' => $ArtistVariableID, 'HumidityVariableID' => $HumidityVariableID, 'ModeVariableID' => $ModeVariableID, 'FanVariableID' => $FanVariableID]) as $name => $label) {
+            'PlaybackVariableID' => $PlaybackVariableID, 'VolumeVariableID' => $VolumeVariableID, 'MuteVariableID' => $MuteVariableID, 'TitleVariableID' => $TitleVariableID, 'ArtistVariableID' => $ArtistVariableID, 'HumidityVariableID' => $HumidityVariableID, 'ModeVariableID' => $ModeVariableID, 'FanVariableID' => $FanVariableID,
+            'HeatVariableID' => $HeatVariableID, 'HeatPowerVariableID' => $HeatPowerVariableID]) as $name => $label) {
             $this->UpdateFormField($name, 'value', $label);
         }
     }
@@ -1984,7 +1993,8 @@ class HomeAgent extends IPSModuleStrict
         // Verbrauch über Zeiträume nur, wenn ein freigegebenes Gerät einen Zähler hat oder die
         // Energiebilanz eingetragen ist. Ohne Bilanz muss die Beschreibung die Grenze nennen: HA Assist
         // gab die Summe der Geräte sonst als Hausverbrauch aus (09.10.2026).
-        $hasMeters = array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['energy']));
+        // Ein Wärmezähler (B83) braucht dieselben Zeiträume wie ein Stromzähler
+        $hasMeters = array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['energy']) || isset(DeviceIndex::rolesOf($row)['heat']));
         $hasBalance = $this->balanceKeys() !== [];
         // Teile der Bilanz für show_chart (B74), nur die eingetragenen, auch aus der Liste der Quellen
         $usableBalance = $this->balanceKeys();
@@ -2028,6 +2038,9 @@ class HomeAgent extends IPSModuleStrict
                 . 'Example: "Is any light still on?" → type=light, active_only=true. "Are all windows closed?" → type=window, active_only=true. '
                 . ($hasMeters ? '"How much did the washing machine use last month?" → name=washing machine, period=last_month. '
                     . '"How much did the washing machine use in January?" → name=washing machine, from=' . date('Y') . '-01-01, to=' . date('Y') . '-01-31. ' : '')
+                // Wärmepumpe (B83): Wärme und Arbeitszahl stehen in der Zeile des Verbrauchs, nur mit Wärmezähler (Tokens)
+                . (array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['heat']))
+                    ? '"What was the performance factor of the heat pump in January?" → name=heat pump, from=' . date('Y') . '-01-01, to=' . date('Y') . '-01-31 (heat, electricity and performance factor in one line). ' : '')
                 . ($hasBalance ? '"How much electricity did we use yesterday?" → period=yesterday. ' : '')
                 . ($hasPower ? '"How much power are we using right now?" → period=now. '
                     . '"What was the highest power of the dryer last month?" → name=dryer, type=power, period=last_month. '
@@ -3284,7 +3297,8 @@ class HomeAgent extends IPSModuleStrict
         return $captions + ['state' => $this->Translate('State or measured value'), 'level' => $this->Translate('Brightness/position'), 'moving' => $this->Translate('Moving state'),
             'stop' => $this->Translate('Stop'), 'power' => $this->Translate('Power'), 'energy' => $this->Translate('Energy meter (archived as counter)'), 'setpoint' => $this->Translate('Setpoint'),
             'colortemp' => $this->Translate('Colour temperature'), 'color' => $this->Translate('Colour'), 'playback' => $this->Translate('Playback'),
-            'volume' => $this->Translate('Volume'), 'mute' => $this->Translate('Mute'), 'title' => $this->Translate('Title'), 'artist' => $this->Translate('Artist'), 'humidity' => $this->Translate('Humidity'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed')];
+            'volume' => $this->Translate('Volume'), 'mute' => $this->Translate('Mute'), 'title' => $this->Translate('Title'), 'artist' => $this->Translate('Artist'), 'humidity' => $this->Translate('Humidity'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed'),
+            'heat' => $this->Translate('Heat meter (archived as counter)'), 'heatpower' => $this->Translate('Heat output')];
     }
 
     /**
