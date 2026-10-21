@@ -127,7 +127,10 @@ $waerme = ausLeistung(53194, $gestern, $heute);
 // Der Stromzähler des Reglers bucht erst um Mitternacht für den Vortag; mit Wärme aus der Leistung kommt deshalb auch
 // der Strom der Arbeitszahl aus der Leistung, beide auf derselben Zeitbasis (gestern sonst Arbeitszahl 15.6)
 $strom = ausLeistung(27660, $gestern, $heute);
-$zeile = 'Heizungsraum | Wärmepumpe | appliance | ' . $zahl(kwh(55642, $gestern, $heute)) . ' kWh, heat ' . $zahl($waerme) . ' kWh from heat output, performance factor ' . $zahl($waerme / $strom) . ' from heat output and power';
+// Der Strom der Arbeitszahl steht mit in der Zeile, im Muster der Kopfzeile: Vorher zeigte die Zeile nur die 6 kWh des
+// Zählers neben „Arbeitszahl 7.1“, und die Claude-App rechnete 89 ÷ 6 = 14.8 und hielt den Zähler für grob gerundet
+// (Hardcopy 21.10.2026, 20:17). Der Zähler bleibt vorn der Verbrauch, gekennzeichnet als „(meter)“.
+$zeile = 'Heizungsraum | Wärmepumpe | appliance | ' . $zahl(kwh(55642, $gestern, $heute)) . ' kWh (meter); from power values: heat ' . $zahl($waerme) . ' kWh from ' . $zahl($strom) . ' kWh electricity, performance factor ' . $zahl($waerme / $strom);
 pruefe(!$r['isError'] && in_array($zeile, $zeilen($r), true), 'gestern: Wärme und Arbeitszahl aus den Stundenmitteln der Leistungen (' . $zeile . '): ' . $r['text']);
 
 // Heute: die laufende Stunde zählt bis jetzt, nicht als ganze Stunde
@@ -137,7 +140,7 @@ $ganz = 0.0;
 foreach ($wp['variablen']['53194']['aggregate']['0'] as $a) {
     $ganz += $a['zeit'] >= $heute ? $a['mittel'] : 0.0;
 }
-pruefe(!$r['isError'] && str_contains($r['text'], ', heat ' . $zahl($waerme) . ' kWh from heat output') && $zahl($waerme) !== $zahl($ganz), 'heute: die laufende Stunde anteilig (' . $zahl($waerme) . ' statt ' . $zahl($ganz) . ' kWh): ' . $r['text']);
+pruefe(!$r['isError'] && str_contains($r['text'], 'from power values: heat ' . $zahl($waerme) . ' kWh from ') && $zahl($waerme) !== $zahl($ganz), 'heute: die laufende Stunde anteilig (' . $zahl($waerme) . ' statt ' . $zahl($ganz) . ' kWh): ' . $r['text']);
 
 // Mit Wärmezähler gilt der Zähler, die Wärmeleistung bleibt für die Leistungszahl
 $r = frage([$heizen], ['name' => 'Wärmepumpe', 'room' => 'Heizungsraum', 'period' => 'yesterday']);
@@ -146,7 +149,7 @@ pruefe(!$r['isError'] && str_contains($r['text'], ', heat ' . $zahl(kwh(58176, $
 // Ohne Stromzähler: Arbeitszahl aus beiden Leistungen; ohne Leistung nur die Wärme
 $nurLeistung = array_merge($ausWaermeleistung, ['EnergyVariableID' => 0]);
 $r = frage([$nurLeistung], ['name' => 'Wärmepumpe', 'room' => 'Heizungsraum', 'period' => 'yesterday']);
-$zeile = 'Heizungsraum | Wärmepumpe | appliance | heat ' . $zahl(ausLeistung(53194, $gestern, $heute)) . ' kWh from heat output, performance factor ' . $zahl(ausLeistung(53194, $gestern, $heute) / $strom) . ' from heat output and power';
+$zeile = 'Heizungsraum | Wärmepumpe | appliance | from power values: heat ' . $zahl(ausLeistung(53194, $gestern, $heute)) . ' kWh from ' . $zahl($strom) . ' kWh electricity, performance factor ' . $zahl(ausLeistung(53194, $gestern, $heute) / $strom);
 pruefe(!$r['isError'] && in_array($zeile, $zeilen($r), true), 'ohne Stromzähler: Arbeitszahl aus den Leistungen (' . $zeile . '): ' . $r['text']);
 $r = frage([array_merge($nurLeistung, ['PowerVariableID' => 0])], ['name' => 'Wärmepumpe', 'room' => 'Heizungsraum', 'period' => 'yesterday']);
 pruefe(!$r['isError'] && in_array('Heizungsraum | Wärmepumpe | appliance | heat ' . $zahl(ausLeistung(53194, $gestern, $heute)) . ' kWh from heat output', $zeilen($r), true), 'nur Wärmeleistung: Wärme ohne Arbeitszahl: ' . $r['text']);
@@ -164,5 +167,7 @@ pruefe(str_starts_with($r['text'], round($strom) . ' W used by 1 of 1 device(s) 
 $de = json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/locale.json'), true)['translations']['de'];
 $kopf = $de['Heat %s kWh from %s kWh electricity, performance factor %s (%d device(s) with heat measurement).'] ?? '';
 pruefe(str_contains($kopf, 'mit Wärmemessung') && !str_contains($kopf, 'Wärmezähler'), 'deutsche Kopfzeile: ' . $kopf);
+$block = $de['from power values: heat %s kWh from %s kWh electricity, performance factor %s'] ?? '';
+pruefe($block === 'aus den Leistungen: Wärme %s kWh aus %s kWh Strom, Arbeitszahl %s' && ($de['(meter)'] ?? '') === '(Zähler)', 'deutscher Block aus den Leistungen: ' . $block);
 
 ende('Wärmemenge und Arbeitszahl');

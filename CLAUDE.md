@@ -468,8 +468,11 @@ Weitere Regeln, die nicht offensichtlich sind:
   Deshalb **ohne Wärmezähler die Wärme aus der Wärmeleistung** (`heatOf`, `powerKilowattHours`): Stundenmittel × Dauer, die
   laufende Stunde bis jetzt. Das Archiv mittelt zeitgewichtet und schreibt jede Stunde, auch ohne neuen Satz (21.10.2026 an
   drei Stunden gegen die Rohwerte nachgerechnet, auf vier Stellen gleich; drei Tage im Juni: 72 Stundenaggregate ohne einen
-  Rohsatz). Mit Leistung am Gerät kommt dann auch der Strom der Arbeitszahl aus der Leistung („from heat output and power“):
-  Gegen den Stromzähler des Reglers, der erst um Mitternacht für den Vortag bucht, ergab „gestern“ 15,6 statt 6,9. Ein
+  Rohsatz). Mit Leistung am Gerät kommt dann auch der Strom der Arbeitszahl aus der Leistung: Gegen den Stromzähler des
+  Reglers, der erst um Mitternacht für den Vortag bucht, ergab „gestern“ 15,6 statt 6,9. Dieser Strom steht als eigener
+  Block in der Zeile, im Muster der Kopfzeile („6 kWh (meter); from power values: heat 93.7 kWh from 13.6 kWh electricity,
+  performance factor 6.9“, `heatOf` mit `block`): Mit nur der Arbeitszahl neben den 6 kWh des Zählers rechnete die
+  Claude-App 89 ÷ 6 = 14,8 und hielt den Zähler für gerundet (Hardcopy 21.10.2026). Der Verbrauch bleibt der Zähler. Ein
   Wärmezähler geht vor; der Selbsttest meldet eine nicht archivierte Wärmeleistung nur ohne Wärmezähler.
   Test `check-waermepumpe.php`.
 - **Lüftung** (Typ `fan`, build 90): `state`, `mode`, `fan`, wahlweise `power`/`energy`; Pflicht Ein/Aus oder

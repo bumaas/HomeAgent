@@ -351,8 +351,10 @@ Wärme 4188 W, Leistungszahl 8.4“). Die Arbeitszahl ist so gut wie die Zähler
 wie die Verbrauchswerte im Regler mancher Wärmepumpen, fehlen Umwälzpumpen und Heizstab, und sie fällt zu gut aus.
 
 Ohne Wärmezähler rechnet das Modul die Wärme aus den Stundenmitteln der archivierten Wärmeleistung, etwa „Wärme 93.7 kWh
-aus der Wärmeleistung“. Hat das Gerät auch eine Leistung, kommt der Strom der Arbeitszahl ebenso aus ihr („Arbeitszahl 6.9
-aus Wärmeleistung und Leistung“), beide Werte gelten dann für dieselben Stunden. Manche Regler schätzen die Wärme nur und
+aus der Wärmeleistung“. Hat das Gerät auch eine Leistung, kommt der Strom der Arbeitszahl ebenso aus ihr, beide Werte
+gelten dann für dieselben Stunden. Die Zeile nennt sie als eigenen Block hinter dem Zähler, etwa „6 kWh (Zähler); aus den
+Leistungen: Wärme 93.7 kWh aus 13.6 kWh Strom, Arbeitszahl 6.9“. Der Verbrauch bleibt der Wert des Zählers vorn, auch in
+den Summen. Manche Regler schätzen die Wärme nur und
 buchen ihre Zähler erst um Mitternacht. Bei einer Stiebel Eltron lag der Wärmezähler bei Teillast beim 1,5- bis 2,5-Fachen
 der aus Volumenstrom und Spreizung gerechneten Wärmeleistung. Lassen Sie den Wärmezähler in so einem Fall leer.
 

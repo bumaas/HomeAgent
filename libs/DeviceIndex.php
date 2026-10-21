@@ -1281,7 +1281,14 @@ final class DeviceIndex
                 $heat['electricity'] += $heatOf['electricity'] ?? 0.0;
                 $heat['complete'] = $heat['complete'] && $heatOf['electricity'] !== null;
             }
-            $rows[] = ['line' => $this->line($entry, self::formatNumber($kwh) . ' kWh' . ($heatOf === null ? '' : ', ' . $heatOf['text'])) . ($timeOf[self::cardKey($entry)] ?? ''), 'value' => $kwh];
+            // Ein Block aus den Leistungen steht hinter dem Zähler, der dann „(meter)“ heißt, damit zwei Stromwerte als zwei
+            // Messwege erkennbar sind
+            $heatSuffix = match (true) {
+                $heatOf === null           => '',
+                $heatOf['block'] ?? false  => ' ' . $this->t('(meter)') . '; ' . $heatOf['text'],
+                default                    => ', ' . $heatOf['text'],
+            };
+            $rows[] = ['line' => $this->line($entry, self::formatNumber($kwh) . ' kWh' . $heatSuffix) . ($timeOf[self::cardKey($entry)] ?? ''), 'value' => $kwh];
         }
         foreach ($heatOnly as $entry) {
             $heatOf = $this->heatOf($entry, $level, $from, $to, null, $seenHeat);
@@ -1403,7 +1410,8 @@ final class DeviceIndex
         }
         $power = isset($entry['roles']['power']) ? $this->powerKilowattHours($entry['roles']['power'], $from, $to) : null;
         $electricity = $power ?? $electricityKwh;
-        return ['text' => $this->heatText($heat, $electricity, true, $power !== null), 'heat' => $heat, 'electricity' => $electricity];
+        return ['text' => $this->heatText($heat, $electricity, true, $power !== null), 'heat' => $heat, 'electricity' => $electricity,
+            'block' => $power !== null && $power > 0];
     }
 
     /**
@@ -1441,12 +1449,18 @@ final class DeviceIndex
     /**
      * „heat 409 kWh, performance factor 14.6“: die Arbeitszahl als Wärme ÷ Strom des Zeitraums, nie als Mittel von
      * Momentanwerten. Ohne Strom (kein Zähler oder 0 kWh, der Regler zählt etwa erst um Mitternacht) keine Arbeitszahl.
+     * Kommen Wärme und Strom aus den Leistungen, steht der Strom mit im Text, im Muster der Kopfzeile („from power
+     * values: heat 89 kWh from 12.5 kWh electricity, performance factor 7.1“): Stand dort nur die Arbeitszahl neben den
+     * 6 kWh des Zählers, rechnete die Claude-App 89 ÷ 6 = 14.8 und hielt den Zähler für gerundet (Hardcopy 21.10.2026).
      */
     private function heatText(float $heatKwh, ?float $electricityKwh, bool $fromOutput, bool $fromPower): string
     {
+        if ($fromPower && $electricityKwh !== null && $electricityKwh > 0) {
+            return sprintf($this->t('from power values: heat %s kWh from %s kWh electricity, performance factor %s'), self::formatNumber($heatKwh), self::formatNumber($electricityKwh), self::formatNumber($heatKwh / $electricityKwh));
+        }
         $text = sprintf($this->t($fromOutput ? 'heat %s kWh from heat output' : 'heat %s kWh'), self::formatNumber($heatKwh));
         if ($electricityKwh !== null && $electricityKwh > 0) {
-            $text .= sprintf($this->t($fromPower ? ', performance factor %s from heat output and power' : ', performance factor %s'), self::formatNumber($heatKwh / $electricityKwh));
+            $text .= sprintf($this->t(', performance factor %s'), self::formatNumber($heatKwh / $electricityKwh));
         }
         return $text;
     }

@@ -341,7 +341,9 @@ circulation pumps and the heating element are missing and it comes out too good.
 
 Without a heat meter the module calculates the heat from the hourly means of the archived heat output, for example "heat
 93.7 kWh from heat output". If the appliance also has a power value, the electricity of the performance factor comes from it
-as well ("performance factor 6.9 from heat output and power"), so both values cover the same hours. Some controllers only
+as well, so both values cover the same hours. The line names them as a block of their own after the meter, for example
+"6 kWh (meter); from power values: heat 93.7 kWh from 13.6 kWh electricity, performance factor 6.9". The consumption
+stays the value of the meter in front, also in the totals. Some controllers only
 estimate the heat and book their meters at midnight. On a Stiebel Eltron the heat meter showed 1.5 to 2.5 times the heat
 output calculated from flow rate and temperature difference at part load. Leave the heat meter empty in such a case.
 
