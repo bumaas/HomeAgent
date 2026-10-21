@@ -345,7 +345,7 @@ ich dieses Jahr an Einspeisevergütung verdient, und wo lande ich am Jahresende?
 Bei einer Wärmepumpe (Typ Gerät) tragen Sie dazu den Wärmezähler und wahlweise die Wärmeleistung ein. Der Wärmezähler
 muss wie der Stromzähler als Zähler archiviert sein und zählt nie im Stromverbrauch. Die Zeile nennt dann für den
 Zeitraum die Wärme und die Arbeitszahl, also Wärme geteilt durch Strom, etwa „Heizungsraum | Wärmepumpe | appliance |
-1397 kWh, Wärme 5161 kWh, Arbeitszahl 3.7“. Haben mehrere Zeilen einen Wärmezähler, etwa Heizen und Warmwasser, steht die
+1397 kWh, Wärme 5161 kWh, Arbeitszahl 3.7“. Haben mehrere Zeilen eine Wärme, aus Wärmezähler oder Wärmeleistung, etwa Heizen und Warmwasser, steht die
 Arbeitszahl aller zusammen darüber. Mit `period=now` und Wärmeleistung kommt die Leistungszahl von jetzt dazu („500 W,
 Wärme 4188 W, Leistungszahl 8.4“). Die Arbeitszahl ist so gut wie die Zähler. Zählt der Stromzähler nur den Verdichter,
 wie die Verbrauchswerte im Regler mancher Wärmepumpen, fehlen Umwälzpumpen und Heizstab, und sie fällt zu gut aus.

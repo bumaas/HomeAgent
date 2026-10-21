@@ -72,7 +72,7 @@ $waermeW = kwh(47620, $von, $bis);
 $r = frage([$heizen, $warmwasser], ['room' => 'Heizungsraum', 'period' => 'last_month']);
 $z = $zeilen($r);
 pruefe(!$r['isError'] && str_starts_with($z[0], $zahl($stromH + $stromW) . ' kWh consumed by 2 of 2 metered device(s)'), 'die Summe zählt nur Strom (' . $zahl($stromH + $stromW) . ' kWh): ' . $z[0]);
-$erwartet = 'Heat ' . $zahl($waermeH + $waermeW) . ' kWh from ' . $zahl($stromH + $stromW) . ' kWh electricity, performance factor ' . $zahl(($waermeH + $waermeW) / ($stromH + $stromW)) . ' (2 device(s) with heat meter).';
+$erwartet = 'Heat ' . $zahl($waermeH + $waermeW) . ' kWh from ' . $zahl($stromH + $stromW) . ' kWh electricity, performance factor ' . $zahl(($waermeH + $waermeW) / ($stromH + $stromW)) . ' (2 device(s) with heat measurement).';
 pruefe(($z[1] ?? '') === $erwartet, 'Kopfzeile mit Wärme und Arbeitszahl beider Zeilen: ' . ($z[1] ?? '-') . ' / erwartet ' . $erwartet);
 $zeileH = 'Heizungsraum | Wärmepumpe | appliance | ' . $zahl($stromH) . ' kWh, heat ' . $zahl($waermeH) . ' kWh, performance factor ' . $zahl($waermeH / $stromH);
 pruefe(in_array($zeileH, $z, true), 'Zeile Heizen mit Wärme und Arbeitszahl (' . $zeileH . '): ' . $r['text']);
@@ -81,7 +81,7 @@ pruefe(in_array($zeileW, $z, true), 'Zeile Warmwasser (' . $zeileW . '): ' . $r[
 
 // Ein Gerät allein: keine eigene Kopfzeile, die Zeile sagt alles
 $r = frage([$heizen, $warmwasser], ['name' => 'Wärmepumpe Warmwasser', 'period' => 'last_month']);
-pruefe(!$r['isError'] && !str_contains($r['text'], 'device(s) with heat meter') && in_array($zeileW, $zeilen($r), true), 'ein Gerät: nur seine Zeile: ' . $r['text']);
+pruefe(!$r['isError'] && !str_contains($r['text'], 'device(s) with heat measurement') && in_array($zeileW, $zeilen($r), true), 'ein Gerät: nur seine Zeile: ' . $r['text']);
 
 /* --- Im Juni zählte der Verdichter fürs Heizen keine ganze kWh: keine Arbeitszahl aus 0 kWh -------- */
 
@@ -159,5 +159,10 @@ $r = frage([$heizen, $warmwasser], ['room' => 'Heizungsraum', 'period' => 'now']
 $zeile = 'Heizungsraum | Wärmepumpe | appliance | ' . round($strom) . ' W, heat ' . round($waerme) . ' W, COP ' . $zahl($waerme / $strom);
 pruefe(!$r['isError'] && in_array($zeile, $zeilen($r), true), 'Leistung jetzt mit Wärmeleistung und COP (' . $zeile . '): ' . $r['text']);
 pruefe(str_starts_with($r['text'], round($strom) . ' W used by 1 of 1 device(s) with power measurement'), 'die Summe zählt nur die elektrische Leistung: ' . $zeilen($r)[0]);
+
+// Die Kopfzeile zählt Geräte mit Wärme, auch aus der Wärmeleistung; „mit Wärmezähler“ stimmte dann nicht (Neustadt 21.10.2026)
+$de = json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/locale.json'), true)['translations']['de'];
+$kopf = $de['Heat %s kWh from %s kWh electricity, performance factor %s (%d device(s) with heat measurement).'] ?? '';
+pruefe(str_contains($kopf, 'mit Wärmemessung') && !str_contains($kopf, 'Wärmezähler'), 'deutsche Kopfzeile: ' . $kopf);
 
 ende('Wärmemenge und Arbeitszahl');

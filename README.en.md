@@ -333,8 +333,8 @@ year?" with a chart.
 For a heat pump (type appliance) you also enter the heat meter and, optionally, the heat output. Like the energy meter,
 the heat meter must be archived as a counter, and it never counts in the electricity consumption. The line then gives the
 heat and the performance factor for the period, that is heat divided by electricity, for example "Heizungsraum |
-Wärmepumpe | appliance | 1397 kWh, heat 5161 kWh, performance factor 3.7". If several lines have a heat meter, for
-example heating and hot water, the performance factor of all of them stands above. With `period=now` and a heat output
+Wärmepumpe | appliance | 1397 kWh, heat 5161 kWh, performance factor 3.7". If several lines have a heat value, from a heat meter or a heat output,
+for example heating and hot water, the performance factor of all of them stands above. With `period=now` and a heat output
 the COP of the moment is added ("500 W, heat 4188 W, COP 8.4"). The performance factor is only as good as the meters. If
 the energy meter only counts the compressor, like the consumption values in the controller of some heat pumps, the
 circulation pumps and the heating element are missing and it comes out too good.

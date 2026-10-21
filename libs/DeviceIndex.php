@@ -1312,8 +1312,8 @@ final class DeviceIndex
         $heatLine = null;
         if ($heat['devices'] > 1) {
             $heatLine = $heat['complete'] && $heat['electricity'] > 0
-                ? sprintf($this->t('Heat %s kWh from %s kWh electricity, performance factor %s (%d device(s) with heat meter).'), self::formatNumber($heat['heat']), self::formatNumber($heat['electricity']), self::formatNumber($heat['heat'] / $heat['electricity']), $heat['devices'])
-                : sprintf($this->t('Heat %s kWh (%d device(s) with heat meter).'), self::formatNumber($heat['heat']), $heat['devices']);
+                ? sprintf($this->t('Heat %s kWh from %s kWh electricity, performance factor %s (%d device(s) with heat measurement).'), self::formatNumber($heat['heat']), self::formatNumber($heat['electricity']), self::formatNumber($heat['heat'] / $heat['electricity']), $heat['devices'])
+                : sprintf($this->t('Heat %s kWh (%d device(s) with heat measurement).'), self::formatNumber($heat['heat']), $heat['devices']);
         }
         $head = [sprintf($this->t('%s kWh consumed by %d of %d metered device(s) (%s).'), self::formatNumber($total), $withHistory, count($metered), $filter)];
         if ($metered === [] && $meters !== []) {
