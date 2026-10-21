@@ -199,7 +199,7 @@ zeigt der Dialog nur die Variablen, die zu diesem Typ gehören.
 | Leistung | Nur bei Licht, Schalter, Steckdose, Gerät, Luftbe-/entfeuchter und Lüftung, wahlweise: die aktuelle Leistung, etwa `POWER` eines Homematic-Messkanals. Sie steht in jeder Antwort hinter dem Zustand, zum Beispiel „an (26.1 W)“. |
 | Zähler | Ebenso wahlweise: der Energiezähler, etwa `ENERGY_COUNTER`. Für den Verbrauch über Zeiträume muss er im Archiv als Zähler aggregiert werden. Hängt ein Gerät an einer Messsteckdose, dürfen beide Zeilen dieselbe Leistung und denselben Zähler tragen; Verbrauch und Leistung eines Raums oder des Hauses zählen jede Variable nur einmal, und der Selbsttest weist darauf hin. |
 | Wärmezähler | Nur beim Gerät, wahlweise: der Wärmemengenzähler einer Wärmepumpe, im Archiv als Zähler aggregiert. Er zählt nie im Stromverbrauch. |
-| Wärmeleistung | Nur beim Gerät, wahlweise: die Wärmeleistung jetzt, in W oder kW. Mit der Leistung des Geräts ergibt sie die Leistungszahl. |
+| Wärmeleistung | Nur beim Gerät, wahlweise: die Wärmeleistung jetzt, in W oder kW. Mit der Leistung des Geräts ergibt sie die Leistungszahl, ohne Wärmezähler auch die Wärme über Zeiträume; dann muss sie archiviert sein. |
 | Gemessen von | Bei allem mit Leistung oder Zähler, wahlweise: der Zähler, hinter dem das Gerät oder der Zähler hängt, etwa die Unterverteilung OG. Zur Auswahl stehen die Zähler der gespeicherten Liste, ein neuer also erst nach dem Übernehmen. |
 | Umgekehrt | Haken setzen, wenn `true` „zu“ oder „aus“ bedeutet. Viele Fensterkontakte melden `true` für geschlossen. Bei Fenster, Tür und Meldern mit einer Zahl gilt sonst alles über 0 als offen bzw. erkannt, mit dem Haken nur die 0; so passt etwa der Türstatus von Matter (0 Geöffnet, 1 Geschlossen). Weitere Einträge wie „Angelehnt“ nennt die Antwort in Klammern. Bei Rollläden erkennt das Modul selbst, welcher Wert „offen“ bedeutet; der Haken dreht das um, falls auf und zu vertauscht sind. |
 | Kippfenster | Nur beim Fenster mit Antrieb: Haken setzen, wenn der Antrieb das Fenster nur kippt. Die Antwort sagt dann „gekippt“ und „50 % gekippt“ statt „offen“ und „50 % offen“. |
@@ -349,6 +349,12 @@ Zeitraum die Wärme und die Arbeitszahl, also Wärme geteilt durch Strom, etwa �
 Arbeitszahl aller zusammen darüber. Mit `period=now` und Wärmeleistung kommt die Leistungszahl von jetzt dazu („500 W,
 Wärme 4188 W, Leistungszahl 8.4“). Die Arbeitszahl ist so gut wie die Zähler. Zählt der Stromzähler nur den Verdichter,
 wie die Verbrauchswerte im Regler mancher Wärmepumpen, fehlen Umwälzpumpen und Heizstab, und sie fällt zu gut aus.
+
+Ohne Wärmezähler rechnet das Modul die Wärme aus den Stundenmitteln der archivierten Wärmeleistung, etwa „Wärme 93.7 kWh
+aus der Wärmeleistung“. Hat das Gerät auch eine Leistung, kommt der Strom der Arbeitszahl ebenso aus ihr („Arbeitszahl 6.9
+aus Wärmeleistung und Leistung“), beide Werte gelten dann für dieselben Stunden. Manche Regler schätzen die Wärme nur und
+buchen ihre Zähler erst um Mitternacht. Bei einer Stiebel Eltron lag der Wärmezähler bei Teillast beim 1,5- bis 2,5-Fachen
+der aus Volumenstrom und Spreizung gerechneten Wärmeleistung. Lassen Sie den Wärmezähler in so einem Fall leer.
 
 Mit `period=now` nennt **get_state** die Leistung jetzt in W, aufgebaut wie der Verbrauch: je Gerät mit
 Leistung der aktuelle Wert, dazu die Summe. Fürs ganze Haus rechnet das Modul die Hausleistung aus den

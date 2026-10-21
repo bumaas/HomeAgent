@@ -369,6 +369,11 @@ class HomeAgent extends IPSModuleStrict
             } elseif (is_array($counter) && !DeviceIndex::isEnergyUnit($counter['unit'])) {
                 $lines[] = sprintf($this->Translate('Note: %s: the heat meter %s counts in %s, not in kWh, so there is no heat over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), IPS_GetName($heat), trim($counter['unit']));
             }
+            // Ohne Wärmezähler kommt die Wärme aus den Stundenmitteln der Wärmeleistung
+            $output = DeviceIndex::rolesOf($entry)['heatpower'] ?? 0;
+            if ($heat === 0 && $output > 0 && IPS_VariableExists($output) && $backend->history($output, 3, 0, 0) === null) {
+                $lines[] = sprintf($this->Translate('Note: %s: the heat output %s is not archived, so there is no heat over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), IPS_GetName($output));
+            }
         }
         // Energiebilanz: Jeder Zähler muss als Zähler archiviert sein, sonst gibt es keinen Hausverbrauch, und jede
         // Leistung eine Leistung; die Hinweise nennen die Quelle mit Namen.
@@ -1994,7 +1999,7 @@ class HomeAgent extends IPSModuleStrict
         // Energiebilanz eingetragen ist. Ohne Bilanz muss die Beschreibung die Grenze nennen: HA Assist
         // gab die Summe der Geräte sonst als Hausverbrauch aus (09.10.2026).
         // Ein Wärmezähler (B83) braucht dieselben Zeiträume wie ein Stromzähler
-        $hasMeters = array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['energy']) || isset(DeviceIndex::rolesOf($row)['heat']));
+        $hasMeters = array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['energy']) || isset(DeviceIndex::rolesOf($row)['heat']) || isset(DeviceIndex::rolesOf($row)['heatpower']));
         $hasBalance = $this->balanceKeys() !== [];
         // Teile der Bilanz für show_chart (B74), nur die eingetragenen, auch aus der Liste der Quellen
         $usableBalance = $this->balanceKeys();
@@ -2039,7 +2044,7 @@ class HomeAgent extends IPSModuleStrict
                 . ($hasMeters ? '"How much did the washing machine use last month?" → name=washing machine, period=last_month. '
                     . '"How much did the washing machine use in January?" → name=washing machine, from=' . date('Y') . '-01-01, to=' . date('Y') . '-01-31. ' : '')
                 // Wärmepumpe (B83): Wärme und Arbeitszahl stehen in der Zeile des Verbrauchs, nur mit Wärmezähler (Tokens)
-                . (array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['heat']))
+                . (array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['heat']) || isset(DeviceIndex::rolesOf($row)['heatpower']))
                     ? '"What was the performance factor of the heat pump in January?" → name=heat pump, from=' . date('Y') . '-01-01, to=' . date('Y') . '-01-31 (heat, electricity and performance factor in one line). ' : '')
                 . ($hasBalance ? '"How much electricity did we use yesterday?" → period=yesterday. ' : '')
                 . ($hasPower ? '"How much power are we using right now?" → period=now. '

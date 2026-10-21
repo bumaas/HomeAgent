@@ -525,7 +525,7 @@ final class DeviceIndex
             && (($this->chart !== null && !$this->chartByDevice
                     && (array_any($matches, static fn (array $e): bool => self::isMeasured($e)) || !array_any($matches, static fn (array $e): bool => isset($e['roles']['energy']))))
                 || in_array($type, self::HISTORY_TYPES, true)
-                || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy']) || isset($e['roles']['heat'])) && array_any($matches, fn (array $e): bool => self::isMeasured($e) || $this->isTimed($e))))) {
+                || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy']) || self::hasHeat($e)) && array_any($matches, fn (array $e): bool => self::isMeasured($e) || $this->isTimed($e))))) {
             if ($range !== null) {
                 [, $from, $to] = $range;
                 return $this->history($matches, $rangeLevel, $from, $to, $filter . $rangeLabel);
@@ -1233,7 +1233,7 @@ final class DeviceIndex
         $matches = self::firstPerVariable(array_values(array_filter($matches, static fn (array $entry): bool => $entry['Type'] !== 'meter')), 'energy');
         $metered = array_values(array_filter($matches, static fn (array $entry): bool => isset($entry['roles']['energy'])));
         // Wärme zählt nie in einer Stromsumme (B83); ein Wärmezähler ohne Stromzähler steht nur mit seiner Wärme da
-        $heatOnly = array_values(array_filter(self::firstPerVariable($matches, 'heat'), static fn (array $entry): bool => isset($entry['roles']['heat']) && !isset($entry['roles']['energy'])));
+        $heatOnly = array_values(array_filter($matches, static fn (array $entry): bool => self::hasHeat($entry) && !isset($entry['roles']['energy'])));
         $balance = $wholeHouse ? $this->balance : [];
         if ($metered === [] && $heatOnly === [] && $balance === [] && $meters === []) {
             return $this->fail(sprintf($this->t('None of the matching devices measures energy (%s).'), $filter));
@@ -1274,31 +1274,30 @@ final class DeviceIndex
             }
             $total += $kwh;
             $withHistory++;
-            $heatText = '';
-            $heatId = $entry['roles']['heat'] ?? 0;
-            if ($heatId > 0 && !isset($seenHeat[$heatId])) {
-                $seenHeat[$heatId] = true;
-                $heatKwh = $this->heatKilowattHours($heatId, $level, $from, $to);
-                $heatText = ', ' . (is_string($heatKwh) ? sprintf($this->t('heat: %s'), $heatKwh) : $this->heatText($heatKwh, $kwh));
-                if (is_float($heatKwh)) {
-                    $heat['devices']++;
-                    $heat['heat'] += $heatKwh;
-                    $heat['electricity'] += $kwh;
-                }
+            $heatOf = $this->heatOf($entry, $level, $from, $to, $kwh, $seenHeat);
+            if ($heatOf !== null && $heatOf['heat'] !== null) {
+                $heat['devices']++;
+                $heat['heat'] += $heatOf['heat'];
+                $heat['electricity'] += $heatOf['electricity'] ?? 0.0;
+                $heat['complete'] = $heat['complete'] && $heatOf['electricity'] !== null;
             }
-            $rows[] = ['line' => $this->line($entry, self::formatNumber($kwh) . ' kWh' . $heatText) . ($timeOf[self::cardKey($entry)] ?? ''), 'value' => $kwh];
+            $rows[] = ['line' => $this->line($entry, self::formatNumber($kwh) . ' kWh' . ($heatOf === null ? '' : ', ' . $heatOf['text'])) . ($timeOf[self::cardKey($entry)] ?? ''), 'value' => $kwh];
         }
         foreach ($heatOnly as $entry) {
-            $heatKwh = $this->heatKilowattHours($entry['roles']['heat'], $level, $from, $to);
-            if (is_float($heatKwh)) {
-                $heat['devices']++;
-                $heat['heat'] += $heatKwh;
-                $heat['complete'] = false;
+            $heatOf = $this->heatOf($entry, $level, $from, $to, null, $seenHeat);
+            if ($heatOf === null) {
+                continue;
             }
-            $rows[] = ['line' => $this->line($entry, is_string($heatKwh) ? sprintf($this->t('heat: %s'), $heatKwh) : $this->heatText($heatKwh, null)) . ($timeOf[self::cardKey($entry)] ?? ''), 'value' => null];
+            if ($heatOf['heat'] !== null) {
+                $heat['devices']++;
+                $heat['heat'] += $heatOf['heat'];
+                $heat['electricity'] += $heatOf['electricity'] ?? 0.0;
+                $heat['complete'] = $heat['complete'] && $heatOf['electricity'] !== null;
+            }
+            $rows[] = ['line' => $this->line($entry, $heatOf['text']) . ($timeOf[self::cardKey($entry)] ?? ''), 'value' => null];
         }
         $lines = $this->rankedLines($rows, $wholeHouse, static fn (float $kwh): string => self::formatNumber($kwh) . ' kWh');
-        $unmetered = array_values(array_filter($timed, static fn (array $item): bool => !isset($item['entry']['roles']['energy']) && !isset($item['entry']['roles']['heat'])));
+        $unmetered = array_values(array_filter($timed, static fn (array $item): bool => !isset($item['entry']['roles']['energy']) && !self::hasHeat($item['entry'])));
         foreach ($unmetered as $item) {
             $lines[] = $this->line($item['entry'], $item['summary']);
             if ($item['sections'] !== null) {
@@ -1368,6 +1367,67 @@ final class DeviceIndex
         return ['text' => implode("\n", array_merge($head, $heatLine === null ? [] : [$heatLine], $meterLines, $lines)), 'isError' => false];
     }
 
+    /** Hat das Gerät eine Wärme über Zeiträume, aus einem Wärmezähler oder aus der Wärmeleistung (B83)? */
+    private static function hasHeat(array $entry): bool
+    {
+        return isset($entry['roles']['heat']) || isset($entry['roles']['heatpower']);
+    }
+
+    /**
+     * Wärme eines Geräts im Zeitraum und der Text dazu (B83). Ein Wärmezähler geht vor. Ohne ihn kommt die Wärme aus den
+     * Stundenmitteln der Wärmeleistung, und mit einer Leistung am Gerät auch der Strom der Arbeitszahl: Ein Regler, der
+     * seine Zähler erst um Mitternacht für den Vortag bucht, ergäbe gegen Wärme aus der Leistung sonst Unsinn (betreute
+     * Anlage 21.10.2026: gestern 15.6 statt 6.9). Jede Variable zählt nur einmal ($seen).
+     *
+     * @param array<int, true> $seen
+     * @return null|array{text: string, heat: ?float, electricity: ?float} electricity = Strom der Arbeitszahl, null = keiner
+     */
+    private function heatOf(array $entry, int $level, int $from, int $to, ?float $electricityKwh, array &$seen): ?array
+    {
+        $counter = $entry['roles']['heat'] ?? 0;
+        $output = $entry['roles']['heatpower'] ?? 0;
+        $id = $counter > 0 ? $counter : $output;
+        if ($id === 0 || isset($seen[$id])) {
+            return null;
+        }
+        $seen[$id] = true;
+        if ($counter > 0) {
+            $heat = $this->heatKilowattHours($counter, $level, $from, $to);
+            return is_string($heat)
+                ? ['text' => sprintf($this->t('heat: %s'), $heat), 'heat' => null, 'electricity' => null]
+                : ['text' => $this->heatText($heat, $electricityKwh, false, false), 'heat' => $heat, 'electricity' => $electricityKwh];
+        }
+        $heat = $this->powerKilowattHours($output, $from, $to);
+        if ($heat === null) {
+            return ['text' => sprintf($this->t('heat: %s'), $this->t('no history archived')), 'heat' => null, 'electricity' => null];
+        }
+        $power = isset($entry['roles']['power']) ? $this->powerKilowattHours($entry['roles']['power'], $from, $to) : null;
+        $electricity = $power ?? $electricityKwh;
+        return ['text' => $this->heatText($heat, $electricity, true, $power !== null), 'heat' => $heat, 'electricity' => $electricity];
+    }
+
+    /**
+     * Energie aus den Stundenmitteln einer Leistung in kWh, die laufende Stunde bis jetzt; null = nicht archiviert oder
+     * keine Leistungseinheit. Das Archiv mittelt zeitgewichtet und schreibt jede Stunde, auch ohne neuen Satz (an drei
+     * Stunden gegen die Rohwerte nachgerechnet, 21.10.2026); Mittel × Dauer ist also die Fläche unter der Kurve.
+     */
+    private function powerKilowattHours(int $variableId, int $from, int $to): ?float
+    {
+        $history = $this->backend->history($variableId, 0, $from, $to);
+        $factor = $history === null ? null : (self::POWER_UNITS[strtolower(trim($history['unit']))] ?? null);
+        if ($factor === null) {
+            return null;
+        }
+        $now = $this->backend->timestamp();
+        $wattHours = 0.0;
+        foreach ($history['rows'] as $row) {
+            if ($row['time'] >= $from && ($to === 0 || $row['time'] < $to)) {
+                $wattHours += $row['avg'] * $factor * max(0, min(3600, $now - $row['time'])) / 3600;
+            }
+        }
+        return $wattHours / 1000;
+    }
+
     /** Wärme eines Wärmezählers im Zeitraum in kWh, sonst der Grund als Text (B83). */
     private function heatKilowattHours(int $variableId, int $level, int $from, int $to): float|string
     {
@@ -1382,11 +1442,11 @@ final class DeviceIndex
      * „heat 409 kWh, performance factor 14.6“: die Arbeitszahl als Wärme ÷ Strom des Zeitraums, nie als Mittel von
      * Momentanwerten. Ohne Strom (kein Zähler oder 0 kWh, der Regler zählt etwa erst um Mitternacht) keine Arbeitszahl.
      */
-    private function heatText(float $heatKwh, ?float $electricityKwh): string
+    private function heatText(float $heatKwh, ?float $electricityKwh, bool $fromOutput, bool $fromPower): string
     {
-        $text = sprintf($this->t('heat %s kWh'), self::formatNumber($heatKwh));
+        $text = sprintf($this->t($fromOutput ? 'heat %s kWh from heat output' : 'heat %s kWh'), self::formatNumber($heatKwh));
         if ($electricityKwh !== null && $electricityKwh > 0) {
-            $text .= sprintf($this->t(', performance factor %s'), self::formatNumber($heatKwh / $electricityKwh));
+            $text .= sprintf($this->t($fromPower ? ', performance factor %s from heat output and power' : ', performance factor %s'), self::formatNumber($heatKwh / $electricityKwh));
         }
         return $text;
     }

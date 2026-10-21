@@ -191,7 +191,7 @@ then shows only the variables that belong to this type.
 | Power | Only for lights, switches, sockets, appliances, humidifiers and ventilation, optional: the current power, for example `POWER` of a Homematic metering channel. It follows the state in every answer, for example "on (26.1 W)". |
 | Energy meter | Also optional: the energy counter, for example `ENERGY_COUNTER`. For consumption over periods it must be aggregated as a counter in the archive. If a device hangs on a metering socket, both rows may carry the same power and energy meter; consumption and power of a room or the house count each variable only once, and the self test points it out. |
 | Heat meter | Appliance only, optional: the heat meter of a heat pump, aggregated as a counter in the archive. It never counts in the electricity consumption. |
-| Heat output | Appliance only, optional: the current heat output, in W or kW. Together with the power of the appliance it gives the COP. |
+| Heat output | Appliance only, optional: the current heat output, in W or kW. Together with the power of the appliance it gives the COP, and without a heat meter also the heat over periods; it must then be archived. |
 | Measured by | For everything with power or an energy meter, optional: the meter the device or meter hangs on, for example the sub-distribution of the upper floor. The choice lists the meters of the saved list, so a new one appears after Apply. |
 | Inverted | Tick this if `true` means "closed" or "off". Many window contacts report `true` for closed. For windows, doors and sensors with a number, anything above 0 otherwise counts as open or detected, with the tick only 0; this fits the Matter door state, for example (0 open, 1 closed). Further entries such as "ajar" appear in brackets in the answer. For blinds the module finds out by itself which value means "open"; the tick reverses that if open and closed are swapped. |
 | Tilt window | Only for a window with a drive: tick this if the drive only tilts the window. The answer then says "tilted" and "50 % tilted" instead of "open" and "50 % open". |
@@ -338,6 +338,12 @@ example heating and hot water, the performance factor of all of them stands abov
 the COP of the moment is added ("500 W, heat 4188 W, COP 8.4"). The performance factor is only as good as the meters. If
 the energy meter only counts the compressor, like the consumption values in the controller of some heat pumps, the
 circulation pumps and the heating element are missing and it comes out too good.
+
+Without a heat meter the module calculates the heat from the hourly means of the archived heat output, for example "heat
+93.7 kWh from heat output". If the appliance also has a power value, the electricity of the performance factor comes from it
+as well ("performance factor 6.9 from heat output and power"), so both values cover the same hours. Some controllers only
+estimate the heat and book their meters at midnight. On a Stiebel Eltron the heat meter showed 1.5 to 2.5 times the heat
+output calculated from flow rate and temperature difference at part load. Leave the heat meter empty in such a case.
 
 With `period=now`, **get_state** reports the power right now in W, built like the consumption: the
 current value of each device with power, plus the total. For the whole house the module calculates the

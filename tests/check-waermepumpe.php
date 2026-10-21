@@ -102,6 +102,55 @@ $r = frage([$falsch], ['name' => 'Wärmepumpe Warmwasser', 'period' => 'last_mon
 // Wie beim Stromzähler: Was nicht als Zähler archiviert ist, hat für das Backend keine Summe
 pruefe(str_contains($r['text'], '28 kWh, heat: no history archived') && !str_contains($r['text'], 'performance factor'), 'eine Leistung als Wärmezähler ergibt keine Wärme: ' . $r['text']);
 
+/* --- Wärme aus der Wärmeleistung, wenn kein Wärmezähler eingetragen ist ------------------------- */
+
+// Das Archiv mittelt zeitgewichtet (am 21.10.2026 an drei Stunden gegen die Rohwerte nachgerechnet, auf vier Stellen
+// gleich) und schreibt jede Stunde, auch ohne neuen Satz. Mittel × Stunde ist also die Fläche unter der Kurve.
+/** kWh aus den Stundenmitteln einer Leistung in kW, von $von bis vor $bis, die laufende Stunde bis jetzt. */
+function ausLeistung(int $id, int $von, int $bis): float
+{
+    global $wp;
+    $summe = 0.0;
+    foreach ($wp['variablen'][(string)$id]['aggregate']['0'] as $a) {
+        if ($a['zeit'] >= $von && $a['zeit'] < $bis) {
+            $summe += $a['mittel'] * min(3600, $wp['jetzt'] - $a['zeit']) / 3600;
+        }
+    }
+    return $summe;
+}
+
+$ausWaermeleistung = array_merge($heizen, ['HeatVariableID' => 0]);
+$heute = (int)strtotime('today', $wp['jetzt']);
+$gestern = (int)strtotime('-1 day', $heute);
+$r = frage([$ausWaermeleistung], ['name' => 'Wärmepumpe', 'room' => 'Heizungsraum', 'period' => 'yesterday']);
+$waerme = ausLeistung(53194, $gestern, $heute);
+// Der Stromzähler des Reglers bucht erst um Mitternacht für den Vortag; mit Wärme aus der Leistung kommt deshalb auch
+// der Strom der Arbeitszahl aus der Leistung, beide auf derselben Zeitbasis (gestern sonst Arbeitszahl 15.6)
+$strom = ausLeistung(27660, $gestern, $heute);
+$zeile = 'Heizungsraum | Wärmepumpe | appliance | ' . $zahl(kwh(55642, $gestern, $heute)) . ' kWh, heat ' . $zahl($waerme) . ' kWh from heat output, performance factor ' . $zahl($waerme / $strom) . ' from heat output and power';
+pruefe(!$r['isError'] && in_array($zeile, $zeilen($r), true), 'gestern: Wärme und Arbeitszahl aus den Stundenmitteln der Leistungen (' . $zeile . '): ' . $r['text']);
+
+// Heute: die laufende Stunde zählt bis jetzt, nicht als ganze Stunde
+$r = frage([$ausWaermeleistung], ['name' => 'Wärmepumpe', 'room' => 'Heizungsraum', 'period' => 'today']);
+$waerme = ausLeistung(53194, $heute, $heute + 86400);
+$ganz = 0.0;
+foreach ($wp['variablen']['53194']['aggregate']['0'] as $a) {
+    $ganz += $a['zeit'] >= $heute ? $a['mittel'] : 0.0;
+}
+pruefe(!$r['isError'] && str_contains($r['text'], ', heat ' . $zahl($waerme) . ' kWh from heat output') && $zahl($waerme) !== $zahl($ganz), 'heute: die laufende Stunde anteilig (' . $zahl($waerme) . ' statt ' . $zahl($ganz) . ' kWh): ' . $r['text']);
+
+// Mit Wärmezähler gilt der Zähler, die Wärmeleistung bleibt für die Leistungszahl
+$r = frage([$heizen], ['name' => 'Wärmepumpe', 'room' => 'Heizungsraum', 'period' => 'yesterday']);
+pruefe(!$r['isError'] && str_contains($r['text'], ', heat ' . $zahl(kwh(58176, $gestern, $heute)) . ' kWh, performance factor') && !str_contains($r['text'], 'from heat output'), 'mit Wärmezähler zählt der Zähler: ' . $r['text']);
+
+// Ohne Stromzähler: Arbeitszahl aus beiden Leistungen; ohne Leistung nur die Wärme
+$nurLeistung = array_merge($ausWaermeleistung, ['EnergyVariableID' => 0]);
+$r = frage([$nurLeistung], ['name' => 'Wärmepumpe', 'room' => 'Heizungsraum', 'period' => 'yesterday']);
+$zeile = 'Heizungsraum | Wärmepumpe | appliance | heat ' . $zahl(ausLeistung(53194, $gestern, $heute)) . ' kWh from heat output, performance factor ' . $zahl(ausLeistung(53194, $gestern, $heute) / $strom) . ' from heat output and power';
+pruefe(!$r['isError'] && in_array($zeile, $zeilen($r), true), 'ohne Stromzähler: Arbeitszahl aus den Leistungen (' . $zeile . '): ' . $r['text']);
+$r = frage([array_merge($nurLeistung, ['PowerVariableID' => 0])], ['name' => 'Wärmepumpe', 'room' => 'Heizungsraum', 'period' => 'yesterday']);
+pruefe(!$r['isError'] && in_array('Heizungsraum | Wärmepumpe | appliance | heat ' . $zahl(ausLeistung(53194, $gestern, $heute)) . ' kWh from heat output', $zeilen($r), true), 'nur Wärmeleistung: Wärme ohne Arbeitszahl: ' . $r['text']);
+
 /* --- Leistungszahl jetzt ------------------------------------------------------------------------- */
 
 $strom = (float)$wp['variablen']['27660']['wert'] * 1000;

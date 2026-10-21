@@ -1011,6 +1011,18 @@ $selbsttest = $m->RunSelfTest();
 pruefe(str_contains($selbsttest, 'Note: Heizungsraum Wärmepumpe: the heat meter V_Heizen_Summe Wärme is not archived as a counter, so there is no heat over periods'), 'Selbsttest: Wärmezähler ohne Archiv: ' . $selbsttest);
 $beschreibung = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name')['get_state']['description'] ?? '';
 pruefe(str_contains($beschreibung, '"What was the performance factor of the heat pump in January?" → name=heat pump, from=' . date('Y') . '-01-01, to=' . date('Y') . '-01-31 (heat, electricity and performance factor in one line). '), 'mit Wärmezähler nennt get_state ein Beispiel für die Arbeitszahl: ' . $beschreibung);
+// Ohne Wärmezähler kommt die Wärme aus der Wärmeleistung; die muss dann archiviert sein
+$waermeleistung = variable(VARIABLETYPE_FLOAT, 4.18);
+IPS_SetName($waermeleistung, 'Wärmeleistung');
+IPS_SetProperty($iid, 'Devices', json_encode([$entfeuchter, array_merge($waermepumpe, ['HeatVariableID' => 0, 'HeatPowerVariableID' => $waermeleistung])]));
+IPS_ApplyChanges($iid);
+$selbsttest = $m->RunSelfTest();
+pruefe(str_contains($selbsttest, 'Note: Heizungsraum Wärmepumpe: the heat output Wärmeleistung is not archived, so there is no heat over periods'), 'Selbsttest: Wärmeleistung ohne Archiv und ohne Wärmezähler: ' . $selbsttest);
+$beschreibung = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name')['get_state']['description'] ?? '';
+pruefe(str_contains($beschreibung, 'performance factor of the heat pump'), 'auch mit Wärmeleistung allein nennt get_state das Beispiel: ' . $beschreibung);
+IPS_SetProperty($iid, 'Devices', json_encode([$entfeuchter, array_merge($waermepumpe, ['HeatPowerVariableID' => $waermeleistung])]));
+IPS_ApplyChanges($iid);
+pruefe(!str_contains($m->RunSelfTest(), 'the heat output'), 'mit Wärmezähler braucht die Wärmeleistung kein Archiv: ' . $m->RunSelfTest());
 IPS_SetProperty($iid, 'Devices', json_encode([$entfeuchter]));
 IPS_ApplyChanges($iid);
 $beschreibung = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name')['get_state']['description'] ?? '';

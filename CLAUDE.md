@@ -462,8 +462,16 @@ Weitere Regeln, die nicht offensichtlich sind:
   `type=power`, die Zählerprüfung aus B78. Gemessen an einer Stiebel Eltron über ModBus (Fixture
   `betreut_2026-10-21_waermepumpe.json`): Wärme- und Stromzähler des Reglers springen nur um 0 Uhr und zählen dann den
   Vortag, der Strom ist der des Verdichters, und seit Juni 2026 liegt der Wärmezähler beim 2- bis 2,4-Fachen der aus dem
-  Volumenstrom gerechneten Wärmeleistung (im Winter 1 bis 4 %). Im Oktober ergaben die Zähler eine Arbeitszahl von 14,8.
-  Das Modul gibt sie aus, wie sie gemessen ist. Test `check-waermepumpe.php`.
+  Volumenstrom gerechneten Wärmeleistung (im Winter 1 bis 4 %). Im Oktober ergaben die Zähler eine Arbeitszahl von 14,8,
+  am 21.10. bis 19 Uhr der Regler 25,7 (über der Carnot-Grenze von rund 10 bis 12), Wärmeleistung und Inverter 7,3. Der
+  „Wärmezähler“ dort ist eine virtuelle Variable des ModBus-Geräts aus den Registern des Reglers, also eine Schätzung.
+  Deshalb **ohne Wärmezähler die Wärme aus der Wärmeleistung** (`heatOf`, `powerKilowattHours`): Stundenmittel × Dauer, die
+  laufende Stunde bis jetzt. Das Archiv mittelt zeitgewichtet und schreibt jede Stunde, auch ohne neuen Satz (21.10.2026 an
+  drei Stunden gegen die Rohwerte nachgerechnet, auf vier Stellen gleich; drei Tage im Juni: 72 Stundenaggregate ohne einen
+  Rohsatz). Mit Leistung am Gerät kommt dann auch der Strom der Arbeitszahl aus der Leistung („from heat output and power“):
+  Gegen den Stromzähler des Reglers, der erst um Mitternacht für den Vortag bucht, ergab „gestern“ 15,6 statt 6,9. Ein
+  Wärmezähler geht vor; der Selbsttest meldet eine nicht archivierte Wärmeleistung nur ohne Wärmezähler.
+  Test `check-waermepumpe.php`.
 - **Lüftung** (Typ `fan`, build 90): `state`, `mode`, `fan`, wahlweise `power`/`energy`; Pflicht Ein/Aus oder
   Lüfterstufe. Zeile und Befehle wie beim Luftbe-/entfeuchter (`humidifierText`, `runOption`), hier mit Ganzzahlwerten aus
   den Profilzuordnungen. Gemessen an einer Ambientika (12.10.2026): `RequestAction` blockiert 2,2 bis 2,4 s, das Modul
