@@ -1190,7 +1190,8 @@ pruefe(oderNull(static fn () => $m->testBackend()->counterReadings($verbrauch, [
 SetValue($verbrauch, $verbrauchQuelle['wert']);
 $setzeBilanz([$bilanzZeile('grid', 'Netz', $verbrauch)]);
 $test = $m->RunSelfTest();
-pruefe(str_contains($test, 'Note: grid import "Netz" Verbrauch: the archive counts more than the meter reading rose (01/2024 +659.8 kWh). Usually that is a single wrong value'), 'Selbsttest nennt den Monat mit Fehlwert, nicht den Neustart im Mai 2026: ' . $test);
+// Mit der ID: Zwei Zähler mit gleichem Namen („Gesamter Verbrauch“ an Aktor und Powermeter) verwechselte ein Tester (22.10.2026).
+pruefe(str_contains($test, 'Note: grid import "Netz" Verbrauch (#' . $verbrauch . '): the archive counts more than the meter reading rose (01/2024 +659.8 kWh). Usually that is a single wrong value'), 'Selbsttest nennt den Zähler mit ID und den Monat mit Fehlwert, nicht den Neustart im Mai 2026: ' . $test);
 date_default_timezone_set($alteZone);
 $setzeBilanz([$bilanzZeile('grid', 'Grid', $zaehler), $bilanzZeile('battery', 'Battery', 0, 69995)]);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Source "Battery": variable for battery charge does not exist'), 'gelöschter Bilanzzähler: aktiv, das Log nennt ihn mit Quelle und Teil: ' . implode(' | ', array_slice(array_column($m->logs(), 'Message'), -2)));
