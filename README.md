@@ -226,6 +226,8 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 | Temperatur, Luftfeuchte, Luftqualität, sonstiger Messwert | Messwert |
 | Zähler | Zähler, wahlweise Leistung |
 
+Einen eigenen Typ für Rauchmelder gibt es nicht. Tragen Sie sie als sonstigen Messwert mit „Nur abfragen“ ein.
+
 Fehlt einer Zeile die Variable ihres Typs, oder wird eine eingetragene Variable gelöscht, ist nur dieses
 Gerät gesperrt. Die Zeile wird rot, Formular und Log nennen sie, alle anderen Geräte bleiben erreichbar.
 Symcon nennt die Instanz außerdem beim Löschen einer eingetragenen Variable als Referenz.

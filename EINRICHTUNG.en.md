@@ -96,7 +96,8 @@ the module (HAGT_…). You read the form of an instance with IPS_GetConfiguratio
 How to proceed:
 0. Check whether there are instances of the module already and list them with name, location, status
    and number of devices. Then ask me whether to use one of them or create a new one. For a new one ask
-   for the target category and the name. Do not create anything before I have answered.
+   for the target category and the name and, if there is an instance already, whether its rooms and
+   devices should be the template. Do not create anything before I have answered.
 1. First read the text "Hint for scripts and AI assistants" in the configuration form of the instance.
    It names the properties Accesses, Rooms and Devices, the device types and the fields of each type.
    Stick to it and do not guess field names.
@@ -119,20 +120,26 @@ How to proceed:
    sub-distributions as type "meter" with "metered by", an electricity price as PriceVariableID.
    Do not release: locks, alarm system and anything security-relevant, including door openers, garage
    doors and gates. Do not release relays that power a smart lamp as a light; the lamp may get their
-   power. If such a device is already in the instance, propose to remove it. Detectors such as water
-   or smoke detectors may be added for querying. Sockets that power the network, servers or the home
+   power. If such a device is already in the instance, propose to remove it. Water detectors may be
+   added for querying as water_leak, smoke detectors as measurement with ReadOnly. Sockets that power the
+   network, servers or the home
    automation itself read only (ReadOnly), heating and ventilation as well at first.
    For devices that are already in the instance, ReadOnly, Invert and the names stay as they are; you
-   change type or variables of such a device only if I agree in the table. If a device is connected
-   more than once (e.g. through Matter and a bridge), take the connection with the most recent values
-   and name the other one. An energy meter that is not archived as a counter, and a power or meter
-   with a unit the hint does not name, you leave out and name as an open question.
+   change type or variables of such a device only if I agree in the table. If a device is evidently
+   connected more than once (e.g. through Matter and a bridge, with the same name and room), take the
+   connection with the most recent values and name the other one; if you are not sure it is the same
+   device, name both as an open question. An energy meter that is not archived as a counter, and a power
+   or meter with a unit the hint does not name, you leave out and name as an open question.
+   What you cannot assign with certainty you do not enter but name as an open question: an unclear
+   room, a relay that may power a smart lamp, a power or meter for several channels, battery and solar
+   meters whose direction or boundary is unclear.
    Also propose the energy balance as the list "Sources": one row per grid connection, solar plant and
    battery with meter and power.
 4. Show me both lists as a table (room, name, type, variables) and wait for my OK before you save
    anything. Mark what is already in the instance and what is new or changes. With more than about 50
    devices show only what is new or changed in the chat and write the whole table to a file in the
-   current working folder.
+   current working folder. My OK applies to the table; open questions stay out until I have answered
+   them one by one.
 5. After my OK: First back up the properties Rooms, Devices, Sources and Accesses as they are now, with
    tokens as <token>, to a file in the current working folder with date and time in the name so that
    no earlier backup is overwritten. Then enter rooms and devices and create one access per assistant
@@ -142,10 +149,11 @@ How to proceed:
    unless I have agreed to a change in the table.
    Leave the token empty, the module creates it itself on apply. Then apply; status and token only
    arrive a few seconds later. Then read both again and check that every access has a token, without
-   printing it. Run HAGT_RunSelfTest and show me errors and the detected direction of every blind. Name
-   every note about energy and heat meters and about the sign of a power as an open question to me.
-   Where open and closed are swapped, set Invert. For windows and doors check whether "closed" matches
-   the current state; if it does not, change nothing and ask me.
+   printing it. Run HAGT_RunSelfTest and show me the errors. Name every note about energy and heat
+   meters and about the sign of a power as an open question to me. Only I know whether a blind, a
+   window or a door counts the right way round: show me for each blind the direction from the self-test
+   and its position according to Symcon, for each window and door its state according to Symcon, and
+   ask me whether that is right. Set Invert only where I say it is swapped.
 
 Rules:
 - Do not switch anything and do not trigger any action on devices. Only read and configure the

@@ -99,7 +99,8 @@ Das Formular einer Instanz liest du mit IPS_GetConfigurationForm(<InstanzID>).
 So gehst du vor:
 0. Sieh nach, ob es schon Instanzen des Moduls gibt, und nenne sie mir mit Name, Ort, Status und
    Anzahl der Geräte. Frag mich dann, ob du eine davon verwenden oder eine neue anlegen sollst. Bei
-   einer neuen frag nach der Zielkategorie und dem Namen. Leg nichts an, bevor ich geantwortet habe.
+   einer neuen frag nach der Zielkategorie und dem Namen und, falls es schon eine Instanz gibt, ob deren
+   Räume und Geräte die Vorlage sein sollen. Leg nichts an, bevor ich geantwortet habe.
 1. Lies zuerst im Konfigurationsformular der Instanz den Text „Hinweis für Skripte und
    KI-Assistenten“. Dort stehen die Properties Accesses, Rooms und Devices, die Gerätetypen und die
    Felder je Typ. Halte dich daran und rate keine Feldnamen.
@@ -124,21 +125,27 @@ So gehst du vor:
    Nicht freigeben: Schlösser, Alarmanlage und alles Sicherheitsrelevante, dazu zählen auch Türöffner,
    Garagentore und Tore. Relais, die eine smarte Lampe mit Strom versorgen, nicht als Licht freigeben;
    ihre Leistung darf die Lampe bekommen. Steht so etwas schon in der Instanz, schlag vor, es zu
-   entfernen. Melder wie Wasser- oder Rauchmelder dürfen zum Abfragen hinein. Steckdosen, an denen
+   entfernen. Wassermelder dürfen als water_leak zum Abfragen hinein, Rauchmelder als measurement mit
+   ReadOnly. Steckdosen, an denen
    Netzwerk, Server oder die Hausautomation selbst hängen, nur zum Abfragen (ReadOnly), ebenso Heizung
    und Lüftung zunächst.
    Bei Geräten, die schon in der Instanz stehen, bleiben ReadOnly, Invert und die Namen, wie sie sind;
    Typ oder Variablen eines solchen Geräts änderst du nur, wenn ich in der Tabelle zustimme. Ist ein Gerät
-   mehrfach angebunden (etwa über Matter und eine Bridge), nimm die Anbindung mit den jüngsten Werten und
-   nenne die andere. Einen Energiezähler, der nicht als Zähler archiviert ist, und eine Leistung oder
-   einen Zähler mit einer Einheit, die der Hinweistext nicht nennt, lässt du weg und nennst sie als
-   offene Frage.
+   erkennbar mehrfach angebunden (etwa über Matter und eine Bridge, mit gleichem Namen und Raum), nimm die
+   Anbindung mit den jüngsten Werten und nenne die andere; bist du nicht sicher, dass es dasselbe Gerät
+   ist, nenne beide als offene Frage. Einen Energiezähler, der nicht als Zähler archiviert ist, und eine
+   Leistung oder einen Zähler mit einer Einheit, die der Hinweistext nicht nennt, lässt du weg und nennst
+   sie als offene Frage.
+   Was du nicht sicher zuordnen kannst, trägst du nicht ein, sondern nennst es als offene Frage: einen
+   unklaren Raum, ein Relais, hinter dem vielleicht eine smarte Lampe hängt, eine Leistung oder einen
+   Zähler für mehrere Kanäle, Zähler von Batterie und PV, deren Richtung oder Abgrenzung unklar ist.
    Schlag auch die Energiebilanz als Liste „Quellen“ vor: je Netzanschluss, PV-Anlage und Batterie eine
    Zeile mit Zähler und Leistung.
 4. Zeig mir beide Listen als Tabelle (Raum, Name, Typ, Variablen) und warte auf mein OK, bevor du
    etwas speicherst. Kennzeichne, was schon in der Instanz steht und was neu ist oder sich ändert. Bei
    mehr als etwa 50 Geräten zeigst du im Chat nur Neues und Änderungen und schreibst die ganze Tabelle in
-   eine Datei im aktuellen Arbeitsordner.
+   eine Datei im aktuellen Arbeitsordner. Mein OK gilt für die Tabelle; offene Fragen bleiben draußen,
+   bis ich sie einzeln beantwortet habe.
 5. Nach meinem OK: Sichere zuerst die Properties Rooms, Devices, Sources und Accesses, so wie sie
    jetzt sind, mit Tokens als <token>, in eine Datei im aktuellen Arbeitsordner mit Datum und Uhrzeit im
    Namen, damit keine frühere Sicherung überschrieben wird. Trag dann Räume und Geräte ein und leg je
@@ -148,11 +155,11 @@ So gehst du vor:
    Räume, Geräte und Zugänge bleiben erhalten, außer ich habe einer Änderung in der Tabelle zugestimmt.
    Das Token lässt du leer, das Modul erzeugt es beim Übernehmen selbst. Dann übernehmen; Status und
    Token kommen erst einige Sekunden danach. Lies dann beides erneut und prüf, dass jeder Zugang ein
-   Token hat, ohne es auszugeben. HAGT_RunSelfTest ausführen und mir Fehler und die erkannte Richtung
-   jedes Rollladens zeigen. Jeden Hinweis zu Energie- und Wärmezählern und zum Vorzeichen einer
-   Leistung nennst du mir als offene Frage. Wo offen und geschlossen vertauscht sind, Invert setzen.
-   Prüf bei Fenstern und Türen, ob „geschlossen“ zum aktuellen Zustand passt; bei einer Abweichung
-   änderst du nichts, sondern fragst mich.
+   Token hat, ohne es auszugeben. HAGT_RunSelfTest ausführen und mir die Fehler zeigen. Jeden Hinweis zu
+   Energie- und Wärmezählern und zum Vorzeichen einer Leistung nennst du mir als offene Frage. Ob ein
+   Rollladen, ein Fenster oder eine Tür richtig herum zählt, weiß nur ich: Zeig mir je Rollladen die
+   Richtung aus dem Selbsttest und den Stand laut Symcon, je Fenster und Tür den Zustand laut Symcon, und
+   frag mich, ob das stimmt. Invert setzt du nur dort, wo ich sage, dass es vertauscht ist.
 
 Regeln:
 - Schalte nichts und löse keine Aktion an Geräten aus. Nur lesen und die Instanz konfigurieren.

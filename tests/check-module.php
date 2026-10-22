@@ -568,6 +568,10 @@ foreach ([
     // Einrichtungs-Blindtest 12.10.2026 (Backlog B58, B59)
     'The volume counts in percent of the range of the variable, also for a range in dB (-80 to 18 dB: 50 % = -31 dB), and is sent in the step size of the variable.' => 'Die Lautstärke zählt in Prozent des Bereichs der Variable, auch bei einem Bereich in dB (-80 bis 18 dB: 50 % = -31 dB), und wird in der Schrittweite der Variable gesendet.',
     'HAGT_GetAddresses(int $InstanceID, string $AccessName): string names the addresses of an access (empty name = all accesses) with <token> as a placeholder; no script function returns a token.' => 'HAGT_GetAddresses(int $InstanceID, string $AccessName): string nennt die Adressen eines Zugangs (leerer Name = alle Zugänge) mit <token> als Platzhalter; keine Skriptfunktion gibt ein Token heraus.',
+    // Prompttest eines Testers 22.10.2026: kein Typ für Rauchmelder, Einheit „ct“ des Strompreises, ChatGPT fehlte
+    'A smoke detector is measurement with ReadOnly.' => 'Ein Rauchmelder ist measurement mit ReadOnly.',
+    'PriceVariableID (electricity price, archived, in ct/kWh or €/kWh; a suffix with ct or Cent means cents, with € or EUR euros, otherwise values above 2 count as cents)' => 'PriceVariableID (Strompreis, archiviert, in ct/kWh oder €/kWh; ein Suffix mit ct oder Cent bedeutet Cent, mit € oder EUR Euro, sonst zählen Werte über 2 als Cent)',
+    'Other assistants such as ChatGPT, Codex or Claude Code use their own token, in the header or with InPath in the address.' => 'Andere Assistenten wie ChatGPT, Codex oder Claude Code nutzen ihr eigenes Token, im Header oder mit InPath in der Adresse.',
 ] as $en => $de) {
     pruefe(str_contains($hinweis, $en), 'Hinweistext nennt: ' . $en);
     pruefe(str_contains($hinweisDe, $de), 'Hinweistext deutsch nennt: ' . $de);

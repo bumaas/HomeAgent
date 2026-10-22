@@ -218,6 +218,8 @@ Which variables a device needs depends on its type:
 | Temperature, humidity, air quality, other measured value | Measured value |
 | Meter | Energy meter, optionally power |
 
+There is no type of its own for smoke detectors. Enter them as other measured value with "Query only".
+
 If a row lacks the variable of its type, or an entered variable is deleted, only this device is
 disabled. The row turns red, form and log name it, all other devices stay reachable. Symcon also
 names the instance as a reference when an entered variable is about to be deleted.
