@@ -153,6 +153,14 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   steht seitdem drin; neue Felder und Typen gehören auch dorthin. Nach dem Prompttest vom 13.10.2026 nennt er die
   Claude-App mit OAuth und Kopplungscode statt mit dem Token in der Adresse, `show_chart` und `show_devices`, die weiteren
   Felder von `set_state` und die Properties der Energiebilanz.
+  Prompttest über JSON-RPC an der Testbox (22.10.2026, builds 227 und 228): Der Agent rief `HAGT_UIDeviceForm` und
+  `HAGT_UISourceForm` mit den zwei Parametern aus dem Hinweistext auf und bekam „Wrong parameter count“. Symcon
+  verlangt jeden Parameter einer Modulfunktion, auch wenn er in PHP einen Vorgabewert hat. Seitdem nennt der Text die
+  volle Signatur, dazu dass die Feldnamen aus `HAGT_UIDeviceForm` die Schlüssel in `Devices` sind, die Grenze zwischen
+  `air_quality` und `measurement` und die Einheiten von Wärmeleistung und Wärmezähler. Der Auftrag für Assistenten steht
+  seitdem öffentlich in `EINRICHTUNG.md`, mit `curl` und einer Konfigurationsdatei, damit das Kennwort weder im Befehl
+  noch im Chat steht. Gemessen dabei: Eine Anlage ohne Fernzugriff-Kennwort nimmt JSON-RPC im lokalen Netz ohne
+  Anmeldung an (Testbox), mit Kennwort antwortet sie mit HTTP 401 und -41001 (nuc).
 
 ## Geräte und Typen
 

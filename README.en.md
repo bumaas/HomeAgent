@@ -37,6 +37,9 @@ unambiguous answer. It only sees and switches the devices you release.
 
 ## Getting started
 
+An AI assistant can also do the setup and propose rooms and devices for you to approve. How that works and what
+to do after an update is described in [Setting up and updating](EINRICHTUNG.en.md).
+
 1. **Create the instance.** Install the module and create a **Home Agent** instance. The form is divided
    into expandable sections that remember whether they are open or closed.
 2. **Create an access.** In the section **Endpoint and accesses**, create an access with a name in the

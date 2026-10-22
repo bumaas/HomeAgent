@@ -38,6 +38,9 @@ die Geräte, die Sie freigeben.
 
 ## Erste Schritte
 
+Die Einrichtung kann auch ein KI-Assistent übernehmen, der Ihnen Räume und Geräte zur Freigabe vorschlägt. Wie das
+geht und was bei einem Update zu tun ist, steht in [Einrichten und aktualisieren](EINRICHTUNG.md).
+
 1. **Instanz anlegen.** Modul installieren und eine Instanz **Home Agent** anlegen. Das Formular ist in
    aufklappbare Bereiche gegliedert, die sich merken, ob sie offen oder zu sind.
 2. **Zugang anlegen.** Im Bereich **Endpunkt und Zugänge** in der Liste **Zugänge** einen Zugang mit

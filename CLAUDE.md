@@ -129,7 +129,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Datum und Uhrzeit** hängt `withNow()` in `module.php` an jede Antwort von `get_state`, nicht an Anleitung oder
   Werkzeugliste (Clients speichern beides lange).
 - **Hinweistext für Skripte und KI-Assistenten** (Label im Formular): genügt allein zum Einrichten; neue Felder und
-  Typen gehören auch dorthin.
+  Typen gehören auch dorthin, Funktionen immer mit voller Signatur (Symcon verlangt jeden Parameter). Der Auftrag in
+  `EINRICHTUNG.md`/`.en.md` baut darauf auf; was der Assistent suchen oder auslassen soll, gehört in beide Fassungen.
 - **Ein neues Feld** von `set_state` kostet eine Fähigkeit in `ROLES`/`TYPE_ROLES`, einen Eintrag in `abilitiesOf()`,
   einen Zweig in `setState()`, eine Eigenschaft im Schema, ein Dialogfeld und, falls auf der Karte, `CARD_FIELDS`.
 
