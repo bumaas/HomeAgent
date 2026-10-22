@@ -136,7 +136,9 @@ Agent then gets a second entry in Home Assistant.
 Whoever sets up by script or with an AI assistant gets the addresses of an access with
 `HAGT_GetAddresses($InstanceID, 'Claude-App')` (empty name for all accesses): in the home network, through
 Symcon Connect and whether sign-in with OAuth works. The token only appears as `<token>` there, only the
-form shows it.
+form shows it. In the same way `HAGT_ExportConfiguration($InstanceID)` returns the whole configuration of the
+instance for a backup, and `HAGT_AddAccess($InstanceID, 'Claude-App', false, false, '')` creates an access without
+the script having to know the tokens of the others.
 
 ## Sign-in with OAuth
 
@@ -218,7 +220,8 @@ Which variables a device needs depends on its type:
 | Temperature, humidity, air quality, other measured value | Measured value |
 | Meter | Energy meter, optionally power |
 
-There is no type of its own for smoke detectors. Enter them as other measured value with "Query only".
+There is no type of its own for smoke detectors. Enter them as other measured value, the assistant cannot switch
+a measured value anyway.
 
 If a row lacks the variable of its type, or an entered variable is deleted, only this device is
 disabled. The row turns red, form and log name it, all other devices stay reachable. Symcon also

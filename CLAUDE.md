@@ -263,6 +263,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   (`UIShowToken`, `UIShowAddress`, Fenster `SecretPopup`), bei OAuth nie. Claude-App: Kopplungscode mit `PairingAccess`,
   Liste `OAuthClients` mit „✖ widerrufen“, `ClaudeNoConnect`/`ClaudeConnectDown`. Andere Assistenten: `localEndpoint`
   (erste private IPv4, Port 3777), `HAGT_GetAddresses` mit `<token>`.
+- **Skripte lesen die Konfiguration nur über `HAGT_ExportConfiguration`** (Tokens als `<token>`, leeres bleibt leer) und
+  legen Zugänge mit `HAGT_AddAccess` an; `IPS_GetProperty` gäbe Tokens aus, ein zurückgeschriebenes `<token>` ersetzte
+  sie. Test `check-module.php`.
 - **Jede Auswahl trägt einen Wert aus ihren Einträgen**, sonst lehnt die Konsole das Übernehmen ab; ohne Zugang „-“.
 - **Gerätedialog** je Typ über `UIDeviceForm`; sichtbare Spalten sind Textspalten mit dem Variablennamen, IDs unsichtbar.
   Raum als Auswahl mit „-“ und der Raumliste; ein Wert, der nicht wörtlich darin steht, bekommt einen eigenen Eintrag

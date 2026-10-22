@@ -213,6 +213,34 @@ $text = $m->QueryState('küche', 'light', '', true);
 pruefe(str_starts_with($text, '1 of 1 checked devices active') && str_contains($text, 'Küche | Deckenlicht | light | on'), 'QueryState mit Stub-Variable: ' . $text);
 pruefe(str_contains($m->QueryState('', 'temperature', '', false), '| 21.5'), 'Messwert kommt über GetValueFormatted');
 
+// Sicherung für den Einrichtungsauftrag (Review des Auftrags 22.10.2026): IPS_GetProperty auf Accesses gab die Tokens in
+// die Ausgabe des Assistenten, die im Chat steht. ExportConfiguration liefert alle Properties, die Tokens als <token>.
+$export = (string)oderNull(static fn () => $m->ExportConfiguration());
+$exportiert = json_decode($export, true);
+pruefe(is_array($exportiert), 'ExportConfiguration liefert JSON: ' . $export);
+pruefe(!str_contains($export, 'abc-token-0123456789abcdef'), 'ExportConfiguration gibt kein Token heraus: ' . $export);
+pruefe(($exportiert['Accesses'][0]['Token'] ?? null) === '<token>' && ($exportiert['Accesses'][0]['Name'] ?? null) === 'Test', 'das Token steht als <token>, der Rest der Zeile bleibt: ' . json_encode($exportiert['Accesses'] ?? null));
+pruefe(($exportiert['Devices'] ?? null) === json_decode((string)IPS_GetProperty($iid, 'Devices'), true), 'Listen kommen als Liste, nicht als JSON-Text: ' . json_encode($exportiert['Devices'] ?? null));
+pruefe(array_diff(['Rooms', 'Scenes', 'Sources', 'PriceVariableID', 'FeedInTariff', 'LogEnabled'], array_keys(is_array($exportiert) ? $exportiert : [])) === [], 'alle Properties sind dabei: ' . json_encode(array_keys(is_array($exportiert) ? $exportiert : [])));
+$maskiert = oderNull(static fn () => \Closure::bind(fn () => $this->maskedAccesses([['Name' => 'A', 'Token' => ''], ['Name' => 'B', 'Token' => 'xyz-token-0123456789abcdef']]), $m, HomeAgent::class)());
+pruefe($maskiert === [['Name' => 'A', 'Token' => ''], ['Name' => 'B', 'Token' => '<token>']], 'ein leeres Token bleibt leer, damit der Assistent sieht, ob eines fehlt: ' . json_encode($maskiert));
+// Ein neuer Zugang ohne die Liste Accesses zu schreiben: Aus dem Export käme <token> zurück und ersetzte die echten Tokens.
+$z = neueInstanz();
+$zid = (int)(new ReflectionProperty(IPSModuleStrict::class, 'InstanceID'))->getValue($z);
+IPS_SetProperty($zid, 'Accesses', json_encode([['Name' => 'Alt', 'Token' => 'alt-token-0123456789abcdef', 'DefaultRoom' => '', 'ReadOnly' => true, 'InPath' => false]]));
+IPS_ApplyChanges($zid);
+$antwort = (string)oderNull(static fn () => $z->AddAccess('Claude-App', false, false, 'Küche'));
+$zugaenge = json_decode((string)IPS_GetProperty($zid, 'Accesses'), true);
+pruefe(count($zugaenge) === 2 && $zugaenge[0]['Token'] === 'alt-token-0123456789abcdef', 'AddAccess hängt an und lässt das vorhandene Token: ' . $antwort);
+// Der Stub führt den einmaligen Timer sofort aus, unter Symcon kommt das Token einige Sekunden später.
+pruefe(array_diff_key($zugaenge[1] ?? [], ['Token' => 0]) === ['Name' => 'Claude-App', 'DefaultRoom' => 'Küche', 'ReadOnly' => false, 'InPath' => false], 'die neue Zeile hat alle Felder: ' . json_encode(array_diff_key($zugaenge[1] ?? [], ['Token' => 0])));
+IPS_ApplyChanges($zid);
+pruefe(strlen((string)(json_decode((string)IPS_GetProperty($zid, 'Accesses'), true)[1]['Token'] ?? '')) === 64, 'beim Übernehmen bekommt der neue Zugang sein Token');
+$doppelt = (string)oderNull(static fn () => $z->AddAccess('claude-app', true, false, ''));
+pruefe(count(json_decode((string)IPS_GetProperty($zid, 'Accesses'), true)) === 2 && str_contains($doppelt, 'already'), 'ein Name, den es schon gibt, legt nichts an: ' . $doppelt);
+$leer = (string)oderNull(static fn () => $z->AddAccess(' ', true, false, ''));
+pruefe(count(json_decode((string)IPS_GetProperty($zid, 'Accesses'), true)) === 2 && $leer !== '', 'ohne Namen legt AddAccess nichts an: ' . $leer);
+
 // Schaltende Skriptfunktionen: Die Stub-Variablen haben keine Aktion, also darf nichts geschaltet werden.
 $text = $m->SwitchDevices('Küche', 'light', '', false);
 pruefe(str_starts_with($text, '0 of 1 devices are now off') && str_contains($text, '| cannot be switched'), 'SwitchDevices ohne Aktion: ' . $text);
@@ -569,14 +597,29 @@ foreach ([
     'The volume counts in percent of the range of the variable, also for a range in dB (-80 to 18 dB: 50 % = -31 dB), and is sent in the step size of the variable.' => 'Die Lautstärke zählt in Prozent des Bereichs der Variable, auch bei einem Bereich in dB (-80 bis 18 dB: 50 % = -31 dB), und wird in der Schrittweite der Variable gesendet.',
     'HAGT_GetAddresses(int $InstanceID, string $AccessName): string names the addresses of an access (empty name = all accesses) with <token> as a placeholder; no script function returns a token.' => 'HAGT_GetAddresses(int $InstanceID, string $AccessName): string nennt die Adressen eines Zugangs (leerer Name = alle Zugänge) mit <token> als Platzhalter; keine Skriptfunktion gibt ein Token heraus.',
     // Prompttest eines Testers 22.10.2026: kein Typ für Rauchmelder, Einheit „ct“ des Strompreises, ChatGPT fehlte
-    'A smoke detector is measurement with ReadOnly.' => 'Ein Rauchmelder ist measurement mit ReadOnly.',
+    'A smoke detector is measurement.' => 'Ein Rauchmelder ist measurement.',
+    // Review des Einrichtungsauftrags 22.10.2026: Sichern ohne Tokens, Speichern mit voller Signatur
+    'HAGT_ExportConfiguration(int $InstanceID): string returns all properties as JSON, lists as lists and every token as <token> (an empty token stays empty); no other function reads Accesses without tokens.' => 'HAGT_ExportConfiguration(int $InstanceID): string liefert alle Properties als JSON, Listen als Liste und jedes Token als <token> (ein leeres Token bleibt leer); keine andere Funktion liest Accesses ohne Tokens.',
+    'Properties are written with IPS_SetProperty(int $InstanceID, string $Name, mixed $Value), a list as JSON text, and take effect with IPS_ApplyChanges(int $InstanceID).' => 'Properties schreibt IPS_SetProperty(int $InstanceID, string $Name, mixed $Value), eine Liste als JSON-Text, wirksam werden sie mit IPS_ApplyChanges(int $InstanceID).',
+    'HAGT_AddAccess(int $InstanceID, string $Name, bool $ReadOnly, bool $InPath, string $DefaultRoom): string adds an access without a token and applies it; the module then creates the token. A script that does not know the tokens adds accesses this way and never writes Accesses itself.' => 'HAGT_AddAccess(int $InstanceID, string $Name, bool $ReadOnly, bool $InPath, string $DefaultRoom): string legt einen Zugang ohne Token an und übernimmt ihn; das Token erzeugt dann das Modul. Ein Skript, das die Tokens nicht kennt, legt Zugänge so an und schreibt Accesses nie selbst.',
     'PriceVariableID (electricity price, archived, in ct/kWh or €/kWh; a suffix with ct or Cent means cents, with € or EUR euros, otherwise values above 2 count as cents)' => 'PriceVariableID (Strompreis, archiviert, in ct/kWh oder €/kWh; ein Suffix mit ct oder Cent bedeutet Cent, mit € oder EUR Euro, sonst zählen Werte über 2 als Cent)',
     'Other assistants such as ChatGPT, Codex or Claude Code use their own token, in the header or with InPath in the address.' => 'Andere Assistenten wie ChatGPT, Codex oder Claude Code nutzen ihr eigenes Token, im Header oder mit InPath in der Adresse.',
 ] as $en => $de) {
     pruefe(str_contains($hinweis, $en), 'Hinweistext nennt: ' . $en);
     pruefe(str_contains($hinweisDe, $de), 'Hinweistext deutsch nennt: ' . $de);
 }
-pruefe(!str_contains($hinweis, 'the Claude app (custom connector without sign-in) only work with InPath'), 'der Hinweistext schickt die Claude-App nicht mehr auf den Weg mit Token in der Adresse');
+// Der Einrichtungsauftrag in beiden Fassungen (Review 22.10.2026): Modul-GUID statt Suche, Sichern und Prüfen über
+// ExportConfiguration statt IPS_GetProperty (gab die Tokens aus), Speichern mit voller Signatur
+foreach (['EINRICHTUNG.md', 'EINRICHTUNG.en.md'] as $datei) {
+    $auftrag = (string)file_get_contents(dirname(__DIR__) . '/' . $datei);
+    foreach ([HomeAgentHarness::MODULE_ID, 'HAGT_ExportConfiguration(<', 'HAGT_AddAccess(<', 'IPS_SetProperty(<', 'IPS_ApplyChanges(<', 'IPS_GetInstanceListByModuleID('] as $muss) {
+        pruefe(str_contains($auftrag, $muss), $datei . ' nennt ' . $muss);
+    }
+    foreach (['IPS_GetProperty', 'IPS_GetConfiguration(', 'with ReadOnly. ', 'mit ReadOnly. ', 'Küche EG', 'ground floor" and', ' zunächst.', ' at first.'] as $nicht) {
+        pruefe(!str_contains($auftrag, $nicht), $datei . ' enthält nicht mehr: ' . $nicht);
+    }
+}
+pruefe(!str_contains($hinweis, 'the Claude app (custom connector without sign-in) only work with InPath'),'der Hinweistext schickt die Claude-App nicht mehr auf den Weg mit Token in der Adresse');
 
 // Der Selbsttest nennt je Rollladen die Richtung und woher sie stammt
 pruefe(str_contains($m->RunSelfTest(), 'Blind Küche Rollo: open at 0, closed at 100 (default: the smallest value is open)'), 'Selbsttest nennt die Richtung des Rollladens: ' . $m->RunSelfTest());

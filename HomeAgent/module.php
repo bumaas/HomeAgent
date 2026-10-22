@@ -1233,6 +1233,63 @@ class HomeAgent extends IPSModuleStrict
     }
 
     /**
+     * Alle Properties als JSON, Listen als Liste und jedes Token als <token>, zum Sichern vor einer Änderung und zum
+     * Prüfen danach. Über IPS_GetProperty kamen die Tokens in die Ausgabe des Assistenten (Review des
+     * Einrichtungsauftrags 22.10.2026); ein leeres Token bleibt leer, daran sieht er, ob eines fehlt.
+     */
+    public function ExportConfiguration(): string
+    {
+        $config = json_decode(IPS_GetConfiguration($this->InstanceID), true);
+        if (!is_array($config)) {
+            return '{}';
+        }
+        foreach (['Accesses', 'Rooms', 'Devices', 'Scenes', 'Sources'] as $name) {
+            $list = json_decode((string)($config[$name] ?? '[]'), true);
+            $config[$name] = is_array($list) ? array_values($list) : [];
+        }
+        $config['Accesses'] = $this->maskedAccesses($config['Accesses']);
+        return (string)json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    }
+
+    /**
+     * Hängt einen Zugang ohne Token an und übernimmt ihn, das Token erzeugt ApplyChanges. Ein Assistent kennt die Tokens
+     * nicht (ExportConfiguration maskiert sie); schriebe er die Liste Accesses selbst, ersetzte <token> die echten.
+     */
+    public function AddAccess(string $Name, bool $ReadOnly, bool $InPath, string $DefaultRoom): string
+    {
+        $name = trim($Name);
+        if ($name === '') {
+            return $this->Translate('The access needs a name');
+        }
+        $accesses = $this->listProperty('Accesses');
+        foreach ($accesses as $row) {
+            if (mb_strtolower(trim((string)($row['Name'] ?? ''))) === mb_strtolower($name)) {
+                return sprintf($this->Translate('There is already an access named "%s"'), $name);
+            }
+        }
+        $accesses[] = ['Name' => $name, 'Token' => '', 'DefaultRoom' => trim($DefaultRoom), 'ReadOnly' => $ReadOnly, 'InPath' => $InPath];
+        IPS_SetProperty($this->InstanceID, 'Accesses', (string)json_encode($accesses));
+        // Übernehmen über den einmaligen Timer wie in ApplyChanges, ein Selbstaufruf lehnt die Rust-Edition ab
+        $this->RegisterOnceTimer('ApplyTokens', 'IPS_ApplyChanges(' . $this->InstanceID . ');');
+        return sprintf($this->Translate('Access "%s" added, it gets its token on apply in a few seconds'), $name);
+    }
+
+    /**
+     * @param list<array<string, mixed>> $accesses
+     * @return list<array<string, mixed>>
+     */
+    private function maskedAccesses(array $accesses): array
+    {
+        foreach ($accesses as &$row) {
+            if (array_key_exists('Token', $row)) {
+                $row['Token'] = trim((string)$row['Token']) === '' ? '' : '<token>';
+            }
+        }
+        unset($row);
+        return $accesses;
+    }
+
+    /**
      * Die Adressen eines Zugangs (leerer Name = alle) für Skripte und KI-Assistenten, das Token nur als
      * Platzhalter <token>. Im Einrichtungs-Blindtest vom 12.10.2026 suchte der Agent die fertige Adresse;
      * das Token selbst käme über den MCP-Server von Symcon beim Agenten an und gehört nur ins Formular.

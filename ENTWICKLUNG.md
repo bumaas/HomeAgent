@@ -646,6 +646,19 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   der feste Grundport; weitere Ports kommen nur über eigene WebServer-Instanzen, die bewusst nicht angezeigt werden,
   Burkhard 12.10.2026).
 
+- **`HAGT_ExportConfiguration` und `HAGT_AddAccess`** (Review des Einrichtungsauftrags 22.10.2026, aus Sicht eines
+  Agenten): Der Auftrag verlangte eine Sicherung „mit Tokens als <token>“ und die Prüfung, dass jeder Zugang ein Token
+  hat, ohne es auszugeben. Beides ging nur über `IPS_GetProperty` oder `IPS_GetConfiguration`, und deren Antwort steht
+  mit den Tokens in der curl-Ausgabe im Chat. Der Export liefert alle Properties, Listen als Liste, Tokens als
+  `<token>`, ein leeres bleibt leer (daran sieht der Agent ein fehlendes). Schreibt der Agent die Liste Accesses aus dem
+  Export zurück, ersetzt `<token>` die echten Tokens; deshalb `HAGT_AddAccess`, das an die gespeicherte Liste anhängt
+  und über den einmaligen Timer `ApplyTokens` übernimmt. Verworfen: Filterbefehl im Auftrag (hängt an der Shell des
+  Assistenten), `<token>` in `ApplyChanges` auf das alte Token zurückführen (das alte ist nach `IPS_SetProperty` nicht
+  mehr lesbar, eine Kopie im Attribut wäre ein zweiter Speicher für Geheimnisse).
+  Im selben Review: Rauchmelder ohne ReadOnly (das Feld gibt es bei `measurement` nicht, auch nicht im Dialog), Modul-ID
+  und Speichern mit `IPS_SetProperty`/`IPS_ApplyChanges` im Auftrag, Schritt 3 gegliedert nach Aufnehmen, Nur abfragen,
+  Nicht aufnehmen und Offene Frage; Schlösser, Tore und Alarmanlage auch nicht zum Abfragen.
+
 - **Spalte „Werkzeugliste“** (Burkhard 12.10.2026: „Kann man dem Anwender signalisieren, ob sich die Werkzeugliste beim
   Speichern verändert hat?“): Holt ein Assistent `tools/list`, merkt sich das Modul im Attribut `ToolLists` je Zugang
   (SHA-256 des Tokens) den Fingerabdruck (`McpProtocol::toolsFingerprint`, ohne Datumsangaben, die Beschreibungen nennen das

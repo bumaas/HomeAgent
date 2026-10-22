@@ -142,7 +142,9 @@ Kinderzimmer“ mit **Nur abfragen**. Home Agent bekommt in Home Assistant dafü
 Wer per Skript oder mit einem KI-Assistenten einrichtet, bekommt die Adressen eines Zugangs mit
 `HAGT_GetAddresses($InstanzID, 'Claude-App')` (leerer Name für alle Zugänge): im Heimnetz, über Symcon
 Connect und ob die Anmeldung per OAuth geht. Das Token steht dort nur als `<token>`, es zeigt allein das
-Formular.
+Formular. Ebenso liefert `HAGT_ExportConfiguration($InstanzID)` die ganze Konfiguration der Instanz zum Sichern,
+und `HAGT_AddAccess($InstanzID, 'Claude-App', false, false, '')` legt einen Zugang an, ohne dass das Skript die
+Tokens der übrigen kennen muss.
 
 ## Anmeldung per OAuth
 
@@ -226,7 +228,8 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 | Temperatur, Luftfeuchte, Luftqualität, sonstiger Messwert | Messwert |
 | Zähler | Zähler, wahlweise Leistung |
 
-Einen eigenen Typ für Rauchmelder gibt es nicht. Tragen Sie sie als sonstigen Messwert mit „Nur abfragen“ ein.
+Einen eigenen Typ für Rauchmelder gibt es nicht. Tragen Sie sie als sonstigen Messwert ein, schalten kann der
+Assistent einen Messwert ohnehin nicht.
 
 Fehlt einer Zeile die Variable ihres Typs, oder wird eine eingetragene Variable gelöscht, ist nur dieses
 Gerät gesperrt. Die Zeile wird rot, Formular und Log nennen sie, alle anderen Geräte bleiben erreichbar.

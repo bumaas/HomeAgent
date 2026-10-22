@@ -91,69 +91,78 @@ file. Every call is a POST with the body
 best sent from a file:
   curl.exe -s -K <path to the file with the credentials> -H "Content-Type: application/json" -d @request.json
 (on Linux and macOS curl instead of curl.exe). Every Symcon function works this way, including those of
-the module (HAGT_…). You read the form of an instance with IPS_GetConfigurationForm(<InstanceID>).
+the module (HAGT_…).
+
+The module: IPS_GetInstanceListByModuleID("{89E40AE0-BB2A-40B8-A16F-C9C5FFBFC09F}") returns its
+instances, IPS_CreateInstance with the same ID creates a new one. You read the form of an instance with
+IPS_GetConfigurationForm(<InstanceID>) and its configuration only with
+HAGT_ExportConfiguration(<InstanceID>); every other function shows the tokens of the accesses in plain
+text. You save with IPS_SetProperty(<InstanceID>, "<property>", <value>), a list as JSON text, followed
+by IPS_ApplyChanges(<InstanceID>). Never write the property Accesses yourself; an access is created by
+HAGT_AddAccess(<InstanceID>, "<name>", <ReadOnly>, <InPath>, "<default room>").
 
 How to proceed:
 0. Check whether there are instances of the module already and list them with name, location, status
    and number of devices. Then ask me whether to use one of them or create a new one. For a new one ask
-   for the target category and the name and, if there is an instance already, whether its rooms and
-   devices should be the template. Do not create anything before I have answered.
-1. First read the text "Hint for scripts and AI assistants" in the configuration form of the instance.
-   It names the properties Accesses, Rooms and Devices, the device types and the fields of each type.
-   Stick to it and do not guess field names.
+   for the target category and the name and, if there is an instance already, whether to copy its
+   rooms, devices and sources; copied entries then count as existing. Do not create anything before I
+   have answered.
+1. Read the text "Hint for scripts and AI assistants" in the configuration form of the instance. It
+   names all properties, the device types and the fields of each type. Stick to it and do not guess
+   field names.
 2. Rooms: Propose a room list with the names we use in everyday speech (e.g. Kitchen, Upstairs
    bathroom, Living room), with floor and aliases (e.g. "Kids' room" as an alias for "Leon"). No
-   technical additions. Each room name may appear only once. If a room exists on several floors, each
-   gets its own name (e.g. "Kitchen ground floor" and "Kitchen top floor") and both get the common name
-   as an alias ("Kitchen"). This applies to new rooms; existing rooms keep their names, a renaming you
-   only propose in the table. If there is an Alexa instance, use its device names and rooms as a
-   template, otherwise the categories in the object tree.
-3. Devices: Propose a release list with lights, sockets, blinds, windows and doors, thermostats, media
-   players and measurements such as temperature and humidity. For everything that should switch, only
-   variables with an action; measurements without an action are fine. Speakable names, unique per room.
-   Add power and energy meters where they exist.
-   Go through all device instances for this, including ModBus, MQTT and cloud devices. Heating and
-   ventilation include heat pump, hot water, air conditioners and ventilation systems. For a heat pump
-   look for a heat meter or a heat output besides power and electricity meter and add them. Propose two
-   rows for heating and hot water only if both heat and electricity are measured separately; otherwise
-   one row, and name the separate heat as an open question. Propose intermediate meters such as
-   sub-distributions as type "meter" with "metered by", an electricity price as PriceVariableID.
-   Do not release: locks, alarm system and anything security-relevant, including door openers, garage
-   doors and gates. Do not release relays that power a smart lamp as a light; the lamp may get their
-   power. If such a device is already in the instance, propose to remove it. Water detectors may be
-   added for querying as water_leak, smoke detectors as measurement with ReadOnly. Sockets that power the
-   network, servers or the home
-   automation itself read only (ReadOnly), heating and ventilation as well at first.
+   technical additions, each room name only once. New rooms that exist on several floors get one name
+   per floor (e.g. "Kitchen upstairs" and "Kitchen downstairs") and both get the common name as an
+   alias ("Kitchen"). Existing rooms keep their names, a renaming you only propose. If there is an
+   Alexa instance, use its device names and rooms as a template, otherwise the categories in the
+   object tree.
+3. Devices: Go through all device instances, including ModBus, MQTT and cloud devices, and propose a
+   release list with speakable names, unique per room.
+   Add:
+   - Lights, sockets, blinds, windows and doors, thermostats, media players, heating and ventilation
+     (heat pump, hot water, air conditioners, ventilation systems) and measurements such as
+     temperature and humidity. For everything that should switch, only variables with an action;
+     measurements without an action are fine.
+   - Detectors for querying: water detectors as water_leak, smoke detectors as measurement.
+   - Power and energy meters where they exist. For a heat pump also a heat meter or heat output; two
+     rows for heating and hot water only if both heat and electricity are measured separately,
+     otherwise one.
+   - Intermediate meters such as sub-distributions as type meter with MeteredBy, an electricity price
+     as PriceVariableID, the energy balance as the list Sources: one row per grid connection, solar
+     plant and battery with meter and power.
+   - If a device is evidently connected more than once (e.g. through Matter and a bridge, with the
+     same name and room), take the connection with the most recent values and name the other one.
+   Query only (ReadOnly): heating and ventilation, and sockets that power the network, servers or the
+   home automation itself.
+   Do not add, not even for querying: locks, alarm system, door openers, garage doors and gates. Do not
+   add relays that power a smart lamp as a light; the lamp may get their power. If such a device is
+   already in the instance, propose to remove it.
+   As an open question instead of an entry: a device with an unclear room, a relay that may power a
+   smart lamp, two connections that may be the same device, an energy meter that is not archived as a
+   counter, a power or meter with a unit the hint does not name or that measures several channels,
+   battery and solar meters with an unclear direction or boundary, the separate heat of a heat pump
+   with only one row.
    For devices that are already in the instance, ReadOnly, Invert and the names stay as they are; you
-   change type or variables of such a device only if I agree in the table. If a device is evidently
-   connected more than once (e.g. through Matter and a bridge, with the same name and room), take the
-   connection with the most recent values and name the other one; if you are not sure it is the same
-   device, name both as an open question. An energy meter that is not archived as a counter, and a power
-   or meter with a unit the hint does not name, you leave out and name as an open question.
-   What you cannot assign with certainty you do not enter but name as an open question: an unclear
-   room, a relay that may power a smart lamp, a power or meter for several channels, battery and solar
-   meters whose direction or boundary is unclear.
-   Also propose the energy balance as the list "Sources": one row per grid connection, solar plant and
-   battery with meter and power.
-4. Show me both lists as a table (room, name, type, variables) and wait for my OK before you save
-   anything. Mark what is already in the instance and what is new or changes. With more than about 50
-   devices show only what is new or changed in the chat and write the whole table to a file in the
-   current working folder. My OK applies to the table; open questions stay out until I have answered
-   them one by one.
-5. After my OK: First back up the properties Rooms, Devices, Sources and Accesses as they are now, with
-   tokens as <token>, to a file in the current working folder with date and time in the name so that
-   no earlier backup is overwritten. Then enter rooms and devices and create one access per assistant
-   I use: <e.g. "Home Assistant" with the token in the address (InPath), "Claude app" without the
-   token in the address>. If this example is still there, ask me which assistants I use. Create
-   accesses only for assistants that do not have one yet. Existing rooms, devices and accesses stay,
-   unless I have agreed to a change in the table.
-   Leave the token empty, the module creates it itself on apply. Then apply; status and token only
-   arrive a few seconds later. Then read both again and check that every access has a token, without
-   printing it. Run HAGT_RunSelfTest and show me the errors. Name every note about energy and heat
-   meters and about the sign of a power as an open question to me. Only I know whether a blind, a
-   window or a door counts the right way round: show me for each blind the direction from the self-test
-   and its position according to Symcon, for each window and door its state according to Symcon, and
-   ask me whether that is right. Set Invert only where I say it is swapped.
+   change type or variables only if I agree in the table.
+4. Show me all proposals as tables: rooms (name, floor, aliases), devices (room, name, type,
+   variables), sources (type, name, meter, power) and the electricity price. Mark what is already in
+   the instance and what is new or changes. With more than about 50 devices show only what is new or
+   changed in the chat and write the whole tables to a file in the current working folder. Then wait
+   for my OK. It applies to the tables, the open questions stay out; what I answer later you add in a
+   second pass, again with a backup.
+5. After my OK: First write the output of HAGT_ExportConfiguration(<InstanceID>) unchanged to a file in
+   the current working folder with date and time in the name. Then enter rooms, devices, sources and
+   electricity price and apply. Create an access with HAGT_AddAccess for each assistant I use that does
+   not have one yet: <assistants, e.g. Home Assistant, Claude app>. If this example is still there, ask
+   me which assistants I use. Whether an access needs InPath is in the hint. Existing rooms, devices
+   and accesses stay, unless I have agreed to a change in the table.
+   Status and token arrive a few seconds after applying. Then check with HAGT_ExportConfiguration that
+   no access has an empty token, and run HAGT_RunSelfTest. Show me the errors. Name every note about
+   energy and heat meters and about the sign of a power as an open question to me. Only I know whether
+   a blind, a window or a door counts the right way round: show me for each blind the direction from
+   the self-test and its position according to Symcon, for each window and door its state according to
+   Symcon, and ask me whether that is right. Set Invert only where I say it is swapped.
 
 Rules:
 - Do not switch anything and do not trigger any action on devices. Only read and configure the
