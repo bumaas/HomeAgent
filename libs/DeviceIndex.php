@@ -186,9 +186,6 @@ final class DeviceIndex
     /** Zeitraum „jetzt“: die aktuelle Leistung statt des Verbrauchs. */
     public const NOW = 'now';
 
-    /** Leistungseinheiten (Groß- und Kleinschreibung egal) und ihr Faktor zu W; ohne Einheit gilt W. */
-    private const POWER_UNITS = ['' => 1.0, 'w' => 1.0, 'kw' => 1000.0, 'mw' => 1000000.0];
-
     /** Reihenfolge in der Antwort, Vorzeichen in der Rechnung und Wort in der Antwort. */
     private const BALANCE_TERMS = [
         'import'    => [1, 'grid import'],
@@ -197,9 +194,6 @@ final class DeviceIndex
         'export'    => [-1, 'grid export'],
         'charge'    => [-1, 'battery charge'],
     ];
-
-    /** Einheiten eines Energiezählers (Groß- und Kleinschreibung egal); ohne Einheit gilt kWh. */
-    private const ENERGY_UNITS = ['', 'wh', 'kwh', 'mwh'];
 
     /** Typen, deren Zeitraum einen Verlauf statt eines Verbrauchs meint. */
     private const HISTORY_TYPES = ['temperature', 'humidity', 'air_quality', 'measurement', 'thermostat'];
@@ -1422,7 +1416,7 @@ final class DeviceIndex
     private function powerKilowattHours(int $variableId, int $from, int $to): ?float
     {
         $history = $this->backend->history($variableId, 0, $from, $to);
-        $factor = $history === null ? null : (self::POWER_UNITS[strtolower(trim($history['unit']))] ?? null);
+        $factor = $history === null ? null : self::powerFactor($history['unit']);
         if ($factor === null) {
             return null;
         }
@@ -1909,12 +1903,9 @@ final class DeviceIndex
     /** Verlauf einer Netzleistung in kW (W und MW umgerechnet); umgekehrt gezählt mit gedrehtem Vorzeichen. */
     private static function kilowattHistory(array $history, bool $inverted): array
     {
-        $factor = match (strtolower(trim($history['unit']))) {
-            'w'     => 0.001,
-            'kw'    => 1.0,
-            'mw'    => 1000.0,
-            default => null,
-        };
+        // ohne Einheit gilt hier kW (die Leistung der Bilanz), sonst die Einheit
+        $watts = trim($history['unit']) === '' ? null : self::powerFactor($history['unit']);
+        $factor = $watts === null ? null : $watts / 1000;
         $sign = $inverted ? -1.0 : 1.0;
         $scale = ($factor ?? 1.0) * $sign;
         $history['rows'] = array_map(static function (array $row) use ($scale, $inverted): array {
@@ -2342,7 +2333,7 @@ final class DeviceIndex
             return ['unit' => null];
         }
         $unit = trim($this->backend->unit($variableId));
-        $factor = self::POWER_UNITS[strtolower($unit)] ?? null;
+        $factor = self::powerFactor($unit);
         return $factor === null ? ['unit' => $unit] : $reading['value'] * $factor;
     }
 
@@ -2365,10 +2356,43 @@ final class DeviceIndex
         return $text;
     }
 
-    /** Zählt eine Variable mit dieser Einheit Leistung (W, kW, MW oder ohne Einheit)? */
+    /** Zählt eine Variable mit dieser Einheit Leistung (mW, W, kW, MW oder ohne Einheit)? */
     public static function isPowerUnit(string $unit): bool
     {
-        return array_key_exists(strtolower(trim($unit)), self::POWER_UNITS);
+        return self::powerFactor($unit) !== null;
+    }
+
+    /**
+     * Faktor einer Leistungseinheit zu W; ohne Einheit gilt W, null = keine Leistung. Die Vorsilbe zählt mit ihrer
+     * Schreibweise: „m“ ist milli (Matter meldet mW), „M“ ist Mega; kilo als „k“ oder „K“.
+     */
+    private static function powerFactor(string $unit): ?float
+    {
+        $unit = trim($unit);
+        if ($unit === '') {
+            return 1.0;
+        }
+        return preg_match('/^([kKmM]?)[wW]$/', $unit, $m) === 1 ? self::prefixFactor($m[1]) : null;
+    }
+
+    /** Faktor einer Energieeinheit zu kWh; ohne Einheit gilt kWh, null = keine Energie. Vorsilben wie bei der Leistung. */
+    private static function energyFactor(string $unit): ?float
+    {
+        $unit = trim($unit);
+        if ($unit === '') {
+            return 1.0;
+        }
+        return preg_match('/^([kKmM]?)[wW][hH]$/', $unit, $m) === 1 ? self::prefixFactor($m[1]) / 1000 : null;
+    }
+
+    private static function prefixFactor(string $prefix): float
+    {
+        return match ($prefix) {
+            'm'      => 0.001,
+            'k', 'K' => 1000.0,
+            'M'      => 1000000.0,
+            default  => 1.0,
+        };
     }
 
     /** Leistung auf ganze W gerundet. */
@@ -2401,10 +2425,10 @@ final class DeviceIndex
         };
     }
 
-    /** Zählt ein Zähler mit dieser Einheit Energie (Wh, kWh, MWh oder ohne Einheit)? */
+    /** Zählt ein Zähler mit dieser Einheit Energie (mWh, Wh, kWh, MWh oder ohne Einheit)? */
     public static function isEnergyUnit(string $unit): bool
     {
-        return in_array(strtolower(trim($unit)), self::ENERGY_UNITS, true);
+        return self::energyFactor($unit) !== null;
     }
 
     /** Ein Tag als JJJJ-MM-TT, 0 Uhr in der Zeitzone der Anlage; null, wenn es kein gültiges Datum ist. */
@@ -2471,11 +2495,7 @@ final class DeviceIndex
         if ($counter === null) {
             return null;
         }
-        return match (strtolower(trim($counter['unit']))) {
-            'wh'    => $counter['sum'] / 1000,
-            'mwh'   => $counter['sum'] * 1000,
-            default => $counter['sum'],
-        };
+        return $counter['sum'] * (self::energyFactor($counter['unit']) ?? 1.0);
     }
 
     /**

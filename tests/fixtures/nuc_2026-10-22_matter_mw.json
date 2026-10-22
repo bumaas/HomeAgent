@@ -1,0 +1,175 @@
+{
+    "_quelle": "nuc 22.10.2026 (Europe/Berlin), nur gelesen (Mitschnitt mw_mitschnitt.php): Matter-Leistungen mit der Einheit mW, gefunden beim Prompttest am nuc. Je Variable Name, Wert, formatierter Wert, Einheit (Suffix aus Profil oder Darstellung) und Archivstatus; keine davon ist archiviert. Dazu die Instanzen (Matter Composite Device) mit allen Variablen samt Einheit, darunter Energiezähler in mWh.",
+    "jetzt": 1792660855,
+    "zeitzone": "Europe/Berlin",
+    "variablen": {
+        "19701": {
+            "name": "Effektivleistung",
+            "wert": 0,
+            "formatiert": "0 mW",
+            "einheit": "mW",
+            "archiviert": false,
+            "aggregationstyp": 0
+        },
+        "20930": {
+            "name": "Wirkleistung",
+            "wert": 0,
+            "formatiert": "0 mW",
+            "einheit": "mW",
+            "archiviert": false,
+            "aggregationstyp": 0
+        },
+        "35903": {
+            "name": "Wirkleistung",
+            "wert": 600,
+            "formatiert": "600 mW",
+            "einheit": "mW",
+            "archiviert": false,
+            "aggregationstyp": 0
+        }
+    },
+    "instanzen": {
+        "28603": {
+            "name": "GRILLPLATS Plug",
+            "modul": "Matter Composite Device",
+            "kinder": {
+                "12566": {
+                    "name": "Blindleistung",
+                    "einheit": "mVAR",
+                    "formatiert": "0 mVAR"
+                },
+                "17915": {
+                    "name": "Reset kumulativ importierte Energie",
+                    "einheit": "",
+                    "formatiert": "01.01.2000 01:00:00"
+                },
+                "19701": {
+                    "name": "Effektivleistung",
+                    "einheit": "mW",
+                    "formatiert": "0 mW"
+                },
+                "20624": {
+                    "name": "Wirkstrom",
+                    "einheit": "mA",
+                    "formatiert": "0 mA"
+                },
+                "20930": {
+                    "name": "Wirkleistung",
+                    "einheit": "mW",
+                    "formatiert": "0 mW"
+                },
+                "24680": {
+                    "name": "Scheinstrom",
+                    "einheit": "mA",
+                    "formatiert": "0 mA"
+                },
+                "24767": {
+                    "name": "Leistungsfaktor",
+                    "einheit": "%",
+                    "formatiert": "0.00 %"
+                },
+                "26597": {
+                    "name": "Scheinleistung",
+                    "einheit": "mVA",
+                    "formatiert": "0 mVA"
+                },
+                "33212": {
+                    "name": "Effektivstrom",
+                    "einheit": "mA",
+                    "formatiert": "0 mA"
+                },
+                "33401": {
+                    "name": "Status",
+                    "einheit": "",
+                    "formatiert": "An"
+                },
+                "35373": {
+                    "name": "Kumulativ importierte Energie",
+                    "einheit": "mWh",
+                    "formatiert": "0 mWh"
+                },
+                "38281": {
+                    "name": "Spannung",
+                    "einheit": "mV",
+                    "formatiert": "228.00 V"
+                },
+                "39958": {
+                    "name": "Betriebsart",
+                    "einheit": "",
+                    "formatiert": "Wechselstrom"
+                },
+                "45510": {
+                    "name": "Blindstrom",
+                    "einheit": "mA",
+                    "formatiert": "0 mA"
+                },
+                "48095": {
+                    "name": "Effektivspannung",
+                    "einheit": "mV",
+                    "formatiert": "228.00 V"
+                },
+                "58943": {
+                    "name": "Frequenz",
+                    "einheit": "mHz",
+                    "formatiert": "50 mHz"
+                }
+            }
+        },
+        "20390": {
+            "name": "Gast.Licht.Decke",
+            "modul": "Matter Composite Device",
+            "kinder": {
+                "15165": {
+                    "name": "Status",
+                    "einheit": "",
+                    "formatiert": "Aus"
+                },
+                "15288": {
+                    "name": "Helligkeit",
+                    "einheit": "%",
+                    "formatiert": "73 %"
+                },
+                "16757": {
+                    "name": "Effektivspannung",
+                    "einheit": "mV",
+                    "formatiert": "230.00 V"
+                },
+                "24698": {
+                    "name": "Betriebsart",
+                    "einheit": "",
+                    "formatiert": "Wechselstrom"
+                },
+                "27291": {
+                    "name": "Periodisch importierte Energie",
+                    "einheit": "mWh",
+                    "formatiert": "0 mWh"
+                },
+                "35903": {
+                    "name": "Wirkleistung",
+                    "einheit": "mW",
+                    "formatiert": "600 mW"
+                },
+                "41314": {
+                    "name": "Leistungsfaktor",
+                    "einheit": "%",
+                    "formatiert": "0.00 %"
+                },
+                "43907": {
+                    "name": "Frequenz",
+                    "einheit": "mHz",
+                    "formatiert": "0 mHz"
+                },
+                "53291": {
+                    "name": "Kumulativ importierte Energie",
+                    "einheit": "mWh",
+                    "formatiert": "2.56 kWh"
+                },
+                "56725": {
+                    "name": "Effektivstrom",
+                    "einheit": "mA",
+                    "formatiert": "0 mA"
+                }
+            }
+        }
+    }
+}

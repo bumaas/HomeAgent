@@ -274,7 +274,7 @@ module counts whole hours from the hourly values, at most 48 hours at a time. Th
 the total, for example "88.5 kWh consumed by 3 of 3 metered device(s)", followed by the consumption
 per device. The values come from the aggregates of the archive; the current day, week and so on count
 up to now. If an energy meter is not archived as a counter, its line says "no history archived" and
-the self-test points this out. It also checks whether the archive matches the meter reading: a single wrong value going up and back counts as consumption in the archive, and the self-test then names the meter and the months, for example "the archive counts more than the meter reading rose (01/2024 +659.8 kWh)". Delete the wrong value in the archive and reaggregate the variable. If a meter resets, for example after a power failure, the archive keeps counting correctly; that is not reported. A counter in a unit other than Wh, kWh or MWh, such as a water or gas meter, is not an energy meter: its line says "not an energy meter (unit m³)" and it is not added. Without a unit, kWh is assumed. Devices without an energy meter are left out. The assistant only gets
+the self-test points this out. It also checks whether the archive matches the meter reading: a single wrong value going up and back counts as consumption in the archive, and the self-test then names the meter and the months, for example "the archive counts more than the meter reading rose (01/2024 +659.8 kWh)". Delete the wrong value in the archive and reaggregate the variable. If a meter resets, for example after a power failure, the archive keeps counting correctly; that is not reported. A counter in a unit other than mWh, Wh, kWh or MWh, such as a water or gas meter, is not an energy meter: its line says "not an energy meter (unit m³)" and it is not added. Without a unit, kWh is assumed. Devices without an energy meter are left out. The assistant only gets
 the parameter if at least one released device has an energy meter or the energy balance is set up.
 
 The module calculates the consumption of the whole house from the **energy balance**:
@@ -360,8 +360,8 @@ With `period=now`, **get_state** reports the power right now in W, built like th
 current value of each device with power, plus the total. For the whole house the module calculates the
 house power from the powers of the sources, for example "House power 1548 W (all
 devices, period=now): grid import 27, solar 0, battery discharge 1521, grid export 0, battery charge
-0 W." and "Of this, 750 W by 11 of 11 device(s) with power measurement, 798 W not metered." W, kW and
-MW are converted; without a unit, W is assumed. If you only have one signed grid sensor, enter it in the
+0 W." and "Of this, 750 W by 11 of 11 device(s) with power measurement, 798 W not metered." mW, W, kW and
+MW are converted (Matter reports mW); without a unit, W is assumed. If you only have one signed grid sensor, enter it in the
 field "Grid import power" (negative means export); a signed battery sensor goes into "Battery discharge
 power" (negative means charging). If a sensor reports the other way round, for example a battery that counts
 positive while charging, tick "Reverse sign" in its row. The self-test then shows the current value of each

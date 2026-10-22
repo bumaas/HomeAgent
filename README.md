@@ -285,7 +285,7 @@ wird mit ganzen Stunden aus den Stundenwerten, höchstens 48 Stunden am Stück. 
 nennt die Summe, etwa „88.5 kWh verbraucht durch 3 von 3 Gerät(en) mit Zähler“, darunter steht der
 Verbrauch je Gerät. Die Werte kommen aus den Aggregaten des Archivs, der laufende Tag, die laufende
 Woche usw. zählen bis jetzt. Ist ein Zähler nicht als Zähler archiviert, sagt die Zeile „kein Verlauf
-archiviert“, und der Selbsttest weist darauf hin. Er prüft auch, ob das Archiv zum Zählerstand passt: Ein einzelner Fehlwert nach oben und zurück zählt im Archiv als Verbrauch, dann nennt der Selbsttest den Zähler und die Monate, etwa „Das Archiv zählt mehr, als der Zählerstand gestiegen ist (01/2024 +659.8 kWh)“. Den Fehlwert löschen Sie im Archiv und aggregieren die Variable neu. Setzt ein Zähler zurück, etwa nach einem Stromausfall, zählt das Archiv richtig weiter, das ist kein Befund. Ein Zähler in einer anderen Einheit als Wh, kWh oder MWh, etwa ein Wasser- oder Gaszähler, gilt nicht als Energiezähler: Seine Zeile sagt „kein Energiezähler (Einheit m³)“, und er zählt nicht mit. Ohne Einheit gilt kWh. Geräte ohne Zähler bleiben außen vor. Den Parameter
+archiviert“, und der Selbsttest weist darauf hin. Er prüft auch, ob das Archiv zum Zählerstand passt: Ein einzelner Fehlwert nach oben und zurück zählt im Archiv als Verbrauch, dann nennt der Selbsttest den Zähler und die Monate, etwa „Das Archiv zählt mehr, als der Zählerstand gestiegen ist (01/2024 +659.8 kWh)“. Den Fehlwert löschen Sie im Archiv und aggregieren die Variable neu. Setzt ein Zähler zurück, etwa nach einem Stromausfall, zählt das Archiv richtig weiter, das ist kein Befund. Ein Zähler in einer anderen Einheit als mWh, Wh, kWh oder MWh, etwa ein Wasser- oder Gaszähler, gilt nicht als Energiezähler: Seine Zeile sagt „kein Energiezähler (Einheit m³)“, und er zählt nicht mit. Ohne Einheit gilt kWh. Geräte ohne Zähler bleiben außen vor. Den Parameter
 bekommt der Assistent nur, wenn mindestens ein freigegebenes Gerät einen Zähler hat oder die
 Energiebilanz eingetragen ist.
 
@@ -371,8 +371,8 @@ Mit `period=now` nennt **get_state** die Leistung jetzt in W, aufgebaut wie der 
 Leistung der aktuelle Wert, dazu die Summe. Fürs ganze Haus rechnet das Modul die Hausleistung aus den
 Leistungen der Quellen, etwa „Hausleistung 1548 W (alle Geräte, period=now):
 Netzbezug 27, PV-Ertrag 0, Batterie entladen 1521, Einspeisung 0, Batterie geladen 0 W.“ und „Davon
-750 W durch 11 von 11 Gerät(en) mit Leistungsmessung, 798 W nicht erfasst.“ W, kW und MW werden
-umgerechnet, ohne Einheit gilt W. Haben Sie für das Netz nur einen Sensor mit Vorzeichen, gehört er
+750 W durch 11 von 11 Gerät(en) mit Leistungsmessung, 798 W nicht erfasst.“ mW, W, kW und MW werden
+umgerechnet (Matter meldet mW), ohne Einheit gilt W. Haben Sie für das Netz nur einen Sensor mit Vorzeichen, gehört er
 ins Feld „Netzbezug Leistung“ (negativ heißt Einspeisung); ebenso ein Batteriesensor ins Feld „Batterie
 entladen Leistung“ (negativ heißt laden). Meldet ein Sensor andersherum, etwa eine Batterie, die beim Laden
 positiv zählt, setzen Sie in der Zeile den Haken „Vorzeichen umkehren“. Der Selbsttest nennt dann je Quelle den
