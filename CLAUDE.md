@@ -131,6 +131,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Hinweistext für Skripte und KI-Assistenten** (Label im Formular): genügt allein zum Einrichten; neue Felder und
   Typen gehören auch dorthin, Funktionen immer mit voller Signatur (Symcon verlangt jeden Parameter). Der Auftrag in
   `EINRICHTUNG.md`/`.en.md` baut darauf auf; was der Assistent suchen oder auslassen soll, gehört in beide Fassungen.
+  Was der Anwender vor dem Absenden ändert, steht als Zeile ganz oben (`ZUGANGSDATEI`), alles andere erfragt der
+  Agent; keine Platzhalter in Klammern für den Anwender (schwer zu finden). Test `check-module.php`.
 - **Ein neues Feld** von `set_state` kostet eine Fähigkeit in `ROLES`/`TYPE_ROLES`, einen Eintrag in `abilitiesOf()`,
   einen Zweig in `setState()`, eine Eigenschaft im Schema, ein Dialogfeld und, falls auf der Karte, `CARD_FIELDS`.
 

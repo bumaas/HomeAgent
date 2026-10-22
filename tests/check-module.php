@@ -618,6 +618,22 @@ foreach (['EINRICHTUNG.md', 'EINRICHTUNG.en.md'] as $datei) {
     foreach (['IPS_GetProperty', 'IPS_GetConfiguration(', 'with ReadOnly. ', 'mit ReadOnly. ', 'Küche EG', 'ground floor" and', ' zunächst.', ' at first.'] as $nicht) {
         pruefe(!str_contains($auftrag, $nicht), $datei . ' enthält nicht mehr: ' . $nicht);
     }
+    // Was der Anwender vor dem Absenden ändert, steht als eine Zeile ganz oben (Burkhard 22.10.2026: „die Stellen findet
+    // man nur schwer“); nach den Assistenten fragt der Agent selbst.
+    $marke = $datei === 'EINRICHTUNG.md' ? 'ZUGANGSDATEI' : 'CREDENTIALS_FILE';
+    $kopf = $datei === 'EINRICHTUNG.md' ? 'Richte in Symcon' : 'Set up the module';
+    $block = '';
+    // der Auftrag ist der Codeblock, in dem der Kopfsatz steht, nicht die Beispiele der curl-Datei davor
+    foreach (explode("\n```\n", $auftrag) as $teil) {
+        if (str_contains($teil, $kopf)) {
+            $block = "```\n" . $teil;
+        }
+    }
+    pruefe(str_starts_with($block, "```\n") && str_contains(explode("\n", $block)[2] ?? '', $marke . ' = '), $datei . ': die Angabe steht in der zweiten Zeile des Auftrags: ' . (explode("\n", $block)[2] ?? ''));
+    pruefe(substr_count($block, $marke) >= 3, $datei . ': der Auftrag nutzt ' . $marke . ' statt eines Platzhalters in Klammern');
+    foreach (['<Pfad zur Datei', '<path to the file', '<Assistenten', '<assistants'] as $nicht) {
+        pruefe(!str_contains($block, $nicht), $datei . ': kein Platzhalter mehr für den Anwender: ' . $nicht);
+    }
 }
 pruefe(!str_contains($hinweis, 'the Claude app (custom connector without sign-in) only work with InPath'),'der Hinweistext schickt die Claude-App nicht mehr auf den Weg mit Token in der Adresse');
 

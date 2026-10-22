@@ -27,7 +27,8 @@ table. Nothing is saved until you agree. Before saving it backs up the previous 
 the self-test. All you check is the table.
 
 If your assistant already has another way into the system, you do not need the following four points. In the
-instructions further down you then only replace the paragraph "Access" with a sentence that names this way.
+instructions further down you then replace the line with CREDENTIALS_FILE and the paragraph "Access" with a
+sentence that names this way.
 
 Otherwise the assistant talks to the JSON-RPC interface of Symcon. That takes four things:
 
@@ -79,17 +80,21 @@ Otherwise the assistant talks to the JSON-RPC interface of Symcon. That takes fo
 The instructions below forbid it to switch devices or change other instances, but it remains a language model.
 Confirm its commands one by one instead of allowing them all, and make a backup of the system first.
 
-Then give the assistant these instructions. Replace the parts in angle brackets first: the path to the file with
-the credentials and, in step 5, the assistants you want to connect to Home Agent.
+Then give the assistant these instructions. If your file with the credentials is not `symcon.curl` in your user
+folder, enter its path in the second line; otherwise the instructions stay as they are. The assistant asks you
+itself which assistants you want to connect.
 ```
+My input (check before sending):
+CREDENTIALS_FILE = the file symcon.curl in my user folder
+
 Set up the module "Home Agent" in Symcon. It is already installed from the Module Store.
 
 Access: You reach Symcon through its JSON-RPC interface. Address and login are in the curl configuration
-file <path to the file with the credentials>. Never show its content and never write it to another
-file. Every call is a POST with the body
+file CREDENTIALS_FILE. If you cannot find it, ask me instead of searching the computer. Never show its
+content and never write it to another file. Every call is a POST with the body
   {"jsonrpc": "2.0", "method": "<function>", "params": [<parameters>], "id": 1}
 best sent from a file:
-  curl.exe -s -K <path to the file with the credentials> -H "Content-Type: application/json" -d @request.json
+  curl.exe -s -K CREDENTIALS_FILE -H "Content-Type: application/json" -d @request.json
 (on Linux and macOS curl instead of curl.exe). Every Symcon function works this way, including those of
 the module (HAGT_…).
 
@@ -105,8 +110,9 @@ How to proceed:
 0. Check whether there are instances of the module already and list them with name, location, status
    and number of devices. Then ask me whether to use one of them or create a new one. For a new one ask
    for the target category and the name and, if there is an instance already, whether to copy its
-   rooms, devices and sources; copied entries then count as existing. Do not create anything before I
-   have answered.
+   rooms, devices and sources; copied entries then count as existing. Ask at the same time which
+   assistants I want to connect to Home Agent (usually one, such as the Claude app). Do not create
+   anything before I have answered.
 1. Read the text "Hint for scripts and AI assistants" in the configuration form of the instance. It
    names all properties, the device types and the fields of each type. Stick to it and do not guess
    field names.
@@ -153,9 +159,8 @@ How to proceed:
    second pass, again with a backup.
 5. After my OK: First write the output of HAGT_ExportConfiguration(<InstanceID>) unchanged to a file in
    the current working folder with date and time in the name. Then enter rooms, devices, sources and
-   electricity price and apply. Create an access with HAGT_AddAccess for each assistant I use that does
-   not have one yet: <assistants, e.g. Home Assistant, Claude app>. If this example is still there, ask
-   me which assistants I use. Whether an access needs InPath is in the hint. Existing rooms, devices
+   electricity price and apply. Create an access with HAGT_AddAccess for each assistant from step 0
+   that does not have one yet; whether it needs InPath is in the hint. Existing rooms, devices
    and accesses stay, unless I have agreed to a change in the table.
    Status and token arrive a few seconds after applying. Then check with HAGT_ExportConfiguration that
    no access has an empty token, and run HAGT_RunSelfTest. Show me the errors. Name every note about
@@ -172,10 +177,11 @@ Rules:
 - At the end a short summary: number of rooms and devices, open questions, result of the self-test.
 ```
 
-The assistant first asks which instance to use and later shows you the table. Take your time with it: Are the
-names the ones you would say in everyday life? Is a device missing, or is there one the assistant should not
-switch? Only your OK lets it save. Its open questions at the end are mostly about meters that Symcon does not
-archive as counters, or about the sign of a battery power. The README explains both under
+The assistant first asks which instance to use and which assistants to connect, and later shows you the table.
+Take your time with it: Are the names the ones you would say in everyday life? Is a device missing, or is there
+one the assistant should not switch? Only your OK lets it save. Its open questions at the end are mostly about
+meters that Symcon does not archive as counters, or about the sign of a battery power. The README explains both
+under
 [The release list](README.en.md#the-release-list).
 
 ### Afterwards

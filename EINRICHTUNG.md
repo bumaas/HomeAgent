@@ -28,7 +28,8 @@ die Energiebilanz als Tabelle vor. Gespeichert wird erst, wenn Sie zugestimmt ha
 bisherige Konfiguration, danach führt er den Selbsttest aus. Sie prüfen nur noch die Tabelle.
 
 Hat Ihr Assistent schon auf anderem Weg Zugriff auf die Anlage, brauchen Sie die folgenden vier Punkte nicht. Im
-Auftrag weiter unten ersetzen Sie dann nur den Absatz „Zugriff“ durch einen Satz, der diesen Weg nennt.
+Auftrag weiter unten ersetzen Sie dann die Zeile mit ZUGANGSDATEI und den Absatz „Zugriff“ durch einen Satz, der
+diesen Weg nennt.
 
 Sonst spricht der Assistent mit der JSON-RPC-Schnittstelle von Symcon. Das braucht vier Dinge:
 
@@ -82,17 +83,21 @@ dürfen. Der Auftrag unten verbietet ihm, Geräte zu schalten oder andere Instan
 Sprachmodell. Bestätigen Sie seine Befehle deshalb einzeln, statt sie pauschal freizugeben, und legen Sie vorher
 eine Sicherung der Anlage an.
 
-Dann geben Sie dem Assistenten diesen Auftrag. Die Angaben in spitzen Klammern ersetzen Sie vorher: den Pfad zur
-Datei mit den Zugangsdaten und in Schritt 5 die Assistenten, die Sie mit Home Agent verbinden wollen.
+Dann geben Sie dem Assistenten diesen Auftrag. Liegt Ihre Datei mit den Zugangsdaten nicht als `symcon.curl` in
+Ihrem Benutzerordner, tragen Sie in der zweiten Zeile ihren Pfad ein; sonst bleibt der Auftrag, wie er ist. Welche
+Assistenten Sie verbinden wollen, fragt er Sie selbst.
 ```
+Meine Angabe (vor dem Absenden prüfen):
+ZUGANGSDATEI = die Datei symcon.curl in meinem Benutzerordner
+
 Richte in Symcon das Modul „Home Agent“ ein. Es ist bereits aus dem Module Store installiert.
 
 Zugriff: Du erreichst Symcon über seine JSON-RPC-Schnittstelle. Adresse und Anmeldung stehen in der
-curl-Konfigurationsdatei <Pfad zur Datei mit den Zugangsdaten>. Zeig ihren Inhalt nie an und schreib ihn in
-keine andere Datei. Jeder Aufruf ist ein POST mit dem Körper
+curl-Konfigurationsdatei ZUGANGSDATEI. Findest du sie nicht, frag mich, statt den Rechner zu durchsuchen.
+Zeig ihren Inhalt nie an und schreib ihn in keine andere Datei. Jeder Aufruf ist ein POST mit dem Körper
   {"jsonrpc": "2.0", "method": "<Funktion>", "params": [<Parameter>], "id": 1}
 am besten aus einer Datei:
-  curl.exe -s -K <Pfad zur Datei mit den Zugangsdaten> -H "Content-Type: application/json" -d @anfrage.json
+  curl.exe -s -K ZUGANGSDATEI -H "Content-Type: application/json" -d @anfrage.json
 (unter Linux und macOS curl statt curl.exe). Jede Symcon-Funktion geht so, auch die des Moduls (HAGT_…).
 
 Das Modul: Seine Instanzen liefert IPS_GetInstanceListByModuleID("{89E40AE0-BB2A-40B8-A16F-C9C5FFBFC09F}"),
@@ -107,8 +112,9 @@ So gehst du vor:
 0. Sieh nach, ob es schon Instanzen des Moduls gibt, und nenne sie mir mit Name, Ort, Status und
    Anzahl der Geräte. Frag mich dann, ob du eine davon verwenden oder eine neue anlegen sollst. Bei
    einer neuen frag nach der Zielkategorie und dem Namen und, falls es schon eine Instanz gibt, ob du
-   deren Räume, Geräte und Quellen übernehmen sollst; übernommene gelten danach als vorhanden. Leg
-   nichts an, bevor ich geantwortet habe.
+   deren Räume, Geräte und Quellen übernehmen sollst; übernommene gelten danach als vorhanden. Frag
+   im selben Zug, welche Assistenten ich mit Home Agent verbinden will (meist einer, etwa die
+   Claude-App). Leg nichts an, bevor ich geantwortet habe.
 1. Lies im Konfigurationsformular der Instanz den Text „Hinweis für Skripte und KI-Assistenten“. Dort
    stehen alle Properties, die Gerätetypen und die Felder je Typ. Halte dich daran und rate keine
    Feldnamen.
@@ -154,11 +160,9 @@ So gehst du vor:
    davon später beantworte, trägst du in einem zweiten Durchgang nach, wieder mit Sicherung.
 5. Nach meinem OK: Schreib zuerst die Ausgabe von HAGT_ExportConfiguration(<InstanzID>) unverändert in
    eine Datei im aktuellen Arbeitsordner mit Datum und Uhrzeit im Namen. Trag dann Räume, Geräte,
-   Quellen und Strompreis ein und übernimm. Leg je Assistent, den ich nutze und der noch keinen Zugang
-   hat, einen mit HAGT_AddAccess an: <Assistenten, z. B. Home Assistant, Claude-App>. Steht dort noch
-   dieses Beispiel, frag mich, welche Assistenten ich nutze. Ob ein Zugang InPath braucht, steht im
-   Hinweistext. Vorhandene Räume, Geräte und Zugänge bleiben erhalten, außer ich habe einer Änderung in
-   der Tabelle zugestimmt.
+   Quellen und Strompreis ein und übernimm. Leg je Assistent aus Schritt 0, der noch keinen Zugang hat,
+   einen mit HAGT_AddAccess an; ob er InPath braucht, steht im Hinweistext. Vorhandene Räume, Geräte
+   und Zugänge bleiben erhalten, außer ich habe einer Änderung in der Tabelle zugestimmt.
    Status und Token kommen einige Sekunden nach dem Übernehmen. Prüf dann mit
    HAGT_ExportConfiguration, dass kein Zugang ein leeres Token hat, und führ HAGT_RunSelfTest aus. Zeig
    mir die Fehler. Jeden Hinweis zu Energie- und Wärmezählern und zum Vorzeichen einer Leistung nennst
@@ -175,11 +179,11 @@ Regeln:
   Selbsttests.
 ```
 
-Der Assistent fragt zuerst, welche Instanz er nehmen soll, und legt Ihnen später die Tabelle vor. Gehen Sie sie in
-Ruhe durch: Sprechen Sie die Namen so aus, wie Sie sie im Alltag sagen würden? Fehlt ein Gerät, oder ist eines
-dabei, das der Assistent nicht schalten soll? Erst Ihr OK lässt ihn speichern. Seine offenen Fragen am Ende
-betreffen meist Zähler, die Symcon nicht als Zähler archiviert, oder das Vorzeichen einer Batterieleistung. Die
-README erklärt beides unter [Die Freigabeliste](README.md#die-freigabeliste).
+Der Assistent fragt zuerst, welche Instanz er nehmen und welche Assistenten er verbinden soll, und legt Ihnen
+später die Tabelle vor. Gehen Sie sie in Ruhe durch: Sprechen Sie die Namen so aus, wie Sie sie im Alltag sagen
+würden? Fehlt ein Gerät, oder ist eines dabei, das der Assistent nicht schalten soll? Erst Ihr OK lässt ihn
+speichern. Seine offenen Fragen am Ende betreffen meist Zähler, die Symcon nicht als Zähler archiviert, oder das
+Vorzeichen einer Batterieleistung. Die README erklärt beides unter [Die Freigabeliste](README.md#die-freigabeliste).
 
 ### Danach
 
