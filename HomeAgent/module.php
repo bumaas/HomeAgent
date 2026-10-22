@@ -352,27 +352,29 @@ class HomeAgent extends IPSModuleStrict
                 }
             }
         }
-        // Verbrauch über Zeiträume gibt es nur aus einem Zähler, den das Archiv als Zähler aggregiert.
+        // Verbrauch über Zeiträume gibt es nur aus einem Zähler, den das Archiv als Zähler aggregiert. Die Hinweise
+        // nennen die Variable mit ID, Zähler an Aktor und Messgerät heißen oft gleich.
+        $named = static fn (int $id): string => IPS_GetName($id) . ' (#' . $id . ')';
         foreach ($list as $entry) {
             $meter = DeviceIndex::rolesOf($entry)['energy'] ?? 0;
             $counter = $meter > 0 && IPS_VariableExists($meter) ? $backend->counterSum($meter, 4, 0, 0) : false;
             if ($counter === null) {
-                $lines[] = sprintf($this->Translate('Note: %s: the energy meter %s is not archived as a counter, so there is no consumption over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), IPS_GetName($meter));
+                $lines[] = sprintf($this->Translate('Note: %s: the energy meter %s is not archived as a counter, so there is no consumption over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), $named($meter));
             } elseif (is_array($counter) && !DeviceIndex::isEnergyUnit($counter['unit'])) {
-                $lines[] = sprintf($this->Translate('Note: %s: the energy meter %s counts in %s, not in kWh, so it is left out of the consumption'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), IPS_GetName($meter), trim($counter['unit']));
+                $lines[] = sprintf($this->Translate('Note: %s: the energy meter %s counts in %s, not in kWh, so it is left out of the consumption'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), $named($meter), trim($counter['unit']));
             }
             // Wärmezähler (B83) ebenso, sonst fehlen Wärme und Arbeitszahl ohne Hinweis
             $heat = DeviceIndex::rolesOf($entry)['heat'] ?? 0;
             $counter = $heat > 0 && IPS_VariableExists($heat) ? $backend->counterSum($heat, 4, 0, 0) : false;
             if ($counter === null) {
-                $lines[] = sprintf($this->Translate('Note: %s: the heat meter %s is not archived as a counter, so there is no heat over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), IPS_GetName($heat));
+                $lines[] = sprintf($this->Translate('Note: %s: the heat meter %s is not archived as a counter, so there is no heat over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), $named($heat));
             } elseif (is_array($counter) && !DeviceIndex::isEnergyUnit($counter['unit'])) {
-                $lines[] = sprintf($this->Translate('Note: %s: the heat meter %s counts in %s, not in kWh, so there is no heat over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), IPS_GetName($heat), trim($counter['unit']));
+                $lines[] = sprintf($this->Translate('Note: %s: the heat meter %s counts in %s, not in kWh, so there is no heat over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), $named($heat), trim($counter['unit']));
             }
             // Ohne Wärmezähler kommt die Wärme aus den Stundenmitteln der Wärmeleistung
             $output = DeviceIndex::rolesOf($entry)['heatpower'] ?? 0;
             if ($heat === 0 && $output > 0 && IPS_VariableExists($output) && $backend->history($output, 3, 0, 0) === null) {
-                $lines[] = sprintf($this->Translate('Note: %s: the heat output %s is not archived, so there is no heat over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), IPS_GetName($output));
+                $lines[] = sprintf($this->Translate('Note: %s: the heat output %s is not archived, so there is no heat over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), $named($output));
             }
         }
         // Energiebilanz: Jeder Zähler muss als Zähler archiviert sein, sonst gibt es keinen Hausverbrauch, und jede
@@ -387,15 +389,15 @@ class HomeAgent extends IPSModuleStrict
                 $caption = $this->balanceCaption($key) . ' "' . trim((string)($source['Name'] ?? '')) . '"';
                 $counter = $backend->counterSum($variableId, 4, 0, 0);
                 if ($counter === null) {
-                    $lines[] = sprintf($this->Translate('Note: energy balance: %s %s is not archived as a counter, so there is no house consumption'), $caption, IPS_GetName($variableId));
+                    $lines[] = sprintf($this->Translate('Note: energy balance: %s %s is not archived as a counter, so there is no house consumption'), $caption, $named($variableId));
                 } elseif (!DeviceIndex::isEnergyUnit($counter['unit'])) {
-                    $lines[] = sprintf($this->Translate('Note: energy balance: %s %s counts in %s, not in kWh, so there is no house consumption'), $caption, IPS_GetName($variableId), trim($counter['unit']));
+                    $lines[] = sprintf($this->Translate('Note: energy balance: %s %s counts in %s, not in kWh, so there is no house consumption'), $caption, $named($variableId), trim($counter['unit']));
                 }
             }
             foreach ([[$in, 'PowerIn'], [$out, 'PowerOut']] as [$key, $field]) {
                 $variableId = (int)($source[$field] ?? 0);
                 if ($key !== null && $variableId > 1 && !DeviceIndex::isPowerUnit($backend->unit($variableId))) {
-                    $lines[] = sprintf($this->Translate('Note: energy balance: %s %s is in %s, not a power value, so there is no house power'), $this->powerCaption($key) . ' "' . trim((string)($source['Name'] ?? '')) . '"', IPS_GetName($variableId), $backend->unit($variableId));
+                    $lines[] = sprintf($this->Translate('Note: energy balance: %s %s is in %s, not a power value, so there is no house power'), $this->powerCaption($key) . ' "' . trim((string)($source['Name'] ?? '')) . '"', $named($variableId), $backend->unit($variableId));
                 }
             }
         }

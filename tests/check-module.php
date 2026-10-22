@@ -1008,7 +1008,8 @@ pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(imp
 IPS_SetProperty($iid, 'Devices', json_encode([$entfeuchter]));
 IPS_ApplyChanges($iid);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Gerät mit Leistung und Zähler: aktiv');
-pruefe(str_contains($m->RunSelfTest(), 'Note: Keller Entfeuchter: the energy meter ENERGY_COUNTER is not archived as a counter, so there is no consumption over periods'), 'Selbsttest: Zähler ohne Archiv: ' . $m->RunSelfTest());
+// Mit der ID wie beim Fehlwert (build 233): Zähler an Aktor und Messgerät heißen oft gleich.
+pruefe(str_contains($m->RunSelfTest(), 'Note: Keller Entfeuchter: the energy meter ENERGY_COUNTER (#' . $zaehler . ') is not archived as a counter, so there is no consumption over periods'), 'Selbsttest: Zähler ohne Archiv, mit ID: ' . $m->RunSelfTest());
 // Wärmezähler (B83): derselbe Hinweis wie beim Stromzähler
 $waermezaehler = variable(VARIABLETYPE_FLOAT, 23.642);
 IPS_SetName($waermezaehler, 'V_Heizen_Summe Wärme');
@@ -1016,7 +1017,7 @@ $waermepumpe = ['Room' => 'Heizungsraum', 'Name' => 'Wärmepumpe', 'Aliases' => 
 IPS_SetProperty($iid, 'Devices', json_encode([$entfeuchter, $waermepumpe]));
 IPS_ApplyChanges($iid);
 $selbsttest = $m->RunSelfTest();
-pruefe(str_contains($selbsttest, 'Note: Heizungsraum Wärmepumpe: the heat meter V_Heizen_Summe Wärme is not archived as a counter, so there is no heat over periods'), 'Selbsttest: Wärmezähler ohne Archiv: ' . $selbsttest);
+pruefe(str_contains($selbsttest, 'Note: Heizungsraum Wärmepumpe: the heat meter V_Heizen_Summe Wärme (#' . $waermezaehler . ') is not archived as a counter, so there is no heat over periods'), 'Selbsttest: Wärmezähler ohne Archiv: ' . $selbsttest);
 $beschreibung = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name')['get_state']['description'] ?? '';
 pruefe(str_contains($beschreibung, '"What was the performance factor of the heat pump in January?" → name=heat pump, from=' . date('Y') . '-01-01, to=' . date('Y') . '-01-31 (heat, electricity and performance factor in one line). '), 'mit Wärmezähler nennt get_state ein Beispiel für die Arbeitszahl: ' . $beschreibung);
 // Ohne Wärmezähler kommt die Wärme aus der Wärmeleistung; die muss dann archiviert sein
@@ -1025,7 +1026,7 @@ IPS_SetName($waermeleistung, 'Wärmeleistung');
 IPS_SetProperty($iid, 'Devices', json_encode([$entfeuchter, array_merge($waermepumpe, ['HeatVariableID' => 0, 'HeatPowerVariableID' => $waermeleistung])]));
 IPS_ApplyChanges($iid);
 $selbsttest = $m->RunSelfTest();
-pruefe(str_contains($selbsttest, 'Note: Heizungsraum Wärmepumpe: the heat output Wärmeleistung is not archived, so there is no heat over periods'), 'Selbsttest: Wärmeleistung ohne Archiv und ohne Wärmezähler: ' . $selbsttest);
+pruefe(str_contains($selbsttest, 'Note: Heizungsraum Wärmepumpe: the heat output Wärmeleistung (#' . $waermeleistung . ') is not archived, so there is no heat over periods'), 'Selbsttest: Wärmeleistung ohne Archiv und ohne Wärmezähler: ' . $selbsttest);
 $beschreibung = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name')['get_state']['description'] ?? '';
 pruefe(str_contains($beschreibung, 'performance factor of the heat pump'), 'auch mit Wärmeleistung allein nennt get_state das Beispiel: ' . $beschreibung);
 IPS_SetProperty($iid, 'Devices', json_encode([$entfeuchter, array_merge($waermepumpe, ['HeatPowerVariableID' => $waermeleistung])]));
@@ -1147,7 +1148,7 @@ pruefe(($mitApps['show_chart']['inputSchema']['properties']['part']['enum'] ?? n
 pruefe(str_contains($mitApps['show_chart']['description'] ?? '', 'with self-sufficiency and self-consumed solar as rings'), 'show_chart nennt die Ringe: ' . ($mitApps['show_chart']['description'] ?? ''));
 pruefe(!in_array('now', $mitApps['show_chart']['inputSchema']['properties']['period']['enum'] ?? ['now'], true), 'ohne Leistungsbilanz kein now im Diagramm');
 $setzeBilanz([$bilanzZeile('grid', 'Grid', $zaehler), $bilanzZeile('solar', 'Solar', $leistung)]);
-pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: solar production "Solar" POWER is not archived as a counter, so there is no house consumption'), 'Selbsttest: Bilanzzähler nicht als Zähler archiviert: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: solar production "Solar" POWER (#' . $leistung . ') is not archived as a counter, so there is no house consumption'), 'Selbsttest: Bilanzzähler nicht als Zähler archiviert: ' . $m->RunSelfTest());
 // Plausibilität der Zähler (B78): der „Verbrauch“ der betreuten Anlage aus mix_2026-10-17_zaehlerstand.json mit seinen
 // echten Aggregaten und Ablesungen im Archiv des Kernel-Stubs, als Netzbezug eingetragen.
 $plausibel = fixture('mix_2026-10-17_zaehlerstand.json');
@@ -1210,7 +1211,7 @@ $mitApps = array_column(json_decode((string)json_encode(oderNull(static fn () =>
 pruefe(($mitApps['show_chart']['inputSchema']['properties']['period']['enum'][0] ?? null) === 'now', 'mit Leistungsbilanz: show_chart bietet now an: ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['period'] ?? null));
 pruefe(str_contains($mitApps['show_chart']['description'] ?? '', 'period=now without room, floor, type or name shows the current house power as rings.'), 'show_chart erklärt now: ' . ($mitApps['show_chart']['description'] ?? json_encode(array_keys($mitApps))));
 $setzeBilanz([$bilanzZeile('grid', 'Grid', 0, 0, $zaehler)]);
-pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: grid import power "Grid" ENERGY_COUNTER is in Wh, not a power value, so there is no house power'), 'Selbsttest: ein Zähler als Leistung: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: grid import power "Grid" ENERGY_COUNTER (#' . $zaehler . ') is in Wh, not a power value, so there is no house power'), 'Selbsttest: ein Zähler als Leistung: ' . $m->RunSelfTest());
 $setzeBilanz([$bilanzZeile('solar', 'Solar', 0, 0, 69994)]);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && str_contains(implode("\n", array_column($m->logs(), 'Message')), 'Source "Solar": variable for solar power does not exist'), 'gelöschte Leistungsvariable: aktiv, das Log nennt sie');
 $setzeBilanz([]);
@@ -1242,8 +1243,8 @@ AC_SetAggregationType($archiv, $wasser, 1);
 IPS_SetProperty($iid, 'Devices', json_encode([['EnergyVariableID' => $wasser] + $entfeuchter]));
 $setzeBilanz([$bilanzZeile('grid', 'Grid', $wasser)]);
 $selbsttest = $m->RunSelfTest();
-pruefe(str_contains($selbsttest, 'Note: Keller Entfeuchter: the energy meter WASSER counts in m³, not in kWh, so it is left out of the consumption'), 'Selbsttest: Gerätezähler in m³: ' . $selbsttest);
-pruefe(str_contains($selbsttest, 'Note: energy balance: grid import "Grid" WASSER counts in m³, not in kWh, so there is no house consumption'), 'Selbsttest: Bilanzzähler in m³: ' . $selbsttest);
+pruefe(str_contains($selbsttest, 'Note: Keller Entfeuchter: the energy meter WASSER (#' . $wasser . ') counts in m³, not in kWh, so it is left out of the consumption'), 'Selbsttest: Gerätezähler in m³: ' . $selbsttest);
+pruefe(str_contains($selbsttest, 'Note: energy balance: grid import "Grid" WASSER (#' . $wasser . ') counts in m³, not in kWh, so there is no house consumption'), 'Selbsttest: Bilanzzähler in m³: ' . $selbsttest);
 $setzeBilanz([]);
 
 /* --- Heizungs-Sollwert (10.10.2026): Typ thermostat, Bereich aus Profil oder Darstellung ----- */
