@@ -107,42 +107,52 @@ So gehst du vor:
    Wohnzimmer), dazu Etage und Aliase (z. B. „Kinderzimmer“ als Alias für „Leon“). Keine technischen
    Zusätze. Jeder Raumname darf nur einmal vorkommen. Gibt es einen Raum auf mehreren Etagen, bekommt
    jeder einen eigenen Namen (z. B. „Küche EG“ und „Küche DG“) und beide den gemeinsamen Namen als
-   Alias („Küche“). Gibt es eine Alexa-Instanz, nimm deren Gerätenamen und Räume als Vorlage, sonst die
-   Kategorien im Objektbaum.
+   Alias („Küche“). Das gilt für neue Räume; vorhandene behalten ihren Namen, eine Umbenennung schlägst
+   du nur in der Tabelle vor. Gibt es eine Alexa-Instanz, nimm deren Gerätenamen und Räume als Vorlage,
+   sonst die Kategorien im Objektbaum.
 3. Geräte: Schlag eine Freigabeliste vor mit Lichtern, Steckdosen, Rollläden, Fenstern und Türen,
    Thermostaten, Mediaplayern und Messwerten wie Temperatur und Luftfeuchte. Für alles, was schalten
    soll, nur Variablen mit Aktion; Messwerte ohne Aktion sind in Ordnung. Sprechbare Namen, je Raum
    eindeutig. Leistung und Energiezähler mit eintragen, wo es sie gibt.
    Geh dafür alle Geräteinstanzen durch, auch ModBus-, MQTT- und Cloud-Geräte. Zu Heizung und Lüftung
    gehören Wärmepumpe, Warmwasser, Klimageräte und Lüftungsanlagen. Bei einer Wärmepumpe such neben
-   Leistung und Stromzähler auch einen Wärmezähler oder eine Wärmeleistung und trag sie ein. Gibt es
-   für Heizen und Warmwasser getrennte Werte, schlag zwei Zeilen vor. Zwischenzähler wie
+   Leistung und Stromzähler auch einen Wärmezähler oder eine Wärmeleistung und trag sie ein. Zwei Zeilen
+   für Heizen und Warmwasser schlägst du nur vor, wenn Wärme und Strom beide getrennt gemessen werden;
+   sonst eine Zeile, und die getrennte Wärme nennst du als offene Frage. Zwischenzähler wie
    Unterverteilungen schlägst du als Typ „meter“ mit „gemessen von“ vor, einen Strompreis als
    PriceVariableID.
    Nicht freigeben: Schlösser, Alarmanlage und alles Sicherheitsrelevante, dazu zählen auch Türöffner,
    Garagentore und Tore. Relais, die eine smarte Lampe mit Strom versorgen, nicht als Licht freigeben;
-   ihre Leistung darf die Lampe bekommen. Heizung und Lüftung zunächst nur zum Abfragen (ReadOnly).
+   ihre Leistung darf die Lampe bekommen. Steht so etwas schon in der Instanz, schlag vor, es zu
+   entfernen. Melder wie Wasser- oder Rauchmelder dürfen zum Abfragen hinein. Steckdosen, an denen
+   Netzwerk, Server oder die Hausautomation selbst hängen, nur zum Abfragen (ReadOnly), ebenso Heizung
+   und Lüftung zunächst.
    Bei Geräten, die schon in der Instanz stehen, bleiben ReadOnly, Invert und die Namen, wie sie sind;
    Typ oder Variablen eines solchen Geräts änderst du nur, wenn ich in der Tabelle zustimme. Ist ein Gerät
    mehrfach angebunden (etwa über Matter und eine Bridge), nimm die Anbindung mit den jüngsten Werten und
-   nenne die andere. Einen Energiezähler, der nicht als Zähler archiviert ist, lässt du weg und nennst ihn
-   als offene Frage.
+   nenne die andere. Einen Energiezähler, der nicht als Zähler archiviert ist, und eine Leistung oder
+   einen Zähler mit einer Einheit, die der Hinweistext nicht nennt, lässt du weg und nennst sie als
+   offene Frage.
    Schlag auch die Energiebilanz als Liste „Quellen“ vor: je Netzanschluss, PV-Anlage und Batterie eine
    Zeile mit Zähler und Leistung.
 4. Zeig mir beide Listen als Tabelle (Raum, Name, Typ, Variablen) und warte auf mein OK, bevor du
-   etwas speicherst. Kennzeichne, was schon in der Instanz steht und was neu ist oder sich ändert.
+   etwas speicherst. Kennzeichne, was schon in der Instanz steht und was neu ist oder sich ändert. Bei
+   mehr als etwa 50 Geräten zeigst du im Chat nur Neues und Änderungen und schreibst die ganze Tabelle in
+   eine Datei im aktuellen Arbeitsordner.
 5. Nach meinem OK: Sichere zuerst die Properties Rooms, Devices, Sources und Accesses, so wie sie
-   jetzt sind, mit Tokens als <token>, mit Datum und Uhrzeit im Namen, damit keine frühere Sicherung
-   überschrieben wird. Trag dann Räume und Geräte ein und leg je Assistent, den ich nutze, einen
-   Zugang an: <z. B. „Home Assistant“ mit Token in der Adresse (InPath), „Claude-App“ ohne Token in der
-   Adresse>. Zugänge legst du nur für Assistenten an, die noch keinen haben. Vorhandene Räume, Geräte
-   und Zugänge bleiben erhalten, außer ich habe einer Änderung in der Tabelle zugestimmt.
+   jetzt sind, mit Tokens als <token>, in eine Datei im aktuellen Arbeitsordner mit Datum und Uhrzeit im
+   Namen, damit keine frühere Sicherung überschrieben wird. Trag dann Räume und Geräte ein und leg je
+   Assistent, den ich nutze, einen Zugang an: <z. B. „Home Assistant“ mit Token in der Adresse
+   (InPath), „Claude-App“ ohne Token in der Adresse>. Steht dort noch dieses Beispiel, frag mich, welche
+   Assistenten ich nutze. Zugänge legst du nur für Assistenten an, die noch keinen haben. Vorhandene
+   Räume, Geräte und Zugänge bleiben erhalten, außer ich habe einer Änderung in der Tabelle zugestimmt.
    Das Token lässt du leer, das Modul erzeugt es beim Übernehmen selbst. Dann übernehmen; Status und
    Token kommen erst einige Sekunden danach. Lies dann beides erneut und prüf, dass jeder Zugang ein
    Token hat, ohne es auszugeben. HAGT_RunSelfTest ausführen und mir Fehler und die erkannte Richtung
    jedes Rollladens zeigen. Jeden Hinweis zu Energie- und Wärmezählern und zum Vorzeichen einer
    Leistung nennst du mir als offene Frage. Wo offen und geschlossen vertauscht sind, Invert setzen.
-   Prüf bei Fenstern und Türen, ob „geschlossen“ zum aktuellen Zustand passt.
+   Prüf bei Fenstern und Türen, ob „geschlossen“ zum aktuellen Zustand passt; bei einer Abweichung
+   änderst du nichts, sondern fragst mich.
 
 Regeln:
 - Schalte nichts und löse keine Aktion an Geräten aus. Nur lesen und die Instanz konfigurieren.

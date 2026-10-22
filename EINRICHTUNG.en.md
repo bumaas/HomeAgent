@@ -104,41 +104,48 @@ How to proceed:
    bathroom, Living room), with floor and aliases (e.g. "Kids' room" as an alias for "Leon"). No
    technical additions. Each room name may appear only once. If a room exists on several floors, each
    gets its own name (e.g. "Kitchen ground floor" and "Kitchen top floor") and both get the common name
-   as an alias ("Kitchen"). If there is an Alexa instance, use its device names and rooms as a template,
-   otherwise the categories in the object tree.
+   as an alias ("Kitchen"). This applies to new rooms; existing rooms keep their names, a renaming you
+   only propose in the table. If there is an Alexa instance, use its device names and rooms as a
+   template, otherwise the categories in the object tree.
 3. Devices: Propose a release list with lights, sockets, blinds, windows and doors, thermostats, media
    players and measurements such as temperature and humidity. For everything that should switch, only
    variables with an action; measurements without an action are fine. Speakable names, unique per room.
    Add power and energy meters where they exist.
    Go through all device instances for this, including ModBus, MQTT and cloud devices. Heating and
    ventilation include heat pump, hot water, air conditioners and ventilation systems. For a heat pump
-   look for a heat meter or a heat output besides power and electricity meter and add them. If there
-   are separate values for heating and hot water, propose two rows. Propose intermediate meters such as
+   look for a heat meter or a heat output besides power and electricity meter and add them. Propose two
+   rows for heating and hot water only if both heat and electricity are measured separately; otherwise
+   one row, and name the separate heat as an open question. Propose intermediate meters such as
    sub-distributions as type "meter" with "metered by", an electricity price as PriceVariableID.
    Do not release: locks, alarm system and anything security-relevant, including door openers, garage
    doors and gates. Do not release relays that power a smart lamp as a light; the lamp may get their
-   power. Heating and ventilation read only at first (ReadOnly).
+   power. If such a device is already in the instance, propose to remove it. Detectors such as water
+   or smoke detectors may be added for querying. Sockets that power the network, servers or the home
+   automation itself read only (ReadOnly), heating and ventilation as well at first.
    For devices that are already in the instance, ReadOnly, Invert and the names stay as they are; you
    change type or variables of such a device only if I agree in the table. If a device is connected
    more than once (e.g. through Matter and a bridge), take the connection with the most recent values
-   and name the other one. An energy meter that is not archived as a counter you leave out and name as
-   an open question.
+   and name the other one. An energy meter that is not archived as a counter, and a power or meter
+   with a unit the hint does not name, you leave out and name as an open question.
    Also propose the energy balance as the list "Sources": one row per grid connection, solar plant and
    battery with meter and power.
 4. Show me both lists as a table (room, name, type, variables) and wait for my OK before you save
-   anything. Mark what is already in the instance and what is new or changes.
+   anything. Mark what is already in the instance and what is new or changes. With more than about 50
+   devices show only what is new or changed in the chat and write the whole table to a file in the
+   current working folder.
 5. After my OK: First back up the properties Rooms, Devices, Sources and Accesses as they are now, with
-   tokens as <token>, with date and time in the name so that no earlier backup is overwritten. Then
-   enter rooms and devices and create one access per assistant I use: <e.g. "Home Assistant" with the
-   token in the address (InPath), "Claude app" without the token in the address>. Create accesses only
-   for assistants that do not have one yet. Existing rooms, devices and accesses stay, unless I have
-   agreed to a change in the table.
+   tokens as <token>, to a file in the current working folder with date and time in the name so that
+   no earlier backup is overwritten. Then enter rooms and devices and create one access per assistant
+   I use: <e.g. "Home Assistant" with the token in the address (InPath), "Claude app" without the
+   token in the address>. If this example is still there, ask me which assistants I use. Create
+   accesses only for assistants that do not have one yet. Existing rooms, devices and accesses stay,
+   unless I have agreed to a change in the table.
    Leave the token empty, the module creates it itself on apply. Then apply; status and token only
    arrive a few seconds later. Then read both again and check that every access has a token, without
    printing it. Run HAGT_RunSelfTest and show me errors and the detected direction of every blind. Name
    every note about energy and heat meters and about the sign of a power as an open question to me.
    Where open and closed are swapped, set Invert. For windows and doors check whether "closed" matches
-   the current state.
+   the current state; if it does not, change nothing and ask me.
 
 Rules:
 - Do not switch anything and do not trigger any action on devices. Only read and configure the
