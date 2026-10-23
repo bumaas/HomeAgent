@@ -42,7 +42,8 @@ Otherwise the assistant talks to the JSON-RPC interface of Symcon. That takes fo
 3. **curl.** Windows 10 and 11, macOS and Linux include it. In Windows PowerShell it is called `curl.exe`,
    because `curl` alone is a different command there.
 4. **A file with the credentials.** curl can read its options from a file (switch `-K`). Create a text file
-   for this, for example `symcon.curl` in your user folder, not in a folder you share through Git or a cloud.
+   for this on the computer the assistant runs on (not on the Symcon system), for example `symcon.curl` in your
+   user folder, not in a folder you share through Git or a cloud.
    The name is up to you:
 
    ```

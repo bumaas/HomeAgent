@@ -44,8 +44,8 @@ Sonst spricht der Assistent mit der JSON-RPC-Schnittstelle von Symcon. Das brauc
 3. **curl.** Windows 10 und 11, macOS und Linux bringen es mit. In der Windows PowerShell heißt es `curl.exe`,
    denn `curl` allein ist dort ein anderer Befehl.
 4. **Eine Datei mit den Zugangsdaten.** curl kann seine Angaben aus einer Datei lesen (Schalter `-K`). Legen Sie
-   dafür eine Textdatei an, etwa `symcon.curl` in Ihrem Benutzerordner, nicht in einem Ordner, den Sie mit Git
-   oder einer Cloud teilen. Der Name ist frei wählbar:
+   dafür auf dem Rechner, auf dem der Assistent läuft (nicht auf der Anlage), eine Textdatei an, etwa `symcon.curl`
+   in Ihrem Benutzerordner, nicht in einem Ordner, den Sie mit Git oder einer Cloud teilen. Der Name ist frei wählbar:
 
    ```
    url = "http://192.168.1.10:3777/api/"
