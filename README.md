@@ -263,6 +263,8 @@ Ein Thermostat nennt Soll- und Ist-Temperatur, etwa „Soll 21 °C (derzeit 20.6
 Assistent nach `type=temperature`, findet er auch die Thermostate mit Ist-Temperatur; eine eigene
 Temperaturzeile auf derselben Variable brauchen Sie dafür nicht. Steht der Sollwert außerhalb seines
 Bereichs, heißt er Sonder-Sollwert: Manche Homematic-Thermostate nutzen 100 für „Ventil ganz offen“.
+Hat das Profil für diesen Wert einen Text, steht er mit in der Zeile, etwa „Sonder-Sollwert „On“ (30.5 °C,
+außerhalb von 6 bis 30 °C)“.
 
 Ein Klimagerät tragen Sie als Thermostat ein, dazu Modus und Lüfterstufe. Die Zeile lautet dann etwa
 „Soll 24 °C (derzeit 20.0 °C), Aus, Lüfter Auto“, und der Assistent stellt beides per Name wie beim

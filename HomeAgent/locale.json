@@ -272,6 +272,7 @@
             "Current temperature": "Ist-Temperatur",
             "setpoint %s": "Soll %s",
             "special setpoint %s outside %s to %s": "Sonder-Sollwert %s außerhalb von %s bis %s",
+            "special setpoint “%s” (%s, outside %s to %s)": "Sonder-Sollwert „%s“ (%s, außerhalb von %s bis %s)",
             "currently %s": "derzeit %s",
             "already set to %s": "stand schon auf %s",
             "not set: %s is outside %s to %s": "nicht gestellt: %s liegt außerhalb von %s bis %s",

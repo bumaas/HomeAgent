@@ -149,4 +149,19 @@ pruefe($anlage->missing === [], 'jeder neue Text hat eine deutsche Übersetzung:
 pruefe(str_contains($texte[0], 'Wintergarten | Heizung | thermostat | Soll 21 °C (derzeit 20.6 °C)'), 'deutsche Zeile: ' . $texte[0]);
 pruefe(str_contains($texte[1], '1 von 1 Geräten auf 21 °C gestellt'), 'deutsche Kopfzeile: ' . $texte[1]);
 
+/* --- Sonderwert mit Text im Profil ---------------------------------------------------------- */
+
+// Betreute Anlage 23.10.2026: Homematic IP auf 30,5, im Profil „On“. Die Zeile nannte nur die Zahl, ein Assistent musste
+// die Bedeutung raten. Jetzt steht der Text des Eintrags vorn, Zahl und Bereich dahinter; ohne Text bleibt es bei der Zahl.
+$sonder = fixture('betreut_2026-10-23_sonder_sollwert.json');
+$idx = index($sonder['geraete'], $sonder['variablen']);
+$r = rufe($idx, 'get', ['type' => 'thermostat']);
+pruefe($zeile($r, 1) === 'Bad Dachgeschoss | Heizung | thermostat | special setpoint “On” (30.5 °C, outside 6 to 30 °C) (currently 21.6 °C)', 'Sonderwert mit dem Text aus dem Profil: ' . $r['text']);
+pruefe($zeile($r, 2) === 'Kinderzimmer | Heizung | thermostat | setpoint 22 °C (currently 22.9 °C)', 'ein Eintrag mit Zahl im Bereich bleibt ein gewöhnlicher Sollwert: ' . $r['text']);
+$karten = $idx->cards(['name' => 'Heizung', 'room' => 'Bad Dachgeschoss'], true);
+$status = $karten['structuredContent']['cards'][0]['status'] ?? null;
+pruefe(is_string($status) && str_contains($status, '“On”'), 'die Karte nennt den Text des Sonderwerts: ' . json_encode($status, JSON_UNESCAPED_UNICODE));
+$r = rufe(index($sonder['geraete'], $sonder['variablen'], $de), 'get', ['type' => 'thermostat']);
+pruefe($anlage->missing === [] && $zeile($r, 1) === 'Bad Dachgeschoss | Heizung | thermostat | Sonder-Sollwert „On“ (30.5 °C, außerhalb von 6 bis 30 °C) (derzeit 21.6 °C)', 'deutsche Zeile mit Text: ' . $r['text'] . ' ' . implode(' | ', $anlage->missing));
+
 ende('Heizungs-Sollwert');

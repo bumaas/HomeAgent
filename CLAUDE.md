@@ -155,7 +155,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Sollwert:** Bereich und Schrittweite aus Darstellung oder Profil. Sonderwerte mit Text am Rand zählen nicht dazu
   (nicht ein Eintrag ohne Text oder mit Formatnamen wie „%d“). Ohne Schrittweite gilt der kleinste Abstand dichter
   Einträge (`associationStep`: mindestens drei Abstände, alle Vielfache des kleinsten, höchstens 1), sonst 0 („ohne feste
-  Schrittweite“). Batteriegeräte melden den Sollwert oft vor der Übernahme.
+  Schrittweite“). Batteriegeräte melden den Sollwert oft vor der Übernahme. Ein Sonderwert nennt den Text seines Eintrags
+  (`specialCaption`), eine Bedeutung erfindet das Modul nicht. Test `check-sollwert.php`.
 - **Luftbe-/entfeuchter** (`humidifier`): `state`, `humidity`, `setpoint` (Feld `humidity`, `runSetpoint`), `mode` und
   `fan` als **Auswahl per Name** (`runOption` über `DeviceBackend::options()`). **Lüftung** (`fan`) ebenso, Pflicht
   Ein/Aus oder Lüfterstufe. Tests `check-entfeuchter.php`, `check-lueftung.php`.

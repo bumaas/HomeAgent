@@ -252,7 +252,8 @@ assistant can ask again. The last line gives date, time and weekday, for example
 A thermostat reports target and current temperature, for example "setpoint 21 °C (currently 20.6 °C)".
 If the assistant asks for `type=temperature`, it also finds thermostats with a current temperature; you
 do not need a separate temperature entry on the same variable. A setpoint outside its range is called a
-special setpoint: some Homematic thermostats use 100 for "valve fully open".
+special setpoint: some Homematic thermostats use 100 for "valve fully open". If the profile has a text
+for this value, the line includes it, for example "special setpoint “On” (30.5 °C, outside 6 to 30 °C)".
 
 Add an air conditioner as a thermostat together with mode and fan speed. Its line then reads like
 "setpoint 24 °C (currently 20.0 °C), Aus, fan Auto", and the assistant sets both by name as with the

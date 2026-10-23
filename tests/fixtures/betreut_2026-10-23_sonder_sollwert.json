@@ -1,0 +1,41 @@
+{
+    "_quelle": "Betreute Anlage 23.10.2026, 15:03 (Europe/Berlin), Symcon 9.0 C++, nur gelesen. Homematic-IP-Wandthermostate, SET_POINT_TEMPERATURE mit Anwenderprofil Temperature.HM_my (6 bis 30,5, Schrittweite 0, eine Nachkommastelle, Suffix ' °C', Einträge 15 '15,0' bis 24 '24,0' im Abstand von 0,5 und 30.5 'On'), Darstellung Legacy mit diesem Profil. Bad Dachgeschoss steht auf 30,5, Symcon zeigt 'On °C'; Kinderzimmer auf 22, angezeigt '22,0 °C'. Ist-Temperatur ACTUAL_TEMPERATURE mit ~Temperature. sollbereich wie SymconDeviceBackend::setpointRange (30,5 'On' fällt heraus, Raster 0,5 aus den Einträgen). In get_state meldete das Modul 'Sonder-Sollwert 30.5 °C außerhalb von 6 bis 30 °C', ein Assistent bat darum, die Bedeutung des Sonderwerts mitzugeben.",
+    "jetzt": 1792760637,
+    "zeitzone": "Europe/Berlin",
+    "variablen": {
+        "36336": {
+            "name": "BadDG.Heizung.Thermostat:1 SET_POINT_TEMPERATURE",
+            "wert": 30.5,
+            "formatiert": "On °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": { "min": 6, "max": 30, "schritt": 0.5 },
+            "optionen": [[15, "15,0"], [16, "16,0"], [17, "17,0"], [18, "18,0"], [19, "19,0"], [20, "20,0"], [20.5, "20,5"], [21, "21,0"], [21.5, "21,5"], [22, "22,0"], [22.5, "22,5"], [23, "23,0"], [23.5, "23,5"], [24, "24,0"], [30.5, "On"]]
+        },
+        "21989": {
+            "name": "BadDG.Heizung.Thermostat:1 ACTUAL_TEMPERATURE",
+            "wert": 21.6,
+            "formatiert": "21.6 °C",
+            "einheit": "°C"
+        },
+        "49196": {
+            "name": "Kinderzimmer.Heizung.Thermostat:1 SET_POINT_TEMPERATURE",
+            "wert": 22,
+            "formatiert": "22,0 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": { "min": 6, "max": 30, "schritt": 0.5 },
+            "optionen": [[15, "15,0"], [16, "16,0"], [17, "17,0"], [18, "18,0"], [19, "19,0"], [20, "20,0"], [20.5, "20,5"], [21, "21,0"], [21.5, "21,5"], [22, "22,0"], [22.5, "22,5"], [23, "23,0"], [23.5, "23,5"], [24, "24,0"], [30.5, "On"]]
+        },
+        "45978": {
+            "name": "Kinderzimmer.Heizung.Thermostat:1 ACTUAL_TEMPERATURE",
+            "wert": 22.9,
+            "formatiert": "22.9 °C",
+            "einheit": "°C"
+        }
+    },
+    "geraete": [
+        { "Room": "Bad Dachgeschoss", "Name": "Heizung", "Aliases": "", "Type": "thermostat", "StateVariableID": 21989, "SetpointVariableID": 36336, "Invert": false, "ReadOnly": true },
+        { "Room": "Kinderzimmer", "Name": "Heizung", "Aliases": "", "Type": "thermostat", "StateVariableID": 45978, "SetpointVariableID": 49196, "Invert": false, "ReadOnly": true }
+    ]
+}

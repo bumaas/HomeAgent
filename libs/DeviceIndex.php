@@ -3403,7 +3403,10 @@ final class DeviceIndex
         return $unit !== '' ? $unit : ($type === 'humidifier' ? '%' : '°C');
     }
 
-    /** „Soll 21 °C“, außerhalb des Bereichs „Sonder-Sollwert 100 °C außerhalb von 6 bis 30 °C“. */
+    /**
+     * „Soll 21 °C“, außerhalb des Bereichs „Sonder-Sollwert 100 °C außerhalb von 6 bis 30 °C“, mit einem Text im Profil
+     * „Sonder-Sollwert „On“ (30.5 °C, außerhalb von 6 bis 30 °C)“.
+     */
     private function setpointText(array $entry): string
     {
         $variable = $entry['roles']['setpoint'] ?? 0;
@@ -3419,9 +3422,28 @@ final class DeviceIndex
         // Ein Wert außerhalb des Bereichs ist meist ein Sonderwert (HM-CC-TC: 100 = Ventil ganz offen).
         $range = $this->backend->setpointRange($variable);
         if ($range !== null && ($setpoint['value'] < $range['min'] - 0.001 || $setpoint['value'] > $range['max'] + 0.001)) {
-            return sprintf($this->t('special setpoint %s outside %s to %s'), $text, self::formatNumber($range['min']), self::formatNumber($range['max']) . ' ' . $unit);
+            // Der Text des Eintrags sagt, was der Sonderwert bedeutet (betreute Anlage 23.10.2026: 30,5 „On“ bei Homematic IP;
+            // mit der Zahl allein musste der Assistent raten). Die Bedeutung erfindet das Modul nicht.
+            $caption = $this->specialCaption($variable, (float)$setpoint['value']);
+            $outside = [self::formatNumber($range['min']), self::formatNumber($range['max']) . ' ' . $unit];
+            return $caption === null
+                ? sprintf($this->t('special setpoint %s outside %s to %s'), $text, ...$outside)
+                : sprintf($this->t('special setpoint “%s” (%s, outside %s to %s)'), $caption, $text, ...$outside);
         }
         return sprintf($this->t('setpoint %s'), $text);
+    }
+
+    /** Text des Eintrags zu einem Sonderwert, wie setpointRange() ihn erkennt; null ohne Eintrag oder mit Zahl oder Formatnamen. */
+    private function specialCaption(int $variable, float $value): ?string
+    {
+        foreach ($this->backend->options($variable) ?? [] as [$optionValue, $caption]) {
+            $caption = trim($caption);
+            if (is_numeric($optionValue) && abs((float)$optionValue - $value) < 0.001
+                && $caption !== '' && !str_contains($caption, '%') && !is_numeric(str_replace(',', '.', $caption))) {
+                return $caption;
+            }
+        }
+        return null;
     }
 
     /**
