@@ -320,7 +320,7 @@ hangs below it and the rest as "not metered"; with meters the chart of the house
 production of a solar plant
 belongs in the energy balance, not in a meter.
 
-If you enter the **electricity price** in the energy balance (an archived variable in ct/kWh or €/kWh, for a dynamic
+If you enter the **electricity price** in the energy balance (an archived variable in ct/kWh or €/kWh, "ct" alone is enough as the unit, for a dynamic
 tariff for example the current price from the Tibber module) and the feed-in tariff, the house consumption also names
 the costs: "Costs 38.21 € for 122.7 kWh grid import (paid on average 31.1 ct/kWh, average price 35.4 ct/kWh). Feed-in
 60.47 €. Without solar and battery it would have been 259.20 €." Each hour counts grid import times the hourly mean

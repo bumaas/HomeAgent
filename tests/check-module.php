@@ -602,7 +602,8 @@ foreach ([
     'HAGT_ExportConfiguration(int $InstanceID): string returns all properties as JSON, lists as lists and every token as <token> (an empty token stays empty); no other function reads Accesses without tokens.' => 'HAGT_ExportConfiguration(int $InstanceID): string liefert alle Properties als JSON, Listen als Liste und jedes Token als <token> (ein leeres Token bleibt leer); keine andere Funktion liest Accesses ohne Tokens.',
     'Properties are written with IPS_SetProperty(int $InstanceID, string $Name, mixed $Value), a list as JSON text, and take effect with IPS_ApplyChanges(int $InstanceID).' => 'Properties schreibt IPS_SetProperty(int $InstanceID, string $Name, mixed $Value), eine Liste als JSON-Text, wirksam werden sie mit IPS_ApplyChanges(int $InstanceID).',
     'HAGT_AddAccess(int $InstanceID, string $Name, bool $ReadOnly, bool $InPath, string $DefaultRoom): string adds an access without a token and applies it; the module then creates the token. A script that does not know the tokens adds accesses this way and never writes Accesses itself.' => 'HAGT_AddAccess(int $InstanceID, string $Name, bool $ReadOnly, bool $InPath, string $DefaultRoom): string legt einen Zugang ohne Token an und übernimmt ihn; das Token erzeugt dann das Modul. Ein Skript, das die Tokens nicht kennt, legt Zugänge so an und schreibt Accesses nie selbst.',
-    'PriceVariableID (electricity price, archived, in ct/kWh or €/kWh; a suffix with ct or Cent means cents, with € or EUR euros, otherwise values above 2 count as cents)' => 'PriceVariableID (Strompreis, archiviert, in ct/kWh oder €/kWh; ein Suffix mit ct oder Cent bedeutet Cent, mit € oder EUR Euro, sonst zählen Werte über 2 als Cent)',
+    // Prompttest 23.10.2026: Neben „ct/kWh“ blieb offen, ob die Einheit „ct“ allein genügt
+    'PriceVariableID (electricity price, archived, in ct/kWh or €/kWh; a suffix containing ct or Cent means cents, ct alone is enough, with € or EUR euros, otherwise values above 2 count as cents)' => 'PriceVariableID (Strompreis, archiviert, in ct/kWh oder €/kWh; ein Suffix, das ct oder Cent enthält, bedeutet Cent, ct allein genügt, mit € oder EUR Euro, sonst zählen Werte über 2 als Cent)',
     'Other assistants such as ChatGPT, Codex or Claude Code use their own token, in the header or with InPath in the address.' => 'Andere Assistenten wie ChatGPT, Codex oder Claude Code nutzen ihr eigenes Token, im Header oder mit InPath in der Adresse.',
 ] as $en => $de) {
     pruefe(str_contains($hinweis, $en), 'Hinweistext nennt: ' . $en);
@@ -617,6 +618,14 @@ foreach (['EINRICHTUNG.md', 'EINRICHTUNG.en.md'] as $datei) {
     }
     foreach (['IPS_GetProperty', 'IPS_GetConfiguration(', 'with ReadOnly. ', 'mit ReadOnly. ', 'Küche EG', 'ground floor" and', ' zunächst.', ' at first.'] as $nicht) {
         pruefe(!str_contains($auftrag, $nicht), $datei . ' enthält nicht mehr: ' . $nicht);
+    }
+    // Prompttest 23.10.2026 (ChatGPT, neue Instanz): Vorrang der Vorlagen, Zeitstempel bei doppelter Anbindung, Gerät ohne
+    // Raum und unklares „gemessen von“ als offene Frage
+    $muster = $datei === 'EINRICHTUNG.md'
+        ? ['aus Schritt 0 übernommen ist, geht vor', 'VariableUpdated', 'nicht mit leerem Raum', 'welcher Zähler über ihm misst (MeteredBy)']
+        : ['taken over in step 0 comes first', 'VariableUpdated', 'do not add it with an empty', 'which meter measures above it (MeteredBy)'];
+    foreach ($muster as $muss) {
+        pruefe(str_contains(preg_replace('/\s+/', ' ', $auftrag), $muss), $datei . ' nennt ' . $muss);
     }
     // Was der Anwender vor dem Absenden ändert, steht als eine Zeile ganz oben (Burkhard 22.10.2026: „die Stellen findet
     // man nur schwer“); nach den Assistenten fragt der Agent selbst.

@@ -122,8 +122,9 @@ So gehst du vor:
    Wohnzimmer), dazu Etage und Aliase (z. B. „Kinderzimmer“ als Alias für „Leon“). Keine technischen
    Zusätze, jeder Raumname nur einmal. Neue Räume, die es auf mehreren Etagen gibt, bekommen je Etage
    einen eigenen Namen (z. B. „Küche oben“ und „Küche unten“) und beide den gemeinsamen als Alias
-   („Küche“). Vorhandene Räume behalten ihren Namen, eine Umbenennung schlägst du nur vor. Gibt es eine
-   Alexa-Instanz, nimm deren Gerätenamen und Räume als Vorlage, sonst die Kategorien im Objektbaum.
+   („Küche“). Vorhandene Räume behalten ihren Namen, eine Umbenennung schlägst du nur vor. Was schon in
+   der Instanz steht oder aus Schritt 0 übernommen ist, geht vor. Für alles andere nimm die Gerätenamen
+   und Räume einer Alexa-Instanz als Vorlage, gibt es keine, die Kategorien im Objektbaum.
 3. Geräte: Geh alle Geräteinstanzen durch, auch ModBus-, MQTT- und Cloud-Geräte, und schlag eine
    Freigabeliste vor, mit sprechbaren Namen, je Raum eindeutig.
    Aufnehmen:
@@ -139,13 +140,15 @@ So gehst du vor:
      PriceVariableID, die Energiebilanz als Liste Sources: je Netzanschluss, PV-Anlage und Batterie
      eine Zeile mit Zähler und Leistung.
    - Ist ein Gerät erkennbar mehrfach angebunden (etwa über Matter und eine Bridge, mit gleichem Namen
-     und Raum), nimm die Anbindung mit den jüngsten Werten und nenne die andere.
+     und Raum), nimm die Anbindung, deren Variablen zuletzt aktualisiert wurden (VariableUpdated aus
+     IPS_GetVariable, nicht VariableChanged), und nenne die andere.
    Nur abfragen (ReadOnly): Heizung und Lüftung, dazu Steckdosen, an denen Netzwerk, Server oder die
    Hausautomation selbst hängen.
    Nicht aufnehmen, auch nicht zum Abfragen: Schlösser, Alarmanlage, Türöffner, Garagentore und Tore.
    Relais, die eine smarte Lampe mit Strom versorgen, nicht als Licht; ihre Leistung darf die Lampe
    bekommen. Steht so etwas schon in der Instanz, schlag vor, es zu entfernen.
-   Als offene Frage statt eines Eintrags: ein Gerät mit unklarem Raum, ein Relais, hinter dem
+   Als offene Frage statt eines Eintrags: ein Gerät mit unklarem Raum (nicht mit leerem Raum
+   eintragen), ein Zähler, bei dem unklar ist, welcher Zähler über ihm misst (MeteredBy), ein Relais, hinter dem
    vielleicht eine smarte Lampe hängt, zwei Anbindungen, die vielleicht dasselbe Gerät sind, ein
    Energiezähler, der nicht als Zähler archiviert ist, eine Leistung oder ein Zähler mit einer Einheit,
    die der Hinweistext nicht nennt oder die mehrere Kanäle misst, Zähler von Batterie und PV mit

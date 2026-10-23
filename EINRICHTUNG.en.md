@@ -121,9 +121,9 @@ How to proceed:
    bathroom, Living room), with floor and aliases (e.g. "Kids' room" as an alias for "Leon"). No
    technical additions, each room name only once. New rooms that exist on several floors get one name
    per floor (e.g. "Kitchen upstairs" and "Kitchen downstairs") and both get the common name as an
-   alias ("Kitchen"). Existing rooms keep their names, a renaming you only propose. If there is an
-   Alexa instance, use its device names and rooms as a template, otherwise the categories in the
-   object tree.
+   alias ("Kitchen"). Existing rooms keep their names, a renaming you only propose. What is already in
+   the instance or taken over in step 0 comes first. For everything else use the device names and rooms
+   of an Alexa instance as a template, if there is none, the categories in the object tree.
 3. Devices: Go through all device instances, including ModBus, MQTT and cloud devices, and propose a
    release list with speakable names, unique per room.
    Add:
@@ -139,13 +139,15 @@ How to proceed:
      as PriceVariableID, the energy balance as the list Sources: one row per grid connection, solar
      plant and battery with meter and power.
    - If a device is evidently connected more than once (e.g. through Matter and a bridge, with the
-     same name and room), take the connection with the most recent values and name the other one.
+     same name and room), take the connection whose variables were updated last (VariableUpdated from
+     IPS_GetVariable, not VariableChanged) and name the other one.
    Query only (ReadOnly): heating and ventilation, and sockets that power the network, servers or the
    home automation itself.
    Do not add, not even for querying: locks, alarm system, door openers, garage doors and gates. Do not
    add relays that power a smart lamp as a light; the lamp may get their power. If such a device is
    already in the instance, propose to remove it.
-   As an open question instead of an entry: a device with an unclear room, a relay that may power a
+   As an open question instead of an entry: a device with an unclear room (do not add it with an empty
+   room), a meter where it is unclear which meter measures above it (MeteredBy), a relay that may power a
    smart lamp, two connections that may be the same device, an energy meter that is not archived as a
    counter, a power or meter with a unit the hint does not name or that measures several channels,
    battery and solar meters with an unclear direction or boundary, the separate heat of a heat pump

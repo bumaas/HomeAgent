@@ -334,7 +334,7 @@ letzten 30 Tagen mehr als 105 % seines eigenen Werts, weist der Selbsttest darau
 zeigt, was unter ihm hängt, und den Rest als „nicht erfasst“; das Diagramm des Hauses je Gerät zeigt mit Zählern die
 oberste Ebene. Die Erzeugung einer PV-Anlage gehört in die Energiebilanz, nicht in einen Zähler.
 
-Tragen Sie in der Energiebilanz den **Strompreis** ein (eine archivierte Variable in ct/kWh oder €/kWh, bei einem
+Tragen Sie in der Energiebilanz den **Strompreis** ein (eine archivierte Variable in ct/kWh oder €/kWh, als Einheit genügt „ct“, bei einem
 dynamischen Tarif etwa der aktuelle Preis aus dem Tibber-Modul) und die Einspeisevergütung, nennt der Hausverbrauch
 auch die Kosten: „Kosten 38.21 € für 122.7 kWh Netzbezug (im Mittel 31.1 ct/kWh bezahlt, Durchschnittspreis 35.4 ct/kWh).
 Einspeisung 60.47 €. Ohne PV und Batterie wären es 259.20 € gewesen.“ Gerechnet wird je Stunde Netzbezug mal
