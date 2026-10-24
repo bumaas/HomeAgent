@@ -7,12 +7,12 @@ operates Symcon with it, whether spoken, typed or from a workflow of its own. It
 still open?", say "Turn off the lights in the living room" or close a blind halfway and gets a short,
 unambiguous answer. It only sees and switches the devices you release.
 
-> **Status:** early preview. Querying, switching, setting brightness, colour temperature, colour, position,
+> **Status:** beta. Querying, switching, setting brightness, colour temperature, colour, position,
 > heating setpoint and target humidity, operating mode and fan speed of dehumidifiers and ventilation units,
 > stopping blinds, consumption and power also behind meters and sub-meters, heat and performance factor of heat pumps, the history of measured values and power, timelines of states, starting scenes as well as playback
 > and volume of media players work. The device list can be proposed from an Alexa instance. The Claude app can
 > sign in with OAuth. The form shows what did not work, a protocol for troubleshooting can be switched on. So far
-> the module has been tried on three systems.
+> the module has been tried on three systems and by the first testers.
 
 ## When do I need this?
 
@@ -647,7 +647,7 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
   unit still confirms it right away, so "set" then means "handed over to the central unit".
 - For a blind that reports only on arrival and has no moving state, the module does not know after
   the command whether it is moving.
-- The assistant does not see errors inside a scene script, it only learns that the script was started.
+- The assistant does not see errors inside a scene script or flow script, it only learns that it was started.
 - The meter check of the self-test only finds wrong values that disappear again. If a meter jumps up for good, for
   example when it is replaced by one with a higher reading, the archive counts the jump as consumption without the
   self-test noticing. It does not check small wrong values below a fifth of a usual month or months shortly after a reset.

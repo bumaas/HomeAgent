@@ -8,12 +8,12 @@ spricht, bedient damit Symcon, ob gesprochen, getippt oder aus einem eigenen Abl
 Rollladen halb schließen und bekommt eine kurze, eindeutige Antwort. Er sieht und schaltet dabei nur
 die Geräte, die Sie freigeben.
 
-> **Stand:** frühe Vorschau. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Farbe, Position,
+> **Stand:** Beta. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Farbe, Position,
 > Heizungs-Sollwert und Zielfeuchte, Betriebsart und Lüfterstufe von Luftentfeuchtern und Lüftungen, das
 > Anhalten von Rollläden, Verbrauch und Leistung auch hinter Zählern und Unterzählern, Wärme und Arbeitszahl von Wärmepumpen, der Verlauf von Messwerten und Leistungen, Zeitleisten von Zuständen, das Starten von Szenen sowie
 > Wiedergabe und Lautstärke von Mediaplayern gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz
 > vorschlagen. Die Claude-App meldet sich auf Wunsch per OAuth an. Was nicht geklappt hat, zeigt das
-> Formular, ein Protokoll zur Fehlersuche lässt sich einschalten. Erprobt ist das Modul bisher auf drei Anlagen.
+> Formular, ein Protokoll zur Fehlersuche lässt sich einschalten. Erprobt ist das Modul auf drei Anlagen und bei den ersten Testern.
 
 ## Wann brauche ich das?
 
@@ -662,7 +662,7 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
   Die Zentrale meldet ihn trotzdem sofort zurück, „gestellt“ heißt dann „an die Zentrale übergeben“.
 - Bei einem Rollladen, der sich erst am Ziel meldet und keinen Fahrstatus hat, weiß das Modul nach
   dem Fahrbefehl nicht, ob er fährt.
-- Fehler innerhalb eines Szenen-Skripts sieht der Assistent nicht, er erfährt nur vom Start.
+- Fehler innerhalb eines Szenen-Skripts oder Ablaufplans sieht der Assistent nicht, er erfährt nur vom Start.
 - Die Prüfung der Zähler im Selbsttest findet nur Fehlwerte, die wieder verschwinden. Springt ein Zähler dauerhaft nach oben, etwa beim Tausch gegen einen Zähler mit höherem Stand, zählt das Archiv den Sprung als Verbrauch, ohne dass der Selbsttest es merkt. Kleine Fehlwerte unter einem Fünftel eines üblichen Monats und Monate kurz nach einer Rücksetzung prüft er nicht.
 - Die Hausleistung mit `type=power` umfasst höchstens 400 Tage.
 - Wärme, Arbeitszahl und Leistungszahl gibt es nur als Text, nicht im Diagramm und nicht mit `type=power`. Zählt der
