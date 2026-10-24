@@ -853,7 +853,7 @@ final class DeviceIndex
      * gegen den Zuwachs seit dem ersten Satz), nur bei einer Abweichung die Monate. Jede Variable einmal, die der Bilanz zuerst.
      *
      * @return list<array{variable: int, key: string, label: string, months: array<int, float>}> key ist der Teil der Bilanz
-     *         ('' bei Geräten), label der Name der Quelle bzw. Raum und Name des Geräts, months Monatsbeginn => kWh zu viel
+     *         ('' bei Geräten), label der Name der Quelle bzw. „Name (Raum)“ des Geräts, months Monatsbeginn => kWh zu viel
      */
     public function counterJumps(): array
     {
@@ -866,7 +866,8 @@ final class DeviceIndex
         foreach ($this->entries as $entry) {
             $id = $entry['roles']['energy'] ?? 0;
             if ($id > 0) {
-                $counters[$id] ??= ['', trim($entry['Room'] . ' ' . $entry['Name'])];
+                // „Name (Raum)“ wie die Fehler der Liste (B99)
+                $counters[$id] ??= ['', trim($entry['Room']) === '' ? $entry['Name'] : $entry['Name'] . ' (' . trim($entry['Room']) . ')'];
             }
         }
         $jumps = [];

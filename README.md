@@ -55,8 +55,8 @@ geht und was bei einem Update zu tun ist, steht in [Einrichten und aktualisieren
    Bereich **Geräte** aufklappen und in der Liste je Gerät Raum, Name und Typ eintragen; der Dialog fragt
    danach die passenden Variablen ab (siehe [Die Freigabeliste](#die-freigabeliste)).
 5. **Prüfen.** **Selbsttest ausführen** meldet fehlende Aktionen, die erkannte Richtung jedes Rollladens
-   und den Bereich jedes Thermostats. **Zustand aller freigegebenen Geräte anzeigen** zeigt, was auch der
-   Assistent sieht.
+   und den Bereich jedes Thermostats und sagt, ob eine Energiebilanz eingetragen ist. **Zustand aller
+   freigegebenen Geräte anzeigen** zeigt, was auch der Assistent sieht. Beides erscheint in einem eigenen Fenster.
 6. **Assistenten verbinden.** Unter der Zugangsliste steht im Bereich **Endpunkt und Zugänge** für jede Art von
    Assistent, was zu tun ist, mit den Adressen Ihrer Anlage.
 
@@ -240,10 +240,10 @@ Feuchtesensor. Jedes Gerät mehr macht die Antworten des Assistenten langsamer u
 
 ## Szenen
 
-Eine Szene ist ein Skript Ihrer Anlage, das der Assistent auf Zuruf starten darf, zum Beispiel
-„Filmabend“ oder „Gute Nacht“. Tragen Sie in der Liste **Freigegebene Szenen** je Szene einen Namen
-und das Skript ein, dazu nach Wunsch Aliase und einen Raum. Den Raum braucht es nur, wenn zwei Szenen
-gleich heißen.
+Eine Szene ist ein Skript oder Ablaufplan Ihrer Anlage, den der Assistent auf Zuruf starten darf, zum
+Beispiel „Filmabend“ oder „Gute Nacht“. Tragen Sie in der Liste **Freigegebene Szenen** je Szene einen
+Namen und das Skript bzw. den Ablaufplan ein, dazu nach Wunsch Aliase und einen Raum. Den Raum braucht es
+nur, wenn zwei Szenen gleich heißen. Ein Ablaufplan ohne Aktion lässt sich nicht starten.
 
 ## Was der Assistent kann
 

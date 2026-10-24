@@ -54,7 +54,8 @@ to do after an update is described in [Setting up and updating](EINRICHTUNG.en.m
    devices, expand the section **Devices** and enter room, name and type for each device in the list; the
    dialog then asks for the matching variables (see [The release list](#the-release-list)).
 5. **Check.** **Run self-test** reports missing actions, the recognised direction of each blind and the
-   range of each thermostat. **Show state of all released devices** shows what the assistant sees.
+   range of each thermostat and says whether an energy balance is set up. **Show state of all released
+   devices** shows what the assistant sees. Both appear in a window of their own.
 6. **Connect the assistant.** Below the list of accesses, the section **Endpoint and accesses** says
    for each kind of assistant what to do, with the addresses of your system.
 
@@ -232,9 +233,10 @@ Every additional device makes the assistant's answers slower and less reliable.
 
 ## Scenes
 
-A scene is a script of your system that the assistant may start on request, for example "movie night"
-or "good night". In the list **Released scenes**, enter a name and the script for each scene, plus
-aliases and a room if you like. The room is only needed if two scenes share a name.
+A scene is a script or flow script of your system that the assistant may start on request, for example
+"movie night" or "good night". In the list **Released scenes**, enter a name and the script or flow
+script for each scene, plus aliases and a room if you like. The room is only needed if two scenes share a
+name. A flow script without an action cannot be started.
 
 ## What the assistant can do
 

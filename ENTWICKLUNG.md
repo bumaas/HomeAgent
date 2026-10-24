@@ -176,6 +176,11 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   noch im Chat steht. Gemessen dabei: Eine Anlage ohne Fernzugriff-Kennwort nimmt JSON-RPC im lokalen Netz ohne
   Anmeldung an (Testbox), mit Kennwort antwortet sie mit HTTP 401 und -41001 (nuc).
 
+- **Ablaufpläne als Szenen** (build 243, B98): Der Szenendialog bot Ablaufpläne schon an (Durchsicht 24.10.2026). Am nuc
+  belegt: `IPS_RunScript` auf einen Ablaufplan mit einem Schritt „Warten“ liefert `true`, die Ablaufplan-Statistik zeigt
+  den Durchlauf mit Status 2 „Erfolgreich beendet“. Ein leerer Ablaufplan startet nicht (`false`, Warnung „Kann
+  Ablaufplan nicht starten, sofern keine Aktionen definiert wurden“); das Modul meldet dann den Fehlschlag.
+
 ## Geräte und Typen
 
 - **Melder mit einer Zahl** (Fenster, Tür, Präsenz, Wasser): aktiv über 0, mit dem Haken „Umgekehrt“ nur bei 0
@@ -609,6 +614,12 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
 
 ## Formular und Diagnose
 
+- **Ausgabe von Selbsttest und Zustand** (build 243, B99): Beide Knöpfe gaben per `echo` ins Meldungsfenster aus, das
+  bei der Durchsicht am 24.10.2026 zu schmal war (Zeilen umbrochen). Dazu „Thermostat Gast Thermostat Gästezimmer“ (Raum
+  und Name ohne Grenze), „0.5“ im deutschen Text, „Gerät(e)“, und ohne Problem sagte der Selbsttest nichts zur Bilanz,
+  „keine“ und „in Ordnung“ sahen gleich aus. Jetzt eigenes Fenster mit einer Zeile je Befund, „Name (Raum)“ wie die
+  Fehler der Liste, Dezimalzeichen aus der Übersetzung, Einzahl und Mehrzahl als eigene Schlüssel, Schlusszeile zur
+  Bilanz. Der Zustand bleibt der Text von `get_state` (für den Assistenten, mit Punkt und englischen Typen).
 - Bereiche „Endpunkt und Zugänge“, „Räume“, „Geräte“, „Szenen“ und „Energiebilanz“ als
   `ExpansionPanel`, in „Endpunkt und Zugänge“ dazu drei Unterbereiche (`PanelClaude`, `PanelHA`, `PanelOther`);
   der Zustand aller steht im Attribut `ExpandedPanels` (`UITogglePanel`, Namen in `PANELS`).

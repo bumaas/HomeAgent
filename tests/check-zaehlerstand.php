@@ -77,7 +77,8 @@ pruefe(!isset($b[18681]) && ($abgelesen[18681] ?? 99) <= 3, 'alte Einspeisung mi
 $n = sprunge('nuc');
 pruefe(array_keys(monate($n[56021] ?? null)) === ['2026-07', '2026-08', '2026-10'], 'Wärmepumpe: Fehlwerte im Juli, August und Oktober 2026 (B40): ' . json_encode(monate($n[56021] ?? null)));
 pruefe((monate($n[56021] ?? null)['2026-08'] ?? 0) > 4.2e9, 'der August mit über vier Milliarden kWh: ' . json_encode(monate($n[56021] ?? null)));
-pruefe(($n[56021]['label'] ?? '') === 'Keller Wärmepumpe Heizen', 'mit Raum: ' . ($n[56021]['label'] ?? ''));
+// B99: „Name (Raum)“ wie die Fehler der Liste, nicht „Raum Name“ ohne Grenze
+pruefe(($n[56021]['label'] ?? '') === 'Wärmepumpe Heizen (Keller)', 'mit Raum in Klammern: ' . ($n[56021]['label'] ?? ''));
 pruefe(!isset($n[47491]), 'Einspeisung: 2.5 kWh Abweichung im November 2024 sind kein Befund: ' . json_encode(monate($n[47491] ?? null)));
 pruefe(monate($n[36579] ?? null) === ['2026-05' => 27.2], 'Wallbox in Wh, gerechnet in kWh: 41 Rücksprünge im Mai 2026, der einzelne im August und kleine unter einem Fünftel eines üblichen Monats zählen nicht: ' . json_encode(monate($n[36579] ?? null)));
 pruefe(!isset($n[16183]), 'Schalterleiste: Rücksetzungen auf 0 in 2023 und 2024 sind kein Befund: ' . json_encode(monate($n[16183] ?? null)));

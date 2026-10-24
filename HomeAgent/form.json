@@ -1131,7 +1131,7 @@
         {
           "type": "List",
           "name": "Scenes",
-          "caption": "Released scenes (scripts the assistant may start)",
+          "caption": "Released scenes (scripts or flow scripts the assistant may start)",
           "add": true,
           "delete": true,
           "rowCount": 5,
@@ -1475,12 +1475,12 @@
     {
       "type": "Button",
       "caption": "Show state of all released devices",
-      "onClick": "echo HAGT_QueryState($id, '', '', '', false);"
+      "onClick": "HAGT_UIShowState($id);"
     },
     {
       "type": "Button",
       "caption": "Run self-test",
-      "onClick": "echo HAGT_RunSelfTest($id);"
+      "onClick": "HAGT_UIShowSelfTest($id);"
     },
     {
       "type": "RowLayout",
@@ -1610,6 +1610,39 @@
             "name": "SecretValue",
             "caption": "",
             "width": "100%"
+          }
+        ]
+      }
+    },
+    {
+      "type": "PopupAlert",
+      "name": "ResultPopup",
+      "visible": false,
+      "popup": {
+        "caption": "Result",
+        "width": "90%",
+        "closeCaption": "Close",
+        "items": [
+          {
+            "type": "Label",
+            "name": "ResultCaption",
+            "caption": "",
+            "bold": true
+          },
+          {
+            "type": "List",
+            "name": "ResultView",
+            "rowCount": 20,
+            "add": false,
+            "delete": false,
+            "columns": [
+              {
+                "caption": "Line",
+                "name": "Line",
+                "width": "auto"
+              }
+            ],
+            "values": []
           }
         ]
       }

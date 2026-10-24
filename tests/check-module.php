@@ -247,7 +247,7 @@ pruefe(str_starts_with($text, '0 of 1 devices are now off') && str_contains($tex
 pruefe(GetValue($licht) === true, 'die Variable bleibt unverändert');
 pruefe(str_contains($m->SetLevel('', '', 'Deckenlicht', 50.0), 'has no adjustable brightness or position'), 'SetLevel ohne Stufenvariable');
 pruefe(str_starts_with($m->SwitchDevices('', '', '', true), 'Nothing was changed'), 'SwitchDevices ohne Filter ändert nichts');
-pruefe(str_contains($m->RunSelfTest(), 'Note: Küche Deckenlicht has no action'), 'Selbsttest weist auf das nicht schaltbare Licht hin, mit Raum und Name: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), 'Note: Deckenlicht (Küche) has no action'), 'Selbsttest weist auf das nicht schaltbare Licht hin, mit Raum und Name: ' . $m->RunSelfTest());
 
 // Wertebereich: aus der Darstellung, sonst aus dem Legacy-Profil, sonst unbekannt
 $anlage = new SymconDeviceBackend(static fn (string $t): string => $t);
@@ -481,8 +481,8 @@ pruefe($status() === IS_ACTIVE, 'der Standardraum darf ein Alias der Raumliste s
 // Selbsttest: Tippfehler im Raum und Räume ohne Gerät als Hinweis, kein Fehler. „Nur abfragen“ je Gerät.
 $setze('Devices', array_merge($geraeteStart, [['Room' => 'Flur', 'Name' => 'Flurlicht', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $licht, 'LevelVariableID' => 0, 'Invert' => false, 'ReadOnly' => true]]));
 $test = $m->RunSelfTest();
-pruefe(str_starts_with($test, "OK\n") && str_contains($test, 'Note: room "Flur" (1 device(s)) is not in the room list') && str_contains($test, 'Note: room "Bad" of the room list has no device') && !str_contains($test, 'room "Küche"'), 'Selbsttest weist auf Räume außerhalb der Liste und Räume ohne Gerät hin: ' . $test);
-pruefe(str_contains($test, 'Note: Küche Deckenlicht has no action') && !str_contains($test, 'Flurlicht has no action'), 'bei „nur abfragen“ entfällt der Hinweis auf die fehlende Aktion');
+pruefe(str_starts_with($test, "OK\n") && str_contains($test, 'Note: room "Flur" (1 device) is not in the room list') && str_contains($test, 'Note: room "Bad" of the room list has no device') && !str_contains($test, 'room "Küche"'), 'Selbsttest weist auf Räume außerhalb der Liste und Räume ohne Gerät hin: ' . $test);
+pruefe(str_contains($test, 'Note: Deckenlicht (Küche) has no action') && !str_contains($test, 'Flurlicht has no action'), 'bei „nur abfragen“ entfällt der Hinweis auf die fehlende Aktion');
 pruefe($m->SwitchDevices('', '', 'Flurlicht', false) === 'Nothing was changed: the devices matching name=Flurlicht can only be read.', '„nur abfragen“ bei Namensnennung: ' . $m->SwitchDevices('', '', 'Flurlicht', false));
 pruefe(str_contains($m->QueryState('', '', 'Flurlicht', false), 'Flur | Flurlicht | light | on'), 'abfragen lässt sich das Gerät');
 
@@ -499,12 +499,50 @@ pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'gültige Szenenli
 pruefe($anlage->scriptExists($skript) && !$anlage->scriptExists(69999) && !$anlage->scriptExists(0), 'scriptExists kennt das Skript, 0 und Fremdes nicht');
 pruefe($m->RunScene('', 'kochlicht') === 'Scene "Kochen" was started.', 'RunScene über den Alias: ' . $m->RunScene('', 'kochlicht'));
 pruefe(str_starts_with($m->RunScene('', ''), '1 scene(s) available, none was started') && str_contains($m->RunScene('', ''), "\nKüche | Kochen"), 'RunScene ohne Namen nennt die Szenen: ' . $m->RunScene('', ''));
-pruefe(str_contains($m->RunSelfTest(), '2 released device(s), 1 scene(s), endpoint'), 'Selbsttest zählt die Szenen: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), '2 released devices, 1 scene, endpoint'), 'Selbsttest zählt die Szenen: ' . $m->RunSelfTest());
+// B99 (Durchsicht des Formulars 24.10.2026): Ohne Bilanz sagt der Selbsttest es, sonst sieht „keine Bilanz“ aus wie
+// „Bilanz in Ordnung“. Zahlen im deutschen Text mit Komma, das Trennzeichen kommt aus der Übersetzung.
+pruefe(str_contains($m->RunSelfTest(), "\nEnergy balance: none\n"), 'ohne Bilanz nennt der Selbsttest sie als „keine“: ' . $m->RunSelfTest());
+pruefe($deutschVon('.') === ',' && $deutschVon('Energy balance: none') === 'Energiebilanz: keine', 'Dezimalkomma und Bilanzzeile auf Deutsch');
+// Ausgabe in einem breiten Fenster, eine Zeile je Befund
+$m->formUpdates = [];
+if (method_exists($m, 'UIShowSelfTest')) {
+    $m->UIShowSelfTest();
+}
+$zeilen = [];
+$offen = false;
+foreach ($m->formUpdates as [$feld, $parameter, $wert]) {
+    if ($feld === 'ResultView' && $parameter === 'values') {
+        $zeilen = array_column(json_decode((string)$wert, true), 'Line');
+    }
+    $offen = $offen || ($feld === 'ResultPopup' && $parameter === 'visible' && $wert === true);
+}
+pruefe($offen && $zeilen === explode("\n", $m->RunSelfTest()), 'der Selbsttest erscheint im Fenster „Ergebnis“, eine Zeile je Befund: ' . json_encode($zeilen, JSON_UNESCAPED_UNICODE));
+$m->formUpdates = [];
+if (method_exists($m, 'UIShowState')) {
+    $m->UIShowState();
+}
+$zeilen = [];
+foreach ($m->formUpdates as [$feld, $parameter, $wert]) {
+    if ($feld === 'ResultView' && $parameter === 'values') {
+        $zeilen = array_column(json_decode((string)$wert, true), 'Line');
+    }
+}
+pruefe($zeilen === explode("\n", $m->QueryState('', '', '', false)), 'der Zustand erscheint im selben Fenster: ' . json_encode($zeilen, JSON_UNESCAPED_UNICODE));
+$knoepfeB99 = array_column(json_decode($m->GetConfigurationForm(), true)['actions'], 'onClick', 'caption');
+pruefe(($knoepfeB99['Show state of all released devices'] ?? '') === 'HAGT_UIShowState($id);', 'der Knopf für den Zustand öffnet das Fenster: ' . json_encode($knoepfeB99));
 
 /* --- Drei Werkzeuge; das Schema von set_state nennt nur, was ein freigegebenes Gerät kann --- */
 
 $liste = $werkzeuge->invoke($m, null);
 pruefe(array_column($liste, 'name') === ['get_state', 'set_state', 'run_scene'], 'drei Werkzeuge: ' . implode(', ', array_column($liste, 'name')));
+// B98 (24.10.2026): Ablaufpläne starten als Szene wie Skripte (am nuc belegt: IPS_RunScript auf einen Ablaufplan mit
+// einem Schritt „Warten“, Status 2 „Erfolgreich beendet“); Beschreibung und Formular nennen beide.
+$szenenBeschreibung = (string)(array_column($liste, 'description', 'name')['run_scene'] ?? '');
+pruefe(str_contains($szenenBeschreibung, 'a prepared script or flow script of the home'), 'run_scene nennt Skripte und Ablaufpläne: ' . $szenenBeschreibung);
+$szenenListe = array_column(flach(json_decode($m->GetConfigurationForm(), true)['elements']), null, 'name')['Scenes'] ?? [];
+pruefe(($szenenListe['caption'] ?? '') === 'Released scenes (scripts or flow scripts the assistant may start)'
+    && $deutschVon('Released scenes (scripts or flow scripts the assistant may start)') === 'Freigegebene Szenen (Skripte oder Ablaufpläne, die der Assistent starten darf)', 'die Szenenliste nennt Ablaufpläne: ' . ($szenenListe['caption'] ?? '–'));
 $hinweise = array_column($liste, 'annotations', 'name');
 pruefe(array_unique(array_column($hinweise, 'openWorldHint')) === [false] && count(array_column($hinweise, 'openWorldHint')) === 3, 'alle drei Werkzeuge tragen openWorldHint false: ' . json_encode($hinweise));
 pruefe(($hinweise['get_state']['readOnlyHint'] ?? null) === true && ($hinweise['set_state'] ?? null) === ['readOnlyHint' => false, 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false], 'Annotationen von get_state und set_state: ' . json_encode($hinweise['set_state'] ?? null));
@@ -567,11 +605,11 @@ IPS_ApplyChanges($iid);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Rollladen mit Position, Licht nur mit Helligkeit, Fenster mit Kontakt: aktiv');
 $text = $m->QueryState('', '', '', false);
 pruefe(str_starts_with($text, '3 device(s) found') && !str_contains($text, 'not available') && str_contains($text, 'Küche | Dimmer | light | on (') && str_contains($text, 'Küche | Tür | door | open'), 'alle drei sind abfragbar: ' . $text);
-pruefe(str_contains($m->RunSelfTest(), 'Note: Küche Rollo has no action') && str_contains($m->RunSelfTest(), 'Note: Küche Dimmer has no action'), 'Selbsttest prüft die Aktion an der Variable, die gestellt wird: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), 'Note: Rollo (Küche) has no action') && str_contains($m->RunSelfTest(), 'Note: Dimmer (Küche) has no action'), 'Selbsttest prüft die Aktion an der Variable, die gestellt wird: ' . $m->RunSelfTest());
 
 // Den Selbsttest gibt es als Knopf im Formular, dort liest der Anwender die erkannte Richtung ab
 $knoepfe = array_column(json_decode($m->GetConfigurationForm(), true)['actions'], 'onClick', 'caption');
-pruefe(($knoepfe['Run self-test'] ?? '') === 'echo HAGT_RunSelfTest($id);', 'Formular hat den Knopf für den Selbsttest: ' . json_encode($knoepfe));
+pruefe(($knoepfe['Run self-test'] ?? '') === 'HAGT_UIShowSelfTest($id);', 'Formular hat den Knopf für den Selbsttest: ' . json_encode($knoepfe));
 
 // Hinweis für Skripte und KI-Assistenten: Was im Blindtest vom 11.10.2026 fehlte (Backlog B52), steht drin,
 // englisch im Formular und deutsch in der Übersetzung.
@@ -663,7 +701,7 @@ foreach (['EINRICHTUNG.md', 'EINRICHTUNG.en.md'] as $datei) {
 pruefe(!str_contains($hinweis, 'the Claude app (custom connector without sign-in) only work with InPath'),'der Hinweistext schickt die Claude-App nicht mehr auf den Weg mit Token in der Adresse');
 
 // Der Selbsttest nennt je Rollladen die Richtung und woher sie stammt
-pruefe(str_contains($m->RunSelfTest(), 'Blind Küche Rollo: open at 0, closed at 100 (default: the smallest value is open)'), 'Selbsttest nennt die Richtung des Rollladens: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), 'Blind Rollo (Küche): open at 0, closed at 100 (default: the smallest value is open)'), 'Selbsttest nennt die Richtung des Rollladens: ' . $m->RunSelfTest());
 pruefe(str_contains($m->QueryState('', 'blind', '', false), 'Küche | Rollo | blind | open'), 'QueryState rechnet die Position selbst: ' . $m->QueryState('', 'blind', '', false));
 IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rolloHm, 'Invert' => false],
@@ -673,10 +711,10 @@ IPS_SetProperty($iid, 'Devices', json_encode([
 ]));
 IPS_ApplyChanges($iid);
 $test = $m->RunSelfTest();
-pruefe(str_contains($test, 'Blind Wohnzimmer Rollo: open at 100, closed at 0 (from the module Home Assistant)'), 'Richtung aus dem Modul des Geräts: ' . $test);
-pruefe(str_contains($test, 'Blind Küche Rollo: open at 1, closed at 0 (from the profile name Rollladen.Reversed)'), 'Richtung aus dem Profilnamen: ' . $test);
-pruefe(str_contains($test, 'Blind Bad Rollo: open at 0, closed at 100 (from the blind presentation, reversed by the checkbox)'), 'Richtung aus der Darstellung, vom Haken umgekehrt: ' . $test);
-pruefe(str_contains($test, 'Note: blind Flur Rollo has no known value range, the assistant cannot set it'), 'Rollladen ohne Bereich wird benannt: ' . $test);
+pruefe(str_contains($test, 'Blind Rollo (Wohnzimmer): open at 100, closed at 0 (from the module Home Assistant)'), 'Richtung aus dem Modul des Geräts: ' . $test);
+pruefe(str_contains($test, 'Blind Rollo (Küche): open at 1, closed at 0 (from the profile name Rollladen.Reversed)'), 'Richtung aus dem Profilnamen: ' . $test);
+pruefe(str_contains($test, 'Blind Rollo (Bad): open at 0, closed at 100 (from the blind presentation, reversed by the checkbox)'), 'Richtung aus der Darstellung, vom Haken umgekehrt: ' . $test);
+pruefe(str_contains($test, 'Note: blind Rollo (Flur) has no known value range, the assistant cannot set it'), 'Rollladen ohne Bereich wird benannt: ' . $test);
 // Den Anzeigetext der Darstellung Rollladen kann der Stub nicht bilden (GetValueFormatted wirft dort),
 // abgefragt wird deshalb nur der Rollladen mit Legacy-Profil. Die Darstellung prüft check-switch.php.
 $text = $m->QueryState('Küche', 'blind', '', false);
@@ -973,7 +1011,7 @@ IPS_SetProperty($iid, 'Devices', json_encode([
 ]));
 IPS_ApplyChanges($iid);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'mit Fahrstatus aktiv');
-pruefe(str_contains($m->RunSelfTest(), 'Blind Küche Rollo reports its movement through WORKING'), 'der Selbsttest nennt den Fahrstatus: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), 'Blind Rollo (Küche) reports its movement through WORKING'), 'der Selbsttest nennt den Fahrstatus: ' . $m->RunSelfTest());
 // Der Fahrstatus wird nur gelesen und braucht keine Aktion (nuc 09.10.2026: Homematic WORKING hat
 // keine, der Selbsttest meldete „hat keine Aktion“, obwohl die Position eine hat).
 $position = variable(VARIABLETYPE_INTEGER, 0);
@@ -985,7 +1023,7 @@ IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Gast', 'Name' => 'Rollladen', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $position, 'MovingVariableID' => $laeuft, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
-pruefe(!str_contains($m->RunSelfTest(), 'Note: Gast Rollladen has no action'), 'Fahrstatus ohne Aktion: kein Hinweis „hat keine Aktion“: ' . $m->RunSelfTest());
+pruefe(!str_contains($m->RunSelfTest(), 'Note: Rollladen (Gast) has no action'), 'Fahrstatus ohne Aktion: kein Hinweis „hat keine Aktion“: ' . $m->RunSelfTest());
 IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Küche', 'Name' => 'Rollo', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $rollo, 'MovingVariableID' => $laeuft, 'Invert' => false],
 ]));
@@ -1053,12 +1091,12 @@ $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () =
 $schema = $werkzeuge['set_state']['inputSchema']['properties'] ?? [];
 pruefe(($schema['command']['enum'] ?? []) === ['open', 'close', 'stop'], 'set_state bietet stop an: ' . json_encode($schema['command']['enum'] ?? null));
 pruefe(str_contains($schema['command']['description'] ?? '', 'stop halts a moving blind or window'), 'die Beschreibung erklärt stop: ' . ($schema['command']['description'] ?? ''));
-pruefe(str_contains($m->RunSelfTest(), 'Blind Gast Rollladen stops through Aktion'), 'der Selbsttest nennt den Stoppweg: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), 'Blind Rollladen (Gast) stops through Aktion'), 'der Selbsttest nennt den Stoppweg: ' . $m->RunSelfTest());
 IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Gast', 'Name' => 'Rollladen', 'Aliases' => '', 'Type' => 'blind', 'StateVariableID' => 0, 'LevelVariableID' => $position, 'StopVariableID' => $ohneStopp, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
-pruefe(str_contains($m->RunSelfTest(), 'Note: blind Gast Rollladen: the stop variable has no entry "Stop", the assistant cannot stop it'), 'eine Stoppvariable ohne Eintrag „Stop“ fällt im Selbsttest auf: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), 'Note: blind Rollladen (Gast): the stop variable has no entry "Stop", the assistant cannot stop it'), 'eine Stoppvariable ohne Eintrag „Stop“ fällt im Selbsttest auf: ' . $m->RunSelfTest());
 $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
 pruefe(!in_array('stop', $werkzeuge['set_state']['inputSchema']['properties']['command']['enum'] ?? [], true) && isset($werkzeuge['set_state']), 'dann bietet das Schema kein stop an');
 IPS_SetProperty($iid, 'Devices', json_encode([
@@ -1101,7 +1139,7 @@ IPS_SetProperty($iid, 'Devices', json_encode([$entfeuchter]));
 IPS_ApplyChanges($iid);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Gerät mit Leistung und Zähler: aktiv');
 // Mit der ID wie beim Fehlwert (build 233): Zähler an Aktor und Messgerät heißen oft gleich.
-pruefe(str_contains($m->RunSelfTest(), 'Note: Keller Entfeuchter: the energy meter ENERGY_COUNTER (#' . $zaehler . ') is not archived as a counter, so there is no consumption over periods'), 'Selbsttest: Zähler ohne Archiv, mit ID: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), 'Note: Entfeuchter (Keller): the energy meter ENERGY_COUNTER (#' . $zaehler . ') is not archived as a counter, so there is no consumption over periods'), 'Selbsttest: Zähler ohne Archiv, mit ID: ' . $m->RunSelfTest());
 // Wärmezähler (B83): derselbe Hinweis wie beim Stromzähler
 $waermezaehler = variable(VARIABLETYPE_FLOAT, 23.642);
 IPS_SetName($waermezaehler, 'V_Heizen_Summe Wärme');
@@ -1109,7 +1147,7 @@ $waermepumpe = ['Room' => 'Heizungsraum', 'Name' => 'Wärmepumpe', 'Aliases' => 
 IPS_SetProperty($iid, 'Devices', json_encode([$entfeuchter, $waermepumpe]));
 IPS_ApplyChanges($iid);
 $selbsttest = $m->RunSelfTest();
-pruefe(str_contains($selbsttest, 'Note: Heizungsraum Wärmepumpe: the heat meter V_Heizen_Summe Wärme (#' . $waermezaehler . ') is not archived as a counter, so there is no heat over periods'), 'Selbsttest: Wärmezähler ohne Archiv: ' . $selbsttest);
+pruefe(str_contains($selbsttest, 'Note: Wärmepumpe (Heizungsraum): the heat meter V_Heizen_Summe Wärme (#' . $waermezaehler . ') is not archived as a counter, so there is no heat over periods'), 'Selbsttest: Wärmezähler ohne Archiv: ' . $selbsttest);
 $beschreibung = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name')['get_state']['description'] ?? '';
 pruefe(str_contains($beschreibung, '"What was the performance factor of the heat pump in January?" → name=heat pump, from=' . date('Y') . '-01-01, to=' . date('Y') . '-01-31 (heat, electricity and performance factor in one line). '), 'mit Wärmezähler nennt get_state ein Beispiel für die Arbeitszahl: ' . $beschreibung);
 // Ohne Wärmezähler kommt die Wärme aus der Wärmeleistung; die muss dann archiviert sein
@@ -1118,7 +1156,7 @@ IPS_SetName($waermeleistung, 'Wärmeleistung');
 IPS_SetProperty($iid, 'Devices', json_encode([$entfeuchter, array_merge($waermepumpe, ['HeatVariableID' => 0, 'HeatPowerVariableID' => $waermeleistung])]));
 IPS_ApplyChanges($iid);
 $selbsttest = $m->RunSelfTest();
-pruefe(str_contains($selbsttest, 'Note: Heizungsraum Wärmepumpe: the heat output Wärmeleistung (#' . $waermeleistung . ') is not archived, so there is no heat over periods'), 'Selbsttest: Wärmeleistung ohne Archiv und ohne Wärmezähler: ' . $selbsttest);
+pruefe(str_contains($selbsttest, 'Note: Wärmepumpe (Heizungsraum): the heat output Wärmeleistung (#' . $waermeleistung . ') is not archived, so there is no heat over periods'), 'Selbsttest: Wärmeleistung ohne Archiv und ohne Wärmezähler: ' . $selbsttest);
 $beschreibung = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name')['get_state']['description'] ?? '';
 pruefe(str_contains($beschreibung, 'performance factor of the heat pump'), 'auch mit Wärmeleistung allein nennt get_state das Beispiel: ' . $beschreibung);
 IPS_SetProperty($iid, 'Devices', json_encode([$entfeuchter, array_merge($waermepumpe, ['HeatPowerVariableID' => $waermeleistung])]));
@@ -1284,6 +1322,7 @@ SetValue($verbrauch, $verbrauchQuelle['wert']);
 $setzeBilanz([$bilanzZeile('grid', 'Netz', $verbrauch)]);
 $test = $m->RunSelfTest();
 // Mit der ID: Zwei Zähler mit gleichem Namen („Gesamter Verbrauch“ an Aktor und Powermeter) verwechselte ein Tester (22.10.2026).
+pruefe(str_contains($test, "\nEnergy balance: 1 source (Netz)\n"), 'mit einer Quelle nennt der Selbsttest sie: ' . $test);
 pruefe(str_contains($test, 'Note: grid import "Netz" Verbrauch (#' . $verbrauch . '): the archive counts more than the meter reading rose (01/2024 +659.8 kWh). Usually that is a single wrong value'), 'Selbsttest nennt den Zähler mit ID und den Monat mit Fehlwert, nicht den Neustart im Mai 2026: ' . $test);
 date_default_timezone_set($alteZone);
 $setzeBilanz([$bilanzZeile('grid', 'Grid', $zaehler), $bilanzZeile('battery', 'Battery', 0, 69995)]);
@@ -1335,7 +1374,7 @@ AC_SetAggregationType($archiv, $wasser, 1);
 IPS_SetProperty($iid, 'Devices', json_encode([['EnergyVariableID' => $wasser] + $entfeuchter]));
 $setzeBilanz([$bilanzZeile('grid', 'Grid', $wasser)]);
 $selbsttest = $m->RunSelfTest();
-pruefe(str_contains($selbsttest, 'Note: Keller Entfeuchter: the energy meter WASSER (#' . $wasser . ') counts in m³, not in kWh, so it is left out of the consumption'), 'Selbsttest: Gerätezähler in m³: ' . $selbsttest);
+pruefe(str_contains($selbsttest, 'Note: Entfeuchter (Keller): the energy meter WASSER (#' . $wasser . ') counts in m³, not in kWh, so it is left out of the consumption'), 'Selbsttest: Gerätezähler in m³: ' . $selbsttest);
 pruefe(str_contains($selbsttest, 'Note: energy balance: grid import "Grid" WASSER (#' . $wasser . ') counts in m³, not in kWh, so there is no house consumption'), 'Selbsttest: Bilanzzähler in m³: ' . $selbsttest);
 $setzeBilanz([]);
 
@@ -1476,10 +1515,10 @@ $aufruf = new ReflectionMethod(HomeAgent::class, 'callTool');
 $r = oderNull(static fn () => $aufruf->invoke($m, 'set_state', ['room' => 'Gast', 'temperature' => 22.5], null));
 pruefe(is_array($r) && GetValue($soll) === 22.5, 'Stellen über das Werkzeug schreibt den Sollwert: ' . json_encode(GetValue($soll)) . ' ' . json_encode($r, JSON_UNESCAPED_UNICODE));
 $test = $m->RunSelfTest();
-pruefe(str_contains($test, 'Thermostat Gast Heizung: 6 to 30 °C in steps of 0.5'), 'der Selbsttest nennt den Bereich des Sollwerts: ' . $test);
+pruefe(str_contains($test, 'Thermostat Heizung (Gast): 6 to 30 °C in steps of 0.5'), 'der Selbsttest nennt den Bereich des Sollwerts: ' . $test);
 // Ohne bekannte Schrittweite sagt der Selbsttest das, statt „in Schritten von 0“ (B81)
 IPS_SetVariableCustomProfile($soll, 'HomeAgentTest.SollOhneRaster');
-pruefe(str_contains($m->RunSelfTest(), 'Thermostat Gast Heizung: 6 to 30 °C without a fixed step'), 'ohne Schrittweite: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), 'Thermostat Heizung (Gast): 6 to 30 °C without a fixed step'), 'ohne Schrittweite: ' . $m->RunSelfTest());
 // Mit dem Profil der betreuten Anlage rundet set_state auf das Raster der Einträge (0,5)
 IPS_SetVariableCustomProfile($soll, 'Temperature.HM_my');
 oderNull(static fn () => $aufruf->invoke($m, 'set_state', ['room' => 'Gast', 'temperature' => 21.3], null));
@@ -1496,7 +1535,7 @@ IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Gast', 'Name' => 'Heizung', 'Aliases' => '', 'Type' => 'thermostat', 'StateVariableID' => $ist, 'SetpointVariableID' => $sollOhneAktion, 'Invert' => false],
 ]));
 IPS_ApplyChanges($iid);
-pruefe(str_contains($m->RunSelfTest(), 'Note: Gast Heizung has no action on its setpoint, the assistant can read it but not set it'), 'Sollwert ohne Aktion fällt im Selbsttest auf: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), 'Note: Heizung (Gast) has no action on its setpoint, the assistant can read it but not set it'), 'Sollwert ohne Aktion fällt im Selbsttest auf: ' . $m->RunSelfTest());
 IPS_SetProperty($iid, 'Devices', json_encode([
     ['Room' => 'Gast', 'Name' => 'Heizung', 'Aliases' => '', 'Type' => 'thermostat', 'StateVariableID' => $ist, 'Invert' => false],
 ]));
@@ -2080,7 +2119,7 @@ IPS_SetProperty($iid, 'Devices', json_encode([
 IPS_ApplyChanges($iid);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Luftentfeuchter mit Leistung ist gültig: ' . IPS_GetInstance($iid)['InstanceStatus']);
 $test = $m->RunSelfTest();
-pruefe(str_contains($test, 'Note: Leistung Entfeuchter is used by Keller Entfeuchter and Keller Luftentfeuchter, consumption and power count it only once'), 'der Selbsttest nennt die doppelt genutzte Leistung: ' . $test);
+pruefe(str_contains($test, 'Note: Leistung Entfeuchter is used by Entfeuchter (Keller) and Luftentfeuchter (Keller), consumption and power count it only once'), 'der Selbsttest nennt die doppelt genutzte Leistung: ' . $test);
 pruefe(isset($de['Note: %s is used by %s and %s, consumption and power count it only once']), 'deutsche Übersetzung des Hinweises');
 
 /* --- Laufzeit: Listen einmal je Anfrage prüfen, Texte nur für Fehler (build 72) ------------------ */
@@ -2579,7 +2618,7 @@ try {
 }
 $tokens = $koppeln();
 $zugriff = (string)($tokens['access_token'] ?? '');
-pruefe(str_contains($m->RunSelfTest(), 'Sign-in with OAuth: 1 assistant(s) paired'), 'Selbsttest nennt die gekoppelten Assistenten: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), 'Sign-in with OAuth: 1 assistant paired'), 'Selbsttest nennt die gekoppelten Assistenten: ' . $m->RunSelfTest());
 
 $formular = json_decode($m->GetConfigurationForm(), true);
 $alle = flach(array_merge($formular['elements'], $formular['actions'] ?? []));
@@ -2628,7 +2667,7 @@ try {
 pruefe($mcp('Bearer ' . $zugriff, 'tools/list')['status'] === 401, 'nach dem Widerruf gilt das Zugriffstoken sofort nicht mehr');
 $aktualisiert = array_values(array_filter($m->formUpdates, static fn (array $u): bool => $u[0] === 'OAuthClients' && $u[1] === 'values'));
 pruefe($aktualisiert !== [] && json_decode((string)end($aktualisiert)[2], true) === [], 'die Liste im offenen Formular wird leer: ' . json_encode($m->formUpdates));
-pruefe(str_contains($m->RunSelfTest(), 'Sign-in with OAuth: 0 assistant(s) paired'), 'Selbsttest nach dem Widerruf: ' . $m->RunSelfTest());
+pruefe(str_contains($m->RunSelfTest(), 'Sign-in with OAuth: 0 assistants paired'), 'Selbsttest nach dem Widerruf: ' . $m->RunSelfTest());
 
 HomeAgentHarness::$connect = '';
 $formular = json_decode($m->GetConfigurationForm(), true);
@@ -3428,7 +3467,7 @@ IPS_SetProperty($zid, 'Devices', json_encode([$leisteZeile, $waschZeile, $truheZ
 IPS_ApplyChanges($zid);
 pruefe(IPS_GetInstance($zid)['InstanceStatus'] === IS_ACTIVE, 'Zähler mit Geräten darunter: aktiv');
 $testZ = $z->RunSelfTest();
-pruefe(str_contains($testZ, 'Note: meter Wohnzimmer Schalterleiste: 18 kWh are measured below it in the last 30 days, more than its own 16.7 kWh; check "Measured by"'), 'Selbsttest: darunter mehr als der Zähler (B82): ' . $testZ);
+pruefe(str_contains($testZ, 'Note: meter Schalterleiste (Wohnzimmer): 18 kWh are measured below it in the last 30 days, more than its own 16.7 kWh; check "Measured by"'), 'Selbsttest: darunter mehr als der Zähler (B82): ' . $testZ);
 $zeilenZ = explode("\n", $z->QueryState('', 'meter', '', false));
 pruefe(($zeilenZ[1] ?? '') === 'Wohnzimmer | Schalterleiste | meter | 842.86', 'QueryState mit type=meter: ' . implode(' ‖ ', $zeilenZ));
 $werkzeugeZ = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $z, HomeAgent::class)()), true), null, 'name');

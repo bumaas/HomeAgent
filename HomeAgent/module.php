@@ -314,6 +314,65 @@ class HomeAgent extends IPSModuleStrict
         return $this->checkedOnce(fn (): string => $this->selfTest());
     }
 
+    /** Nur für das Formular: der Selbsttest im Fenster „Ergebnis“, eine Zeile je Befund (B99, das Meldungsfenster war zu schmal). */
+    public function UIShowSelfTest(): void
+    {
+        $this->showResult($this->Translate('Self-test'), $this->RunSelfTest());
+    }
+
+    /** Nur für das Formular: der Zustand aller freigegebenen Geräte im Fenster „Ergebnis“. */
+    public function UIShowState(): void
+    {
+        $this->showResult($this->Translate('State of all released devices'), $this->QueryState('', '', '', false));
+    }
+
+    private function showResult(string $caption, string $text): void
+    {
+        $this->UpdateFormField('ResultCaption', 'caption', $caption);
+        $this->UpdateFormField('ResultView', 'values', (string)json_encode(array_map(static fn (string $line): array => ['Line' => $line], explode("\n", $text))));
+        $this->UpdateFormField('ResultPopup', 'visible', true);
+    }
+
+    /** Gerät im Selbsttest: „Name (Raum)“ wie die Fehler der Liste, nicht „Raum Name“ ohne Grenze (B99). */
+    private function entryLabel(array $entry): string
+    {
+        $name = trim((string)($entry['Name'] ?? ''));
+        $room = trim((string)($entry['Room'] ?? ''));
+        $name = $name === '' ? '?' : $name;
+        return $room === '' ? $name : $name . ' (' . $room . ')';
+    }
+
+    /** Anzahl mit Einzahl oder Mehrzahl, beide als Schlüssel für Translate() (B99, statt „Gerät(e)“). */
+    private function countText(int $count, string $one, string $many): string
+    {
+        return sprintf($this->Translate($count === 1 ? $one : $many), $count);
+    }
+
+    /**
+     * Zahl für Texte an den Anwender, ohne Nullen am Ende. Das Dezimalzeichen kommt aus der Übersetzung des Schlüssels
+     * „.“, deutsch also ein Komma (B99). Antworten an den Assistenten bleiben beim Punkt.
+     */
+    private function localNumber(float $value, int $decimals): string
+    {
+        return str_replace('.', $this->Translate('.'), rtrim(rtrim(number_format($value, $decimals, '.', ''), '0'), '.'));
+    }
+
+    /** Schlusszeile zur Energiebilanz, auch ohne Problem: „keine“ sähe sonst aus wie „in Ordnung“ (B99). */
+    private function balanceLine(): string
+    {
+        $sources = $this->sources();
+        if ($sources === []) {
+            return $this->Translate('Energy balance: none');
+        }
+        if ($this->usableSources() === []) {
+            return $this->Translate('Energy balance: disabled until the errors above are corrected');
+        }
+        $names = array_map(fn (array $source): string => trim((string)($source['Name'] ?? '')) ?: $this->Translate(self::SOURCE_NAMES[(string)($source['Type'] ?? '')] ?? '?'), $sources);
+        $line = sprintf($this->Translate('Energy balance: %s'), $this->countText(count($sources), '%d source', '%d sources') . ' (' . implode(', ', $names) . ')');
+        $price = $this->priceVariable();
+        return $price > 0 ? $line . sprintf($this->Translate(', electricity price from "%s"'), IPS_GetName($price)) : $line;
+    }
+
     private function selfTest(): string
     {
         $lines = [];
@@ -345,14 +404,14 @@ class HomeAgent extends IPSModuleStrict
             if ((string)($entry['Type'] ?? '') === 'thermostat') {
                 $setpoint = DeviceIndex::rolesOf($entry)['setpoint'] ?? 0;
                 if ($setpoint > 0 && !$backend->hasAction($setpoint)) {
-                    $lines[] = sprintf($this->Translate('Note: %s has no action on its setpoint, the assistant can read it but not set it'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')));
+                    $lines[] = sprintf($this->Translate('Note: %s has no action on its setpoint, the assistant can read it but not set it'), $this->entryLabel($entry));
                 }
                 continue;
             }
             foreach (array_intersect_key(DeviceIndex::rolesOf($entry), ['state' => true, 'level' => true]) as $variableId) {
                 if (!$backend->hasAction($variableId)) {
                     // Mit Raum, sonst ist der Hinweis bei gleichnamigen Geräten nicht eindeutig.
-                    $lines[] = sprintf($this->Translate('Note: %s has no action on its state variable, the assistant can read it but not switch it'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')));
+                    $lines[] = sprintf($this->Translate('Note: %s has no action on its state variable, the assistant can read it but not switch it'), $this->entryLabel($entry));
                     break;
                 }
             }
@@ -364,22 +423,22 @@ class HomeAgent extends IPSModuleStrict
             $meter = DeviceIndex::rolesOf($entry)['energy'] ?? 0;
             $counter = $meter > 0 && IPS_VariableExists($meter) ? $backend->counterSum($meter, 4, 0, 0) : false;
             if ($counter === null) {
-                $lines[] = sprintf($this->Translate('Note: %s: the energy meter %s is not archived as a counter, so there is no consumption over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), $named($meter));
+                $lines[] = sprintf($this->Translate('Note: %s: the energy meter %s is not archived as a counter, so there is no consumption over periods'), $this->entryLabel($entry), $named($meter));
             } elseif (is_array($counter) && !DeviceIndex::isEnergyUnit($counter['unit'])) {
-                $lines[] = sprintf($this->Translate('Note: %s: the energy meter %s counts in %s, not in kWh, so it is left out of the consumption'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), $named($meter), trim($counter['unit']));
+                $lines[] = sprintf($this->Translate('Note: %s: the energy meter %s counts in %s, not in kWh, so it is left out of the consumption'), $this->entryLabel($entry), $named($meter), trim($counter['unit']));
             }
             // Wärmezähler (B83) ebenso, sonst fehlen Wärme und Arbeitszahl ohne Hinweis
             $heat = DeviceIndex::rolesOf($entry)['heat'] ?? 0;
             $counter = $heat > 0 && IPS_VariableExists($heat) ? $backend->counterSum($heat, 4, 0, 0) : false;
             if ($counter === null) {
-                $lines[] = sprintf($this->Translate('Note: %s: the heat meter %s is not archived as a counter, so there is no heat over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), $named($heat));
+                $lines[] = sprintf($this->Translate('Note: %s: the heat meter %s is not archived as a counter, so there is no heat over periods'), $this->entryLabel($entry), $named($heat));
             } elseif (is_array($counter) && !DeviceIndex::isEnergyUnit($counter['unit'])) {
-                $lines[] = sprintf($this->Translate('Note: %s: the heat meter %s counts in %s, not in kWh, so there is no heat over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), $named($heat), trim($counter['unit']));
+                $lines[] = sprintf($this->Translate('Note: %s: the heat meter %s counts in %s, not in kWh, so there is no heat over periods'), $this->entryLabel($entry), $named($heat), trim($counter['unit']));
             }
             // Ohne Wärmezähler kommt die Wärme aus den Stundenmitteln der Wärmeleistung
             $output = DeviceIndex::rolesOf($entry)['heatpower'] ?? 0;
             if ($heat === 0 && $output > 0 && IPS_VariableExists($output) && $backend->history($output, 3, 0, 0) === null) {
-                $lines[] = sprintf($this->Translate('Note: %s: the heat output %s is not archived, so there is no heat over periods'), trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?')), $named($output));
+                $lines[] = sprintf($this->Translate('Note: %s: the heat output %s is not archived, so there is no heat over periods'), $this->entryLabel($entry), $named($output));
             }
         }
         // Energiebilanz: Jeder Zähler muss als Zähler archiviert sein, sonst gibt es keinen Hausverbrauch, und jede
@@ -424,7 +483,7 @@ class HomeAgent extends IPSModuleStrict
                 }
             }
             foreach ($unlisted as $room => $devices) {
-                $lines[] = sprintf($this->Translate('Note: room "%s" (%d device(s)) is not in the room list, so it has neither aliases nor a floor'), $room, $devices);
+                $lines[] = sprintf($this->Translate('Note: room "%s" (%s) is not in the room list, so it has neither aliases nor a floor'), $room, $this->countText($devices, '%d device', '%d devices'));
             }
             foreach ($rooms->names() as $name) {
                 if (!array_any(array_merge($list, $this->sceneList()), static fn (array $entry): bool => DeviceIndex::normalize((string)($entry['Room'] ?? '')) === DeviceIndex::normalize($name))) {
@@ -439,7 +498,7 @@ class HomeAgent extends IPSModuleStrict
             if ($level === 0) {
                 continue;
             }
-            $label = trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? ''));
+            $label = $this->entryLabel($entry);
             $inverted = (bool)($entry['Invert'] ?? false);
             $range = $backend->range($level);
             $travel = DeviceIndex::travel($range, $inverted);
@@ -457,7 +516,7 @@ class HomeAgent extends IPSModuleStrict
             if ($inverted) {
                 $source .= $this->Translate(', reversed by the checkbox');
             }
-            $number = static fn (float $value): string => rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+            $number = fn (float $value): string => $this->localNumber($value, 2);
             $lines[] = sprintf($this->Translate('Blind %s: open at %s, closed at %s (%s)'), $label, $number($travel['open']), $number($travel['closed']), $source);
             $moving = DeviceIndex::rolesOf($entry)['moving'] ?? 0;
             if ($moving > 0 && IPS_VariableExists($moving)) {
@@ -477,19 +536,19 @@ class HomeAgent extends IPSModuleStrict
         // Zähler (B82): Darunter gemessen ist mehr als der Zähler selbst, dann hängt etwas am falschen Zähler.
         $today = (int)strtotime('today');
         foreach ($this->deviceIndex()->meterOverruns((int)strtotime('-30 days', $today), 0) as $overrun) {
-            $kwh = static fn (float $value): string => rtrim(rtrim(number_format($value, 1, '.', ''), '0'), '.');
-            $lines[] = sprintf($this->Translate('Note: meter %s: %s kWh are measured below it in the last 30 days, more than its own %s kWh; check "Measured by"'), trim($overrun['room'] . ' ' . $overrun['name']), $kwh($overrun['below']), $kwh($overrun['meter']));
+            $kwh = fn (float $value): string => $this->localNumber($value, 1);
+            $lines[] = sprintf($this->Translate('Note: meter %s: %s kWh are measured below it in the last 30 days, more than its own %s kWh; check "Measured by"'), $this->entryLabel(['Room' => $overrun['room'], 'Name' => $overrun['name']]), $kwh($overrun['below']), $kwh($overrun['meter']));
         }
         // Energiezähler (B78): Das Archiv zählt mehr, als der Zählerstand gestiegen ist; genannt werden die drei größten Monate.
         foreach ($this->deviceIndex()->counterJumps() as $jump) {
-            $kwh = static fn (float $value): string => rtrim(rtrim(number_format($value, 1, '.', ''), '0'), '.');
+            $kwh = fn (float $value): string => $this->localNumber($value, 1);
             $largest = $jump['months'];
             arsort($largest);
             $shown = array_slice($largest, 0, 3, true);
             ksort($shown);
             $months = implode(', ', array_map(static fn (int $month, float $value): string => date('m/Y', $month) . ' +' . $kwh($value) . ' kWh', array_keys($shown), $shown));
             if (count($largest) > 3) {
-                $months .= sprintf($this->Translate(' and %d more month(s)'), count($largest) - 3);
+                $months .= $this->countText(count($largest) - 3, ' and %d more month', ' and %d more months');
             }
             $caption = $jump['key'] === '' ? $jump['label'] : $this->balanceCaption($jump['key']) . ' "' . $jump['label'] . '"';
             // Mit der ID: Zähler an Aktor und Messgerät heißen oft gleich (Tester 22.10.2026: zweimal „Gesamter Verbrauch“).
@@ -501,14 +560,14 @@ class HomeAgent extends IPSModuleStrict
             if ($setpoint === 0 || !IPS_VariableExists($setpoint)) {
                 continue;
             }
-            $label = trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? ''));
+            $label = $this->entryLabel($entry);
             $range = $backend->setpointRange($setpoint);
             if ($range === null) {
                 $lines[] = sprintf($this->Translate('Note: thermostat %s has no known value range, temperatures are sent unchecked'), $label);
                 continue;
             }
             $unit = trim($backend->unit($setpoint));
-            $number = static fn (float $value): string => rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+            $number = fn (float $value): string => $this->localNumber($value, 2);
             // Ohne bekannte Schrittweite nicht „in Schritten von 0“ (B81)
             $lines[] = $range['step'] > 0
                 ? sprintf($this->Translate('Thermostat %s: %s to %s %s in steps of %s'), $label, $number($range['min']), $number($range['max']), $unit === '' ? '°C' : $unit, $number($range['step']))
@@ -520,7 +579,7 @@ class HomeAgent extends IPSModuleStrict
             foreach ($list as $entry) {
                 $variable = DeviceIndex::rolesOf($entry)[$role] ?? 0;
                 if ($variable > 0) {
-                    $users[$variable][] = trim((string)($entry['Room'] ?? '') . ' ' . (string)($entry['Name'] ?? '?'));
+                    $users[$variable][] = $this->entryLabel($entry);
                 }
             }
             foreach ($users as $variable => $names) {
@@ -538,13 +597,14 @@ class HomeAgent extends IPSModuleStrict
             $lines[] = sprintf($this->Translate('Note: access "%s": default room "%s" is neither in the room list nor the room of a device, it has no effect until this is corrected'), $access, $room);
         }
         if ($this->oauthBase() !== '') {
-            $lines[] = sprintf($this->Translate('Sign-in with OAuth: %d assistant(s) paired'), count($this->oauthClientRows()));
+            $lines[] = sprintf($this->Translate('Sign-in with OAuth: %s paired'), $this->countText(count($this->oauthClientRows()), '%d assistant', '%d assistants'));
         } elseif ($this->connectConfigured()) {
             $lines[] = $this->Translate('Sign-in with OAuth for the Claude app: not available right now, Symcon Connect is set up but not connected');
         } else {
             $lines[] = $this->Translate('Sign-in with OAuth for the Claude app: not available, Symcon Connect is not active');
         }
-        $lines[] = sprintf($this->Translate('%d released device(s), %d scene(s), endpoint %s'), $count, $sceneCount, $this->GetEndpoint());
+        $lines[] = $this->balanceLine();
+        $lines[] = sprintf($this->Translate('%s, %s, endpoint %s'), $this->countText($count, '%d released device', '%d released devices'), $this->countText($sceneCount, '%d scene', '%d scenes'), $this->GetEndpoint());
         return implode("\n", array_merge([$ok ? 'OK' : 'ERROR'], $lines));
     }
 
@@ -2412,7 +2472,7 @@ class HomeAgent extends IPSModuleStrict
             $tools[] = [
                 'name'        => 'run_scene',
                 'title'       => 'Start a scene',
-                'description' => 'Starts one released scene, a prepared script of the home such as "movie night". '
+                'description' => 'Starts one released scene, a prepared script or flow script of the home such as "movie night". '
                     . 'The name must match exactly one scene, otherwise nothing is started and the answer lists the candidates. '
                     . 'Without a name nothing is started and the answer lists all scenes. The answer confirms the start, not the effect. '
                     . 'Scenes: ' . implode(', ', $shown) . ($more > 0 ? ' and ' . $more . ' more' : '') . '.',

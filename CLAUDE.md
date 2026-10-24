@@ -110,7 +110,7 @@ Backend. So laufen die Tests mit echten Mitschnitten.
 |---|---|---|
 | `get_state` | Zustand, Verbrauch, Leistung, Verlauf, Zeitleiste; Filter `room`, `floor`, `type`, `name`, `active_only`, `period`/`from`/`to` | immer |
 | `set_state` | schalten und stellen (`command`, `percent`, `temperature`, `humidity`, `mode`, `fan_speed`, `color_temperature`, `color`, `volume`, `volume_change`, `mute`) | ohne „Nur abfragen“ |
-| `run_scene` | freigegebenes Skript starten; Szenennamen in der Beschreibung | mit Szenen |
+| `run_scene` | freigegebenes Skript oder Ablaufplan starten (`IPS_RunScript`, Ablaufplan braucht eine Aktion); Szenennamen in der Beschreibung | mit Szenen |
 | `show_chart` | Diagramm als MCP App | Clients mit Apps, Clients von Anthropic immer |
 | `show_devices` | Gerätekarten als MCP App | ebenso |
 | `control_device` | Bedienung von der Karte (`_meta.ui.visibility: ["app"]`) | ohne „Nur abfragen“, aufrufbar auch ohne Apps |
@@ -290,6 +290,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   `LOG_TAIL_BYTES` (3 MB) je Datei. Client je Werkzeugaufruf (`callerOf`), auch vom Protokoll abgewiesene Aufrufe.
   Zeilen ohne Anmeldung über `writeAnonymousLog` gedrosselt (Buffer `LogQuiet`). Tokens, Adressen und Kopplungscodes
   stehen nie darin.
+- **Selbsttest und Zustand** im Fenster `ResultPopup` (`UIShowSelfTest`, `UIShowState`), Geräte als „Name (Raum)“
+  (`entryLabel`), Zahlen mit `localNumber` (Dezimalzeichen aus dem Schlüssel „.“), Anzahlen mit `countText`, Schlusszeile
+  zur Bilanz (`balanceLine`). Test `check-module.php`.
 - Debug der Instanz: `Request`, `Tool` (Aufruf, Argumente, Antwort), `Hook` (abgewiesene Anfragen).
 
 ## Entwickeln und Testen
