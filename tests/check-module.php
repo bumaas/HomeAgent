@@ -2257,6 +2257,21 @@ pruefe($a['status'] === 400 && !isset($a['headers']['Location']), 'Client-Dokume
 // kein Zeitlimit. Ein nicht lesbares Dokument wird kurz gemerkt, damit Wiederholungen nicht jedes Mal warten.
 $a = $autorisieren('GET', ['client_id' => 'https://unbekannt.example/client'] + $abfrage);
 pruefe(count(array_keys(HomeAgentHarness::$fetched, 'https://unbekannt.example/client', true)) === 1, 'ein nicht lesbares Client-Dokument wird nicht gleich noch einmal geholt: ' . json_encode(HomeAgentHarness::$fetched));
+// Security-Review 24.10.2026 (Befund 1): Mit wechselnder client_id holte jede Anfrage ohne Anmeldung ein Dokument (bis 5 s
+// je PHP-Thread der Anlage), ungebremst. Ein nicht lesbares Dokument zählt jetzt als Fehlversuch, und neue Dokumente
+// holt das Modul höchstens CLIENT_DOCUMENT_FETCHES je Minute, über alle Absender.
+pruefe($fehlversuche() !== '', 'ein nicht lesbares Client-Dokument zählt als Fehlversuch');
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'OAuthFetches', ''); // die Abrufe weiter oben zählen nicht mit
+$geholtVorher = count(HomeAgentHarness::$fetched);
+for ($i = 1; $i <= 15; $i++) {
+    $autorisieren('GET', ['client_id' => 'https://flut' . $i . '.example/client'] + $abfrage);
+}
+$neuGeholt = count(HomeAgentHarness::$fetched) - $geholtVorher;
+pruefe($neuGeholt === 10, 'höchstens 10 neue Client-Dokumente je Minute, über alle Absender: ' . $neuGeholt);
+pruefe($fehlversuche() !== '', 'auch ohne Abruf zählt eine nicht lesbare client_id als Fehlversuch');
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'SignInFailures', '');
+(new ReflectionMethod($m, 'SetBuffer'))->invoke($m, 'OAuthFetches', '');
 try {
     $optionen = (new ReflectionMethod(HomeAgent::class, 'clientDocumentOptions'))->invoke(null);
 } catch (Throwable $e) {

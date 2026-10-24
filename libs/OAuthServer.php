@@ -186,7 +186,13 @@ final class OAuthServer
      */
     public static function publicAddress(string $ip): bool
     {
-        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE | FILTER_FLAG_GLOBAL_RANGE) !== false;
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE | FILTER_FLAG_GLOBAL_RANGE) === false) {
+            return false;
+        }
+        // NAT64 (64:ff9b::/96 nach RFC 6052, 64:ff9b:1::/48 nach RFC 8215) trägt eine IPv4-Adresse, über ein Gateway auch
+        // eine private; filter_var hält das Präfix für global (Security-Review 24.10.2026).
+        $bytes = (string)inet_pton($ip);
+        return strlen($bytes) !== 16 || (!str_starts_with($bytes, "\x00\x64\xff\x9b" . str_repeat("\x00", 8)) && !str_starts_with($bytes, "\x00\x64\xff\x9b\x00\x01"));
     }
 
     /** Textparameter einer Anfrage, '' wenn er fehlt oder kein Text ist. */

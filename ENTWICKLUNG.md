@@ -95,6 +95,14 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   Speicher ändert nur `changeStored` unter einer Sperre; ohne Sperre gibt es 503 statt Tokens, die nie
   gespeichert wurden. Körper an `oauth/authorize` und `oauth/token` höchstens 8 KB (413). Das CIMD wird
   nur von global erreichbaren Adressen geholt (`FILTER_FLAG_GLOBAL_RANGE`, also nicht aus 100.64.0.0/10).
+  Security-Review vom 24.10.2026 vor der ersten öffentlichen Beta: `filter_var` hält die NAT64-Präfixe 64:ff9b::/96 und
+  64:ff9b:1::/48 für global, über ein NAT64-Gateway erreichten sie aber auch private IPv4-Adressen; `publicAddress`
+  lehnt beide ab. Mit wechselnder `client_id` löste außerdem jede Anfrage an `oauth/authorize` ohne Anmeldung einen
+  Abruf aus, der einen PHP-Thread der Anlage bis zu 5 s belegt (die Skripte der Anlage teilen diese Threads), und der
+  Merker für Fehlschläge griff nur je `client_id`. Seitdem zählt eine angegebene, nicht lesbare `client_id` im
+  `SignInGuard` (ohne `client_id` wird nichts abgerufen, das bleibt kein Fehlversuch), und das Modul holt höchstens
+  `CLIENT_DOCUMENT_FETCHES` (10) neue Dokumente je Minute über alle Absender (Buffer `OAuthFetches`); darüber gilt das
+  Dokument als nicht lesbar. Claudes Dokument liegt eine Stunde im Zwischenspeicher, die Grenze trifft echte Clients nicht.
   Die Einwilligungsseite nennt in der Überschrift den Host der `client_id`, den Namen wählt der Client
   selbst. Bei mehr als 50 Kopplungen fallen die am längsten nicht erneuerten heraus. **Zuletzt benutzt** (`lastUse` je
   Familie, `OAuthServer::markUsed` in `oauthAccess`, höchstens alle `USE_STEP` = 600 s ins Attribut, sonst schriebe jede

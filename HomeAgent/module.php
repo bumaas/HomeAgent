@@ -120,6 +120,11 @@ class HomeAgent extends IPSModuleStrict
     /** Ein nicht lesbares Client-Dokument wird so lange nicht erneut geholt (Code-Review 12.10.2026). */
     private const CLIENT_DOCUMENT_FAILURE_SECONDS = 60;
     private const CLIENT_DOCUMENT_MAX_ENTRIES = 10;
+    /**
+     * So viele Client-Dokumente holt das Modul je Minute höchstens, über alle Absender. oauth/authorize ist ohne Anmeldung
+     * erreichbar, und jeder Abruf hält einen PHP-Thread der Anlage bis zu 5 s (Security-Review 24.10.2026).
+     */
+    private const CLIENT_DOCUMENT_FETCHES = 10;
 
     /** Höchstgröße eines Körpers an oauth/authorize und oauth/token; beide sind ohne Anmeldung erreichbar. */
     private const OAUTH_BODY_MAX = 8192;
@@ -1568,6 +1573,11 @@ class HomeAgent extends IPSModuleStrict
         $check = OAuthServer::checkAuthorize($params, $base, $client);
         if ($check['status'] === 'page') {
             $this->SendDebug('OAuth', 'authorize rejected: ' . $check['error'], 0);
+            // Eine angegebene, aber nicht lesbare client_id zählt als Fehlversuch, sonst ließen sich Abrufe ungebremst
+            // auslösen; ohne client_id wird nichts abgerufen (Review R7)
+            if ($check['error'] === 'client' && ($params['client_id'] ?? '') !== '') {
+                $this->recordSignInFailure(SignInGuard::sender($_SERVER));
+            }
             return $this->htmlPage(400, $check['error'] === 'client'
                 ? $this->Translate('The assistant could not be identified, its client document is not readable.')
                 : $this->Translate('The return address of the assistant is not allowed.'));
@@ -1783,6 +1793,19 @@ class HomeAgent extends IPSModuleStrict
         // Ein nicht lesbares Dokument kurz merken: oauth/authorize ist ohne Anmeldung erreichbar, jede
         // Wiederholung würde sonst erneut bis zum Zeitlimit warten.
         if (array_key_exists($clientId, $cache) && ($cache[$clientId]['fetched'] ?? 0) > $now - self::CLIENT_DOCUMENT_FAILURE_SECONDS) {
+            return null;
+        }
+        $allowed = false;
+        $this->changeStored('OAuthFetches', static function (array $window) use ($now, &$allowed): array {
+            if ((int)($window['start'] ?? 0) <= $now - 60) {
+                $window = ['start' => $now, 'count' => 0];
+            }
+            $allowed = (int)$window['count'] < self::CLIENT_DOCUMENT_FETCHES;
+            $window['count'] = (int)$window['count'] + ($allowed ? 1 : 0);
+            return $window;
+        });
+        if (!$allowed) {
+            $this->SendDebug('OAuth', 'client document not fetched, too many fetches in the last minute: ' . $clientId, 0);
             return null;
         }
         $json = $this->fetchClientDocument($clientId);

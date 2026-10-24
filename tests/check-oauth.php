@@ -285,6 +285,12 @@ foreach (['100.100.1.1', '100.97.187.41', '192.0.0.1', '198.18.0.1', '169.254.1.
     pruefe(!OAuthServer::publicAddress($ip), 'keine öffentliche Adresse: ' . $ip);
 }
 pruefe(OAuthServer::publicAddress('160.79.106.181') && OAuthServer::publicAddress('2606:4700::6810:1'), 'öffentliche Adressen bleiben erlaubt');
+// Security-Review 24.10.2026 (Befund 3): NAT64-Präfixe (RFC 6052, RFC 8215) tragen eine IPv4-Adresse, über ein Gateway
+// erreichen sie auch private Netze; filter_var hält 64:ff9b::/96 für global.
+foreach (['64:ff9b::7f00:1', '64:ff9b::c0a8:b256', '64:ff9b::a9fe:a9fe', '64:ff9b:1::c0a8:101', '64:FF9B::7F00:1'] as $ip) {
+    pruefe(!OAuthServer::publicAddress($ip), 'NAT64-Adresse ist nicht öffentlich: ' . $ip);
+}
+pruefe(OAuthServer::publicAddress('2600:64:ff9b::1'), 'eine globale Adresse, die 64:ff9b nur enthält, bleibt erlaubt');
 pruefe(!OAuthServer::clientIdAllowed('https://100.64.0.1/client'), 'CGNAT-Adresse als client_id abgewiesen');
 // Code-Review 12.10.2026: Die Adresse prüft curl erst nach Verbindungsaufbau und TLS-Handshake. Damit ein Name,
 // der auf eine interne Adresse zeigt, keine internen Ports abtastet, nur der HTTPS-Standardport.

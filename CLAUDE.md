@@ -71,7 +71,7 @@ Backend. So laufen die Tests mit echten Mitschnitten.
 - **`SignInGuard`:** nach 20 abgewiesenen Anmeldungen in einer Minute 60 s zu für diesen Absender, nach 100 von allen
   zusammen für alle. Über Connect zählt der letzte Eintrag aus `X-Forwarded-For`, nur bei 127.0.0.1 oder ::1.
   Als Fehlversuch zählen nur ein ungültiges Token (auch in der Adresse), ein falscher Kopplungscode, ein ungültiger Code
-  und ein ungültiges Erneuerungstoken; keine Anmeldung oder ein bekanntes, abgelaufenes Token zählen nicht.
+  und ein ungültiges Erneuerungstoken, eine nicht lesbare `client_id`; keine Anmeldung oder ein bekanntes, abgelaufenes Token zählen nicht.
 - **Ein fehlerhafter Eintrag sperrt nur sich selbst**: Zugang (`usableAccesses()`), Gerät (`usableDevices()`), Szene
   (`usableScenes()`), Bilanz als Ganzes (`usableBalance()`). Geprüft bei jedem Aufruf, aber nur einmal je Anfrage
   (`checkedOnce` in Hook, Selbsttest und Formular), Beschriftungen nur für fehlerhafte Zeilen (Laufzeit). Status 104
@@ -84,7 +84,9 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   Connect gibt es die reservierten Pfade nicht (404); sie gelten nie als Token in der Adresse. Ein GET auf
   `oauth/authorize` verbraucht nichts (kann zweimal kommen).
   - Clients melden sich per CIMD; `fetchClientDocument` nur HTTPS auf 443, 5 KB, 5 s, keine Weiterleitung, nur global
-    erreichbare Adressen (`CURLOPT_PREREQFUNCTION`), Fehlschlag 60 s gemerkt, Dokument 1 h im Buffer `OAuthClients`.
+    erreichbare Adressen (`CURLOPT_PREREQFUNCTION`, NAT64 ausgeschlossen), Fehlschlag 60 s gemerkt, Dokument 1 h im
+    Buffer `OAuthClients`. Höchstens `CLIENT_DOCUMENT_FETCHES` Abrufe je Minute; eine angegebene, nicht lesbare
+    `client_id` ist ein Fehlversuch (Abruf ohne Anmeldung belegt einen Thread). Tests `check-module.php`, `check-oauth.php`.
   - Kopplung mit Kopplungscode je Zugang (`HAGT_CreatePairingCode`, 6 Ziffern, 10 min, einmal, nach 5 Fehleingaben
     verfallen); der Client erbt den Zugang, gemerkt als SHA-256 seines Tokens. Neues Token trennt die Kopplungen.
   - Codes und Tokens nur als Hash in Buffern (`OAuthPairings`, `OAuthCodes`, `OAuthTokens`), Kopplungen im Attribut
