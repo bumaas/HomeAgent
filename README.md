@@ -117,7 +117,7 @@ es beim Übernehmen; alle Assistenten dieses Zugangs brauchen dann das neue.
 |---|---|
 | Name | Frei wählbar, am besten nach dem, der über den Zugang kommt (siehe unten). Er erscheint im Protokoll, unter „Was nicht geklappt hat“ und im Debug der Instanz. |
 | Token | Das Kennwort dieses Zugangs. Ein Zugang ohne Token bekommt beim Übernehmen eines aus 64 Zeichen; ein per Skript gesetztes braucht mindestens 24. |
-| Standardraum | Der Raum, in dem der Assistent steht. „Mach das Licht an“ ohne Raum meint dann diesen Raum, und bei gleichen Gerätenamen gewinnt das Gerät dort. Für das ganze Haus sagt der Assistent `room=all`. |
+| Standardraum | Der Raum, in dem der Assistent steht. „Mach das Licht an“ ohne Raum meint dann diesen Raum, und bei gleichen Gerätenamen gewinnt das Gerät dort. Für das ganze Haus sagt der Assistent `room=all`. Steht der Raum weder in der Raumliste noch bei einem Gerät, wirkt er nicht; das Formular nennt ihn unter den Zugängen. |
 | Nur abfragen | Dieser Zugang darf fragen, aber nichts schalten. Er sieht nur das Werkzeug zum Abfragen, und der Assistent erfährt, dass der Zugang nur lesen darf. |
 | Token auch in der Adresse | Für Clients, die keine Anmeldung mitschicken können. Das Token hängt dann an der Adresse. |
 | Werkzeugliste | Ob der Assistent die aktuelle Werkzeugliste kennt: **aktuell**, **veraltet** oder **noch nicht geholt**, mit der Uhrzeit des letzten Abholens. Die Liste ändert sich mit einem Update des Moduls und mit Ihren Einstellungen, etwa einem Gerät mit neuem Typ, einem neuen Raum oder einer neuen Szene. Steht dort **veraltet**, öffnen Sie in der Claude-App einen neuen Chat; hilft das nicht, trennen Sie den Connector und verbinden ihn neu. |
@@ -710,7 +710,7 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
 - Status 104: noch kein Zugang, der Endpunkt weist alle Anfragen ab. Status 201: Die Raumliste ist
   fehlerhaft, oder es gibt keinen fehlerfreien Zugang mehr; die roten Zeilen im Formular nennen den Fehler, und
   der Endpunkt bleibt bis zur Korrektur geschlossen. In beiden Fällen antwortet er mit HTTP 503
-  („nicht bereit“), nicht mit einem Anmeldefehler. Ein fehlerhafter Zugang (Token zu kurz oder doppelt,
-  unbekannter Standardraum), ein Gerät oder eine Szene mit fehlender Variable bzw. fehlendem Skript
+  („nicht bereit“), nicht mit einem Anmeldefehler. Ein fehlerhafter Zugang (Name fehlt, Token zu kurz oder
+  doppelt), ein Gerät oder eine Szene mit fehlender Variable bzw. fehlendem Skript
   sperrt nur sich selbst; der Rest arbeitet weiter, Formular und Log nennen den Eintrag. Fehlt eine
   Variable der Energiebilanz, ist die ganze Bilanz gesperrt, sonst wäre der Hausverbrauch falsch.

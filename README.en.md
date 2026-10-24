@@ -112,7 +112,7 @@ access then need the new one.
 |---|---|
 | Name | Free text, best after whoever comes through the access (see below). It appears in the protocol, under "What did not work" and in the debug of the instance. |
 | Token | The password of this access. An access without a token gets one of 64 characters on apply; one set by script needs at least 24. |
-| Default room | The room the assistant is in. "Turn on the light" without a room then means this room, and with equal device names the device there wins. For the whole house the assistant says `room=all`. |
+| Default room | The room the assistant is in. "Turn on the light" without a room then means this room, and with equal device names the device there wins. For the whole house the assistant says `room=all`. If the room is neither in the room list nor the room of a device, it has no effect; the form names it under the accesses. |
 | Query only | This access may ask but not switch anything. It only sees the query tool, and the assistant is told that the access can only read. |
 | Token also in the address | For clients that cannot send a login. The token is then appended to the address. |
 | Tool list | Whether the assistant knows the current tool list: **current**, **outdated** or **not fetched yet**, with the time of the last fetch. The list changes with an update of the module and with your settings, for example a device of a new type, a new room or a new scene. If it says **outdated**, open a new chat in the Claude app; if that does not help, disconnect the connector and connect it again. |
@@ -693,7 +693,7 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
 - Status 104: no access yet, the endpoint rejects all requests. Status 201: the room list has
   errors, or there is no faultless access left; the red rows in the form name the error, and the endpoint
   stays closed until they are corrected. In both cases it answers with HTTP 503 ("not ready"), not
-  with a login error. A faulty access (token too short or used twice, unknown default room), or a
+  with a login error. A faulty access (name missing, token too short or used twice), or a
   device or scene whose variable or script is missing, only disables itself; the rest keeps working,
   form and log name the entry. If a variable of the energy balance is missing, the whole balance is
   disabled, otherwise the house consumption would be wrong.

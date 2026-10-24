@@ -369,7 +369,21 @@ pruefe($status() === IS_ACTIVE, 'fehlerhafte Zugänge sperren nur sich selbst, A
 pruefe(str_contains($logText(), 'Faulty entries are disabled until they are corrected: '), 'das Log sagt, dass die fehlerhaften Zugänge gesperrt sind: ' . $logText());
 $log = $logText();
 pruefe(str_contains($log, 'Access without a name: name is missing') && !str_contains($log, 'Access "C": token is missing') && str_contains($log, 'Access "D": token is used twice'), 'Log nennt Zugänge ohne Name, ohne Token und mit doppeltem Token: ' . $log);
-pruefe(str_contains($log, 'Access "E": default room "Dachboden" is neither in the room list nor the room of a device'), 'unbekannter Standardraum wird benannt');
+// B96 (Durchsicht des Formulars 24.10.2026): Ein unbekannter Standardraum sperrt den Zugang nicht mehr. Ein neuer
+// Zugang mit Standardraum vor der Raumliste schloss sonst den ganzen Endpunkt. Er wirkt nur nicht, bis er stimmt.
+pruefe(!str_contains($log, 'default room "Dachboden"'), 'unbekannter Standardraum ist kein Fehler der Zeile: ' . $log);
+pruefe(str_contains($m->RunSelfTest(), 'Note: access "E": default room "Dachboden" is neither in the room list nor the room of a device, it has no effect until this is corrected'), 'der Selbsttest nennt den unbekannten Standardraum: ' . $m->RunSelfTest());
+$setze('Accesses', [$zugang('E', 'xyz-token-0123456789abcdef', 'Dachboden')]);
+pruefe($status() === IS_ACTIVE, 'ein Zugang mit unbekanntem Standardraum hält den Endpunkt allein offen: Status ' . $status());
+$hinweisE = array_column(flach(json_decode($m->GetConfigurationForm(), true)['elements']), null, 'name')['DefaultRoomsUnknown'] ?? [];
+pruefe(($hinweisE['visible'] ?? false) === true && ($hinweisE['caption'] ?? '') === 'These default rooms are neither in the room list nor the room of a device and have no effect: Dachboden (access "E")', 'das Formular nennt den unbekannten Standardraum unter den Zugängen: ' . json_encode($hinweisE));
+$zugangE = $zugang('E', 'xyz-token-0123456789abcdef', 'Dachboden');
+pruefe(!str_contains((string)json_encode((new ReflectionMethod(HomeAgent::class, 'tools'))->invoke($m, $zugangE)), 'Dachboden')
+    && !str_contains((new ReflectionMethod(HomeAgent::class, 'serverInfo'))->invoke($m, $zugangE)['instructions'], 'Dachboden'), 'ein unbekannter Standardraum steht weder in den Werkzeugen noch in den instructions');
+// Überschrift der Fehler oben im Formular: nur, was wirklich vorliegt (B96)
+$setze('Accesses', [$zugang('Kurz', 'zu-kurz')]);
+$kopf = array_column(flach(json_decode($m->GetConfigurationForm(), true)['elements']), null, 'name')['ListErrors']['caption'] ?? '';
+pruefe($status() === 201 && $kopf === 'No access is free of errors, the endpoint stays closed until this is corrected:', 'ohne fehlerfreien Zugang nennt die Überschrift nur die Zugänge: ' . $kopf);
 pruefe(!str_contains($log, 'abc-token-0123456789abcdef') && !str_contains($log, 'xyz-token-0123456789abcdef'), 'kein Token steht im Log');
 
 $zugaenge = [$zugang('Küche', 'abc-token-0123456789abcdef', 'Küche'), $zugang('Gast', 'gast-token-0123456789abcdef', '', true), $zugang('HA', 'pfad-token-0123456789abcdef', '', false, true)];
@@ -448,6 +462,8 @@ pruefe(str_contains($m->GetConfigurationForm(), 'Bearer <token>') && !str_contai
 
 $setze('Rooms', [['Name' => 'Küche', 'Aliases' => 'Kochbereich', 'Floor' => 'EG'], ['Name' => '', 'Aliases' => '', 'Floor' => ''], ['Name' => 'küche', 'Aliases' => '', 'Floor' => '']]);
 pruefe($status() === 201 && str_contains($logText(), 'Room without a name: name is missing') && str_contains($logText(), 'Room "küche": name is used twice'), 'fehlerhafte Raumliste: Status 201 mit Klartext: ' . $status());
+$kopf = array_column(flach(json_decode($m->GetConfigurationForm(), true)['elements']), null, 'name')['ListErrors']['caption'] ?? '';
+pruefe($kopf === 'The room list has errors, the endpoint stays closed until this is corrected:', 'bei fehlerhafter Raumliste nennt die Überschrift nur die Raumliste: ' . $kopf);
 $setze('Rooms', [['Name' => 'Küche', 'Aliases' => 'Kochbereich', 'Floor' => 'EG'], ['Name' => 'Bad', 'Aliases' => '', 'Floor' => 'OG']]);
 pruefe($status() === IS_ACTIVE, 'gültige Raumliste: aktiv');
 $schema = array_column($werkzeuge->invoke($m, null), 'inputSchema', 'name');
@@ -680,7 +696,7 @@ pruefe(!in_array('RoomChoice', $spalten, true), 'keine Spalte RoomChoice: ' . im
 $oben = $formular['elements'];
 $bereiche = array_values(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel'));
 $inhalt = array_map(static fn (array $b): array => array_values(array_filter(array_column($b['items'], 'name'))), $bereiche);
-pruefe(count($bereiche) === 6 && $inhalt[0] === ['Accesses', 'ConnectHeading', 'PanelClaude', 'PanelHA', 'PanelOther'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['RoomsMissing', 'Devices'] && $inhalt[3] === ['Scenes'] && in_array('Sources', array_column(flach($bereiche[4]['items']), 'name'), true) && in_array('Problems', array_column(flach($bereiche[5]['items']), 'name'), true), 'sechs Bereiche in dieser Reihenfolge, zuletzt „Was nicht geklappt hat“: ' . json_encode($inhalt));
+pruefe(count($bereiche) === 6 && $inhalt[0] === ['Accesses', 'DefaultRoomsUnknown', 'ConnectHeading', 'PanelClaude', 'PanelHA', 'PanelOther'] && $inhalt[1] === ['Rooms'] && $inhalt[2] === ['RoomsMissing', 'Devices'] && $inhalt[3] === ['Scenes'] && in_array('Sources', array_column(flach($bereiche[4]['items']), 'name'), true) && in_array('Problems', array_column(flach($bereiche[5]['items']), 'name'), true), 'sechs Bereiche in dieser Reihenfolge, zuletzt „Was nicht geklappt hat“: ' . json_encode($inhalt));
 pruefe(array_values(array_filter(array_column(array_filter($oben, static fn (array $e): bool => ($e['type'] ?? '') !== 'ExpansionPanel'), 'name'))) === [], 'oben steht außer den Bereichen nur Erklärtext, kein Feld: ' . json_encode(array_column($oben, 'name')));
 // Burkhard, 10.10.2026: einheitlich zugeklappt, und jeder Bereich merkt sich seinen Zustand
 $zustand = static fn (): array => array_map(static fn (array $b): bool => ($b['expanded'] ?? false) === true, array_values(array_filter(json_decode($m->GetConfigurationForm(), true)['elements'], static fn (array $e): bool => ($e['type'] ?? '') === 'ExpansionPanel')));
@@ -839,6 +855,10 @@ $raumFormular = array_column(flach(json_decode($raumProbe->GetConfigurationForm(
 pruefe(!in_array('RoomChoice', array_merge(...array_map('array_keys', $raumFormular['Devices']['values'] ?? [[]])), true), 'die Zeilen tragen kein RoomChoice mehr');
 $fehlend = $raumFormular['RoomsMissing'] ?? [];
 pruefe(($fehlend['visible'] ?? false) === true && str_contains((string)($fehlend['caption'] ?? ''), 'Wohnzimmer') && !str_contains((string)($fehlend['caption'] ?? ''), 'Küche') && !str_contains((string)($fehlend['caption'] ?? ''), 'Bad'), 'über der Liste stehen die Räume, die in der Raumliste fehlen: ' . ($fehlend['caption'] ?? '–'));
+// B97 (Durchsicht des Formulars 24.10.2026): Der Dialog zeigt den eigenen Raum mit „(nicht in der Raumliste)“, der
+// Hinweis sagte aber, er biete nur Räume der Raumliste an.
+pruefe(str_ends_with((string)($fehlend['caption'] ?? ''), '. In the device dialog they carry the note "not in the room list".'), 'der Hinweis beschreibt den Dialog richtig: ' . ($fehlend['caption'] ?? '–'));
+pruefe((json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/locale.json'), true)['translations']['de']['These rooms of the device list are missing in the room list: %s. In the device dialog they carry the note "not in the room list".'] ?? '') ==='Diese Räume der Geräteliste fehlen in der Raumliste: %s. Im Gerätedialog stehen sie mit dem Zusatz „nicht in der Raumliste“.', 'der Hinweis auf Deutsch');
 // Ein Alias zählt als Raum der Raumliste
 IPS_SetProperty($rp, 'Devices', json_encode([
     ['Room' => 'Bad_DG', 'Name' => 'Spiegel', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 69995, 'LevelVariableID' => 0, 'Invert' => false],
@@ -1727,7 +1747,10 @@ pruefe(preg_match('/[0-9a-f]{24,}/', $ausgaben[0] ?? '') === 0 && str_contains($
 $formular = json_decode($m->GetConfigurationForm(), true);
 $knopf = array_values(array_filter(flach(array_column(array_filter(flach($formular['elements']), static fn ($e) => ($e['name'] ?? '') === 'Accesses'), 'form')[0] ?? []), static fn ($e) => str_contains((string)($e['onClick'] ?? ''), 'HAGT_UIGenerateToken')))[0] ?? [];
 pruefe(($knopf['onClick'] ?? '') === 'echo HAGT_UIGenerateToken($id);' && ($knopf['caption'] ?? '') === 'New token', 'der Knopf „Neues Token“ steht im Bearbeiten-Dialog: ' . json_encode($knopf));
-pruefe(str_contains((string)($knopf['confirm'] ?? ''), 'disconnects every assistant'), 'der Knopf fragt vorher, weil ein neues Token alle Assistenten des Zugangs trennt: ' . json_encode($knopf['confirm'] ?? null));
+// B95 (Durchsicht des Formulars 24.10.2026): Der Knopf steht auch im Dialog einer neuen Zeile, an der noch kein
+// Assistent hängt; die Rückfrage gilt deshalb nur für den Fall, dass schon einer den Zugang nutzt.
+pruefe(($knopf['confirm'] ?? '') === 'If an assistant already uses this access, it is disconnected until it gets the new token. Continue?', 'der Knopf fragt vorher, passend auch für eine neue Zeile: ' . json_encode($knopf['confirm'] ?? null));
+pruefe((json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/locale.json'), true)['translations']['de']['If an assistant already uses this access, it is disconnected until it gets the new token. Continue?'] ?? '') === 'Nutzt schon ein Assistent diesen Zugang, ist er getrennt, bis er das neue Token bekommt. Fortfahren?', 'die Rückfrage auf Deutsch');
 pruefe(!in_array('GeneratedToken', array_column(flach($formular['actions']), 'name'), true) && !in_array('echo HAGT_UIGenerateToken($id);', array_column(flach($formular['actions']), 'onClick'), true), 'unten im Formular gibt es Knopf und Feld nicht mehr');
 
 // Die Bremse selbst, mit vorgegebener Uhrzeit
@@ -1933,8 +1956,8 @@ pruefe(str_contains($anfrage('Bearer ' . $token), 'Parse error'), 'der gültige 
 $a = $anfrage('Bearer abc123');
 pruefe(str_contains($a, 'Missing or invalid bearer token'), 'der Zugang mit zu kurzem Token ist gesperrt: ' . $a);
 $a = $anfrage('Bearer boden-token-0123456789abcdef');
-pruefe(str_contains($a, 'Missing or invalid bearer token'), 'der Zugang mit unbekanntem Standardraum ist gesperrt: ' . $a);
-$setze('Accesses', [$zugang('Kurz', 'abc123'), $zugang('Dachboden', 'boden-token-0123456789abcdef', 'Dachboden')]);
+pruefe(str_contains($a, 'Parse error'), 'der Zugang mit unbekanntem Standardraum ist benutzbar, der Raum wirkt nur nicht (B96): ' . $a);
+$setze('Accesses', [$zugang('Kurz', 'abc123'), $zugang('', 'ohne-name-token-0123456789abcdef')]);
 pruefe($status() === 201, 'ohne einen gültigen Zugang bleibt der Endpunkt zu: Status ' . $status());
 $setze('Accesses', [$zugang('Lang', $token)]);
 IPS_SetProperty($iid, 'Devices', json_encode([['Room' => 'Küche', 'Name' => '', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $licht, 'Invert' => false]]));
@@ -1972,7 +1995,7 @@ $setze('Scenes', []);
 $setze('Rooms', [['Name' => '', 'Aliases' => '', 'Floor' => '']]);
 pruefe($status() === 201, 'ein Fehler in der Raumliste schließt weiterhin den Endpunkt: Status ' . $status());
 $formular = json_decode($m->GetConfigurationForm(), true);
-pruefe(str_contains(json_encode($formular), 'The room list has errors or no access is free of errors, the endpoint stays closed until this is corrected'), 'das Formular sagt dann, dass der Endpunkt zu ist');
+pruefe(str_contains(json_encode($formular), 'The room list has errors, the endpoint stays closed until this is corrected'), 'das Formular sagt dann, dass der Endpunkt zu ist');
 $setze('Rooms', []);
 $setze('Devices', $geraeteStart);
 pruefe($status() === IS_ACTIVE, 'Ausgangslage wiederhergestellt');
@@ -2507,8 +2530,9 @@ pruefe($fehlversuche() !== '', 'ein unbekanntes Token zählt weiter');
 
 // R1: Erneuern, während der Zugang nicht benutzbar ist, kostet die Kopplung nicht
 $erneuern = (string)($tokens['refresh_token'] ?? '');
-// Ein Tippfehler im Standardraum sperrt den Zugang; ein zweiter hält den Endpunkt offen
-IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('Claude-App', $token, 'Hallle', true), $zugang('Andere', 'andere-token-0123456789abcdef')]));
+// Ein fehlender Name sperrt den Zugang; ein zweiter hält den Endpunkt offen. Bis build 241 sperrte hier ein
+// Tippfehler im Standardraum, das tut er seit B96 nicht mehr.
+IPS_SetProperty($iid, 'Accesses', json_encode([$zugang('', $token, 'Halle', true), $zugang('Andere', 'andere-token-0123456789abcdef')]));
 IPS_ApplyChanges($iid);
 $a = $tokenAnfrage(['grant_type' => 'refresh_token', 'refresh_token' => $erneuern, 'client_id' => $claudeId]);
 pruefe($a['status'] === 400 && ($a['json']['error'] ?? '') === 'invalid_grant', 'Zugang gesperrt: Erneuern scheitert: ' . $a['status']);

@@ -73,7 +73,8 @@ Backend. So laufen die Tests mit echten Mitschnitten.
   Als Fehlversuch zählen nur ein ungültiges Token (auch in der Adresse), ein falscher Kopplungscode, ein ungültiger Code
   und ein ungültiges Erneuerungstoken, eine nicht lesbare `client_id`; keine Anmeldung oder ein bekanntes, abgelaufenes Token zählen nicht.
 - **Ein fehlerhafter Eintrag sperrt nur sich selbst**: Zugang (`usableAccesses()`), Gerät (`usableDevices()`), Szene
-  (`usableScenes()`), Bilanz als Ganzes (`usableBalance()`). Geprüft bei jedem Aufruf, aber nur einmal je Anfrage
+  (`usableScenes()`), Bilanz als Ganzes (`usableBalance()`). Ein unbekannter Standardraum sperrt nichts, er wirkt nur nicht
+  (`defaultRoomOf`, `unknownDefaultRooms`, Hinweis in Formular und Selbsttest). Geprüft bei jedem Aufruf, aber nur einmal je Anfrage
   (`checkedOnce` in Hook, Selbsttest und Formular), Beschriftungen nur für fehlerhafte Zeilen (Laufzeit). Status 104
   ohne Zugang mit Token, 201 bei Fehlern in der Raumliste oder ohne fehlerfreien Zugang (`endpointClosed()`); beides
   antwortet 503, nicht 401 (HA beginnt bei 401 die OAuth-Suche).

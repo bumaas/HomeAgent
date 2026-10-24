@@ -222,7 +222,7 @@ class HomeAgent extends IPSModuleStrict
         $problems = $this->validateLists();
         if ($this->endpointClosed($problems)) {
             $this->SetStatus(self::STATUS_LIST_INVALID);
-            $this->LogMessage($this->Translate('The room list has errors or no access is free of errors, the endpoint stays closed until this is corrected') . ': ' . implode('; ', array_column($problems, 'text')), KL_ERROR);
+            $this->LogMessage($this->Translate($this->closedHeading($problems)) . ': ' . implode('; ', array_column($problems, 'text')), KL_ERROR);
             return;
         }
         if ($problems !== []) {
@@ -534,6 +534,9 @@ class HomeAgent extends IPSModuleStrict
                 $lines[] = sprintf($this->Translate('Note: access "%s" also accepts its token as the last part of the address, for clients that cannot send a login'), $access['Name']);
             }
         }
+        foreach ($this->unknownDefaultRooms() as $access => $room) {
+            $lines[] = sprintf($this->Translate('Note: access "%s": default room "%s" is neither in the room list nor the room of a device, it has no effect until this is corrected'), $access, $room);
+        }
         if ($this->oauthBase() !== '') {
             $lines[] = sprintf($this->Translate('Sign-in with OAuth: %d assistant(s) paired'), count($this->oauthClientRows()));
         } elseif ($this->connectConfigured()) {
@@ -636,11 +639,17 @@ class HomeAgent extends IPSModuleStrict
                 $element['form'] = "return json_decode(HAGT_UISourceForm(\$id, \$Sources['Type'] ?? 'grid', \$Sources['PowerOut'] ?? 0), true);";
                 $element['values'] = array_map(fn (array $row): array => $this->sourceLabels($row), $this->storedSources());
             }
-            // Räume der Geräteliste, die in der Raumliste fehlen (B75): Die Auswahl im Dialog bietet nur die Raumliste an
+            // Räume der Geräteliste, die in der Raumliste fehlen (B75); der Dialog zeigt den eigenen Raum mit Zusatz (B97)
+            if (($element['name'] ?? '') === 'DefaultRoomsUnknown') {
+                $unknown = $this->unknownDefaultRooms();
+                $element['visible'] = $unknown !== [];
+                $element['caption'] = sprintf($this->Translate('These default rooms are neither in the room list nor the room of a device and have no effect: %s'),
+                    implode(', ', array_map(fn (string $access, string $room): string => sprintf($this->Translate('%s (access "%s")'), $room, $access), array_keys($unknown), $unknown)));
+            }
             if (($element['name'] ?? '') === 'RoomsMissing') {
                 $missing = $this->missingRooms();
                 $element['visible'] = $missing !== [];
-                $element['caption'] = sprintf($this->Translate('These rooms of the device list are missing in the room list: %s. The device dialog only offers rooms of the room list.'), implode(', ', $missing));
+                $element['caption'] = sprintf($this->Translate('These rooms of the device list are missing in the room list: %s. In the device dialog they carry the note "not in the room list".'), implode(', ', $missing));
             }
 
             // Fehlerhafte Zeilen rot. Die Konsole ergänzt die gespeicherten Zeilen der Reihe nach um
@@ -681,7 +690,7 @@ class HomeAgent extends IPSModuleStrict
 
         // Die Fehler stehen oben im Formular, nicht nur im Log.
         if ($problems !== []) {
-            $heading = $this->endpointClosed($problems) ? 'The room list has errors or no access is free of errors, the endpoint stays closed until this is corrected' : 'Faulty entries are disabled until they are corrected';
+            $heading = $this->endpointClosed($problems) ? $this->closedHeading($problems) : 'Faulty entries are disabled until they are corrected';
             $labels = [['type' => 'Label', 'name' => 'ListErrors', 'caption' => $this->Translate($heading) . ':', 'bold' => true, 'color' => self::LABEL_COLOR_ERROR]];
             foreach ($problems as $number => $problem) {
                 $labels[] = ['type' => 'Label', 'name' => 'ListError' . $number, 'caption' => $problem['text'], 'color' => self::LABEL_COLOR_ERROR];
@@ -2065,7 +2074,7 @@ class HomeAgent extends IPSModuleStrict
     {
         // Der Standardraum des Zugangs und die Etagen der Raumliste stehen in den Beschreibungen,
         // damit der Assistent sie ohne eigenen Aufruf kennt. Ohne Etagen gibt es den Parameter nicht.
-        $defaultRoom = (string)($access['DefaultRoom'] ?? '');
+        $defaultRoom = $this->defaultRoomOf($access);
         $readOnly = ($access['ReadOnly'] ?? false) === true;
         $floors = $this->roomIndex()->floors();
         $floor = $floors === [] ? [] : ['floor' => ['type' => 'string', 'description' => 'Floor, for all rooms of a floor. Known floors: ' . implode(', ', $floors) . '.']];
@@ -2436,7 +2445,7 @@ class HomeAgent extends IPSModuleStrict
         if (($access['ReadOnly'] ?? false) === true) {
             $instructions .= ' ' . $this->Translate(self::READ_ONLY_NOTE);
         }
-        $defaultRoom = (string)($access['DefaultRoom'] ?? '');
+        $defaultRoom = $this->defaultRoomOf($access);
         if ($defaultRoom !== '') {
             $instructions .= ' ' . sprintf($this->Translate('You are in room %s. Commands and questions without a room mean this room; use room=all for the whole house.'), $defaultRoom);
         }
@@ -2458,7 +2467,7 @@ class HomeAgent extends IPSModuleStrict
     {
         $started = hrtime(true);
         $readOnly = ($access['ReadOnly'] ?? false) === true;
-        $defaultRoom = (string)($access['DefaultRoom'] ?? '');
+        $defaultRoom = $this->defaultRoomOf($access);
         $index = match (true) {
             $name === 'get_state'                  => $this->deviceIndex($defaultRoom),
             $name === 'show_chart'                 => $this->deviceIndex($defaultRoom),
@@ -2891,6 +2900,18 @@ class HomeAgent extends IPSModuleStrict
         return array_any($problems, static fn (array $p): bool => $p['list'] === 'Rooms') || $this->usableAccesses() === [];
     }
 
+    /** Überschrift bei geschlossenem Endpunkt: nur, was wirklich vorliegt (B96). Englischer Schlüssel für Translate(). */
+    private function closedHeading(array $problems): string
+    {
+        $rooms = array_any($problems, static fn (array $p): bool => $p['list'] === 'Rooms');
+        $accesses = $this->usableAccesses() === [];
+        return match (true) {
+            $rooms && $accesses => 'The room list has errors and no access is free of errors, the endpoint stays closed until this is corrected',
+            $rooms              => 'The room list has errors, the endpoint stays closed until this is corrected',
+            default             => 'No access is free of errors, the endpoint stays closed until this is corrected',
+        };
+    }
+
     /**
      * Meldet jedes Objekt der Listen als Referenz, damit Symcon beim Löschen einer Variable oder
      * eines Skripts die Instanz nennt (wie BlindControl). Alte Referenzen fallen vorher weg.
@@ -3039,6 +3060,38 @@ class HomeAgent extends IPSModuleStrict
     {
         $faulty = array_column(array_filter($this->validateLists(), static fn (array $p): bool => $p['list'] === 'Accesses'), 'index');
         return array_filter($this->accessList(), static fn (array $access, int $index): bool => $access['Token'] !== '' && !in_array($index, $faulty, true), ARRAY_FILTER_USE_BOTH);
+    }
+
+    /**
+     * Zugänge, deren Standardraum weder in der Raumliste noch bei einem Gerät steht: Name des Zugangs => Raum.
+     * Der Standardraum bleibt freier Text. Ein Tippfehler sperrte bis build 241 den Zugang und mit ihm oft den
+     * Endpunkt (Durchsicht des Formulars 24.10.2026: Standardraum eingetragen, bevor es Räume gab); jetzt wirkt er
+     * nur nicht und wird genannt (B96).
+     *
+     * @return array<string, string>
+     */
+    private function unknownDefaultRooms(): array
+    {
+        $unknown = [];
+        foreach ($this->accessList() as $access) {
+            if ($access['DefaultRoom'] !== '' && !$this->knowsRoom($access['DefaultRoom'])) {
+                $unknown[$access['Name']] = $access['DefaultRoom'];
+            }
+        }
+        return $unknown;
+    }
+
+    private function knowsRoom(string $room): bool
+    {
+        return $this->roomIndex()->isKnown($room)
+            || array_any($this->deviceList(), static fn (array $entry): bool => DeviceIndex::normalize((string)($entry['Room'] ?? '')) === DeviceIndex::normalize($room));
+    }
+
+    /** Standardraum eines Zugangs, leer, wenn es keinen gibt oder der Raum unbekannt ist (B96). */
+    private function defaultRoomOf(?array $access): string
+    {
+        $room = trim((string)($access['DefaultRoom'] ?? ''));
+        return $room !== '' && $this->knowsRoom($room) ? $room : '';
     }
 
     private function hasAccessWithToken(): bool
@@ -3270,12 +3323,7 @@ class HomeAgent extends IPSModuleStrict
                 $add('Accesses', $index, $row, $this->Translate('token is used twice'));
             }
             $tokens[] = $access['Token'];
-            // Der Standardraum bleibt freier Text; ein Tippfehler würde ihn still wirkungslos machen.
-            $known = $rooms->isKnown($access['DefaultRoom'])
-                || array_any($list, static fn (array $entry): bool => DeviceIndex::normalize((string)($entry['Room'] ?? '')) === DeviceIndex::normalize($access['DefaultRoom']));
-            if ($access['DefaultRoom'] !== '' && !$known) {
-                $add('Accesses', $index, $row, sprintf($this->Translate('default room "%s" is neither in the room list nor the room of a device'), $access['DefaultRoom']));
-            }
+            // Ein unbekannter Standardraum sperrt nichts (B96), ihn nennen Formular und Selbsttest (unknownDefaultRooms).
         }
 
         $seen = [];

@@ -103,9 +103,15 @@
               "type": "Button",
               "caption": "New token",
               "onClick": "echo HAGT_UIGenerateToken($id);",
-              "confirm": "A new token disconnects every assistant that uses this access until it gets the new token. Continue?"
+              "confirm": "If an assistant already uses this access, it is disconnected until it gets the new token. Continue?"
             }
           ]
+        },
+        {
+          "type": "Label",
+          "name": "DefaultRoomsUnknown",
+          "caption": "",
+          "visible": false
         },
         {
           "type": "Label",

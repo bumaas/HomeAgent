@@ -34,6 +34,12 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   ein Fehler der Zeile. Nach 20 abgewiesenen Anmeldungen in einer Minute ist der Hook für diesen Absender 60 s zu, nach 100 von allen
   zusammen für alle (`SignInGuard`, je Absender seit build 99, Backlog B60). Über Connect kommt alles von 127.0.0.1;
   `SignInGuard::sender()` nimmt dann den letzten Eintrag aus `X-Forwarded-For`, nur bei 127.0.0.1 oder ::1.
+- **Ein unbekannter Standardraum sperrt nichts** (build 242, B96): Bis build 241 war er ein Fehler der Zeile. Bei der
+  Durchsicht des Formulars am 24.10.2026 trug Burkhard an einem neuen Zugang den Standardraum „Gast“ ein, bevor es Räume
+  gab; der einzige Zugang war gesperrt, der Endpunkt zu (201), und die Überschrift „Die Raumliste ist fehlerhaft oder kein
+  Zugang ist fehlerfrei“ ließ raten, was zutraf. Jetzt wirkt der Raum nicht (`defaultRoomOf` gibt leer zurück, weder
+  Werkzeuge noch `instructions` nennen ihn), Formular (`DefaultRoomsUnknown`) und Selbsttest nennen ihn, und die
+  Überschrift nennt nur, was vorliegt (`closedHeading`). Wie bei Geräten, deren Raum fehlt (`missingRooms()`).
 - **Ein fehlerhafter Eintrag sperrt nur sich selbst**: Zugang (`usableAccesses()`), Gerät
   (`usableDevices()`), Szene (`usableScenes()`), Energiebilanz als Ganzes (`usableBalance()`). Geprüft wird
   bei jedem Aufruf, eine gelöschte Variable sperrt ihr Gerät also sofort, ohne Übernehmen. Eine Anfrage
