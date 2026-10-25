@@ -194,6 +194,7 @@ zeigt der Dialog nur die Variablen, die zu diesem Typ gehören.
 | Typ | Licht, Schalter, Steckdose, Gerät, Rollladen, Thermostat, Mediaplayer, Luftbe-/entfeuchter, Lüftung/Ventilator, Fenster, Tür, Anwesenheit, Wasserleck, Temperatur, Luftfeuchte, Luftqualität, sonstiger Messwert oder Zähler. |
 | Zustand oder Messwert | Die Variable für an/aus, offen/zu oder erkannt, bei Messwerten der Wert selbst. Beim Thermostat die Ist-Temperatur. |
 | Sollwert | Nur beim Thermostat: die Variable mit der Solltemperatur. Sie braucht eine Aktion. |
+| Ventilstellung, 2, 3 | Nur beim Thermostat, wahlweise und nebeneinander: bis zu drei Ventile seiner Heizkörper. Gezählt wird in Prozent des Bereichs der Variable. Bei Homematic IP steht die Stellung in `LEVEL`, nicht in `VALVE_STATE` (das ist der Status der Ventiladaption); ein Stellantrieb HM-CC-VD ist ein eigenes Gerät neben dem HM-CC-TC. |
 | Farbtemperatur | Nur beim Licht, wahlweise: die Variable mit der Farbtemperatur in Kelvin oder Mired. Sie braucht eine Aktion. |
 | Farbe | Nur beim Licht, wahlweise: die Variable mit der Farbe als Ganzzahl (RGB, etwa Profil `~HexColor`). Sie braucht eine Aktion. |
 | Ist-Feuchte, Zielfeuchte, Modus, Lüfterstufe | Beim Luftbe-/entfeuchter: die gemessene Luftfeuchte, die Zielfeuchte, die der Assistent stellen darf (Bereich und Schrittweite aus Darstellung oder Profil), und zwei Auswahlvariablen, deren Einträge er per Name setzt. Bei der Lüftung nur Modus und Lüfterstufe. Der Zustand heißt dort „Ein/Aus“. |
@@ -218,7 +219,7 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 | Schalter, Steckdose | Schaltzustand, wahlweise Leistung und Zähler |
 | Gerät | Schaltzustand oder Leistung, wahlweise Zähler, Wärmezähler und Wärmeleistung. Ein Gerät nur mit Leistung, etwa eine Wärmepumpe, lässt sich abfragen, aber nicht schalten. |
 | Rollladen | Position, dazu wahlweise Fahrstatus und Stopp |
-| Thermostat | Sollwert, wahlweise die Ist-Temperatur, Modus und Lüfterstufe (Klimagerät), Leistung und Zähler |
+| Thermostat | Sollwert, wahlweise die Ist-Temperatur, bis zu drei Ventile, Modus und Lüfterstufe (Klimagerät), Leistung und Zähler |
 | Mediaplayer | Ein/Aus, Wiedergabe oder Lautstärke, wahlweise Stumm, Titel, Interpret, Leistung und Zähler |
 | Luftbe-/entfeuchter | Ein/Aus oder Zielfeuchte, wahlweise Ist-Feuchte, Modus und Lüfterstufe |
 | Lüftung/Ventilator | Ein/Aus oder Lüfterstufe, wahlweise Modus |
@@ -266,6 +267,11 @@ Bereichs, heißt er Sonder-Sollwert: Manche Homematic-Thermostate nutzen 100 fü
 Ein Wert am Rand mit eigenem Text zählt ebenfalls nicht zum Bereich, ob der Text aus einem Eintrag des Profils
 oder aus einem Intervall der Darstellung mit festem Wert kommt. Der Text steht dann mit in der Zeile, etwa
 „Sonder-Sollwert „On“ (30.5 °C, außerhalb von 6 bis 30 °C)“.
+
+Mit Ventilstellung nennt die Zeile das offenste Ventil, etwa „Soll 21.5 °C (derzeit 20.4 °C, Ventil 97 %)“ oder
+bei mehreren „Ventile bis 98 %“. Dann zählt das Thermostat bei „Welche Heizkörper heizen?“ (`active_only`) als aktiv,
+solange ein Ventil über 0 steht. Auf einem Sonder-Sollwert zählt es nie, denn „Ventil ganz offen“ hält das Ventil
+fest auf, ob der Raum Wärme braucht oder nicht. Die Gerätekarte zeigt die Stellung neben dem Sollwert.
 
 Ein Klimagerät tragen Sie als Thermostat ein, dazu Modus und Lüfterstufe. Die Zeile lautet dann etwa
 „Soll 24 °C (derzeit 20.0 °C), Aus, Lüfter Auto“, und der Assistent stellt beides per Name wie beim
@@ -659,6 +665,7 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
 
 - Farbe als Text geht noch nicht. Die Betriebsart eines Thermostats geht nur über eine Variable mit Aktion;
   bei Homematic-Wandthermostaten hat `CONTROL_MODE` keine.
+- Den Verlauf einer Ventilstellung zeigt das Modul noch nicht, nur die Stellung von jetzt.
 - Ein batteriebetriebenes Thermostat übernimmt einen neuen Sollwert oft erst beim nächsten Funkkontakt.
   Die Zentrale meldet ihn trotzdem sofort zurück, „gestellt“ heißt dann „an die Zentrale übergeben“.
 - Bei einem Rollladen, der sich erst am Ziel meldet und keinen Fahrstatus hat, weiß das Modul nach

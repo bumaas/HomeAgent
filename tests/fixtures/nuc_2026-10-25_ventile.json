@@ -1,0 +1,635 @@
+{
+    "_quelle": "nuc 25.10.2026 (Europe/Berlin), nur gelesen, Werte und Bereiche über SymconDeviceBackend (read, range, setpointRange, options). Thermostate der Freigabeliste #15877 mit den Stellantrieben ihres Raums: HM-CC-TC mit HM-CC-VD (VALVE_STATE, ~Intensity.100, 0 bis 99 %), zwölf Antriebe stehen bei Sonder-Sollwert 100 bzw. 30,5 („Ventil offen“) fest auf 97 bis 98 %; Musikzimmer regelt auf 21,5 °C mit 97 %; Wintergarten Wandthermostat HM-TC-IT mit HmIP-Heizkörperthermostat (VALVE_STATE ~Intensity.100). BadEG ist ein Homematic-IP-Thermostat: Stellung in LEVEL (~Intensity.1, 0 bis 1), VALVE_STATE daneben ist der Adaptionsstatus (Profil HM.ValveState) und steht als „Heizung falsch“ für den Selbsttest. Ein Raum ist wie in den anderen Fixtures in „Atelier“ umbenannt. Bei den Ist-Temperaturen sind die Einträge „%.1f“ des Profils weggelassen. ValveVariableID usw. sind die neuen Felder von B101 (an der Anlage noch nicht eingetragen).",
+    "jetzt": 1792939787,
+    "zeitzone": "Europe/Berlin",
+    "variablen": {
+        "41351": {
+            "name": "nuc: Gast.Heizung.Thermostat:1 TEMPERATURE",
+            "wert": 21.9,
+            "formatiert": "21.9 °C",
+            "einheit": "°C"
+        },
+        "10028": {
+            "name": "nuc: Gast.Heizung.Thermostat:2 SETPOINT",
+            "wert": 100,
+            "formatiert": "100.0 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            }
+        },
+        "30333": {
+            "name": "nuc: Gast.Heizung.Stellantrieb:1 VALVE_STATE",
+            "wert": 98,
+            "formatiert": "98 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "19960": {
+            "name": "nuc: Wintergarten.Heizung.Wandthermostat:2 ACTUAL_TEMPERATURE",
+            "wert": 21.3,
+            "formatiert": "21.3 °C",
+            "einheit": "°C"
+        },
+        "11093": {
+            "name": "nuc: Wintergarten.Heizung.Wandthermostat:2 SET_TEMPERATURE",
+            "wert": 20.5,
+            "formatiert": "20.5 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 5,
+                "max": 30,
+                "schritt": 0.5
+            },
+            "optionen": [
+                [
+                    4.5,
+                    "Off"
+                ],
+                [
+                    30.5,
+                    "On"
+                ]
+            ]
+        },
+        "27311": {
+            "name": "nuc: Wintergarten.Heizung.Heizkörperthermostat:4 VALVE_STATE",
+            "wert": 0,
+            "formatiert": "0 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "45568": {
+            "name": "nuc: Bad.Heizung.Thermostat:1 TEMPERATURE",
+            "wert": 22.2,
+            "formatiert": "22.2 °C",
+            "einheit": "°C"
+        },
+        "16206": {
+            "name": "nuc: Bad.Heizung.Thermostat:2 SETPOINT",
+            "wert": 30.5,
+            "formatiert": "30.5 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            }
+        },
+        "55547": {
+            "name": "nuc: Bad.Heizung.Stellantrieb:1 VALVE_STATE",
+            "wert": 98,
+            "formatiert": "98 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "39353": {
+            "name": "nuc: Bad.Heizung.Stellantrieb Handtuchhalter:1 VALVE_STATE",
+            "wert": 98,
+            "formatiert": "98 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "16439": {
+            "name": "nuc: DG_Bad.Heizung.Thermostat:1 TEMPERATURE",
+            "wert": 18.4,
+            "formatiert": "18.4 °C",
+            "einheit": "°C"
+        },
+        "55269": {
+            "name": "nuc: DG_Bad.Heizung.Thermostat:2 SETPOINT",
+            "wert": 6,
+            "formatiert": "6.0 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            }
+        },
+        "37753": {
+            "name": "nuc: DG_Bad.Heizung.Stellantrieb:1 VALVE_STATE",
+            "wert": 0,
+            "formatiert": "0 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "51410": {
+            "name": "nuc: Dachboden.Heizung.Thermostat:1 TEMPERATURE",
+            "wert": 17.8,
+            "formatiert": "17.8 °C",
+            "einheit": "°C"
+        },
+        "26569": {
+            "name": "nuc: Dachboden.Heizung.Thermostat:2 SETPOINT",
+            "wert": 17,
+            "formatiert": "17.0 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            }
+        },
+        "34598": {
+            "name": "nuc: Dachboden.Heizung.Stellantrieb:1 VALVE_STATE",
+            "wert": 0,
+            "formatiert": "0 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "20417": {
+            "name": "nuc: Flur.Heizung.Thermostat:1 TEMPERATURE",
+            "wert": 22.7,
+            "formatiert": "22.7 °C",
+            "einheit": "°C"
+        },
+        "24071": {
+            "name": "nuc: Flur.Heizung.Thermostat:2 SETPOINT",
+            "wert": 30.5,
+            "formatiert": "30.5 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            }
+        },
+        "16724": {
+            "name": "nuc: Flur.Heizung.Stellantrieb:1 VALVE_STATE",
+            "wert": 98,
+            "formatiert": "98 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "49120": {
+            "name": "nuc: Heike.Heizung.Thermostat:1 TEMPERATURE",
+            "wert": 22.5,
+            "formatiert": "22.5 °C",
+            "einheit": "°C"
+        },
+        "28616": {
+            "name": "nuc: Heike.Heizung.Thermostat:2 SETPOINT",
+            "wert": 30.5,
+            "formatiert": "30.5 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            }
+        },
+        "22481": {
+            "name": "nuc: Heike.Heizung.Stellantrieb:1 VALVE_STATE",
+            "wert": 98,
+            "formatiert": "98 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "36203": {
+            "name": "nuc: Küche.Heizung.Thermostat:1 TEMPERATURE",
+            "wert": 22.3,
+            "formatiert": "22.3 °C",
+            "einheit": "°C"
+        },
+        "53537": {
+            "name": "nuc: Küche.Heizung.Thermostat:2 SETPOINT",
+            "wert": 30.5,
+            "formatiert": "30.5 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            }
+        },
+        "21824": {
+            "name": "nuc: Küche.Heizung.Stellantrieb:1 VALVE_STATE",
+            "wert": 98,
+            "formatiert": "98 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "55817": {
+            "name": "nuc: DG_Küche.Heizung.Thermostat:1 TEMPERATURE",
+            "wert": 17.4,
+            "formatiert": "17.4 °C",
+            "einheit": "°C"
+        },
+        "45107": {
+            "name": "nuc: DG_Küche.Heizung.Thermostat:2 SETPOINT",
+            "wert": 6,
+            "formatiert": "6.0 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            }
+        },
+        "17461": {
+            "name": "nuc: DG_Küche.Heizung.Stellantrieb:1 VALVE_STATE",
+            "wert": 0,
+            "formatiert": "0 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "41945": {
+            "name": "nuc: Musik.Heizung.Thermostat:1 TEMPERATURE",
+            "wert": 20.4,
+            "formatiert": "20.4 °C",
+            "einheit": "°C"
+        },
+        "48076": {
+            "name": "nuc: Musik.Heizung.Thermostat:2 SETPOINT",
+            "wert": 21.5,
+            "formatiert": "21.5 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            }
+        },
+        "27238": {
+            "name": "nuc: Musik.Heizung.Stellantrieb:1 VALVE_STATE",
+            "wert": 97,
+            "formatiert": "97 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "41417": {
+            "name": "nuc: Schlafen.Heizung.Thermostat:1 TEMPERATURE",
+            "wert": 20.4,
+            "formatiert": "20.4 °C",
+            "einheit": "°C"
+        },
+        "50167": {
+            "name": "nuc: Schlafen.Heizung.Thermostat:2 SETPOINT",
+            "wert": 100,
+            "formatiert": "100.0 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            }
+        },
+        "47673": {
+            "name": "nuc: Schlafen.Heizung.Stellantrieb (West):1 VALVE_STATE",
+            "wert": 98,
+            "formatiert": "98 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "56452": {
+            "name": "nuc: Schlafen.Heizung.Stellantrieb (Sportplatz):1 VALVE_STATE",
+            "wert": 98,
+            "formatiert": "98 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "30145": {
+            "name": "nuc: Atelier.Heizung.Thermostat:1 TEMPERATURE",
+            "wert": 17.3,
+            "formatiert": "17.3 °C",
+            "einheit": "°C"
+        },
+        "11218": {
+            "name": "nuc: Atelier.Heizung.Thermostat:2 SETPOINT",
+            "wert": 16,
+            "formatiert": "16.0 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            }
+        },
+        "27966": {
+            "name": "nuc: Atelier.Heizung.Stellantrieb:1 VALVE_STATE",
+            "wert": 0,
+            "formatiert": "0 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "38498": {
+            "name": "nuc: Wohnzimmer.Heizung.Thermostat:1 TEMPERATURE",
+            "wert": 22.9,
+            "formatiert": "22.9 °C",
+            "einheit": "°C"
+        },
+        "48140": {
+            "name": "nuc: Wohnzimmer.Heizung.Thermostat:2 SETPOINT",
+            "wert": 30.5,
+            "formatiert": "30.5 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            }
+        },
+        "30193": {
+            "name": "nuc: Wohnzimmer.Heizung.Stellantrieb (Wohnbereich):1 VALVE_STATE",
+            "wert": 98,
+            "formatiert": "98 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "46683": {
+            "name": "nuc: Wohnzimmer.Heizung.Stellantrieb (Essbereich):1 VALVE_STATE",
+            "wert": 98,
+            "formatiert": "98 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        "20971": {
+            "name": "nuc: BadEG.Heizung.Thermostat:1 ACTUAL_TEMPERATURE",
+            "wert": 20.8,
+            "formatiert": "20.8 °C",
+            "einheit": "°C"
+        },
+        "20088": {
+            "name": "nuc: BadEG.Heizung.Thermostat:1 SET_POINT_TEMPERATURE",
+            "wert": 20,
+            "formatiert": "20.0 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 5,
+                "max": 30,
+                "schritt": 0.5
+            },
+            "optionen": [
+                [
+                    4.5,
+                    "Off"
+                ],
+                [
+                    30.5,
+                    "On"
+                ]
+            ]
+        },
+        "38972": {
+            "name": "nuc: BadEG.Heizung.Thermostat:1 LEVEL",
+            "wert": 0.68,
+            "formatiert": "68 %",
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 1
+            }
+        },
+        "36250": {
+            "name": "nuc: BadEG.Heizung.Thermostat:1 VALVE_STATE",
+            "wert": 4,
+            "formatiert": "ADAPTION_DONE",
+            "bereich": {
+                "min": 0,
+                "max": 8
+            },
+            "optionen": [
+                [
+                    0,
+                    "STATE_NOT_AVAILABLE"
+                ],
+                [
+                    1,
+                    "RUN_TO_START"
+                ],
+                [
+                    2,
+                    "WAIT_FOR_ADAPTION"
+                ],
+                [
+                    3,
+                    "ADAPTION_IN_PROGRESS"
+                ],
+                [
+                    4,
+                    "ADAPTION_DONE"
+                ],
+                [
+                    5,
+                    "TOO_TIGHT"
+                ],
+                [
+                    6,
+                    "ADJUSTMENT_TOO_BIG"
+                ],
+                [
+                    7,
+                    "ADJUSTMENT_TOO_SMALL"
+                ],
+                [
+                    8,
+                    "ERROR_POSITION"
+                ]
+            ]
+        }
+    },
+    "geraete": [
+        {
+            "Room": "Gast",
+            "Name": "Heizung",
+            "Aliases": "",
+            "Type": "thermostat",
+            "StateVariableID": 41351,
+            "SetpointVariableID": 10028,
+            "ValveVariableID": 30333
+        },
+        {
+            "Room": "Wintergarten",
+            "Name": "Heizung",
+            "Aliases": "",
+            "Type": "thermostat",
+            "StateVariableID": 19960,
+            "SetpointVariableID": 11093,
+            "ValveVariableID": 27311
+        },
+        {
+            "Room": "Bad",
+            "Name": "Heizung",
+            "Aliases": "",
+            "Type": "thermostat",
+            "StateVariableID": 45568,
+            "SetpointVariableID": 16206,
+            "ValveVariableID": 55547,
+            "Valve2VariableID": 39353
+        },
+        {
+            "Room": "Bad oben",
+            "Name": "Heizung",
+            "Aliases": "",
+            "Type": "thermostat",
+            "StateVariableID": 16439,
+            "SetpointVariableID": 55269,
+            "ValveVariableID": 37753
+        },
+        {
+            "Room": "Dachboden",
+            "Name": "Heizung",
+            "Aliases": "",
+            "Type": "thermostat",
+            "StateVariableID": 51410,
+            "SetpointVariableID": 26569,
+            "ValveVariableID": 34598
+        },
+        {
+            "Room": "Flur",
+            "Name": "Heizung",
+            "Aliases": "",
+            "Type": "thermostat",
+            "StateVariableID": 20417,
+            "SetpointVariableID": 24071,
+            "ValveVariableID": 16724
+        },
+        {
+            "Room": "Heike",
+            "Name": "Heizung",
+            "Aliases": "",
+            "Type": "thermostat",
+            "StateVariableID": 49120,
+            "SetpointVariableID": 28616,
+            "ValveVariableID": 22481
+        },
+        {
+            "Room": "Küche",
+            "Name": "Heizung",
+            "Aliases": "",
+            "Type": "thermostat",
+            "StateVariableID": 36203,
+            "SetpointVariableID": 53537,
+            "ValveVariableID": 21824
+        },
+        {
+            "Room": "Küche oben",
+            "Name": "Heizung",
+            "Aliases": "",
+            "Type": "thermostat",
+            "StateVariableID": 55817,
+            "SetpointVariableID": 45107,
+            "ValveVariableID": 17461
+        },
+        {
+            "Room": "Musikzimmer",
+            "Name": "Heizung",
+            "Aliases": "",
+            "Type": "thermostat",
+            "StateVariableID": 41945,
+            "SetpointVariableID": 48076,
+            "ValveVariableID": 27238
+        },
+        {
+            "Room": "Schlafen",
+            "Name": "Heizung",
+            "Aliases": "",
+            "Type": "thermostat",
+            "StateVariableID": 41417,
+            "SetpointVariableID": 50167,
+            "ValveVariableID": 47673,
+            "Valve2VariableID": 56452
+        },
+        {
+            "Room": "Atelier",
+            "Name": "Heizung",
+            "Aliases": "",
+            "Type": "thermostat",
+            "StateVariableID": 30145,
+            "SetpointVariableID": 11218,
+            "ValveVariableID": 27966
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Heizung",
+            "Aliases": "",
+            "Type": "thermostat",
+            "StateVariableID": 38498,
+            "SetpointVariableID": 48140,
+            "ValveVariableID": 30193,
+            "Valve2VariableID": 46683
+        },
+        {
+            "Room": "BadEG",
+            "Name": "Heizung",
+            "Aliases": "",
+            "Type": "thermostat",
+            "SetpointVariableID": 20088,
+            "StateVariableID": 20971,
+            "ValveVariableID": 38972
+        },
+        {
+            "Room": "BadEG",
+            "Name": "Heizung falsch",
+            "Aliases": "",
+            "Type": "thermostat",
+            "SetpointVariableID": 20088,
+            "ValveVariableID": 36250
+        }
+    ]
+}

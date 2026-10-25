@@ -187,6 +187,7 @@ then shows only the variables that belong to this type.
 | Type | Light, switch, socket, appliance, blind, thermostat, media player, humidifier, ventilation/fan, window, door, presence, water leak, temperature, humidity, air quality, other measured value or meter. |
 | State or measured value | The variable for on/off, open/closed or detected, for measured values the value itself. For a thermostat the current temperature. |
 | Setpoint | Only for a thermostat: the variable with the target temperature. It needs an action. |
+| Valve position, 2, 3 | Only for a thermostat, optional and side by side: up to three valves of its radiators. They count in percent of the range of the variable. On Homematic IP the position is in `LEVEL`, not in `VALVE_STATE` (that is the status of the valve adaption); an HM-CC-VD actuator is a device of its own next to the HM-CC-TC. |
 | Colour temperature | Only for a light, optional: the variable with the colour temperature in Kelvin or mired. It needs an action. |
 | Colour | Only for a light, optional: the variable with the colour as an integer (RGB, for example profile `~HexColor`). It needs an action. |
 | Current humidity, target humidity, mode, fan speed | For a humidifier or dehumidifier: the measured humidity, the target humidity the assistant may set (range and step from presentation or profile), and two selection variables whose entries it sets by name. For ventilation only mode and fan speed. The state is called "On/off" there. |
@@ -211,7 +212,7 @@ Which variables a device needs depends on its type:
 | Switch, socket | Switching state, optionally power and energy meter |
 | Appliance | Switching state or power, optionally energy meter, heat meter and heat output. An appliance with power only, such as a heat pump, can be queried but not switched. |
 | Blind | Position, optionally moving state and stop |
-| Thermostat | Setpoint, optionally the current temperature, mode and fan speed (air conditioner), power and energy meter |
+| Thermostat | Setpoint, optionally the current temperature, up to three valves, mode and fan speed (air conditioner), power and energy meter |
 | Media player | On/off, playback or volume, optionally mute, title, artist, power and energy meter |
 | Humidifier | On/off or target humidity, optionally current humidity, mode and fan speed |
 | Ventilation/fan | On/off or fan speed, optionally mode |
@@ -258,6 +259,11 @@ special setpoint: some Homematic thermostats use 100 for "valve fully open". A v
 text of its own is not part of the range either, whether the text comes from a profile association or from a
 presentation interval with a fixed value. The line then includes the text, for example "special setpoint
 “On” (30.5 °C, outside 6 to 30 °C)".
+
+With valve positions the line names the most open valve, for example "setpoint 21.5 °C (currently 20.4 °C, valve
+97 %)", or "valves up to 98 %" with several. The thermostat then counts as active for "Which radiators are heating?"
+(`active_only`) while a valve is above 0. On a special setpoint it never counts, because "valve fully open" keeps the
+valve open whether the room needs heat or not. The device card shows the position next to the setpoint.
 
 Add an air conditioner as a thermostat together with mode and fan speed. Its line then reads like
 "setpoint 24 °C (currently 20.0 °C), Aus, fan Auto", and the assistant sets both by name as with the
@@ -645,6 +651,7 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
 
 - Colour as text is not supported yet. The operating mode of a thermostat only works through a variable with an
   action; on Homematic wall thermostats `CONTROL_MODE` has none.
+- The module does not show the history of a valve position yet, only the current position.
 - A battery-powered thermostat often takes a new setpoint only at its next radio contact. The central
   unit still confirms it right away, so "set" then means "handed over to the central unit".
 - For a blind that reports only on arrival and has no moving state, the module does not know after

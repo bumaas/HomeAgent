@@ -45,7 +45,8 @@ final class DeviceIndex
      * der im Archiv als Zähler aggregiert wird, „stop“ eine eigene Stoppvariable (ohne sie sucht
      * das Backend einen Weg über das Modul des Geräts), „setpoint“ der Sollwert eines Thermostats
      * (beim Thermostat ist „state“ die Ist-Temperatur), „heat“ ein Wärmezähler und „heatpower“ die Wärmeleistung einer
-     * Wärmepumpe (B83; beide zählen nie in einer Stromsumme). Eine neue Fähigkeit kostet einen Eintrag hier,
+     * Wärmepumpe (B83; beide zählen nie in einer Stromsumme), „valve“ bis „valve3“ die Ventilstellungen der Heizkörper
+     * eines Thermostats (B101, es zählt die offenste). Eine neue Fähigkeit kostet einen Eintrag hier,
      * einen in TYPE_ROLES und ein Feld im Bearbeitungsdialog des Moduls.
      */
     public const ROLES = [
@@ -68,6 +69,9 @@ final class DeviceIndex
         'fan'       => 'FanVariableID',
         'heat'      => 'HeatVariableID',
         'heatpower' => 'HeatPowerVariableID',
+        'valve'     => 'ValveVariableID',
+        'valve2'    => 'Valve2VariableID',
+        'valve3'    => 'Valve3VariableID',
     ];
 
     /**
@@ -130,8 +134,9 @@ final class DeviceIndex
         // Wärmepumpe (B83): Wärmezähler und Wärmeleistung wahlweise, daraus Arbeitszahl und Leistungszahl
         'appliance'   => ['roles' => ['state', 'power', 'energy', 'heat', 'heatpower'], 'required' => ['state', 'power']],
         'blind'       => ['roles' => ['level', 'moving', 'stop'], 'required' => ['level']],
-        // Klimagerät und AV-Receiver nehmen Strom auf (B85): Leistung und Zähler wahlweise
-        'thermostat'  => ['roles' => ['state', 'setpoint', 'mode', 'fan', 'power', 'energy'], 'required' => ['setpoint']],
+        // Klimagerät und AV-Receiver nehmen Strom auf (B85): Leistung und Zähler wahlweise. Bis zu drei Ventile (B101,
+        // Burkhard 25.10.2026: drei feste Felder), ein Raum hat oft mehrere Heizkörper an einem Thermostat.
+        'thermostat'  => ['roles' => ['state', 'setpoint', 'mode', 'fan', 'power', 'energy', 'valve', 'valve2', 'valve3'], 'required' => ['setpoint']],
         'media'       => ['roles' => ['state', 'playback', 'volume', 'mute', 'title', 'artist', 'power', 'energy'], 'required' => ['state', 'playback', 'volume']],
         'humidifier'  => ['roles' => ['state', 'humidity', 'setpoint', 'mode', 'fan', 'power', 'energy'], 'required' => ['state', 'setpoint']],
         'fan'         => ['roles' => ['state', 'mode', 'fan', 'power', 'energy'], 'required' => ['state', 'fan']],
@@ -3422,7 +3427,7 @@ final class DeviceIndex
         $text = self::formatNumber((float)$setpoint['value']) . ' ' . $unit;
         // Ein Wert außerhalb des Bereichs ist meist ein Sonderwert (HM-CC-TC: 100 = Ventil ganz offen).
         $range = $this->backend->setpointRange($variable);
-        if ($range !== null && ($setpoint['value'] < $range['min'] - 0.001 || $setpoint['value'] > $range['max'] + 0.001)) {
+        if (self::outsideRange($range, (float)$setpoint['value'])) {
             // Der Text des Eintrags sagt, was der Sonderwert bedeutet (betreute Anlage 23.10.2026: 30,5 „On“ bei Homematic IP;
             // mit der Zahl allein musste der Assistent raten). Die Bedeutung erfindet das Modul nicht.
             $caption = $this->specialCaption($variable, (float)$setpoint['value']);
@@ -3432,6 +3437,74 @@ final class DeviceIndex
                 : sprintf($this->t('special setpoint “%s” (%s, outside %s to %s)'), $caption, $text, ...$outside);
         }
         return sprintf($this->t('setpoint %s'), $text);
+    }
+
+    /** @param ?array{min: float, max: float} $range */
+    private static function outsideRange(?array $range, float $value): bool
+    {
+        return $range !== null && ($value < $range['min'] - 0.001 || $value > $range['max'] + 0.001);
+    }
+
+    /** Steht der Sollwert eines Thermostats auf einem Sonderwert (außerhalb seines Bereichs)? */
+    private function isSpecialSetpoint(array $entry): bool
+    {
+        $variable = $entry['roles']['setpoint'] ?? 0;
+        $value = $this->backend->read($variable)['value'] ?? null;
+        return (is_int($value) || is_float($value)) && self::outsideRange($this->backend->setpointRange($variable), (float)$value);
+    }
+
+    /**
+     * Ventile eines Thermostats (B101): die offenste Stellung in Prozent ihres Bereichs (Homematic IP LEVEL 0 bis 1,
+     * HM-CC-VD 0 bis 99 %), ohne Bereich der Wert selbst. Fehlende Variablen zählen nicht; null ohne Ventil.
+     *
+     * @return ?array{percent: ?float, count: int, missing: list<int>}
+     */
+    private function valveOf(array $entry): ?array
+    {
+        $variables = array_values(array_intersect_key($entry['roles'], ['valve' => true, 'valve2' => true, 'valve3' => true]));
+        if ($variables === []) {
+            return null;
+        }
+        $highest = null;
+        $missing = [];
+        foreach ($variables as $variable) {
+            $value = $this->backend->read($variable)['value'] ?? null;
+            if (!is_int($value) && !is_float($value)) {
+                $missing[] = $variable;
+                continue;
+            }
+            $range = $this->backend->range($variable);
+            $percent = $range !== null && $range['max'] > $range['min'] ? ($value - $range['min']) / ($range['max'] - $range['min']) * 100 : (float)$value;
+            $highest = max($highest ?? $percent, $percent);
+        }
+        return ['percent' => $highest, 'count' => count($variables), 'missing' => $missing];
+    }
+
+    /** „Ventil 68 %“, bei mehreren „Ventile bis 98 %“; null ohne Ventil. */
+    private function valveText(array $entry): ?string
+    {
+        $valve = $this->valveOf($entry);
+        if ($valve === null) {
+            return null;
+        }
+        if ($valve['percent'] === null) {
+            return sprintf($this->t('valve not available (variable %d is missing)'), $valve['missing'][0]);
+        }
+        $percent = self::formatNumber(round($valve['percent'])) . ' %';
+        return sprintf($this->t($valve['count'] > 1 ? 'valves up to %s' : 'valve %s'), $percent);
+    }
+
+    /**
+     * Heizt das Thermostat? Nur mit Ventil: ein Ventil über 0. Auf einem Sonderwert nie, „Ventil offen“ am HM-CC-TC hält
+     * das Ventil fest auf (zwölf Antriebe am nuc ganzjährig auf 98 %, Entscheidung Burkhard 25.10.2026).
+     */
+    private function heatingActive(array $entry): ?bool
+    {
+        $valve = $this->valveOf($entry);
+        if ($valve === null || $valve['percent'] === null) {
+            return null;
+        }
+        return !$this->isSpecialSetpoint($entry) && $valve['percent'] > 0;
     }
 
     /** Text des Eintrags zu einem Sonderwert, wie setpointRange() ihn erkennt; null ohne Eintrag oder mit Zahl oder Formatnamen. */
@@ -3488,13 +3561,14 @@ final class DeviceIndex
         return ['text' => $extras === [] ? '-' : implode(', ', $extras), 'active' => null];
     }
 
-    /** Zustand eines Thermostats: Sollwert, dahinter die Ist-Temperatur; bei einem Klimagerät Modus und Lüfterstufe. */
+    /** Zustand eines Thermostats: Sollwert, dahinter Ist-Temperatur und Ventil; bei einem Klimagerät Modus und Lüfterstufe. */
     private function thermostatText(array $entry): string
     {
         $roles = $entry['roles'];
         $text = $this->setpointText($entry);
         $current = isset($roles['state']) ? $this->backend->read($roles['state']) : null;
-        $text = $current === null ? $text : $text . ' (' . sprintf($this->t('currently %s'), $current['formatted']) . ')';
+        $inner = array_values(array_filter([$current === null ? null : sprintf($this->t('currently %s'), $current['formatted']), $this->valveText($entry)]));
+        $text = $inner === [] ? $text : $text . ' (' . implode(', ', $inner) . ')';
         if (isset($roles['mode'])) {
             $text .= ', ' . ($this->backend->read($roles['mode'])['formatted'] ?? sprintf($this->t('not available (variable %d is missing)'), $roles['mode']));
         }
@@ -4573,7 +4647,7 @@ final class DeviceIndex
     private function mainStateOf(array $entry): array
     {
         if ($entry['Type'] === 'thermostat') {
-            return ['text' => $this->thermostatText($entry), 'active' => null];
+            return ['text' => $this->thermostatText($entry), 'active' => $this->heatingActive($entry)];
         }
         if ($entry['Type'] === 'media') {
             return $this->mediaText($entry);
@@ -6208,6 +6282,8 @@ final class DeviceIndex
             $status = match (true) {
                 in_array($entry['Type'], ['humidifier', 'fan'], true) && $state['active'] !== null => $this->t($state['active'] ? 'on' : 'off'),
                 $mode !== null                                                                     => $mode,
+                // Ein Heizkörperthermostat zeigt links die Ventilstellung (B101)
+                $entry['Type'] === 'thermostat'                                                    => $this->valveText($entry),
                 default                                                                            => null,
             };
         }

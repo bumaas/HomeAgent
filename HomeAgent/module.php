@@ -573,6 +573,25 @@ class HomeAgent extends IPSModuleStrict
                 ? sprintf($this->Translate('Thermostat %s: %s to %s %s in steps of %s'), $label, $number($range['min']), $number($range['max']), $unit === '' ? '°C' : $unit, $number($range['step']))
                 : sprintf($this->Translate('Thermostat %s: %s to %s %s without a fixed step'), $label, $number($range['min']), $number($range['max']), $unit === '' ? '°C' : $unit);
         }
+        // Ventile (B101): Eine Variable, deren Einträge nur Namen tragen, ist ein Status und keine Stellung (Homematic IP:
+        // VALVE_STATE ist die Adaption, die Stellung steht in LEVEL; nuc 25.10.2026).
+        foreach ($list as $entry) {
+            foreach (array_intersect_key(DeviceIndex::rolesOf($entry), ['valve' => true, 'valve2' => true, 'valve3' => true]) as $valve) {
+                $names = [];
+                foreach ($backend->options($valve) ?? [] as [, $caption]) {
+                    $caption = trim($caption);
+                    if ($caption === '' || str_contains($caption, '%') || is_numeric(str_replace(',', '.', $caption))) {
+                        $names = [];
+                        break;
+                    }
+                    $names[] = $caption;
+                }
+                if ($names !== []) {
+                    $lines[] = sprintf($this->Translate('Note: %s: the valve position %s has named states (%s), so it is a status and not a position; Homematic IP keeps the position in LEVEL'),
+                        $this->entryLabel($entry), $named($valve), implode(', ', array_slice($names, 0, 2)) . (count($names) > 2 ? ', …' : ''));
+                }
+            }
+        }
         // Dieselbe Leistung oder derselbe Zähler an zwei Geräten (Messsteckdose und Gerät dahinter) zählt nur einmal.
         foreach (['power', 'energy'] as $role) {
             $users = [];
@@ -778,6 +797,14 @@ class HomeAgent extends IPSModuleStrict
         }
         $fields = $this->deviceDialogFields($type);
         foreach ($dialog as &$element) {
+            // Die drei Ventile stehen nebeneinander in einer Zeile (B101, Burkhard 25.10.2026)
+            foreach ($element['items'] ?? [] as $index => $item) {
+                $field = $fields[(string)($item['name'] ?? '')] ?? null;
+                if ($field !== null) {
+                    $element['items'][$index]['visible'] = $field['visible'];
+                    $element['items'][$index]['caption'] = $field['caption'];
+                }
+            }
             $name = (string)($element['name'] ?? '');
             if ($name === 'Type') {
                 // Die Typen stehen nur einmal in der form.json, bei der Spalte der Liste.
@@ -785,7 +812,9 @@ class HomeAgent extends IPSModuleStrict
             }
             if (isset($fields[$name])) {
                 $element['visible'] = $fields[$name]['visible'];
-                $element['caption'] = $fields[$name]['caption'];
+                if ($fields[$name]['caption'] !== '') {
+                    $element['caption'] = $fields[$name]['caption'];
+                }
             } elseif (isset($element['caption'])) {
                 $element['caption'] = $this->Translate($element['caption']);
             }
@@ -1175,12 +1204,15 @@ class HomeAgent extends IPSModuleStrict
      * ein anderer Gerätetyp oder eine andere Variable gewählt wird. Die Felder folgen dem Typ, und
      * die Texte für die Spalten der Liste folgen den gewählten Variablen.
      */
-    public function UIDeviceChanged(string $Type, int $StateVariableID, int $LevelVariableID, int $MovingVariableID = 0, int $PowerVariableID = 0, int $EnergyVariableID = 0, int $StopVariableID = 0, int $SetpointVariableID = 0, int $ColorTempVariableID = 0, int $ColorVariableID = 0, int $PlaybackVariableID = 0, int $VolumeVariableID = 0, int $MuteVariableID = 0, int $TitleVariableID = 0, int $ArtistVariableID = 0, int $HumidityVariableID = 0, int $ModeVariableID = 0, int $FanVariableID = 0, int $HeatVariableID = 0, int $HeatPowerVariableID = 0): void
+    public function UIDeviceChanged(string $Type, int $StateVariableID, int $LevelVariableID, int $MovingVariableID = 0, int $PowerVariableID = 0, int $EnergyVariableID = 0, int $StopVariableID = 0, int $SetpointVariableID = 0, int $ColorTempVariableID = 0, int $ColorVariableID = 0, int $PlaybackVariableID = 0, int $VolumeVariableID = 0, int $MuteVariableID = 0, int $TitleVariableID = 0, int $ArtistVariableID = 0, int $HumidityVariableID = 0, int $ModeVariableID = 0, int $FanVariableID = 0, int $HeatVariableID = 0, int $HeatPowerVariableID = 0, int $ValveVariableID = 0, int $Valve2VariableID = 0, int $Valve3VariableID = 0): void
     {
         $type = array_key_exists($Type, DeviceIndex::TYPES) ? $Type : array_key_first(DeviceIndex::TYPES);
         foreach ($this->deviceDialogFields($type) as $name => $field) {
             $this->UpdateFormField($name, 'visible', $field['visible']);
-            $this->UpdateFormField($name, 'caption', $field['caption']);
+            // Die Zeile der Ventile (RowLayout) hat keine Beschriftung
+            if ($field['caption'] !== '') {
+                $this->UpdateFormField($name, 'caption', $field['caption']);
+            }
             // Ein ausgeblendetes „gemessen von“ wird geleert, sonst bliebe ein alter Wert unsichtbar stehen (Review M5)
             if ($name === 'MeteredBy' && !$field['visible']) {
                 $this->UpdateFormField($name, 'value', 0);
@@ -1188,7 +1220,8 @@ class HomeAgent extends IPSModuleStrict
         }
         foreach ($this->deviceLabels(['Type' => $type, 'StateVariableID' => $StateVariableID, 'LevelVariableID' => $LevelVariableID, 'MovingVariableID' => $MovingVariableID, 'PowerVariableID' => $PowerVariableID, 'EnergyVariableID' => $EnergyVariableID, 'StopVariableID' => $StopVariableID, 'SetpointVariableID' => $SetpointVariableID, 'ColorTempVariableID' => $ColorTempVariableID, 'ColorVariableID' => $ColorVariableID,
             'PlaybackVariableID' => $PlaybackVariableID, 'VolumeVariableID' => $VolumeVariableID, 'MuteVariableID' => $MuteVariableID, 'TitleVariableID' => $TitleVariableID, 'ArtistVariableID' => $ArtistVariableID, 'HumidityVariableID' => $HumidityVariableID, 'ModeVariableID' => $ModeVariableID, 'FanVariableID' => $FanVariableID,
-            'HeatVariableID' => $HeatVariableID, 'HeatPowerVariableID' => $HeatPowerVariableID]) as $name => $label) {
+            'HeatVariableID' => $HeatVariableID, 'HeatPowerVariableID' => $HeatPowerVariableID, 'ValveVariableID' => $ValveVariableID, 'Valve2VariableID' => $Valve2VariableID,
+            'Valve3VariableID' => $Valve3VariableID]) as $name => $label) {
             $this->UpdateFormField($name, 'value', $label);
         }
     }
@@ -3481,7 +3514,8 @@ class HomeAgent extends IPSModuleStrict
             $type === 'blind'                                  => ['level' => $this->Translate('Position'), 'moving' => $this->Translate('Moving state'), 'stop' => $this->Translate('Stop')],
             $type === 'window'                                 => ['state' => $this->Translate('Contact'), 'level' => $this->Translate('Drive (opening)'), 'moving' => $this->Translate('Moving state'), 'stop' => $this->Translate('Stop')],
             $type === 'door'                                   => ['state' => $this->Translate('Contact')],
-            $type === 'thermostat'                             => ['state' => $this->Translate('Current temperature'), 'setpoint' => $this->Translate('Setpoint'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed')],
+            $type === 'thermostat'                             => ['state' => $this->Translate('Current temperature'), 'setpoint' => $this->Translate('Setpoint'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed'),
+                'valve' => $this->Translate('Valve position'), 'valve2' => $this->Translate('Valve position 2'), 'valve3' => $this->Translate('Valve position 3')],
             $type === 'media'                                  => ['state' => $this->Translate('On/off')],
             $type === 'humidifier'                             => ['state' => $this->Translate('On/off'), 'humidity' => $this->Translate('Current humidity'), 'setpoint' => $this->Translate('Target humidity'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed')],
             $type === 'fan'                                    => ['state' => $this->Translate('On/off'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed')],
@@ -3494,7 +3528,8 @@ class HomeAgent extends IPSModuleStrict
             'stop' => $this->Translate('Stop'), 'power' => $this->Translate('Power'), 'energy' => $this->Translate('Energy meter (archived as counter)'), 'setpoint' => $this->Translate('Setpoint'),
             'colortemp' => $this->Translate('Colour temperature'), 'color' => $this->Translate('Colour'), 'playback' => $this->Translate('Playback'),
             'volume' => $this->Translate('Volume'), 'mute' => $this->Translate('Mute'), 'title' => $this->Translate('Title'), 'artist' => $this->Translate('Artist'), 'humidity' => $this->Translate('Humidity'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed'),
-            'heat' => $this->Translate('Heat meter (archived as counter)'), 'heatpower' => $this->Translate('Heat output')];
+            'heat' => $this->Translate('Heat meter (archived as counter)'), 'heatpower' => $this->Translate('Heat output'),
+            'valve' => $this->Translate('Valve position'), 'valve2' => $this->Translate('Valve position 2'), 'valve3' => $this->Translate('Valve position 3')];
     }
 
     /**
@@ -3542,6 +3577,7 @@ class HomeAgent extends IPSModuleStrict
             default                                           => $this->Translate('Inverted (the variable reports "on" when the device is off)'),
         };
         $fields['Invert'] = ['visible' => $invert !== null, 'caption' => $invert ?? $this->Translate('Inverted')];
+        $fields['ValveRow'] = ['visible' => in_array('valve', DeviceIndex::TYPE_ROLES[$type]['roles'], true), 'caption' => ''];
         // „gemessen von“ (B82) bei allem, was Energie oder Leistung misst, auch beim Zähler unter einem Zähler
         $fields['MeteredBy'] = ['visible' => array_intersect(['energy', 'power'], DeviceIndex::TYPE_ROLES[$type]['roles']) !== [], 'caption' => $this->Translate('Measured by (meter above it)')];
         // Ein Kippfenster heißt ganz offen „gekippt“.

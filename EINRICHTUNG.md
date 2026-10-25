@@ -134,6 +134,8 @@ So gehst du vor:
      Luftfeuchte. Für alles, was schalten soll, nur Variablen mit Aktion (HasAction(<VariablenID>)
      liefert true); Messwerte ohne Aktion sind in Ordnung.
    - Melder zum Abfragen: Wassermelder als water_leak, Rauchmelder als measurement.
+   - Bei Heizkörperthermostaten auch die Ventilstellungen, mehrere Antriebe eines Raums am selben
+     Thermostat (bis zu drei).
    - Leistung und Energiezähler, wo es sie gibt. Bei einer Wärmepumpe auch Wärmezähler oder
      Wärmeleistung; zwei Zeilen für Heizen und Warmwasser nur, wenn Wärme und Strom beide getrennt
      gemessen werden, sonst eine.
@@ -153,7 +155,8 @@ So gehst du vor:
    vielleicht eine smarte Lampe hängt, zwei Anbindungen, die vielleicht dasselbe Gerät sind, ein
    Energiezähler, der nicht als Zähler archiviert ist, eine Leistung oder ein Zähler mit einer Einheit,
    die der Hinweistext nicht nennt oder die mehrere Kanäle misst, Zähler von Batterie und PV mit
-   unklarer Richtung oder Abgrenzung, die getrennte Wärme einer Wärmepumpe mit nur einer Zeile.
+   unklarer Richtung oder Abgrenzung, die getrennte Wärme einer Wärmepumpe mit nur einer Zeile, ein
+   Stellantrieb, bei dem unklar ist, zu welchem Thermostat er gehört.
    Bei Geräten, die schon in der Instanz stehen, bleiben ReadOnly, Invert und die Namen, wie sie sind;
    Typ oder Variablen änderst du nur, wenn ich in der Tabelle zustimme.
 4. Zeig mir alle Vorschläge als Tabellen: Räume (Name, Etage, Aliase), Geräte (Raum, Name, Typ,

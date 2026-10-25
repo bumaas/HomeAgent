@@ -286,6 +286,19 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   `type=media` lässt `on` solche Player aus und zählt sie, „Wintergarten an“ startet keine Musik (Burkhard 18.10.2026 nach
   dem Review); trifft `on` nur solche Player, nennt die Absage `type=media`. Test `check-musik-aus.php`.
 
+- **Ventile** (B101, Burkhard 25.10.2026: „ventilstellungen der heizkörper auch abfragen“). Home Assistant kennt am
+  Thermostat nur `hvac_action`; die Stellung legen Integrationen als eigenen Sensor je Ventil an, ohne Bezug zum Thermostat,
+  und „welche Heizkörper heizen“ muss das Sprachmodell selbst zusammensuchen. Hier ist das Ventil eine Fähigkeit des
+  Thermostats. Drei feste Felder nebeneinander statt einer Unterliste (Burkhard: am nuc haben Wohnzimmer, Schlafen und Bad
+  je zwei Antriebe), gezeigt und gewertet wird das offenste. Schwelle: Im Archiv des nuc (Winter 01-03/2026) gehen die
+  geregelten HM-CC-VD auf 0, ein Ruhewert ist nicht zu sehen, 1 bis 3 % kommen höchstens 6 % der Zeit vor; deshalb „über 0“.
+  Zwölf Antriebe stehen dort bei „Ventil offen“ (Sonder-Sollwert 100 bzw. 30,5) ganzjährig auf 97 bis 98 %; sie zählen
+  nie als heizend (Entscheidung Burkhard), das setzte build 246 voraus (fester Text am Rand einer Darstellung). Erkennen
+  lässt sich ein Ventil nicht: `~Valve` und `~Valve.F` hängen am nuc an CPU-Last und Wirkungsgrad, an keinem Ventil. Falle
+  bei Homematic IP: `VALVE_STATE` (Profil `HM.ValveState`) ist der Adaptionsstatus, die Stellung steht in `LEVEL` (0 bis 1);
+  der Selbsttest nennt Ventilvariablen, deren Einträge nur Namen tragen. HmIP-`LEVEL` ist am nuc nicht archiviert, der
+  Verlauf ist deshalb zurückgestellt.
+
 ## Energie
 
 - **Dieselbe Leistung oder derselbe Zähler an zwei Geräten** (Messsteckdose und Gerät dahinter) zählt in

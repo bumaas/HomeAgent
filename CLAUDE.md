@@ -161,6 +161,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   Einträge (`associationStep`: mindestens drei Abstände, alle Vielfache des kleinsten, höchstens 1), sonst 0 („ohne feste
   Schrittweite“). Batteriegeräte melden den Sollwert oft vor der Übernahme. Ein Sonderwert nennt den Text seines Eintrags
   (`specialCaption`), eine Bedeutung erfindet das Modul nicht. Test `check-sollwert.php`.
+- **Ventile** (B101): `valve`, `valve2`, `valve3` am `thermostat`, im Dialog nebeneinander (`ValveRow`); es zählt das offenste
+  in Prozent des Bereichs (`valveOf`). Aktiv nur mit Ventil über 0 und nie auf einem Sonder-Sollwert (`heatingActive`); der
+  Selbsttest nennt Ventilvariablen mit nur benannten Einträgen (HmIP `VALVE_STATE`). Noch nicht: Verlauf. Test `check-ventil.php`.
 - **Luftbe-/entfeuchter** (`humidifier`): `state`, `humidity`, `setpoint` (Feld `humidity`, `runSetpoint`), `mode` und
   `fan` als **Auswahl per Name** (`runOption` über `DeviceBackend::options()`). **Lüftung** (`fan`) ebenso, Pflicht
   Ein/Aus oder Lüfterstufe. Tests `check-entfeuchter.php`, `check-lueftung.php`.

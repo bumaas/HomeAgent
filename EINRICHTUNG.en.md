@@ -133,6 +133,8 @@ How to proceed:
      temperature and humidity. For everything that should switch, only variables with an action
      (HasAction(<VariableID>) returns true); measurements without an action are fine.
    - Detectors for querying: water detectors as water_leak, smoke detectors as measurement.
+   - For radiator thermostats also the valve positions, several actuators of a room on the same
+     thermostat (up to three).
    - Power and energy meters where they exist. For a heat pump also a heat meter or heat output; two
      rows for heating and hot water only if both heat and electricity are measured separately,
      otherwise one.
@@ -152,7 +154,7 @@ How to proceed:
    smart lamp, two connections that may be the same device, an energy meter that is not archived as a
    counter, a power or meter with a unit the hint does not name or that measures several channels,
    battery and solar meters with an unclear direction or boundary, the separate heat of a heat pump
-   with only one row.
+   with only one row, a valve actuator where it is unclear which thermostat it belongs to.
    For devices that are already in the instance, ReadOnly, Invert and the names stay as they are; you
    change type or variables only if I agree in the table.
 4. Show me all proposals as tables: rooms (name, floor, aliases), devices (room, name, type,

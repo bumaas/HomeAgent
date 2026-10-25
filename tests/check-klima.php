@@ -48,7 +48,7 @@ $buero = ['room' => 'Büro'];
 
 /* --- Typ und Angebot ------------------------------------------------------------------------------ */
 
-pruefe((DeviceIndex::TYPE_ROLES['thermostat']['roles'] ?? null) === ['state', 'setpoint', 'mode', 'fan', 'power', 'energy'] && (DeviceIndex::TYPE_ROLES['thermostat']['required'] ?? null) === ['setpoint'], 'Thermostat mit Modus, Lüfterstufe, Leistung und Zähler (B85), Pflicht bleibt der Sollwert: ' . json_encode(DeviceIndex::TYPE_ROLES['thermostat'] ?? null));
+pruefe((DeviceIndex::TYPE_ROLES['thermostat']['roles'] ?? null) === ['state', 'setpoint', 'mode', 'fan', 'power', 'energy', 'valve', 'valve2', 'valve3'] && (DeviceIndex::TYPE_ROLES['thermostat']['required'] ?? null) === ['setpoint'], 'Thermostat mit Modus, Lüfterstufe, Leistung und Zähler (B85), Pflicht bleibt der Sollwert: ' . json_encode(DeviceIndex::TYPE_ROLES['thermostat'] ?? null));
 pruefe(DeviceIndex::abilitiesOf($liste[0]) === ['temperature', 'mode', 'fan_speed', 'off'], 'versteht temperature, mode, fan_speed und off (über den Modus): ' . json_encode(DeviceIndex::abilitiesOf($liste[0])));
 $ohne = array_diff_key($liste[0], ['ModeVariableID' => 0, 'FanVariableID' => 0]);
 pruefe(DeviceIndex::abilitiesOf($ohne) === ['temperature'], 'ein Thermostat ohne Modus bleibt, wie er war: ' . json_encode(DeviceIndex::abilitiesOf($ohne)));
