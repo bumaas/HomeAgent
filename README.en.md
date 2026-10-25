@@ -106,22 +106,23 @@ twice. Locks, televisions, colour lights, scenes and blinds that only know open,
 ## Accesses
 
 Each assistant gets an access of its own. You still maintain the devices only once, all accesses of
-an instance see the same release list. The list shows name, query only, default room and, in the column
-**Connection**, how the assistant is connected. "Token also in the address" is in the edit dialog of the
-row. You only see the token itself where you need it: **Show token** for Claude Code and similar clients,
-**Show address** for Home Assistant. **New token** in the dialog replaces it on apply; all assistants of this
-access then need the new one.
+an instance see the same release list. The list has these columns:
 
 | Column | Meaning |
 |---|---|
 | Name | Free text, best after whoever comes through the access (see below). It appears in the protocol, under "What did not work" and in the debug of the instance. |
-| Token | The password of this access. An access without a token gets one of 64 characters on apply; one set by script needs at least 24. |
-| Default room | The room the assistant is in. "Turn on the light" without a room then means this room, and with equal device names the device there wins. For the whole house the assistant says `room=all`. If the room is neither in the room list nor the room of a device, it has no effect; the form names it under the accesses. |
 | Query only | This access may ask but not switch anything. It only sees the query tool, and the assistant is told that the access can only read. |
-| Token also in the address | For clients that cannot send a login. The token is then appended to the address. |
+| Default room | The room the assistant is in. "Turn on the light" without a room then means this room, and with equal device names the device there wins. For the whole house the assistant says `room=all`. If the room is neither in the room list nor the room of a device, it has no effect; the form names it under the accesses. |
+| Connection | How the assistant signs in: "token in the header", "address with token" or, with sign-in by OAuth, "signed in:" with the paired assistants. |
 | Tool list | Whether the assistant knows the current tool list: **current**, **outdated** or **not fetched yet**, with the time of the last fetch. The list changes with an update of the module and with your settings, for example a device of a new type, a new room or a new scene. If it says **outdated**, open a new chat in the Claude app; if that does not help, disconnect the connector and connect it again. |
 
-Without an access, the instance shows status 104 and rejects all requests. A new access gets its token on Apply.
+The token is the password of the access. The module creates it on apply (64 characters), one set by script needs at
+least 24. It only shows on request: **Show token** for Claude Code and similar clients, **Show address** for
+Home Assistant. The dialog of a row also has the tick **Token also in the address** for clients that cannot send the
+login in the header, and **New token**. It replaces the token on apply, all assistants of this access then need the
+new one.
+
+Without an access, the instance shows status 104 and rejects all requests.
 
 ### Which access for whom
 

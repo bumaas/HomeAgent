@@ -110,22 +110,23 @@ die Meldung nach dem Klick zählt sie.
 ## Zugänge
 
 Jeder Assistent bekommt seinen eigenen Zugang. Die Geräte pflegen Sie trotzdem nur einmal, alle
-Zugänge einer Instanz sehen dieselbe Freigabeliste. Die Liste zeigt Name, Nur abfragen, Standardraum und in
-der Spalte **Verbindung**, wie der Assistent verbunden ist. „Token auch in der Adresse“ steht im
-Bearbeiten-Dialog der Zeile. Das Token selbst sehen Sie nur, wenn Sie es brauchen: **Token anzeigen** für
-Claude Code und ähnliche Clients, **Adresse anzeigen** für Home Assistant. **Neues Token** im Dialog ersetzt
-es beim Übernehmen; alle Assistenten dieses Zugangs brauchen dann das neue.
+Zugänge einer Instanz sehen dieselbe Freigabeliste. Die Liste hat diese Spalten:
 
 | Spalte | Bedeutung |
 |---|---|
 | Name | Frei wählbar, am besten nach dem, der über den Zugang kommt (siehe unten). Er erscheint im Protokoll, unter „Was nicht geklappt hat“ und im Debug der Instanz. |
-| Token | Das Kennwort dieses Zugangs. Ein Zugang ohne Token bekommt beim Übernehmen eines aus 64 Zeichen; ein per Skript gesetztes braucht mindestens 24. |
-| Standardraum | Der Raum, in dem der Assistent steht. „Mach das Licht an“ ohne Raum meint dann diesen Raum, und bei gleichen Gerätenamen gewinnt das Gerät dort. Für das ganze Haus sagt der Assistent `room=all`. Steht der Raum weder in der Raumliste noch bei einem Gerät, wirkt er nicht; das Formular nennt ihn unter den Zugängen. |
 | Nur abfragen | Dieser Zugang darf fragen, aber nichts schalten. Er sieht nur das Werkzeug zum Abfragen, und der Assistent erfährt, dass der Zugang nur lesen darf. |
-| Token auch in der Adresse | Für Clients, die keine Anmeldung mitschicken können. Das Token hängt dann an der Adresse. |
+| Standardraum | Der Raum, in dem der Assistent steht. „Mach das Licht an“ ohne Raum meint dann diesen Raum, und bei gleichen Gerätenamen gewinnt das Gerät dort. Für das ganze Haus sagt der Assistent `room=all`. Steht der Raum weder in der Raumliste noch bei einem Gerät, wirkt er nicht; das Formular nennt ihn unter den Zugängen. |
+| Verbindung | Wie sich der Assistent anmeldet: „Token im Header“, „Adresse mit Token“ oder bei der Anmeldung per OAuth „angemeldet:“ mit den gekoppelten Assistenten. |
 | Werkzeugliste | Ob der Assistent die aktuelle Werkzeugliste kennt: **aktuell**, **veraltet** oder **noch nicht geholt**, mit der Uhrzeit des letzten Abholens. Die Liste ändert sich mit einem Update des Moduls und mit Ihren Einstellungen, etwa einem Gerät mit neuem Typ, einem neuen Raum oder einer neuen Szene. Steht dort **veraltet**, öffnen Sie in der Claude-App einen neuen Chat; hilft das nicht, trennen Sie den Connector und verbinden ihn neu. |
 
-Ohne Zugang zeigt die Instanz den Status 104 und weist alle Anfragen ab. Ein neuer Zugang bekommt sein Token beim Übernehmen.
+Das Token ist das Kennwort des Zugangs. Das Modul erzeugt es beim Übernehmen (64 Zeichen), ein per Skript gesetztes
+braucht mindestens 24. Sichtbar wird es nur auf Knopfdruck: **Token anzeigen** für Claude Code und ähnliche Clients,
+**Adresse anzeigen** für Home Assistant. Im Dialog einer Zeile stehen dazu der Haken **Token auch in der Adresse** für
+Clients, die keine Anmeldung im Header mitschicken können, und **Neues Token**. Das ersetzt das Token beim
+Übernehmen, alle Assistenten dieses Zugangs brauchen dann das neue.
+
+Ohne Zugang zeigt die Instanz den Status 104 und weist alle Anfragen ab.
 
 ### Welcher Zugang für wen
 
