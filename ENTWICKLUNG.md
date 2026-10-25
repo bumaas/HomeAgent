@@ -215,7 +215,11 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   `FakeBackend` bildet das über `schreibtAltwert` nach).
 - **Sollwert:** Bereich und Schrittweite aus Darstellung oder Profil, Sonderwerte mit Text am Rand
   („On“; nicht ein Eintrag ohne Text oder mit Formatnamen wie „%d“, Review 18.10.2026, N7) zählen nicht dazu, bei einem Profil ohne Schrittweite um 0,5 (das Raster der Karte; Homematic-IP-Profil
-  einer betreuten Anlage mit Einträgen 15 bis 24 und „On“ bei 30,5, vorher bis 30,5, 16.10.2026). Batteriegeräte melden den neuen Sollwert oft schon über die Zentrale,
+  einer betreuten Anlage mit Einträgen 15 bis 24 und „On“ bei 30,5, vorher bis 30,5, 16.10.2026). Dasselbe gilt für die
+  Darstellung „Wert“ (Schieberegler) mit Intervallen, die genau einen Wert durch einen festen Text ersetzen (`intervalEntries`):
+  Nach der Umstellung der Homematic-IP-Sollwerte von Profil auf Darstellung 4,5 bis 30,5 mit „Off“ und „On“ (25.10.2026)
+  meldete die betreute Anlage „Soll 30.5 °C“ statt des Sonderwerts, weil nur der Profilzweig die Ränder prüfte und die
+  Einträge nur `OPTIONS` lasen. Batteriegeräte melden den neuen Sollwert oft schon über die Zentrale,
   bevor das Gerät ihn übernimmt. Hat das Profil keine Schrittweite, gilt der kleinste Abstand seiner Einträge mit Zahlen
   (B81, 18.10.2026: dasselbe Homematic-IP-Profil hat Einträge im Abstand von 0,5; der Selbsttest meldete „in Schritten
   von 0“, `set_state` rundete nicht). Das gilt nur für dichte Einträge (`associationStep`: mindestens drei Abstände, jeder

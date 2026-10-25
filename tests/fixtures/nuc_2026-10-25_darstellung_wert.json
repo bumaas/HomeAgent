@@ -1,0 +1,77 @@
+{
+    "quelle": "nuc, 25.10.2026, IPS_GetVariablePresentation: Homematic-IP-Sollwerte (SET_POINT_TEMPERATURE) und Wandthermostat HM-TC-IT-WM-W-EU (SET_TEMPERATURE) mit Darstellung Wert 4,5 bis 30,5, Intervalle mit festem Text Off bei 4,5 und On bei 30,5",
+    "sollwerte": [
+        {
+            "name": "BadDG.Heizung.Thermostat:1 / SET_POINT_TEMPERATURE",
+            "typ": 2,
+            "wert": 30.5,
+            "formatiert": "On",
+            "darstellung": {
+                "CUSTOM_GRADIENT": "[]",
+                "DECIMAL_SEPARATOR": "Client",
+                "DIGITS": 1,
+                "GRADIENT_TYPE": 0,
+                "ICON": "Temperature",
+                "INTERVALS": "[{\"ConstantActive\":true,\"ConstantValue\":\"Off\",\"ConversionFactor\":1,\"DigitsActive\":false,\"DigitsValue\":0,\"IconActive\":false,\"IconValue\":\"\",\"IntervalMaxValue\":4.5,\"IntervalMinValue\":4.5,\"PrefixActive\":false,\"PrefixValue\":\"\",\"SuffixActive\":false,\"SuffixValue\":\"\"},{\"ConstantActive\":true,\"ConstantValue\":\"On\",\"ConversionFactor\":1,\"DigitsActive\":false,\"DigitsValue\":0,\"IconActive\":false,\"IconValue\":\"\",\"IntervalMaxValue\":30.5,\"IntervalMinValue\":30.5,\"PrefixActive\":false,\"PrefixValue\":\"\",\"SuffixActive\":false,\"SuffixValue\":\"\"}]",
+                "INTERVALS_ACTIVE": true,
+                "MAX": 30.5,
+                "MIN": 4.5,
+                "PERCENTAGE": false,
+                "PREFIX": "",
+                "PRESENTATION": "{6B9CAEEC-5958-C223-30F7-BD36569FC57A}",
+                "STEP_SIZE": 0.5,
+                "SUFFIX": " °C",
+                "THOUSANDS_SEPARATOR": "",
+                "USAGE_TYPE": 5
+            }
+        },
+        {
+            "name": "BadOG.Heizung.Thermostat:1 / SET_POINT_TEMPERATURE",
+            "typ": 2,
+            "wert": 22,
+            "formatiert": "22.0 °C",
+            "darstellung": {
+                "CUSTOM_GRADIENT": "[]",
+                "DECIMAL_SEPARATOR": "Client",
+                "DIGITS": 1,
+                "GRADIENT_TYPE": 0,
+                "ICON": "Temperature",
+                "INTERVALS": "[{\"ConstantActive\":true,\"ConstantValue\":\"Off\",\"ConversionFactor\":1,\"DigitsActive\":false,\"DigitsValue\":0,\"IconActive\":false,\"IconValue\":\"\",\"IntervalMaxValue\":4.5,\"IntervalMinValue\":4.5,\"PrefixActive\":false,\"PrefixValue\":\"\",\"SuffixActive\":false,\"SuffixValue\":\"\"},{\"ConstantActive\":true,\"ConstantValue\":\"On\",\"ConversionFactor\":1,\"DigitsActive\":false,\"DigitsValue\":0,\"IconActive\":false,\"IconValue\":\"\",\"IntervalMaxValue\":30.5,\"IntervalMinValue\":30.5,\"PrefixActive\":false,\"PrefixValue\":\"\",\"SuffixActive\":false,\"SuffixValue\":\"\"}]",
+                "INTERVALS_ACTIVE": true,
+                "MAX": 30.5,
+                "MIN": 4.5,
+                "PERCENTAGE": false,
+                "PREFIX": "",
+                "PRESENTATION": "{6B9CAEEC-5958-C223-30F7-BD36569FC57A}",
+                "STEP_SIZE": 0.5,
+                "SUFFIX": " °C",
+                "THOUSANDS_SEPARATOR": "",
+                "USAGE_TYPE": 5
+            }
+        },
+        {
+            "name": "Wintergarten.Heizung.Wandthermostat:2 / SET_TEMPERATURE",
+            "typ": 2,
+            "wert": 20.5,
+            "formatiert": "20.5 °C",
+            "darstellung": {
+                "CUSTOM_GRADIENT": "[]",
+                "DECIMAL_SEPARATOR": "Client",
+                "DIGITS": 1,
+                "GRADIENT_TYPE": 0,
+                "ICON": "Temperature",
+                "INTERVALS": "[{\"ConstantActive\":true,\"ConstantValue\":\"Off\",\"ConversionFactor\":1,\"DigitsActive\":false,\"DigitsValue\":0,\"IconActive\":false,\"IconValue\":\"\",\"IntervalMaxValue\":4.5,\"IntervalMinValue\":4.5,\"PrefixActive\":false,\"PrefixValue\":\"\",\"SuffixActive\":false,\"SuffixValue\":\"\"},{\"ConstantActive\":true,\"ConstantValue\":\"On\",\"ConversionFactor\":1,\"DigitsActive\":false,\"DigitsValue\":0,\"IconActive\":false,\"IconValue\":\"\",\"IntervalMaxValue\":30.5,\"IntervalMinValue\":30.5,\"PrefixActive\":false,\"PrefixValue\":\"\",\"SuffixActive\":false,\"SuffixValue\":\"\"}]",
+                "INTERVALS_ACTIVE": true,
+                "MAX": 30.5,
+                "MIN": 4.5,
+                "PERCENTAGE": false,
+                "PREFIX": "",
+                "PRESENTATION": "{6B9CAEEC-5958-C223-30F7-BD36569FC57A}",
+                "STEP_SIZE": 0.5,
+                "SUFFIX": " °C",
+                "THOUSANDS_SEPARATOR": "",
+                "USAGE_TYPE": 5
+            }
+        }
+    ]
+}

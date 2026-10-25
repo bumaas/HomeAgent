@@ -1533,6 +1533,24 @@ $m->formUpdates = [];
 oderNull(static fn () => $m->UIDeviceChanged('thermostat', $ist, 0, 0, 0, 0, 0, $soll));
 pruefe(in_array(['SetpointLabel', 'value', 'SET_TEMPERATURE'], $m->formUpdates, true) && in_array(['SetpointVariableID', 'visible', true], $m->formUpdates, true), 'die Wahl des Sollwerts zieht den Spaltentext nach: ' . json_encode($m->formUpdates, JSON_UNESCAPED_UNICODE));
 
+// Darstellung „Wert“ mit festem Text am Rand (nuc 25.10.2026, Mitschnitt): Homematic IP 4,5 bis 30,5, Intervalle „Off“ bei
+// 4,5 und „On“ bei 30,5. Vorher galt nur der Rand eines Profils als Sonderwert; mit der Darstellung blieb 30,5 im Bereich,
+// die Zeile meldete „Soll 30.5 °C“ statt „On“, und set_state nahm 30,5 an.
+$wertMitschnitt = json_decode((string)file_get_contents(__DIR__ . '/fixtures/nuc_2026-10-25_darstellung_wert.json'), true)['sollwerte'];
+$wertSoll = [];
+foreach ($wertMitschnitt as $s) {
+    $id = variable($s['typ'], (float)$s['wert']);
+    IPS_SetVariableCustomPresentation($id, $s['darstellung']);
+    IPS_SetVariableCustomAction($id, $sollAktion);
+    $wertSoll[] = $id;
+}
+pruefe($sollbereich($wertSoll[0]) === ['min' => 5.0, 'max' => 30.0, 'step' => 0.5], 'Darstellung Wert: „Off“ bei 4,5 und „On“ bei 30,5 fallen heraus: ' . json_encode($sollbereich($wertSoll[0])));
+pruefe($sollbereich($wertSoll[2]) === ['min' => 5.0, 'max' => 30.0, 'step' => 0.5], 'ebenso am Wandthermostat HM-TC-IT: ' . json_encode($sollbereich($wertSoll[2])));
+$wertEintraege = oderNull(static fn () => $anlage->options($wertSoll[0])) ?? [];
+pruefe(in_array([30.5, 'On'], $wertEintraege, true) && in_array([4.5, 'Off'], $wertEintraege, true), 'die festen Texte der Intervalle sind Einträge: ' . json_encode($wertEintraege));
+// Zeile und set_state folgen aus Bereich und Einträgen (check-sollwert.php); den Anzeigetext eines Schiebereglers bildet der
+// Kernel-Stub nicht, deshalb hier nur das Backend.
+
 $sollOhneAktion = variable(VARIABLETYPE_FLOAT, 20.0);
 IPS_SetVariableCustomProfile($sollOhneAktion, '~Temperature.HM');
 IPS_SetProperty($iid, 'Devices', json_encode([

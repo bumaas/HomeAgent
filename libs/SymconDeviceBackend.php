@@ -194,7 +194,8 @@ final class SymconDeviceBackend implements DeviceBackend
     }
 
     /**
-     * Einträge aus der Darstellung (OPTIONS, etwa beim HomeAssistant-Modul), sonst aus dem Profil.
+     * Einträge aus der Darstellung (OPTIONS, etwa beim HomeAssistant-Modul, oder feste Texte ihrer Intervalle), sonst aus dem
+     * Profil.
      *
      * @return list<array{0: mixed, 1: string}>
      */
@@ -207,6 +208,9 @@ final class SymconDeviceBackend implements DeviceBackend
             if (is_array($option) && array_key_exists('Value', $option)) {
                 $entries[] = [$option['Value'], (string)($option['Caption'] ?? '')];
             }
+        }
+        if ($entries === []) {
+            $entries = self::intervalEntries($presentation);
         }
         $profile = (string)($presentation['PROFILE'] ?? '');
         if ($entries === [] && $profile !== '' && IPS_VariableProfileExists($profile)) {
@@ -332,9 +336,9 @@ final class SymconDeviceBackend implements DeviceBackend
         }
         $presentation = IPS_GetVariablePresentation($variableId);
         if (($presentation['PRESENTATION'] ?? '') !== self::PRESENTATION_SHUTTER && isset($presentation['MIN'], $presentation['MAX'])) {
-            $min = (float)$presentation['MIN'];
-            $max = (float)$presentation['MAX'];
-            return $max > $min ? ['min' => $min, 'max' => $max, 'step' => (float)($presentation['STEP_SIZE'] ?? 0)] : null;
+            // Feste Texte am Rand wie im Profil (nuc 25.10.2026: Darstellung Wert 4,5 bis 30,5 mit „Off“ und „On“)
+            $step = (float)($presentation['STEP_SIZE'] ?? 0);
+            return self::withoutSpecialEdges((float)$presentation['MIN'], (float)$presentation['MAX'], $step, self::intervalEntries($presentation));
         }
         $profile = (string)($presentation['PROFILE'] ?? '');
         if ($profile === '') {
@@ -354,22 +358,56 @@ final class SymconDeviceBackend implements DeviceBackend
         if ($step <= 0) {
             $step = self::associationStep($data['Associations']);
         }
-        // Ein Rand mit Text statt Zahl ist ein Sonderwert (Homematic: 30,5 „On“, 4,5 „Off“). Ohne Schrittweite
-        // zählt das Raster der Karte (0,5); vorher blieb der Sonderwert dann im Bereich (betreute Anlage 16.10.2026).
+        $entries = array_map(static fn (array $association): array => [$association['Value'], (string)$association['Name']], $data['Associations']);
+        return self::withoutSpecialEdges($min, $max, $step, $entries);
+    }
+
+    /**
+     * Ein Rand mit Text statt Zahl ist ein Sonderwert (Homematic: 30,5 „On“, 4,5 „Off“) und gehört nicht zum Bereich. Ohne
+     * Schrittweite zählt das Raster der Karte (0,5); vorher blieb der Sonderwert dann im Bereich (betreute Anlage 16.10.2026).
+     *
+     * @param list<array{0: mixed, 1: string}> $entries
+     * @return array{min: float, max: float, step: float}|null
+     */
+    private static function withoutSpecialEdges(float $min, float $max, float $step, array $entries): ?array
+    {
         $edge = $step > 0 ? $step : 0.5;
         // Ein Eintrag ohne Text (nur Farbe) oder mit Formatnamen („%d“) zeigt den Wert selbst (Review 18.10.2026, N7)
-        foreach ($data['Associations'] as $association) {
-            $text = trim((string)$association['Name']);
-            if ($text === '' || str_contains($text, '%') || is_numeric(str_replace(',', '.', $text))) {
+        foreach ($entries as [$value, $caption]) {
+            $text = trim($caption);
+            if ($text === '' || str_contains($text, '%') || is_numeric(str_replace(',', '.', $text)) || !is_numeric($value)) {
                 continue;
             }
-            if (abs((float)$association['Value'] - $max) < 0.001) {
+            if (abs((float)$value - $max) < 0.001) {
                 $max -= $edge;
-            } elseif (abs((float)$association['Value'] - $min) < 0.001) {
+            } elseif (abs((float)$value - $min) < 0.001) {
                 $min += $edge;
             }
         }
         return $max > $min ? ['min' => $min, 'max' => $max, 'step' => $step] : null;
+    }
+
+    /**
+     * Intervalle einer Darstellung (Schieberegler, „Wert“), die genau einen Wert durch einen festen Text ersetzen, als Einträge:
+     * Homematic IP 4,5 „Off“ und 30,5 „On“ (nuc 25.10.2026). Intervalle über einen Bereich beschriften keinen einzelnen Wert.
+     *
+     * @return list<array{0: float, 1: string}>
+     */
+    private static function intervalEntries(array $presentation): array
+    {
+        if (!($presentation['INTERVALS_ACTIVE'] ?? false)) {
+            return [];
+        }
+        $intervals = json_decode((string)($presentation['INTERVALS'] ?? ''), true);
+        $entries = [];
+        foreach (is_array($intervals) ? $intervals : [] as $interval) {
+            if (is_array($interval) && ($interval['ConstantActive'] ?? false) && trim((string)($interval['ConstantValue'] ?? '')) !== ''
+                && isset($interval['IntervalMinValue'], $interval['IntervalMaxValue'])
+                && abs((float)$interval['IntervalMinValue'] - (float)$interval['IntervalMaxValue']) < 0.001) {
+                $entries[] = [(float)$interval['IntervalMinValue'], (string)$interval['ConstantValue']];
+            }
+        }
+        return $entries;
     }
 
     /**

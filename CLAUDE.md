@@ -156,7 +156,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   `color_mode` (`colorModeKind`: Zigbee2MQTT, HomeAssistant-Modul, Matter 0/1 Farbe, 2 Farbtemperatur); dann nennen
   Zustand und Karte nur den gültigen Wert. Test `check-farbmodus.php`.
 - **Sollwert:** Bereich und Schrittweite aus Darstellung oder Profil. Sonderwerte mit Text am Rand zählen nicht dazu
-  (nicht ein Eintrag ohne Text oder mit Formatnamen wie „%d“). Ohne Schrittweite gilt der kleinste Abstand dichter
+  (nicht ein Eintrag ohne Text oder mit Formatnamen wie „%d“), auch ein Intervall der Darstellung mit festem Text auf
+  einem Wert (`intervalEntries`, Test `check-module.php`). Ohne Schrittweite gilt der kleinste Abstand dichter
   Einträge (`associationStep`: mindestens drei Abstände, alle Vielfache des kleinsten, höchstens 1), sonst 0 („ohne feste
   Schrittweite“). Batteriegeräte melden den Sollwert oft vor der Übernahme. Ein Sonderwert nennt den Text seines Eintrags
   (`specialCaption`), eine Bedeutung erfindet das Modul nicht. Test `check-sollwert.php`.
