@@ -7,12 +7,11 @@ operates Symcon with it, whether spoken, typed or from a workflow of its own. It
 still open?", say "Turn off the lights in the living room" or close a blind halfway and gets a short,
 unambiguous answer. It only sees and switches the devices you release.
 
-> **Status:** beta. Querying, switching, setting brightness, colour temperature, colour, position,
-> heating setpoint and target humidity, operating mode and fan speed of dehumidifiers and ventilation units,
-> stopping blinds, consumption and power also behind meters and sub-meters, heat and performance factor of heat pumps, the history of measured values and power, timelines of states, starting scenes as well as playback
-> and volume of media players work. The device list can be proposed from an Alexa instance. The Claude app can
-> sign in with OAuth. The form shows what did not work, a protocol for troubleshooting can be switched on. So far
-> the module has been tried on three systems and by the first testers.
+> **Status:** beta, tried on three systems and by the first testers. The assistant queries and switches. It sets
+> brightness, colour, colour temperature, position, setpoints, operating mode and fan speed, stops blinds, starts
+> scenes and operates media players. It knows consumption and power also behind meters and sub-meters, for the house
+> also the costs, for heat pumps heat and performance factor. Histories of measured values and power and timelines of states come as text
+> and, in the Claude app, as charts. The device list can be proposed from an Alexa instance.
 
 ## When do I need this?
 
@@ -195,7 +194,7 @@ name, alias, type and the names of the variables.
 | Name, aliases | The name and further names, separated by commas. A partial word is enough when searching. If a device is found through an alias, the answer shows it in brackets after the name. |
 | Type | Light, switch, socket, appliance, blind, thermostat, media player, humidifier, ventilation/fan, window, door, presence, water leak, temperature, humidity, air quality, other measured value or meter. |
 | State or measured value | The variable for on/off, open/closed or detected, for measured values the value itself. For a thermostat the current temperature. |
-| Setpoint | Only for a thermostat: the variable with the target temperature. It needs an action. |
+| Setpoint | Only for a thermostat: the variable with the target temperature. It needs an action. The module reads range and step size from the presentation or the profile; without a step size the spacing of the entries counts (for example 15.0, 15.5, 16.0). A value at the edge with a text of its own is not part of the range, whether the text comes from a profile association or from a presentation interval with a fixed value, for example "On" at 30.5. The self-test shows the range for each thermostat. |
 | Valve position, 2, 3 | Only for a thermostat, optional and side by side: up to three valves of its radiators. They count in percent of the range of the variable. On Homematic IP the position is in `LEVEL`, not in `VALVE_STATE` (that is the status of the valve adaption); an HM-CC-VD actuator is a device of its own next to the HM-CC-TC. |
 | Colour temperature | Only for a light, optional: the variable with the colour temperature in Kelvin or mired. It needs an action. |
 | Colour | Only for a light, optional: the variable with the colour as an integer (RGB, for example profile `~HexColor`). It needs an action. |
@@ -209,7 +208,7 @@ name, alias, type and the names of the variables.
 | Heat meter | Appliance only, optional: the heat meter of a heat pump, logged in the archive with the aggregation "counter". It never counts in the electricity consumption. |
 | Heat output | Appliance only, optional: the current heat output, in W or kW. Together with the power of the appliance it gives the COP, and without a heat meter also the heat over periods; it must then be archived. |
 | Measured by | For everything with power or an energy meter, optional: the meter the device or meter hangs on, for example the sub-distribution of the upper floor. The choice lists the meters of the saved list, so a new one appears after Apply. |
-| Inverted | Tick this if `true` means "closed" or "off". Many window contacts report `true` for closed. For windows, doors and sensors with a number, anything above 0 otherwise counts as open or detected, with the tick only 0; this fits the Matter door state, for example (0 open, 1 closed). Further entries such as "ajar" appear in brackets in the answer. For blinds the module finds out by itself which value means "open"; the tick reverses that if open and closed are swapped. |
+| Inverted | Tick this if `true` means "closed" or "off". Many window contacts report `true` for closed. For windows, doors and sensors with a number, anything above 0 otherwise counts as open or detected, with the tick only 0; this fits the Matter door state, for example (0 open, 1 closed). Further entries such as "ajar" appear in brackets in the answer. For blinds the module finds out by itself which value means "open": from the "blind" presentation, from the profile (a profile name containing ".Reversed" counts the other way round), for the HomeAssistant module 100 as open, like Home Assistant. The self-test shows it for every blind, for example "Blind Küche Rollladen: open at 1, closed at 0". If that is wrong, the tick, here "Reverse direction", turns it round. |
 | Tilt window | Only for a window with a drive: tick this if the drive only tilts the window. The answer then says "tilted" and "50 % tilted" instead of "open" and "50 % open". |
 | Query only | The assistant may announce the state but not switch or set the device. Meant for devices like the garage door or the heating in the children's room. |
 
@@ -318,9 +317,8 @@ from the hourly means of the archived heat output.
 
 The performance factor is only as good as the meters. If the energy meter only counts the compressor, like the
 consumption values in the controller of some heat pumps, the circulation pumps and the heating element are missing and
-it comes out too good. Some controllers only estimate the heat and book their meters at midnight. On a Stiebel Eltron
-the heat meter showed 1.5 to 2.5 times the heat output calculated from flow rate and temperature difference at part
-load. Leave the heat meter empty in such a case.
+it comes out too good. Some controllers only estimate the heat and book their meters at midnight. Leave the heat meter
+empty then, the module calculates the heat from the heat output.
 
 If heat output and power exist only once for heating and hot water, you have two options. One line for both gives the
 performance factor over everything, that is the seasonal performance factor. For separate lines a small script on your
@@ -393,11 +391,9 @@ Each device gets a line with its state, for example:
 Some types need a few more words:
 
 - **Thermostat:** If the assistant asks for temperatures, it also finds thermostats with a current temperature; you do
-  not need a separate temperature entry on the same variable. A setpoint outside its range is called a special
-  setpoint; some Homematic thermostats use 100 for "valve fully open". A value at the edge with a text of its own is
-  not part of the range either, whether the text comes from a profile association or from a presentation interval
-  with a fixed value. The line then includes the text, for example "special setpoint “On” (30.5 °C, outside 6 to
-  30 °C)".
+  not need a separate temperature entry on the same variable. A setpoint outside the range or at its edge with a text
+  of its own is called a special setpoint; some Homematic thermostats use 100 for "valve fully open". A text then
+  appears in the line, for example "special setpoint “On” (30.5 °C, outside 6 to 30 °C)".
 - **Valves:** With valve positions the line names the most open valve, "valves up to 98 %" with several. For "Which
   radiators are heating?" a thermostat counts as active while a valve is above 0. On a special setpoint it never
   counts, because "valve fully open" keeps the valve open whether the room needs heat or not. The device card shows
@@ -562,12 +558,9 @@ variable. For the Sonos module it runs from 0 to 100, for the HomeAssistant modu
 Denon receiver from -80 to 18 dB. There 50 % is -31 dB, and the query names both ("volume 64 % = -17.5 dB").
 Values are sent in the step size of the variable, half dB for the Denon.
 
-The module checks a temperature against the range of the setpoint, which it reads from the presentation
-or the profile of the variable. Outside of it nothing is sent, and the answer names the range. Odd values
-go to the step size, with steps of 0.5 21.3 becomes 21.5, and the answer names the value sent. If the profile has no
-step size, the spacing of its entries counts, for example 15.0, 15.5, 16.0. Entries
-such as "On" at the edge of a Homematic profile do not count as part of the range. The button **Run
-self-test** shows the range for each thermostat.
+The module checks a temperature against the [range of the setpoint](#the-release-list). Outside of it nothing is
+sent, and the answer names the range. Odd values go to the step size, with steps of 0.5 21.3 becomes 21.5, and the
+answer names the value sent.
 
 The assistant gives the colour temperature in Kelvin. If the variable counts in mired (range up to 1000,
 for example Hue via Matter), the module converts it. A value outside the range of the lamp goes to the
@@ -590,11 +583,7 @@ If the assistant names a single device with a command it does not understand, no
 the answer says what the device can do.
 
 You do not need to know how a blind counts internally. Some devices report 0 for open, others 0 for
-closed. The module reads it from the "blind" presentation of the variable or from its profile (a
-profile name containing ".Reversed" counts the other way round). Blinds from the HomeAssistant module
-count 100 as open, like Home Assistant. The button **Run self-test** shows for
-every blind what was detected, for example "Blind Küche Rollladen: open at 1, closed at 0". If that
-is wrong, tick "Reverse direction" for the device.
+closed; the module finds out by itself (see [The release list](#the-release-list), column "Inverted").
 
 Four rules keep the wrong things from being switched:
 

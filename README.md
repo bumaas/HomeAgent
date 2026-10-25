@@ -8,12 +8,11 @@ spricht, bedient damit Symcon, ob gesprochen, getippt oder aus einem eigenen Abl
 Rollladen halb schließen und bekommt eine kurze, eindeutige Antwort. Er sieht und schaltet dabei nur
 die Geräte, die Sie freigeben.
 
-> **Stand:** Beta. Abfragen, Schalten, das Stellen von Helligkeit, Farbtemperatur, Farbe, Position,
-> Heizungs-Sollwert und Zielfeuchte, Betriebsart und Lüfterstufe von Luftentfeuchtern und Lüftungen, das
-> Anhalten von Rollläden, Verbrauch und Leistung auch hinter Zählern und Unterzählern, Wärme und Arbeitszahl von Wärmepumpen, der Verlauf von Messwerten und Leistungen, Zeitleisten von Zuständen, das Starten von Szenen sowie
-> Wiedergabe und Lautstärke von Mediaplayern gehen. Die Geräteliste lässt sich aus einer Alexa-Instanz
-> vorschlagen. Die Claude-App meldet sich auf Wunsch per OAuth an. Was nicht geklappt hat, zeigt das
-> Formular, ein Protokoll zur Fehlersuche lässt sich einschalten. Erprobt ist das Modul auf drei Anlagen und bei den ersten Testern.
+> **Stand:** Beta, erprobt auf drei Anlagen und bei den ersten Testern. Der Assistent fragt ab und schaltet. Er stellt
+> Helligkeit, Farbe, Farbtemperatur, Position, Sollwerte, Betriebsart und Lüfterstufe, hält Rollläden an, startet
+> Szenen und bedient Mediaplayer. Verbrauch und Leistung kennt er auch hinter Zählern und Unterzählern, fürs Haus
+> dazu die Kosten, bei Wärmepumpen Wärme und Arbeitszahl. Verläufe von Messwerten und Leistungen und Zeitleisten von Zuständen gibt
+> es als Text und in der Claude-App als Diagramm. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen.
 
 ## Wann brauche ich das?
 
@@ -202,7 +201,7 @@ Name, Alias, Typ und den Namen der Variablen.
 | Name, Aliase | Der Name und weitere Bezeichnungen, durch Komma getrennt. Ein Teilwort genügt beim Suchen. Wird ein Gerät über einen Alias gefunden, steht er in der Antwort in Klammern hinter dem Namen. |
 | Typ | Licht, Schalter, Steckdose, Gerät, Rollladen, Thermostat, Mediaplayer, Luftbe-/entfeuchter, Lüftung/Ventilator, Fenster, Tür, Anwesenheit, Wasserleck, Temperatur, Luftfeuchte, Luftqualität, sonstiger Messwert oder Zähler. |
 | Zustand oder Messwert | Die Variable für an/aus, offen/zu oder erkannt, bei Messwerten der Wert selbst. Beim Thermostat die Ist-Temperatur. |
-| Sollwert | Nur beim Thermostat: die Variable mit der Solltemperatur. Sie braucht eine Aktion. |
+| Sollwert | Nur beim Thermostat: die Variable mit der Solltemperatur. Sie braucht eine Aktion. Bereich und Schrittweite liest das Modul aus der Darstellung oder dem Profil, ohne Schrittweite gilt der Abstand der Einträge (etwa 15,0, 15,5, 16,0). Ein Wert am Rand mit eigenem Text zählt nicht zum Bereich, ob der Text aus einem Eintrag des Profils oder aus einem Intervall der Darstellung mit festem Wert kommt, etwa „On“ bei 30,5. Der Selbsttest zeigt den Bereich je Thermostat. |
 | Ventilstellung, 2, 3 | Nur beim Thermostat, wahlweise und nebeneinander: bis zu drei Ventile seiner Heizkörper. Gezählt wird in Prozent des Bereichs der Variable. Bei Homematic IP steht die Stellung in `LEVEL`, nicht in `VALVE_STATE` (das ist der Status der Ventiladaption); ein Stellantrieb HM-CC-VD ist ein eigenes Gerät neben dem HM-CC-TC. |
 | Farbtemperatur | Nur beim Licht, wahlweise: die Variable mit der Farbtemperatur in Kelvin oder Mired. Sie braucht eine Aktion. |
 | Farbe | Nur beim Licht, wahlweise: die Variable mit der Farbe als Ganzzahl (RGB, etwa Profil `~HexColor`). Sie braucht eine Aktion. |
@@ -216,7 +215,7 @@ Name, Alias, Typ und den Namen der Variablen.
 | Wärmezähler | Nur beim Gerät, wahlweise: der Wärmemengenzähler einer Wärmepumpe, im Archiv mit der Aggregation „Zähler“. Er zählt nie im Stromverbrauch. |
 | Wärmeleistung | Nur beim Gerät, wahlweise: die Wärmeleistung jetzt, in W oder kW. Mit der Leistung des Geräts ergibt sie die Leistungszahl, ohne Wärmezähler auch die Wärme über Zeiträume; dann muss sie archiviert sein. |
 | Gemessen von | Bei allem mit Leistung oder Zähler, wahlweise: der Zähler, hinter dem das Gerät oder der Zähler hängt, etwa die Unterverteilung OG. Zur Auswahl stehen die Zähler der gespeicherten Liste, ein neuer also erst nach dem Übernehmen. |
-| Umgekehrt | Haken setzen, wenn `true` „zu“ oder „aus“ bedeutet. Viele Fensterkontakte melden `true` für geschlossen. Bei Fenster, Tür und Meldern mit einer Zahl gilt sonst alles über 0 als offen bzw. erkannt, mit dem Haken nur die 0; so passt etwa der Türstatus von Matter (0 Geöffnet, 1 Geschlossen). Weitere Einträge wie „Angelehnt“ nennt die Antwort in Klammern. Bei Rollläden erkennt das Modul selbst, welcher Wert „offen“ bedeutet; der Haken dreht das um, falls auf und zu vertauscht sind. |
+| Umgekehrt | Haken setzen, wenn `true` „zu“ oder „aus“ bedeutet. Viele Fensterkontakte melden `true` für geschlossen. Bei Fenster, Tür und Meldern mit einer Zahl gilt sonst alles über 0 als offen bzw. erkannt, mit dem Haken nur die 0; so passt etwa der Türstatus von Matter (0 Geöffnet, 1 Geschlossen). Weitere Einträge wie „Angelehnt“ nennt die Antwort in Klammern. Bei Rollläden erkennt das Modul selbst, welcher Wert „offen“ bedeutet: aus der Darstellung „Rollladen“, aus dem Profil (ein Profilname mit „.Reversed“ zählt umgekehrt), beim HomeAssistant-Modul wie in Home Assistant 100 als offen. Der Selbsttest zeigt es je Rollladen, etwa „Rollladen Küche Rollladen: offen bei 1, geschlossen bei 0“. Stimmt das nicht, dreht der Haken, hier „Richtung umkehren“, es um. |
 | Kippfenster | Nur beim Fenster mit Antrieb: Haken setzen, wenn der Antrieb das Fenster nur kippt. Die Antwort sagt dann „gekippt“ und „50 % gekippt“ statt „offen“ und „50 % offen“. |
 | Nur abfragen | Der Assistent darf den Zustand ansagen, das Gerät aber nicht schalten oder stellen. Gedacht für Geräte wie das Garagentor oder die Heizung im Kinderzimmer. |
 
@@ -327,9 +326,8 @@ Stundenmitteln der archivierten Wärmeleistung.
 
 Die Arbeitszahl ist so gut wie die Zähler. Zählt der Stromzähler nur den Verdichter, wie die Verbrauchswerte im Regler
 mancher Wärmepumpen, fehlen Umwälzpumpen und Heizstab, und sie fällt zu gut aus. Manche Regler schätzen die Wärme nur
-und buchen ihre Zähler erst um Mitternacht. Bei einer Stiebel Eltron lag der Wärmezähler bei Teillast beim 1,5- bis
-2,5-Fachen der aus Volumenstrom und Spreizung gerechneten Wärmeleistung. Lassen Sie den Wärmezähler in so einem Fall
-leer.
+und buchen ihre Zähler erst um Mitternacht. Lassen Sie den Wärmezähler dann leer, das Modul rechnet die Wärme aus der
+Wärmeleistung.
 
 Gibt es Wärmeleistung und Leistung nur einmal für Heizen und Warmwasser, haben Sie zwei Möglichkeiten. Eine Zeile für
 beides nennt die Arbeitszahl über alles, also die Jahresarbeitszahl. Für getrennte Zeilen teilt ein kleines Skript auf
@@ -402,11 +400,9 @@ Je Gerät steht eine Zeile mit seinem Zustand, zum Beispiel:
 Zu einigen Typen gibt es mehr zu sagen:
 
 - **Thermostat:** Fragt der Assistent nach Temperaturen, findet er auch die Thermostate mit Ist-Temperatur; eine
-  eigene Temperaturzeile auf derselben Variable brauchen Sie dafür nicht. Steht der Sollwert außerhalb seines
-  Bereichs, heißt er Sonder-Sollwert; manche Homematic-Thermostate nutzen 100 für „Ventil ganz offen“. Ein Wert am
-  Rand mit eigenem Text zählt ebenfalls nicht zum Bereich, ob der Text aus einem Eintrag des Profils oder aus einem
-  Intervall der Darstellung mit festem Wert kommt. Der Text steht dann mit in der Zeile, etwa „Sonder-Sollwert „On“
-  (30.5 °C, außerhalb von 6 bis 30 °C)“.
+  eigene Temperaturzeile auf derselben Variable brauchen Sie dafür nicht. Ein Sollwert außerhalb des Bereichs oder am
+  Rand mit eigenem Text heißt Sonder-Sollwert; manche Homematic-Thermostate nutzen 100 für „Ventil ganz offen“. Ein
+  Text steht dann mit in der Zeile, etwa „Sonder-Sollwert „On“ (30.5 °C, außerhalb von 6 bis 30 °C)“.
 - **Ventile:** Mit Ventilstellung nennt die Zeile das offenste Ventil, bei mehreren „Ventile bis 98 %“. Bei „Welche
   Heizkörper heizen?“ zählt ein Thermostat als aktiv, solange ein Ventil über 0 steht. Auf einem Sonder-Sollwert
   zählt es nie, denn „Ventil ganz offen“ hält das Ventil fest auf, ob der Raum Wärme braucht oder nicht. Die
@@ -574,11 +570,9 @@ Variable nennt. Beim Sonos-Modul geht er von 0 bis 100, beim HomeAssistant-Modul
 Denon-Receiver von -80 bis 18 dB. Dort sind 50 % also -31 dB, und die Abfrage nennt beides
 („Lautstärke 64 % = -17.5 dB“). Gesendet wird in der Schrittweite der Variable, beim Denon in halben dB.
 
-Eine Temperatur prüft das Modul gegen den Bereich des Sollwerts, den es aus der Darstellung oder dem
-Profil der Variable liest. Liegt sie außerhalb, geht nichts hinaus, und die Antwort nennt den Bereich.
-Krumme Werte gehen auf die Schrittweite, aus 21,3 wird bei 0,5er-Schritten 21,5, und die Antwort nennt
-den gesendeten Wert. Hat das Profil keine Schrittweite, gilt der Abstand seiner Einträge, etwa 15,0, 15,5, 16,0. Einträge wie „On“ am Rand eines Homematic-Profils zählen nicht zum Bereich. Der
-Knopf **Selbsttest ausführen** zeigt den Bereich je Thermostat.
+Eine Temperatur prüft das Modul gegen den [Bereich des Sollwerts](#die-freigabeliste). Liegt sie außerhalb, geht
+nichts hinaus, und die Antwort nennt den Bereich. Krumme Werte gehen auf die Schrittweite, aus 21,3 wird bei
+0,5er-Schritten 21,5, und die Antwort nennt den gesendeten Wert.
 
 Die Farbtemperatur nimmt der Assistent in Kelvin an. Zählt die Variable in Mired (Bereich bis 1000, so
 etwa Hue über Matter), rechnet das Modul um. Ein Wert außerhalb des Bereichs der Lampe geht auf das
@@ -601,11 +595,7 @@ ausgelassen wurden. Nennt der Assistent ein einzelnes Gerät mit einem Befehl, d
 ändert sich nichts, und die Antwort sagt, was das Gerät kann.
 
 Wie ein Rollladen intern zählt, müssen Sie nicht wissen. Manche Geräte melden 0 für offen, andere 0
-für geschlossen. Das Modul liest es aus der Darstellung „Rollladen“ der Variable oder aus ihrem
-Profil (ein Profilname mit „.Reversed“ zählt umgekehrt). Rollläden aus dem HomeAssistant-Modul zählen wie
-Home Assistant 100 als offen. Der Knopf **Selbsttest ausführen** zeigt für jeden
-Rollladen, was erkannt wurde, zum Beispiel „Rollladen Küche Rollladen: offen bei 1, geschlossen bei 0“.
-Stimmt das nicht, setzen Sie beim Gerät den Haken „Richtung umkehren“.
+für geschlossen; das Modul erkennt es selbst (siehe [Die Freigabeliste](#die-freigabeliste), Spalte „Umgekehrt“).
 
 Damit nichts Falsches geschaltet wird, gelten vier Regeln:
 
