@@ -197,8 +197,8 @@ name, alias, type and the names of the variables.
 | Moving state | Only for blinds and windows with a drive, and only if such a variable exists: it reports whether the blind is moving, for example `WORKING` on Homematic or the run status on the Velux KLF200. The module then answers "moving" at once, even if the position only arrives at the end. |
 | Stop | Only for blinds and windows with a drive, optional: a variable that stops the travel, that is a boolean with an action or a selection with the entry "Stop" (such as "Aktion" in the HomeAssistant module). Homematic and Velux KLF200 devices are stopped by the module even without it. |
 | Power | Only for lights, switches, sockets, appliances, humidifiers and ventilation, optional: the current power, for example `POWER` of a Homematic metering channel. It follows the state in every answer, for example "on (26.1 W)". |
-| Energy meter | Also optional: the energy counter, for example `ENERGY_COUNTER`. For consumption over periods it must be aggregated as a counter in the archive. If a device hangs on a metering socket, both rows may carry the same power and energy meter; consumption and power of a room or the house count each variable only once, and the self test points it out. |
-| Heat meter | Appliance only, optional: the heat meter of a heat pump, aggregated as a counter in the archive. It never counts in the electricity consumption. |
+| Energy meter | Also optional: the energy counter, for example `ENERGY_COUNTER`. For consumption over periods the archive must log it with the aggregation "counter" (see [What must be archived](#what-must-be-archived)). If a device hangs on a metering socket, both rows may carry the same power and energy meter; consumption and power of a room or the house count each variable only once, and the self test points it out. |
+| Heat meter | Appliance only, optional: the heat meter of a heat pump, logged in the archive with the aggregation "counter". It never counts in the electricity consumption. |
 | Heat output | Appliance only, optional: the current heat output, in W or kW. Together with the power of the appliance it gives the COP, and without a heat meter also the heat over periods; it must then be archived. |
 | Measured by | For everything with power or an energy meter, optional: the meter the device or meter hangs on, for example the sub-distribution of the upper floor. The choice lists the meters of the saved list, so a new one appears after Apply. |
 | Inverted | Tick this if `true` means "closed" or "off". Many window contacts report `true` for closed. For windows, doors and sensors with a number, anything above 0 otherwise counts as open or detected, with the tick only 0; this fits the Matter door state, for example (0 open, 1 closed). Further entries such as "ajar" appear in brackets in the answer. For blinds the module finds out by itself which value means "open"; the tick reverses that if open and closed are swapped. |
@@ -233,6 +233,108 @@ names the instance as a reference when an entered variable is about to be delete
 Only release what you really need by voice, about one temperature and one humidity sensor per room.
 Every additional device makes the assistant's answers slower and less reliable.
 
+## Energy balance and meters
+
+With solar or a battery, no single meter measures what the house consumes. The module therefore calculates it from the
+**energy balance**:
+
+> House consumption = grid import + solar production + battery discharge − grid export − battery charge
+
+The values come from the **sources**. A source is anything through which electricity enters or leaves the house: a
+grid connection, a solar plant or a battery. Each source is a row of the list **Sources** in the "Energy balance"
+section of the form. The dialog of a row shows the fields of its type:
+
+| Type | Energy meter | Power (optional) |
+|---|---|---|
+| Grid | import and export | import and export, or one signed sensor |
+| Solar plant | production | production |
+| Battery | discharge and charge | discharge and charge, or one signed sensor |
+
+Without solar and battery one grid row with the import is enough. Several solar plants, batteries or grid connections
+each get a row of their own. The balance adds up the rows of a type, also backwards from the archive, and the answers
+name them. Each variable may appear only once in the list. If a row has an error, such as a missing variable, the whole
+balance is disabled, otherwise the house consumption would be wrong. If the balance used to be in single fields before
+an update, you will find it as the rows "Grid", "Solar" and "Battery" in the list; you may rename them.
+
+The meter at the grid connection belongs only here, not also as a device of type meter. It measures the grid import,
+and with solar or a battery that is less than the house uses.
+
+An instance has exactly one energy balance and one electricity price. For a second site with its own balance or
+tariff, create a second instance.
+
+### Sign of the power
+
+If you only have one signed sensor for the grid, it goes into the field "Grid import power"; negative then means
+export. A signed battery sensor likewise goes into "Battery discharge power", negative means charging. If a sensor
+counts the other way round, for example a battery that reports positive while charging, tick "Reverse sign" in its row.
+The self-test shows the current value of each source and how it counts, for example "Energy balance: battery discharge
+power "Marstek" Battery Power reads 1112 W now and counts as battery charge 1112 W, reversed by the checkbox".
+
+### Meters and "Measured by"
+
+Enter a sub-distribution, a wallbox or a flat meter in the release list as a device of type **Meter**, with its energy
+meter and optionally its power. A meter never counts in a device total, it has a line of its own. The production of a
+solar plant belongs in the energy balance, not in a meter.
+
+In the field **Measured by** you choose for devices and meters the meter above them, as deep as needed, for example the
+terrarium on the children's room and the children's room on the sub-distribution of the upper floor. The answers then
+name for each meter what is measured below it and what is not metered. For the whole house the top level counts, that
+is everything without "Measured by". A reference to something that is not a meter of the list, and meters that measure
+each other in a circle, disable the row. If more than 105 % of its own value is measured below a meter in the last 30
+days, the self-test points it out.
+
+### Electricity price
+
+If you enter the **electricity price** in the energy balance, the answers about the house consumption also name the
+costs. The price is an archived variable in ct/kWh or €/kWh, "ct" alone is enough as the unit. For a dynamic tariff
+this is for example the current price from the Tibber module. The feed-in tariff goes next to it. Each hour counts grid
+import times the hourly mean price. These are working costs only, without base fee. Against the supplier's bill they
+differ by a few percent, because your own meter measures slightly differently and the archive only knows hourly means.
+
+### Heat pump
+
+Enter a heat pump as type appliance, with its power or its energy meter and optionally the heat meter and the heat
+output. The heat meter never counts in the electricity consumption. Without a heat meter the module calculates the heat
+from the hourly means of the archived heat output.
+
+The performance factor is only as good as the meters. If the energy meter only counts the compressor, like the
+consumption values in the controller of some heat pumps, the circulation pumps and the heating element are missing and
+it comes out too good. Some controllers only estimate the heat and book their meters at midnight. On a Stiebel Eltron
+the heat meter showed 1.5 to 2.5 times the heat output calculated from flow rate and temperature difference at part
+load. Leave the heat meter empty in such a case.
+
+If heat output and power exist only once for heating and hot water, you have two options. One line for both gives the
+performance factor over everything, that is the seasonal performance factor. For separate lines a small script on your
+system splits both values by operating mode, for example by a "hot water mode" variable of the controller: in hot water
+mode into "heat output hot water" and "power hot water", otherwise into the two variables for heating, the other ones
+set to 0. All four must be archived.
+
+### What must be archived
+
+Answers about periods come from the Symcon archive. If something is missing there, the line says "no history
+archived", and the self-test names the variable with its ID.
+
+| For the assistant to … | the archive must … |
+|---|---|
+| give consumption, per device or for the house | log the energy meter with the aggregation "counter", as well as each meter of the sources and a heat meter |
+| give costs | also log the electricity price |
+| give the heat without a heat meter | log the heat output |
+| give the power over a period | log the power |
+| show a history of measured values | log the measured value |
+| show a timeline | log the state |
+
+An energy meter counts in mWh, Wh, kWh or MWh, without a unit kWh is assumed. A counter in another unit, such as a
+water or gas meter, is not an energy meter: its line says "not an energy meter (unit m³)" and it is not added. Power in
+mW, W, kW and MW is converted (Matter reports mW), without a unit W is assumed.
+
+### Meter readings in the self-test
+
+The self-test also checks whether the archive matches the meter reading. A single wrong value going up and back counts
+as consumption in the archive. The self-test then names the meter with its ID and the months, for example "the archive
+counts more than the meter reading rose (01/2024 +659.8 kWh)". Delete the wrong value in the archive and reaggregate
+the variable. If a meter resets, for example after a power failure, the archive keeps counting correctly; that is not
+reported.
+
 ## Scenes
 
 A scene is a script or flow script of your system that the assistant may start on request, for example
@@ -242,187 +344,147 @@ name. A flow script without an action cannot be started.
 
 ## What the assistant can do
 
-The assistant gets three tools: one for asking, one for switching and setting and one for scenes.
+The assistant gets three tools: one for asking (**get_state**), one for switching and setting (**set_state**) and one
+for scenes (**run_scene**). The following sections start from questions as you would ask them in everyday life. What
+the assistant sends to the tools for them is listed in the [technical appendix](#tool-arguments).
 
-### Querying
+### "Is a window still open anywhere?"
 
-The tool **get_state** filters by room, floor, type and name and can be limited to active devices (on, open,
-presence detected). The first line of the answer always gives the count, for example
-"1 of 4 checked devices active". Devices without on and off, such as blinds and measurements, are not
-counted; a closing line gives their number and types. If nothing matches, it lists the known rooms and types so the
-assistant can ask again. The last line gives date, time and weekday, for example "Now: 2026-10-11 12:19
-(Sunday)", so the assistant can also answer "What time is it?" and work out "yesterday". The answers follow the language of your Symcon system (English or German).
+The assistant asks for states by room, floor, type or name, if wanted only for what is active (on, open, presence
+detected). The first line of the answer always gives the count, for example "1 of 4 checked devices active"; the
+assistant does not have to count. Devices without on and off, such as blinds and measurements, are not counted, a
+closing line gives their number and types. If nothing matches, the module lists the known rooms and types, and the
+assistant can ask again. The last line gives date, time and weekday, for example "Now: 2026-10-11 12:19 (Sunday)". So
+the assistant can also answer "What time is it?" and work out "yesterday". The answers follow the language of your
+Symcon system (English or German).
 
-A thermostat reports target and current temperature, for example "setpoint 21 °C (currently 20.6 °C)".
-If the assistant asks for `type=temperature`, it also finds thermostats with a current temperature; you
-do not need a separate temperature entry on the same variable. A setpoint outside its range is called a
-special setpoint: some Homematic thermostats use 100 for "valve fully open". A value at the edge with a
-text of its own is not part of the range either, whether the text comes from a profile association or from a
-presentation interval with a fixed value. The line then includes the text, for example "special setpoint
-“On” (30.5 °C, outside 6 to 30 °C)".
+Each device gets a line with its state, for example:
 
-With valve positions the line names the most open valve, for example "setpoint 21.5 °C (currently 20.4 °C, valve
-97 %)", or "valves up to 98 %" with several. The thermostat then counts as active for "Which radiators are heating?"
-(`active_only`) while a valve is above 0. On a special setpoint it never counts, because "valve fully open" keeps the
-valve open whether the room needs heat or not. The device card shows the position next to the setpoint.
+| Type | State in the answer |
+|---|---|
+| Light | "on (100 %, 2700 K)" |
+| Appliance with power | "on (26.1 W)" |
+| Window with drive | "tilted (with drive)" |
+| Thermostat | "setpoint 21.5 °C (currently 20.4 °C, valve 97 %)" |
+| Air conditioner | "setpoint 24 °C (currently 20.0 °C), Aus, fan Auto" |
+| Dehumidifier | "on (51 %, setpoint 55 %, Smart, fan Niedrig)" |
+| Ventilation | "on (Nacht, fan niedrig)" |
+| Media player | "playing "Can't Get Enough" by Bad Company (volume 20 %)", "paused (volume 37 %, muted)" |
 
-Add an air conditioner as a thermostat together with mode and fan speed. Its line then reads like
-"setpoint 24 °C (currently 20.0 °C), Aus, fan Auto", and the assistant sets both by name as with the
-dehumidifier. "Turn off the air conditioner" sets the mode to off; to turn it on, choose a mode such as cool or
-heat. Both variables need an action and a selection in the
-presentation or the profile.
+Some types need a few more words:
 
-A dehumidifier reports "on (51 %, setpoint 55 %, Smart, fan Niedrig)" or "off" and counts as active while it runs. Ventilation reports the same way without humidity: "on (Nacht, fan niedrig)".
+- **Thermostat:** If the assistant asks for temperatures, it also finds thermostats with a current temperature; you do
+  not need a separate temperature entry on the same variable. A setpoint outside its range is called a special
+  setpoint; some Homematic thermostats use 100 for "valve fully open". A value at the edge with a text of its own is
+  not part of the range either, whether the text comes from a profile association or from a presentation interval
+  with a fixed value. The line then includes the text, for example "special setpoint “On” (30.5 °C, outside 6 to
+  30 °C)".
+- **Valves:** With valve positions the line names the most open valve, "valves up to 98 %" with several. For "Which
+  radiators are heating?" a thermostat counts as active while a valve is above 0. On a special setpoint it never
+  counts, because "valve fully open" keeps the valve open whether the room needs heat or not. The device card shows
+  the position next to the setpoint.
+- **Air conditioner:** Add it as a thermostat together with mode and fan speed. Both variables need an action and a
+  selection in the presentation or the profile, and the assistant sets them by name as with the dehumidifier. "Turn
+  off the air conditioner" sets the mode to off; to turn it on, choose a mode such as cool or heat.
+- **Dehumidifier, ventilation, media player:** They count as active while they run or play.
+- **Media players of the HomeAssistant module:** There playback is only a command variable. Enter its status text
+  (`playing`, `paused`, `idle`, `off` …) as on/off, and the module knows the state anyway. Without either only the
+  title is shown, and the player is not counted among the active devices.
 
-A media player reports for example "playing "Can't Get Enough" by Bad Company (volume 20 %)",
-"paused (volume 37 %, muted)" or "off". It counts as active while it plays. With the HomeAssistant
-module playback is only a command variable; enter its status text (`playing`, `paused`, `idle`, `off` …)
-as on/off, and the module knows the state anyway. Without either only the title is shown, and the player
-is not counted among the active devices.
+### "How much electricity did we use last month?"
 
-With `period`, **get_state** reports consumption instead of the state: `today`, `yesterday`,
-`this_week`, `last_week`, `this_month`, `last_month`, `this_year` or `last_year`. Instead of `period`, a
-free range works with `from` and `to` (first and last day as YYYY-MM-DD, both included; without `to`
-only that one day), for example "in January" with `from=2026-01-01` and `to=2026-01-31`. Whole years and
-whole months come from the yearly and monthly values of the archive, everything else from the daily
-values. With a time (YYYY-MM-DD HH:MM) it works by the hour, for example "today between 1 and 3 pm" with
-`from=2026-10-12 13:00` and `to=2026-10-12 15:00`; then `to` is the end, without `to` it runs until now. The
-module counts whole hours from the hourly values, at most 48 hours at a time. The first line gives
-the total, for example "88.5 kWh consumed by 3 of 3 metered device(s)", followed by the consumption
-per device. The values come from the aggregates of the archive; the current day, week and so on count
-up to now. If an energy meter is not archived as a counter, its line says "no history archived" and
-the self-test names it with its ID. It also checks whether the archive matches the meter reading: a single wrong value going up and back counts as consumption in the archive, and the self-test then names the meter with its ID and the months, for example "the archive counts more than the meter reading rose (01/2024 +659.8 kWh)". Delete the wrong value in the archive and reaggregate the variable. If a meter resets, for example after a power failure, the archive keeps counting correctly; that is not reported. A counter in a unit other than mWh, Wh, kWh or MWh, such as a water or gas meter, is not an energy meter: its line says "not an energy meter (unit m³)" and it is not added. Without a unit, kWh is assumed. Devices without an energy meter are left out. The assistant only gets
-the parameter if at least one released device has an energy meter or the energy balance is set up.
+Consumption is available per device, room or type and for the whole house: for today, yesterday, this and last week,
+this and last month, this and last year or a free period, by the hour if wanted ("today between 1 and 3 pm"). Running
+periods count up to now. A device needs an energy meter for this, the house the [energy
+balance](#energy-balance-and-meters).
 
-The module calculates the consumption of the whole house from the **energy balance**:
-grid import + solar production + battery discharge − grid export − battery charge. The "Energy
-balance" section of the form holds the list **Sources** for this, one row per grid connection, solar plant
-and battery. The dialog of a row shows the fields of its type: import and export for the grid, the production
-for a solar plant, discharge and charge for a battery, each as an energy meter and optionally as a power. Each
-energy meter must be archived as a counter. Each variable may appear only once in the list, otherwise the balance is locked. Without solar and battery one grid row with the import is enough. If the assistant asks without room, floor,
-type and name (with `room=all` for an access with a default room), the first line reads, for example, "House consumption 774.8 kWh (all devices,
-period=last_month): grid import 122.7, solar 1356.8, battery discharge 285, grid export 658.7, battery
-charge 330.9 kWh." Devices with their own energy meter are part of it and are not added: "Of this,
-166.2 kWh by 9 of 10 metered device(s), 608.6 kWh not metered." If one of the counters has no history,
-the answer says "House consumption unknown" and names the counter. Asked for a room or type, the
-answer stays with the sum of the devices. With solar or a battery, a line with self-sufficiency
-and self-consumption follows: "Self-sufficiency 84 %, self-consumed solar 51 %." For the whole house the
-answer lists only the five largest consumers and sums up the rest ("5 more device(s) together
-25.6 kWh."); asked for a room, all devices follow in the order of the list.
+Asked for a room or type, the first line gives the total of the devices, for example "88.5 kWh consumed by 3 of 3
+metered device(s)", followed by each device in the order of the list. Devices without an energy meter are left out.
 
-Several solar plants, batteries or grid connections each get a row of their own. The balance adds up the rows of a
-type, also backwards from the archive, and the answer then names them, for example "solar … (of this Roof …,
-Garage …)". In the chart of the house consumption "solar (used directly)" then stands per plant in shades of the
-solar colour, split by its production in the section; nobody measures which plant feeds in or charges the battery. A
-part of the balance (`part`) shows each source as a series of its own. If a row has an error, the whole balance is disabled. If the balance used to be in single fields, you
-will find it as the rows "Grid", "Solar" and "Battery" in the list after the update; you may rename them.
+For the whole house the consumption comes from the energy balance, with its parts:
 
-Enter a sub-distribution, a wallbox or a flat meter as type **Meter**, with its energy meter and optionally its
-power. A meter never counts in a device total, it has a line of its own. In the field "Measured by" you choose for
-devices and meters the meter above them, as deep as needed, for example the terrarium on the children's room and the
-children's room on the sub-distribution of the upper floor. The line of a meter then names what is measured below
-it and the rest: "Haushalt 13.4 kWh, of this 2.1 kWh measured below it by 9 meter(s) or device(s), 11.3 kWh not
-metered". For the whole house the top level counts, that is everything without "Measured by": "Of this, 13.4 kWh by
-2 meter(s) and 0 device(s) at the top level, 0 kWh not metered." The same goes for the power with `period=now`; a
-meter without power of its own counts there with what is measured below it. A reference to something that is not a
-meter of the list, and meters that measure each other in a circle, disable the row. If more than 105 % of its own
-value is measured below a meter in the last 30 days, the self test points it out. The chart of a meter shows what
-hangs below it and the rest as "not metered"; with meters the chart of the house per device shows the top level. The
-production of a solar plant
-belongs in the energy balance, not in a meter. The meter at the grid connection, too, belongs only in the sources: as
-type meter it would report the grid import as consumption, and with solar or a battery that is less than the house uses.
+> House consumption 774.8 kWh (all devices, period=last_month): grid import 122.7, solar 1356.8, battery discharge
+> 285, grid export 658.7, battery charge 330.9 kWh.
+>
+> Of this, 166.2 kWh by 9 of 10 metered device(s), 608.6 kWh not metered.
+>
+> Self-sufficiency 84 %, self-consumed solar 51 %.
 
-An instance has exactly one energy balance and one electricity price. For a second site with its own balance or tariff,
-create a second instance.
+Devices with their own energy meter are part of the house consumption and are not added. For the house the answer
+lists only the five largest consumers and sums up the rest ("5 more device(s) together 25.6 kWh."). Several plants of
+one type are named, for example "solar … (of this Roof …, Garage …)". Self-sufficiency and self-consumption only exist
+with solar or a battery. If a counter of the balance has no history, the answer says "House consumption unknown" and
+names the counter.
 
-If you enter the **electricity price** in the energy balance (an archived variable in ct/kWh or €/kWh, "ct" alone is enough as the unit, for a dynamic
-tariff for example the current price from the Tibber module) and the feed-in tariff, the house consumption also names
-the costs: "Costs 38.21 € for 122.7 kWh grid import (paid on average 31.1 ct/kWh, average price 35.4 ct/kWh). Feed-in
-60.47 €. Without solar and battery it would have been 259.20 €." Each hour counts grid import times the hourly mean
-price. These are working costs only, without base fee; against the supplier's bill they differ by a few percent,
-because your own meter measures slightly differently and the archive only knows hourly means. In charts `costs`
-shows the house consumption in euros, as stacked bars, as heatmap and with a comparison. A cumulative chart
-(`cumulative`) adds up consumption or costs day by day and projects a running period to its end, for example "So far
-10239.5 kWh, projected 13079.9 kWh for the whole period. Comparison by the same time 9066.1 kWh (+13 %)." The
-projection follows the course of the same period in the year before, so the expensive winter counts properly; without
-data from the year before it is linear with the mean so far. In euros the feed-in revenue is a green line next to it,
-and the text names the balance ("Feed-in 786.59 €, net 491.01 €.").
+With devices of type meter, each meter line names what is measured below it and the rest: "Haushalt 13.4 kWh, of this
+2.1 kWh measured below it by 9 meter(s) or device(s), 11.3 kWh not metered". For the house the top level counts then:
+"Of this, 13.4 kWh by 2 meter(s) and 0 device(s) at the top level, 0 kWh not metered."
 
-With `part` the chart shows a single meter of the energy balance instead of the house consumption: `grid` (grid
-import), `feed_in` (grid export), `pv`, `battery_charge` or `battery_discharge`. This works as bars, cumulative chart,
-heatmap and with a comparison, with `costs` in euros for `grid` and as feed-in revenue for `feed_in`. So the assistant
-answers for example "How much feed-in revenue have I earned this year, and where will I end up by the end of the
-year?" with a chart.
+For a heat pump the line also gives the heat and the performance factor, that is heat divided by electricity, for
+example "Heizungsraum | Wärmepumpe | appliance | 1397 kWh, heat 5161 kWh, performance factor 3.7". If several lines
+have a heat value, for example heating and hot water, the performance factor of all of them stands above. If the heat
+comes from the heat output and the appliance has a power value, the module also takes the electricity of the
+performance factor from it, for the same hours, and names both as a block of their own after the meter: "6 kWh
+(meter); from power values: heat 93.7 kWh from 13.6 kWh electricity, performance factor 6.9". The consumption in front
+and in the totals stays the value of the meter.
 
-For a heat pump (type appliance) you also enter the heat meter and, optionally, the heat output. Like the energy meter,
-the heat meter must be archived as a counter, and it never counts in the electricity consumption. The line then gives the
-heat and the performance factor for the period, that is heat divided by electricity, for example "Heizungsraum |
-Wärmepumpe | appliance | 1397 kWh, heat 5161 kWh, performance factor 3.7". If several lines have a heat value, from a heat meter or a heat output,
-for example heating and hot water, the performance factor of all of them stands above. With `period=now` and a heat output
-the COP of the moment is added ("500 W, heat 4188 W, COP 8.4"). The performance factor is only as good as the meters. If
-the energy meter only counts the compressor, like the consumption values in the controller of some heat pumps, the
-circulation pumps and the heating element are missing and it comes out too good.
+### "What did the electricity cost us?"
 
-Without a heat meter the module calculates the heat from the hourly means of the archived heat output, for example "heat
-93.7 kWh from heat output". If the appliance also has a power value, the electricity of the performance factor comes from it
-as well, so both values cover the same hours. The line names them as a block of their own after the meter, for example
-"6 kWh (meter); from power values: heat 93.7 kWh from 13.6 kWh electricity, performance factor 6.9". The consumption
-stays the value of the meter in front, also in the totals. Some controllers only
-estimate the heat and book their meters at midnight. On a Stiebel Eltron the heat meter showed 1.5 to 2.5 times the heat
-output calculated from flow rate and temperature difference at part load. Leave the heat meter empty in such a case.
+With the [electricity price](#electricity-price) entered, the house consumption also names the costs:
 
-If heat output and power exist only once for heating and hot water, you have two options. One line for both gives the
-performance factor over everything, that is the seasonal performance factor. For separate lines a small script on your
-system splits both values by operating mode, for example by a "hot water mode" variable of the controller: in hot
-water mode into "heat output hot water" and "power hot water", otherwise into the two variables for heating, the other
-ones set to 0. All four must be archived.
+> Costs 38.21 € for 122.7 kWh grid import (paid on average 31.1 ct/kWh, average price 35.4 ct/kWh). Feed-in 60.47 €.
+> Without solar and battery it would have been 259.20 €.
 
-With `period=now`, **get_state** reports the power right now in W, built like the consumption: the
-current value of each device with power, plus the total. For the whole house the module calculates the
-house power from the powers of the sources, for example "House power 1548 W (all
-devices, period=now): grid import 27, solar 0, battery discharge 1521, grid export 0, battery charge
-0 W." and "Of this, 750 W by 11 of 11 device(s) with power measurement, 798 W not metered." mW, W, kW and
-MW are converted (Matter reports mW); without a unit, W is assumed. If you only have one signed grid sensor, enter it in the
-field "Grid import power" (negative means export); a signed battery sensor goes into "Battery discharge
-power" (negative means charging). If a sensor reports the other way round, for example a battery that counts
-positive while charging, tick "Reverse sign" in its row. The self-test then shows the current value of each
-source and how it counts ("Energy balance: battery discharge power "Marstek" Battery Power reads 1112 W now and
-counts as battery charge 1112 W, reversed by the checkbox").
+Costs exist only for the whole house. In the Claude app they also come as a chart, for example as a cumulative chart
+projected to the end of the year (see [charts](#charts-device-cards-and-templates-in-the-claude-app)).
 
-For measured values (temperature, humidity, air quality, other measurements and the current
-temperature of a thermostat) the same periods return the **history**: minimum, average and maximum per
-hour, day or month, for example "How warm was it in the guest room over the last 30 days?". The first
-line then reads "History of 1 measured value(s) (room=Gast, type=temperature, from=2026-09-10,
-to=2026-10-09), per day: minimum / average / maximum.", followed by a line per measured value with the
-lowest and highest value of the whole period and when it occurred ("minimum 20.6 °C (2026-09-30 05:40), maximum 23.4 °C
-(2026-10-02 16:15)") and a line per interval such as "2026-09-28 22.2 / 22.6 / 23.1". Today and yesterday come hourly,
-weeks and months daily, years monthly; with `from` and `to` up to two days hourly, up to 100 days daily,
-beyond that monthly. The history applies when a measured-value type is asked for or when none of the
-matches has a meter; for the whole house it stays with consumption. At most five measured values at a
-time, otherwise the answer asks for a room or name. If a thermostat reads the same sensor as a
-temperature device, the history comes only once. The measured value must be logged in the archive,
-otherwise the line says "no history archived".
+### "What is drawing power right now?"
 
-The **power over a period** is asked for with `type=power` together with `period` or `from`/`to`, for example "When
-did the dryer draw the most power last month?". It covers all matches with a power value, meters included. Per
-device a line gives the lowest and highest power with the time from the raw values in the archive ("minimum 20.8 W
-(2026-10-08 22:40), maximum 336.9 W (2026-10-01 20:46)"); with a single device the table per hour, day or month
-follows. Up to 20 devices at a time. Without room and name, and with an energy balance, the line gives the house
-power from the meters of the balance with the lowest and highest hourly mean, plus grid import and grid
-export with their peaks in kW. Hours in which the balance gives a house consumption below 0 have meters that do not
-match; they are left out and the answer gives their number and the days with most of them. Minimum and maximum of
-devices, grid import and grid export are marked as instantaneous values; no 15-minute mean can be above them. Peaks of several sensors cannot be added up to the second from the archive, so the
-house uses the hourly mean. Without a period `type=power` gives the current power. The power must be logged in the
-archive.
+Asked for the power right now, each device with power measurement gives its value, plus the total. For the whole house
+the module calculates the house power from the powers of the sources:
 
-For devices with a state (on/off, open/closed, motion, a selection such as the operating mode of a battery)
-the same periods return a **timeline**: how long each state lasted and, with up to twelve sections, when.
-"When was the front door open today?" is answered with something like
-"Flur | Haustür | door | open 12 min, closed 15 h 36 min" followed by "open 08:32, 09:17-09:18, …". If a
-device also has a meter, consumption and times share one line ("0.2 kWh, on 3 h 31 min, off 12 h 18 min").
-With more than five devices, more than twelve sections or more than two days only the totals with their count
-are given. The state must be logged in the archive; a state without archive is left out and counted. There is
-no timeline for the whole house.
+> House power 1548 W (all devices, period=now): grid import 27, solar 0, battery discharge 1521, grid export 0, battery
+> charge 0 W.
+>
+> Of this, 750 W by 11 of 11 device(s) with power measurement, 798 W not metered.
+
+A meter without power of its own counts there with what is measured below it. For a heat pump with heat output the COP
+of the moment is added ("500 W, heat 4188 W, COP 8.4").
+
+The power over a period can be asked for as well, for example "When did the dryer draw the most power last month?". It
+covers all matches with a power value, meters included. Per device a line gives the lowest and highest power with the
+time from the raw values in the archive ("minimum 20.8 W (2026-10-08 22:40), maximum 336.9 W (2026-10-01 20:46)"); with
+a single device a table per hour, day or month follows. These are instantaneous values and marked as such; no
+15-minute mean can be above them.
+
+For the whole house the answer gives the house power from the meters of the balance with the lowest and highest hourly
+mean, plus grid import and grid export with their peaks in kW. Peaks of several sensors cannot be added up to the
+second from the archive, so the house uses the hourly mean. If the balance gives a house consumption below 0 in an
+hour, the meters do not match. Such hours are left out, and the answer gives their number and the days with most of
+them.
+
+### "How warm was it in the guest room last week?"
+
+For measured values (temperature, humidity, air quality, other measurements and the current temperature of a
+thermostat) the same periods return the **history**: minimum, average and maximum per hour, day or month. The first
+line reads for example "History of 1 measured value(s) (room=Gast, type=temperature, from=2026-09-10, to=2026-10-09),
+per day: minimum / average / maximum." Below it each measured value gets the lowest and highest value of the whole
+period with its time ("minimum 20.6 °C (2026-09-30 05:40), maximum 23.4 °C (2026-10-02 16:15)") and a line per
+interval such as "2026-09-28 22.2 / 22.6 / 23.1".
+
+The history applies when a measured-value type is asked for or when none of the matches has a meter; for the whole
+house it stays with consumption. If a thermostat reads the same sensor as a temperature device, the history comes only
+once.
+
+### "When was the front door open today?"
+
+For devices with a state (on/off, open/closed, motion, a selection such as the operating mode of a battery) the same
+periods return a **timeline**: how long each state lasted and, with few sections, when. The answer then reads for
+example "Flur | Haustür | door | open 12 min, closed 15 h 36 min" followed by "open 08:32, 09:17-09:18, …". If a device
+also has a meter, consumption and times share one line ("0.2 kWh, on 3 h 31 min, off 12 h 18 min"). A state without
+archive is left out and counted. There is no timeline for the whole house.
+
+### For scripts
 
 The state query is also available for scripts:
 
@@ -598,6 +660,24 @@ metered" from the energy balance. If a room has measured values besides meters, 
 values first; ask for the consumption explicitly then. A meter that only counts once a day shows the whole day in
 one hour of an hourly chart.
 
+With an electricity price entered, the chart also shows the house consumption in euros, as stacked bars, as heatmap and
+with a comparison. A cumulative chart adds up consumption or costs day by day and projects a running period to its
+end, for example "So far 10239.5 kWh, projected 13079.9 kWh for the whole period. Comparison by the same time
+9066.1 kWh (+13 %)." The projection follows the course of the same period in the year before, so the expensive winter
+counts properly; without data from the year before it is linear with the mean so far. In euros the feed-in revenue is
+a green line next to it, and the text names the balance ("Feed-in 786.59 €, net 491.01 €.").
+
+Instead of the house consumption, the chart can also show only one part of the energy balance: grid import, grid
+export, solar production, battery charge or discharge, each source as a series of its own. This works as bars,
+cumulative chart, heatmap and with a comparison, for the grid import also in euros and for the grid export as feed-in
+revenue. So the assistant answers for example "How much feed-in revenue have I earned this year, and where will I end
+up by the end of the year?" with a chart. With several solar plants, "solar (used directly)" in the chart of the house
+consumption stands per plant in shades of the solar colour, split by its production in the section; nobody measures
+which plant feeds in or charges the battery.
+
+The chart of a meter shows what hangs below it and the rest as "not metered"; with meters the chart of the house per
+device shows the top level.
+
 With "Show me the lights in the living room" the Claude app shows the devices as cards, grouped by kind. Each card
 shows the state and, in large print, the main value (brightness, opening, reading or power); what is on is coloured.
 Depending on the device there is a switch, a bar for brightness or opening that can be dragged, buttons for open, stop and close, the setpoint with plus
@@ -652,6 +732,7 @@ time, access, tool, arguments, duration and answer. After 24 hours or after **Li
 a new file starts, the previous one stays as `homeagent_<InstanceID>.old.log`. So one to two days are
 available. **Show protocol** shows the last 200 lines, **Download protocol** downloads both files as one (at most the last 3 MB of each),
 **Clear protocol** deletes them. Tokens and pairing codes are never written. Rejected requests without sign-in are written at most ten times in ten minutes per sender, then a note.
+
 ## Limits
 
 - Colour as text is not supported yet. The operating mode of a thermostat only works through a variable with an
@@ -697,6 +778,17 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
 - **MCP:** Model Context Protocol, the interface through which AI assistants use tools.
 - **Token:** the password the assistant logs in with.
 - **Access:** a token together with its settings (default room, query only).
+- **Energy balance:** the calculation the module uses for the consumption of the whole house, from grid import, solar
+  production, battery discharge, grid export and battery charge.
+- **Source:** a row of the energy balance, that is a grid connection, a solar plant or a battery.
+- **Energy meter:** the variable that adds up the energy of a device, for example `ENERGY_COUNTER`. In the archive it
+  needs the aggregation "counter".
+- **Meter (type):** a device of the release list that only measures, for example a sub-distribution, a wallbox or a flat
+  meter. It never counts in a device total.
+- **Measured by:** the meter a device or another meter hangs on.
+- **Not metered:** the part of a consumption or a power that no device and no meter below measures.
+- **Special setpoint:** a setpoint outside the range of a thermostat or at its edge with a text of its own, for example
+  100 for "valve fully open" or 30.5 for "On".
 
 ## Technical appendix
 
@@ -713,3 +805,30 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
   device or scene whose variable or script is missing, only disables itself; the rest keeps working,
   form and log name the entry. If a variable of the energy balance is missing, the whole balance is
   disabled, otherwise the house consumption would be wrong.
+
+### Tool arguments
+
+The assistant sends these arguments to **get_state**; the values are part of the tool description.
+
+| Argument | Meaning |
+|---|---|
+| `room`, `floor`, `type`, `name` | Selection of the devices. Without a room, an access with a default room uses that one, `room=all` means the whole house. |
+| `active_only` | only what is on, open or detected |
+| `period` | `today`, `yesterday`, `this_week`, `last_week`, `this_month`, `last_month`, `this_year`, `last_year` for consumption, history and timeline, `now` for the power right now. The assistant only gets the parameter if at least one released device has an energy meter or the energy balance is set up. |
+| `from`, `to` | free period instead of `period`: first and last day as YYYY-MM-DD, both included, without `to` only that one day, for example "in January" with `from=2026-01-01` and `to=2026-01-31`. With a time (YYYY-MM-DD HH:MM) by the hour, for example `from=2026-10-12 13:00` and `to=2026-10-12 15:00`; then `to` is the end, without `to` it runs until now. The module counts whole hours, at most 48 at a time. |
+| `type=power` | not a device type: with a period the power over the period, without a period the power right now |
+
+Where the values come from and where the limits are:
+
+- Consumption: whole years and months from the yearly and monthly values of the archive, hours from the hourly values,
+  everything else from the daily values.
+- History: today and yesterday hourly, weeks and months daily, years monthly; with `from` and `to` up to two days
+  hourly, up to 100 days daily, beyond that monthly. At most five measured values at a time, otherwise the answer asks
+  for a room or name.
+- Power over a period: up to 20 devices at a time, for the house at most 400 days.
+- Timeline: the times of each section with up to twelve sections. With more than five devices, more than twelve
+  sections or more than two days only the totals with their count are given.
+
+For charts (**show_chart**) there are also: `compare` (`previous` or `year_before`), `versus` (second device for the
+scatter chart), `heatmap`, `cumulative` (cumulative chart), `costs` (in euros) and `part` (`grid`, `feed_in`, `pv`,
+`battery_charge` or `battery_discharge`).

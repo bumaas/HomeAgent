@@ -195,7 +195,7 @@ Der Assistent fragt zuerst, welche Instanz er nehmen und welche Assistenten er v
 später die Tabelle vor. Gehen Sie sie in Ruhe durch: Sprechen Sie die Namen so aus, wie Sie sie im Alltag sagen
 würden? Fehlt ein Gerät, oder ist eines dabei, das der Assistent nicht schalten soll? Erst Ihr OK lässt ihn
 speichern. Seine offenen Fragen am Ende betreffen meist Zähler, die Symcon nicht als Zähler archiviert, oder das
-Vorzeichen einer Batterieleistung. Die README erklärt beides unter [Die Freigabeliste](README.md#die-freigabeliste).
+Vorzeichen einer Batterieleistung. Die README erklärt beides unter [Energiebilanz und Zähler](README.md#energiebilanz-und-zähler).
 
 ### Danach
 

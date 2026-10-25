@@ -192,7 +192,7 @@ Take your time with it: Are the names the ones you would say in everyday life? I
 one the assistant should not switch? Only your OK lets it save. Its open questions at the end are mostly about
 meters that Symcon does not archive as counters, or about the sign of a battery power. The README explains both
 under
-[The release list](README.en.md#the-release-list).
+[Energy balance and meters](README.en.md#energy-balance-and-meters).
 
 ### Afterwards
 

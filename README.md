@@ -204,8 +204,8 @@ Name, Alias, Typ und den Namen der Variablen.
 | Fahrstatus | Nur bei Rollladen und Fenster mit Antrieb und nur, wenn es so eine Variable gibt: sie meldet, ob er gerade fährt, etwa `WORKING` bei Homematic oder der Laufstatus beim Velux KLF200. Dann antwortet das Modul sofort mit „fährt“, auch wenn die Position erst am Ziel kommt. |
 | Stopp | Nur bei Rollladen und Fenster mit Antrieb, wahlweise: eine Variable, die die Fahrt anhält, also ein Wahrheitswert mit Aktion oder eine Auswahl mit dem Eintrag „Stop“ (etwa „Aktion“ beim HomeAssistant-Modul). Homematic- und Velux-KLF200-Geräte hält das Modul auch ohne sie an. |
 | Leistung | Nur bei Licht, Schalter, Steckdose, Gerät, Luftbe-/entfeuchter und Lüftung, wahlweise: die aktuelle Leistung, etwa `POWER` eines Homematic-Messkanals. Sie steht in jeder Antwort hinter dem Zustand, zum Beispiel „an (26.1 W)“. |
-| Zähler | Ebenso wahlweise: der Energiezähler, etwa `ENERGY_COUNTER`. Für den Verbrauch über Zeiträume muss er im Archiv als Zähler aggregiert werden. Hängt ein Gerät an einer Messsteckdose, dürfen beide Zeilen dieselbe Leistung und denselben Zähler tragen; Verbrauch und Leistung eines Raums oder des Hauses zählen jede Variable nur einmal, und der Selbsttest weist darauf hin. |
-| Wärmezähler | Nur beim Gerät, wahlweise: der Wärmemengenzähler einer Wärmepumpe, im Archiv als Zähler aggregiert. Er zählt nie im Stromverbrauch. |
+| Zähler | Ebenso wahlweise: der Energiezähler, etwa `ENERGY_COUNTER`. Für den Verbrauch über Zeiträume muss er im Archiv mit der Aggregation „Zähler“ geloggt sein (siehe [Was archiviert sein muss](#was-archiviert-sein-muss)). Hängt ein Gerät an einer Messsteckdose, dürfen beide Zeilen dieselbe Leistung und denselben Zähler tragen; Verbrauch und Leistung eines Raums oder des Hauses zählen jede Variable nur einmal, und der Selbsttest weist darauf hin. |
+| Wärmezähler | Nur beim Gerät, wahlweise: der Wärmemengenzähler einer Wärmepumpe, im Archiv mit der Aggregation „Zähler“. Er zählt nie im Stromverbrauch. |
 | Wärmeleistung | Nur beim Gerät, wahlweise: die Wärmeleistung jetzt, in W oder kW. Mit der Leistung des Geräts ergibt sie die Leistungszahl, ohne Wärmezähler auch die Wärme über Zeiträume; dann muss sie archiviert sein. |
 | Gemessen von | Bei allem mit Leistung oder Zähler, wahlweise: der Zähler, hinter dem das Gerät oder der Zähler hängt, etwa die Unterverteilung OG. Zur Auswahl stehen die Zähler der gespeicherten Liste, ein neuer also erst nach dem Übernehmen. |
 | Umgekehrt | Haken setzen, wenn `true` „zu“ oder „aus“ bedeutet. Viele Fensterkontakte melden `true` für geschlossen. Bei Fenster, Tür und Meldern mit einer Zahl gilt sonst alles über 0 als offen bzw. erkannt, mit dem Haken nur die 0; so passt etwa der Türstatus von Matter (0 Geöffnet, 1 Geschlossen). Weitere Einträge wie „Angelehnt“ nennt die Antwort in Klammern. Bei Rollläden erkennt das Modul selbst, welcher Wert „offen“ bedeutet; der Haken dreht das um, falls auf und zu vertauscht sind. |
@@ -240,6 +240,110 @@ Symcon nennt die Instanz außerdem beim Löschen einer eingetragenen Variable al
 Geben Sie nur frei, was Sie per Sprache wirklich brauchen, je Raum etwa einen Temperatur- und einen
 Feuchtesensor. Jedes Gerät mehr macht die Antworten des Assistenten langsamer und unsicherer.
 
+## Energiebilanz und Zähler
+
+Mit PV oder Batterie misst kein einzelner Zähler, was das Haus verbraucht. Das Modul rechnet es deshalb aus der
+**Energiebilanz**:
+
+> Hausverbrauch = Netzbezug + PV-Ertrag + Batterie entladen − Einspeisung − Batterie geladen
+
+Die Werte dafür kommen aus den **Quellen**. Eine Quelle ist alles, worüber Strom ins Haus kommt oder es verlässt: ein
+Netzanschluss, eine PV-Anlage oder eine Batterie. Jede Quelle ist eine Zeile der Liste **Quellen** im Bereich
+„Energiebilanz“ des Formulars. Der Dialog einer Zeile zeigt je Art die passenden Felder:
+
+| Art | Zähler | Leistung (wahlweise) |
+|---|---|---|
+| Netz | Bezug und Einspeisung | Bezug und Einspeisung oder ein Sensor mit Vorzeichen |
+| PV-Anlage | Ertrag | Ertrag |
+| Batterie | entladen und geladen | entladen und geladen oder ein Sensor mit Vorzeichen |
+
+Ohne PV und Batterie genügt eine Zeile Netz mit dem Bezug. Mehrere PV-Anlagen, Batterien oder Netzanschlüsse bekommen
+je eine Zeile. Die Bilanz zählt die Zeilen einer Art zusammen, auch rückwirkend aus dem Archiv, und die Antworten
+nennen sie mit Namen. Jede Variable darf nur einmal in der Liste stehen. Hat eine Zeile einen Fehler, etwa eine
+fehlende Variable, ist die ganze Bilanz gesperrt, sonst wäre der Hausverbrauch falsch. Stand die Bilanz vor einem
+Update in einzelnen Feldern, finden Sie sie als Zeilen „Netz“, „PV“ und „Batterie“ in der Liste; die Namen dürfen Sie
+ändern.
+
+Der Zähler am Netzanschluss steht nur hier, nicht zusätzlich als Gerät vom Typ Zähler. Er misst den Netzbezug, und
+mit PV oder Batterie ist das weniger, als das Haus verbraucht.
+
+Eine Instanz hat genau eine Energiebilanz und einen Strompreis. Für einen zweiten Standort mit eigener Bilanz oder
+eigenem Tarif legen Sie eine zweite Instanz an.
+
+### Vorzeichen der Leistung
+
+Haben Sie für das Netz nur einen Sensor mit Vorzeichen, gehört er ins Feld „Netzbezug Leistung“, negativ heißt dann
+Einspeisung. Ein Batteriesensor gehört ebenso ins Feld „Batterie entladen Leistung“, negativ heißt laden. Zählt ein
+Sensor andersherum, etwa eine Batterie, die beim Laden positiv meldet, setzen Sie in der Zeile den Haken „Vorzeichen
+umkehren“. Der Selbsttest nennt je Quelle den aktuellen Wert und wie er zählt, etwa „Energiebilanz: Batterie
+entladen Leistung "Marstek" Battery Power meldet jetzt 1112 W und zählt als Batterie geladen 1112 W, durch den Haken
+umgekehrt“.
+
+### Zähler und „Gemessen von“
+
+Eine Unterverteilung, eine Wallbox oder einen Wohnungszähler tragen Sie in der Freigabeliste als Gerät vom Typ
+**Zähler** ein, mit dem Energiezähler und wahlweise der Leistung. Ein Zähler zählt nie in einer Gerätesumme, er hat
+seine eigene Zeile. Die Erzeugung einer PV-Anlage gehört in die Energiebilanz, nicht in einen Zähler.
+
+Im Feld **Gemessen von** wählen Sie bei Geräten und Zählern den Zähler darüber, beliebig tief, etwa das Terrarium am
+Kinderzimmer und das Kinderzimmer an der Unterverteilung OG. Die Antworten nennen dann je Zähler, was darunter gemessen
+ist und was nicht erfasst ist. Fürs ganze Haus zählt die oberste Ebene, also alles ohne „Gemessen von“. Ein Verweis
+auf etwas, das kein Zähler der Liste ist, und Zähler, die sich im Kreis messen, sperren die Zeile. Liegt unter einem
+Zähler in den letzten 30 Tagen mehr als 105 % seines eigenen Werts, weist der Selbsttest darauf hin.
+
+### Strompreis
+
+Tragen Sie in der Energiebilanz den **Strompreis** ein, dann nennen die Antworten zum Hausverbrauch auch die Kosten.
+Der Strompreis ist eine archivierte Variable in ct/kWh oder €/kWh, als Einheit genügt „ct“. Bei einem dynamischen
+Tarif ist das etwa der aktuelle Preis aus dem Tibber-Modul. Dazu kommt die Einspeisevergütung. Gerechnet wird je
+Stunde Netzbezug mal Stundenmittel des Preises. Das sind reine Arbeitskosten ohne Grundgebühr. Gegen die Abrechnung
+des Versorgers weicht das um wenige Prozent ab, weil der eigene Zähler etwas anders misst und das Archiv nur
+Stundenmittel kennt.
+
+### Wärmepumpe
+
+Eine Wärmepumpe tragen Sie als Typ Gerät ein, mit ihrer Leistung oder ihrem Stromzähler und dazu wahlweise dem
+Wärmezähler und der Wärmeleistung. Der Wärmezähler zählt nie im Stromverbrauch. Ohne Wärmezähler rechnet das Modul die Wärme aus den
+Stundenmitteln der archivierten Wärmeleistung.
+
+Die Arbeitszahl ist so gut wie die Zähler. Zählt der Stromzähler nur den Verdichter, wie die Verbrauchswerte im Regler
+mancher Wärmepumpen, fehlen Umwälzpumpen und Heizstab, und sie fällt zu gut aus. Manche Regler schätzen die Wärme nur
+und buchen ihre Zähler erst um Mitternacht. Bei einer Stiebel Eltron lag der Wärmezähler bei Teillast beim 1,5- bis
+2,5-Fachen der aus Volumenstrom und Spreizung gerechneten Wärmeleistung. Lassen Sie den Wärmezähler in so einem Fall
+leer.
+
+Gibt es Wärmeleistung und Leistung nur einmal für Heizen und Warmwasser, haben Sie zwei Möglichkeiten. Eine Zeile für
+beides nennt die Arbeitszahl über alles, also die Jahresarbeitszahl. Für getrennte Zeilen teilt ein kleines Skript auf
+Ihrer Anlage beide Werte nach der Betriebsart auf, etwa nach einer Variable „Warmwasserbetrieb“ des Reglers: im
+Warmwasserbetrieb in „Wärmeleistung Warmwasser“ und „Leistung Warmwasser“, sonst in die beiden Variablen fürs Heizen,
+die jeweils anderen auf 0. Alle vier müssen archiviert sein.
+
+### Was archiviert sein muss
+
+Antworten über Zeiträume kommen aus dem Archiv von Symcon. Fehlt dort etwas, sagt die Zeile „kein Verlauf archiviert“,
+und der Selbsttest nennt die Variable mit ihrer ID.
+
+| Damit der Assistent … | muss im Archiv … |
+|---|---|
+| Verbrauch nennt, je Gerät oder fürs Haus | der Energiezähler mit der Aggregation „Zähler“ geloggt sein, ebenso jeder Zähler der Quellen und ein Wärmezähler |
+| Kosten nennt | dazu der Strompreis geloggt sein |
+| die Wärme ohne Wärmezähler nennt | die Wärmeleistung geloggt sein |
+| die Leistung über einen Zeitraum nennt | die Leistung geloggt sein |
+| einen Verlauf von Messwerten zeigt | der Messwert geloggt sein |
+| eine Zeitleiste zeigt | der Zustand geloggt sein |
+
+Ein Energiezähler zählt in mWh, Wh, kWh oder MWh, ohne Einheit gilt kWh. Ein Zähler in einer anderen Einheit, etwa ein
+Wasser- oder Gaszähler, gilt nicht als Energiezähler: Seine Zeile sagt „kein Energiezähler (Einheit m³)“, und er zählt
+nicht mit. Leistungen in mW, W, kW und MW rechnet das Modul um (Matter meldet mW), ohne Einheit gilt W.
+
+### Zählerstände im Selbsttest
+
+Der Selbsttest prüft auch, ob das Archiv zum Zählerstand passt. Ein einzelner Fehlwert nach oben und zurück zählt im
+Archiv als Verbrauch. Dann nennt der Selbsttest den Zähler mit seiner ID und die Monate, etwa „Das Archiv zählt mehr,
+als der Zählerstand gestiegen ist (01/2024 +659.8 kWh)“. Den Fehlwert löschen Sie im Archiv und aggregieren die
+Variable neu. Setzt ein Zähler zurück, etwa nach einem Stromausfall, zählt das Archiv richtig weiter, das ist kein
+Befund.
+
 ## Szenen
 
 Eine Szene ist ein Skript oder Ablaufplan Ihrer Anlage, den der Assistent auf Zuruf starten darf, zum
@@ -249,190 +353,147 @@ nur, wenn zwei Szenen gleich heißen. Ein Ablaufplan ohne Aktion lässt sich nic
 
 ## Was der Assistent kann
 
-Der Assistent bekommt drei Werkzeuge: eines zum Fragen, eines zum Schalten und Stellen und eines
-für Szenen.
+Der Assistent bekommt drei Werkzeuge: eines zum Fragen (**get_state**), eines zum Schalten und Stellen
+(**set_state**) und eines für Szenen (**run_scene**). Die folgenden Abschnitte gehen von Fragen aus, wie man sie im
+Alltag stellt. Welche Angaben der Assistent dafür an die Werkzeuge schickt, steht im
+[Anhang Technik](#angaben-der-werkzeuge).
 
-### Abfragen
+### „Ist noch irgendwo ein Fenster offen?“
 
-Das Werkzeug **get_state** filtert nach Raum, Etage, Typ und Name und kann auf aktive Geräte beschränken
-(an, offen, Anwesenheit erkannt). Die erste Zeile der Antwort nennt immer die Anzahl, zum Beispiel
-„1 von 4 geprüften Geräten aktiv“. Geräte ohne an und aus, etwa Rollläden und Messwerte, zählen dabei
-nicht mit; eine Schlusszeile nennt ihre Zahl und ihre Typen. Findet es nichts, nennt es die bekannten Räume und Typen, damit
-der Assistent neu fragen kann. Die letzte Zeile nennt Datum, Uhrzeit und Wochentag, etwa „Jetzt: 2026-10-11 12:19
-(Sonntag)“; so beantwortet der Assistent auch „Wie spät ist es?“ und rechnet „gestern“ richtig.
+Nach Zuständen fragt der Assistent je Raum, Etage, Typ oder Name, auf Wunsch nur nach dem, was aktiv ist (an, offen,
+Anwesenheit erkannt). Die erste Zeile der Antwort nennt immer die Anzahl, etwa „1 von 4 geprüften Geräten aktiv“; der
+Assistent muss nicht selbst zählen. Geräte ohne an und aus, etwa Rollläden und Messwerte, zählen dabei nicht mit,
+eine Schlusszeile nennt ihre Zahl und ihre Typen. Findet das Modul nichts, nennt es die bekannten Räume und Typen,
+und der Assistent kann neu fragen. Die letzte Zeile nennt Datum, Uhrzeit und Wochentag, etwa „Jetzt: 2026-10-11
+12:19 (Sonntag)“. So beantwortet der Assistent auch „Wie spät ist es?“ und rechnet „gestern“ richtig.
 
-Ein Thermostat nennt Soll- und Ist-Temperatur, etwa „Soll 21 °C (derzeit 20.6 °C)“. Fragt der
-Assistent nach `type=temperature`, findet er auch die Thermostate mit Ist-Temperatur; eine eigene
-Temperaturzeile auf derselben Variable brauchen Sie dafür nicht. Steht der Sollwert außerhalb seines
-Bereichs, heißt er Sonder-Sollwert: Manche Homematic-Thermostate nutzen 100 für „Ventil ganz offen“.
-Ein Wert am Rand mit eigenem Text zählt ebenfalls nicht zum Bereich, ob der Text aus einem Eintrag des Profils
-oder aus einem Intervall der Darstellung mit festem Wert kommt. Der Text steht dann mit in der Zeile, etwa
-„Sonder-Sollwert „On“ (30.5 °C, außerhalb von 6 bis 30 °C)“.
+Je Gerät steht eine Zeile mit seinem Zustand, zum Beispiel:
 
-Mit Ventilstellung nennt die Zeile das offenste Ventil, etwa „Soll 21.5 °C (derzeit 20.4 °C, Ventil 97 %)“ oder
-bei mehreren „Ventile bis 98 %“. Dann zählt das Thermostat bei „Welche Heizkörper heizen?“ (`active_only`) als aktiv,
-solange ein Ventil über 0 steht. Auf einem Sonder-Sollwert zählt es nie, denn „Ventil ganz offen“ hält das Ventil
-fest auf, ob der Raum Wärme braucht oder nicht. Die Gerätekarte zeigt die Stellung neben dem Sollwert.
+| Typ | Zustand in der Antwort |
+|---|---|
+| Licht | „an (100 %, 2700 K)“ |
+| Gerät mit Leistung | „an (26.1 W)“ |
+| Fenster mit Antrieb | „gekippt (mit Antrieb)“ |
+| Thermostat | „Soll 21.5 °C (derzeit 20.4 °C, Ventil 97 %)“ |
+| Klimagerät | „Soll 24 °C (derzeit 20.0 °C), Aus, Lüfter Auto“ |
+| Luftentfeuchter | „an (51 %, Soll 55 %, Smart, Lüfter Niedrig)“ |
+| Lüftung | „an (Nacht, Lüfter niedrig)“ |
+| Mediaplayer | „spielt „Can't Get Enough“ von Bad Company (Lautstärke 20 %)“, „pausiert (Lautstärke 37 %, stumm)“ |
 
-Ein Klimagerät tragen Sie als Thermostat ein, dazu Modus und Lüfterstufe. Die Zeile lautet dann etwa
-„Soll 24 °C (derzeit 20.0 °C), Aus, Lüfter Auto“, und der Assistent stellt beides per Name wie beim
-Luftentfeuchter. „Schalte das Klimagerät aus“ stellt den Modus auf Aus, eingeschaltet wird über einen Modus wie
-Kühlen oder Heizen. Beide Variablen brauchen eine Aktion und eine Auswahl in der
-Darstellung oder im Profil.
+Zu einigen Typen gibt es mehr zu sagen:
 
-Ein Luftentfeuchter meldet sich mit „an (51 %, Soll 55 %, Smart, Lüfter Niedrig)“ oder „aus“ und zählt als
-aktiv, solange er läuft. Eine Lüftung meldet sich ebenso, nur ohne Feuchte: „an (Nacht, Lüfter niedrig)“.
+- **Thermostat:** Fragt der Assistent nach Temperaturen, findet er auch die Thermostate mit Ist-Temperatur; eine
+  eigene Temperaturzeile auf derselben Variable brauchen Sie dafür nicht. Steht der Sollwert außerhalb seines
+  Bereichs, heißt er Sonder-Sollwert; manche Homematic-Thermostate nutzen 100 für „Ventil ganz offen“. Ein Wert am
+  Rand mit eigenem Text zählt ebenfalls nicht zum Bereich, ob der Text aus einem Eintrag des Profils oder aus einem
+  Intervall der Darstellung mit festem Wert kommt. Der Text steht dann mit in der Zeile, etwa „Sonder-Sollwert „On“
+  (30.5 °C, außerhalb von 6 bis 30 °C)“.
+- **Ventile:** Mit Ventilstellung nennt die Zeile das offenste Ventil, bei mehreren „Ventile bis 98 %“. Bei „Welche
+  Heizkörper heizen?“ zählt ein Thermostat als aktiv, solange ein Ventil über 0 steht. Auf einem Sonder-Sollwert
+  zählt es nie, denn „Ventil ganz offen“ hält das Ventil fest auf, ob der Raum Wärme braucht oder nicht. Die
+  Gerätekarte zeigt die Stellung neben dem Sollwert.
+- **Klimagerät:** Tragen Sie es als Thermostat ein, dazu Modus und Lüfterstufe. Beide Variablen brauchen eine Aktion
+  und eine Auswahl in der Darstellung oder im Profil, der Assistent stellt sie per Name wie beim Luftentfeuchter.
+  „Schalte das Klimagerät aus“ stellt den Modus auf Aus, eingeschaltet wird über einen Modus wie Kühlen oder Heizen.
+- **Luftentfeuchter, Lüftung, Mediaplayer:** Sie zählen als aktiv, solange sie laufen bzw. spielen.
+- **Mediaplayer des HomeAssistant-Moduls:** Dort ist die Wiedergabe nur eine Befehlsvariable. Tragen Sie als Ein/Aus
+  den Statustext ein (`playing`, `paused`, `idle`, `off` …), dann kennt das Modul den Zustand trotzdem. Ohne beides
+  steht dort nur der Titel, und der Player zählt bei den aktiven Geräten nicht mit.
 
-Ein Mediaplayer meldet sich etwa mit „spielt „Can't Get Enough“ von Bad Company (Lautstärke 20 %)“,
-„pausiert (Lautstärke 37 %, stumm)“ oder „aus“. Als aktiv zählt er, wenn er spielt. Beim
-HomeAssistant-Modul ist die Wiedergabe nur eine Befehlsvariable; tragen Sie dort als Ein/Aus den
-Statustext ein (`playing`, `paused`, `idle`, `off` …), dann kennt das Modul den Zustand trotzdem. Ohne
-beides steht dort nur der Titel, und der Player zählt bei den aktiven Geräten nicht mit.
+### „Wie viel Strom haben wir letzten Monat verbraucht?“
 
-Mit `period` fragt **get_state** nach dem Verbrauch statt nach dem Zustand: `today`, `yesterday`,
-`this_week`, `last_week`, `this_month`, `last_month`, `this_year` oder `last_year`. Statt `period` geht
-auch ein freier Zeitraum mit `from` und `to` (erster und letzter Tag als JJJJ-MM-TT, beide
-eingeschlossen, ohne `to` nur der eine Tag), etwa „im Januar“ mit `from=2026-01-01` und `to=2026-01-31`.
-Ganze Jahre und ganze Monate kommen aus den Jahres- und Monatswerten des Archivs, alles andere aus den
-Tageswerten. Mit Uhrzeit (JJJJ-MM-TT HH:MM) geht es stundengenau, etwa „heute zwischen 13 und 15 Uhr“ mit
-`from=2026-10-12 13:00` und `to=2026-10-12 15:00`; dann ist `to` das Ende, ohne `to` gilt bis jetzt. Gerechnet
-wird mit ganzen Stunden aus den Stundenwerten, höchstens 48 Stunden am Stück. Die erste Zeile
-nennt die Summe, etwa „88.5 kWh verbraucht durch 3 von 3 Gerät(en) mit Zähler“, darunter steht der
-Verbrauch je Gerät. Die Werte kommen aus den Aggregaten des Archivs, der laufende Tag, die laufende
-Woche usw. zählen bis jetzt. Ist ein Zähler nicht als Zähler archiviert, sagt die Zeile „kein Verlauf
-archiviert“, und der Selbsttest nennt ihn mit seiner ID. Er prüft auch, ob das Archiv zum Zählerstand passt: Ein einzelner Fehlwert nach oben und zurück zählt im Archiv als Verbrauch, dann nennt der Selbsttest den Zähler mit seiner ID und die Monate, etwa „Das Archiv zählt mehr, als der Zählerstand gestiegen ist (01/2024 +659.8 kWh)“. Den Fehlwert löschen Sie im Archiv und aggregieren die Variable neu. Setzt ein Zähler zurück, etwa nach einem Stromausfall, zählt das Archiv richtig weiter, das ist kein Befund. Ein Zähler in einer anderen Einheit als mWh, Wh, kWh oder MWh, etwa ein Wasser- oder Gaszähler, gilt nicht als Energiezähler: Seine Zeile sagt „kein Energiezähler (Einheit m³)“, und er zählt nicht mit. Ohne Einheit gilt kWh. Geräte ohne Zähler bleiben außen vor. Den Parameter
-bekommt der Assistent nur, wenn mindestens ein freigegebenes Gerät einen Zähler hat oder die
-Energiebilanz eingetragen ist.
+Den Verbrauch gibt es je Gerät, Raum oder Typ und fürs ganze Haus. Gefragt werden kann nach heute, gestern, dieser und
+letzter Woche, diesem und letztem Monat, diesem und letztem Jahr oder nach einem freien Zeitraum, auf Wunsch
+stundengenau („heute zwischen 13 und 15 Uhr“). Laufende Zeiträume zählen bis jetzt. Ein Gerät braucht dafür einen
+Energiezähler, das Haus die [Energiebilanz](#energiebilanz-und-zähler).
 
-Den Verbrauch des ganzen Hauses rechnet das Modul aus der **Energiebilanz**:
-Netzbezug + PV-Ertrag + Batterie entladen − Einspeisung − Batterie geladen. Im Abschnitt „Energiebilanz“
-des Formulars steht dafür die Liste **Quellen**, eine Zeile je Netzanschluss, PV-Anlage und Batterie. Der Dialog
-einer Zeile zeigt je Art die passenden Felder: beim Netz Bezug und Einspeisung, bei der PV-Anlage den Ertrag, bei
-der Batterie entladen und geladen, jeweils als Zähler und wahlweise als Leistung. Jeder Zähler muss als Zähler
-archiviert sein. Jede Variable darf nur einmal in der Liste stehen, sonst ist die Bilanz gesperrt. Ohne PV und Batterie genügt eine Zeile Netz mit dem Bezug. Fragt der Assistent ohne Raum, Etage, Typ und Name (bei einem Zugang
-mit Standardraum mit `room=all`), lautet die erste Zeile
-etwa „Hausverbrauch 774.8 kWh (alle Geräte, period=last_month): Netzbezug 122.7, PV-Ertrag 1356.8,
-Batterie entladen 285, Einspeisung 658.7, Batterie geladen 330.9 kWh.“ Die Geräte mit eigenem Zähler
-sind ein Teil davon und werden nicht dazugezählt: „Davon 166.2 kWh durch 9 von 10 Gerät(en) mit
-eigenem Zähler, 608.6 kWh nicht erfasst.“ Fehlt einem der Zähler der Verlauf, sagt die Antwort
-„Hausverbrauch unbekannt“ und nennt den Zähler. Nach einem Raum oder Typ gefragt, bleibt es bei der
-Summe der Geräte. Mit PV oder Batterie folgt eine Zeile mit Autarkie und Eigenverbrauch:
-„Autarkie 84 %, Eigenverbrauch der PV 51 %.“ Fürs ganze Haus nennt die Antwort nur die fünf größten
-Verbraucher und fasst den Rest zusammen („5 weitere Gerät(e) zusammen 25.6 kWh.“); nach einem Raum
-gefragt, kommen alle Geräte in der Reihenfolge der Liste.
+Nach einem Raum oder Typ gefragt, nennt die erste Zeile die Summe der Geräte, etwa „88.5 kWh verbraucht durch 3 von 3
+Gerät(en) mit Zähler“, darunter steht jedes Gerät in der Reihenfolge der Liste. Geräte ohne Energiezähler bleiben
+außen vor.
 
-Mehrere PV-Anlagen, Batterien oder Netzanschlüsse bekommen je eine eigene Zeile. Die Bilanz zählt die Zeilen einer
-Art zusammen, auch rückwirkend aus dem Archiv, und die Antwort nennt sie dann mit Namen, etwa „PV-Ertrag …
-(davon Dach …, Garage …)“. Im Diagramm des Hausverbrauchs steht „PV direkt“ dann je Anlage in Abstufungen der
-PV-Farbe, aufgeteilt nach ihrem Ertrag im Abschnitt; welche Anlage einspeist oder die Batterie lädt, misst niemand.
-Ein Teil der Bilanz (`part`) zeigt jede Quelle als eigene Reihe. Hat eine Zeile einen Fehler, ist die ganze Bilanz gesperrt. Stand die Bilanz bisher in
-einzelnen Feldern, finden Sie sie nach dem Update als Zeilen „Netz“, „PV“ und „Batterie“ in der Liste; die Namen
-dürfen Sie ändern.
+Fürs ganze Haus kommt der Verbrauch aus der Energiebilanz, mit ihren Teilen:
 
-Eine Unterverteilung, eine Wallbox oder einen Wohnungszähler tragen Sie als Typ **Zähler** ein, mit dem
-Energiezähler und wahlweise der Leistung. Ein Zähler zählt nie in einer Gerätesumme, er hat seine eigene Zeile.
-Im Feld „Gemessen von“ wählen Sie bei Geräten und Zählern den Zähler darüber, beliebig tief, etwa das Terrarium am
-Kinderzimmer und das Kinderzimmer an der Unterverteilung OG. Die Zeile eines Zählers nennt dann, was darunter
-gemessen ist, und den Rest: „Haushalt 13.4 kWh, davon 2.1 kWh von 9 Zähler(n) oder Gerät(en) darunter gemessen,
-11.3 kWh nicht erfasst“. Fürs ganze Haus zählt die oberste Ebene, also alles ohne „Gemessen von“: „Davon 13.4 kWh
-durch 2 Zähler und 0 Gerät(e) auf oberster Ebene, 0 kWh nicht erfasst.“ Ebenso bei der Leistung mit `period=now`;
-ein Zähler ohne eigene Leistung zählt dort mit dem, was darunter gemessen ist. Ein Verweis auf etwas, das kein
-Zähler der Liste ist, und Zähler, die sich im Kreis messen, sperren die Zeile. Liegt unter einem Zähler in den
-letzten 30 Tagen mehr als 105 % seines eigenen Werts, weist der Selbsttest darauf hin. Das Diagramm eines Zählers
-zeigt, was unter ihm hängt, und den Rest als „nicht erfasst“; das Diagramm des Hauses je Gerät zeigt mit Zählern die
-oberste Ebene. Die Erzeugung einer PV-Anlage gehört in die Energiebilanz, nicht in einen Zähler. Auch der Zähler am
-Netzanschluss steht nur in den Quellen: Als Typ Zähler würde er den Netzbezug als Verbrauch melden, mit PV oder
-Batterie ist das weniger, als das Haus verbraucht.
+> Hausverbrauch 774.8 kWh (alle Geräte, period=last_month): Netzbezug 122.7, PV-Ertrag 1356.8, Batterie entladen 285,
+> Einspeisung 658.7, Batterie geladen 330.9 kWh.
+>
+> Davon 166.2 kWh durch 9 von 10 Gerät(en) mit eigenem Zähler, 608.6 kWh nicht erfasst.
+>
+> Autarkie 84 %, Eigenverbrauch der PV 51 %.
 
-Eine Instanz hat genau eine Energiebilanz und einen Strompreis. Für einen zweiten Standort mit eigener Bilanz oder
-eigenem Tarif legen Sie eine zweite Instanz an.
+Die Geräte mit eigenem Zähler sind ein Teil des Hausverbrauchs und werden nicht dazugezählt. Fürs Haus nennt die
+Antwort nur die fünf größten Verbraucher und fasst den Rest zusammen („5 weitere Gerät(e) zusammen 25.6 kWh.“).
+Mehrere Anlagen einer Art stehen mit Namen da, etwa „PV-Ertrag … (davon Dach …, Garage …)“. Autarkie und
+Eigenverbrauch gibt es nur mit PV oder Batterie. Fehlt einem Zähler der Bilanz der Verlauf, sagt die Antwort
+„Hausverbrauch unbekannt“ und nennt den Zähler.
 
-Tragen Sie in der Energiebilanz den **Strompreis** ein (eine archivierte Variable in ct/kWh oder €/kWh, als Einheit genügt „ct“, bei einem
-dynamischen Tarif etwa der aktuelle Preis aus dem Tibber-Modul) und die Einspeisevergütung, nennt der Hausverbrauch
-auch die Kosten: „Kosten 38.21 € für 122.7 kWh Netzbezug (im Mittel 31.1 ct/kWh bezahlt, Durchschnittspreis 35.4 ct/kWh).
-Einspeisung 60.47 €. Ohne PV und Batterie wären es 259.20 € gewesen.“ Gerechnet wird je Stunde Netzbezug mal
-Stundenmittel des Preises. Das sind reine Arbeitskosten ohne Grundgebühr; gegen die Abrechnung des Versorgers weicht
-das um wenige Prozent ab, weil der eigene Zähler etwas anders misst und das Archiv nur Stundenmittel kennt. Im
-Diagramm zeigt `costs` den Hausverbrauch in Euro, als Stapel, als Heatmap und mit Vergleich. Eine Summenkurve
-(`cumulative`) addiert Verbrauch oder Kosten Tag für Tag auf und rechnet einen laufenden Zeitraum bis zu seinem Ende
-hoch, etwa „Bisher 10239.5 kWh, hochgerechnet 13079.9 kWh für den ganzen Zeitraum. Vergleich zur selben Zeit 9066.1 kWh
-(+13 %).“ Hochgerechnet wird mit dem Verlauf desselben Zeitraums im Vorjahr, so kommt der teure Winter richtig hinein; ohne
-Vorjahresdaten linear mit dem bisherigen Mittel. In Euro steht die Vergütung der Einspeisung als grüne Linie daneben, der
-Text nennt den Saldo („Einspeisung 786.59 €, Saldo 491.01 €.“).
+Mit Geräten vom Typ Zähler nennt jede Zählerzeile, was darunter gemessen ist, und den Rest: „Haushalt 13.4 kWh, davon
+2.1 kWh von 9 Zähler(n) oder Gerät(en) darunter gemessen, 11.3 kWh nicht erfasst“. Fürs Haus zählt dann die oberste
+Ebene: „Davon 13.4 kWh durch 2 Zähler und 0 Gerät(e) auf oberster Ebene, 0 kWh nicht erfasst.“
 
-Mit `part` zeigt das Diagramm statt des Hausverbrauchs nur einen Zähler der Energiebilanz: `grid` (Netzbezug), `feed_in`
-(Einspeisung), `pv`, `battery_charge` oder `battery_discharge`. Das geht als Balken, Summenkurve, Heatmap und mit
-Vergleich, mit `costs` bei `grid` in Euro und bei `feed_in` als Vergütung. So beantwortet der Assistent etwa „Was habe
-ich dieses Jahr an Einspeisevergütung verdient, und wo lande ich am Jahresende?“ mit einem Diagramm.
+Bei einer Wärmepumpe nennt die Zeile auch die Wärme und die Arbeitszahl, also Wärme geteilt durch Strom, etwa
+„Heizungsraum | Wärmepumpe | appliance | 1397 kWh, Wärme 5161 kWh, Arbeitszahl 3.7“. Haben mehrere Zeilen eine Wärme, etwa Heizen
+und Warmwasser, steht die Arbeitszahl aller zusammen darüber. Kommt die Wärme aus der Wärmeleistung und hat das Gerät
+eine Leistung, rechnet das Modul auch den Strom der Arbeitszahl aus ihr, für dieselben Stunden, und nennt beides als
+eigenen Block hinter dem Zähler: „6 kWh (Zähler); aus den Leistungen: Wärme 93.7 kWh aus 13.6 kWh Strom, Arbeitszahl
+6.9“. Der Verbrauch vorn und in den Summen bleibt der Wert des Zählers.
 
-Bei einer Wärmepumpe (Typ Gerät) tragen Sie dazu den Wärmezähler und wahlweise die Wärmeleistung ein. Der Wärmezähler
-muss wie der Stromzähler als Zähler archiviert sein und zählt nie im Stromverbrauch. Die Zeile nennt dann für den
-Zeitraum die Wärme und die Arbeitszahl, also Wärme geteilt durch Strom, etwa „Heizungsraum | Wärmepumpe | appliance |
-1397 kWh, Wärme 5161 kWh, Arbeitszahl 3.7“. Haben mehrere Zeilen eine Wärme, aus Wärmezähler oder Wärmeleistung, etwa Heizen und Warmwasser, steht die
-Arbeitszahl aller zusammen darüber. Mit `period=now` und Wärmeleistung kommt die Leistungszahl von jetzt dazu („500 W,
-Wärme 4188 W, Leistungszahl 8.4“). Die Arbeitszahl ist so gut wie die Zähler. Zählt der Stromzähler nur den Verdichter,
-wie die Verbrauchswerte im Regler mancher Wärmepumpen, fehlen Umwälzpumpen und Heizstab, und sie fällt zu gut aus.
+### „Was hat uns der Strom gekostet?“
 
-Ohne Wärmezähler rechnet das Modul die Wärme aus den Stundenmitteln der archivierten Wärmeleistung, etwa „Wärme 93.7 kWh
-aus der Wärmeleistung“. Hat das Gerät auch eine Leistung, kommt der Strom der Arbeitszahl ebenso aus ihr, beide Werte
-gelten dann für dieselben Stunden. Die Zeile nennt sie als eigenen Block hinter dem Zähler, etwa „6 kWh (Zähler); aus den
-Leistungen: Wärme 93.7 kWh aus 13.6 kWh Strom, Arbeitszahl 6.9“. Der Verbrauch bleibt der Wert des Zählers vorn, auch in
-den Summen. Manche Regler schätzen die Wärme nur und
-buchen ihre Zähler erst um Mitternacht. Bei einer Stiebel Eltron lag der Wärmezähler bei Teillast beim 1,5- bis 2,5-Fachen
-der aus Volumenstrom und Spreizung gerechneten Wärmeleistung. Lassen Sie den Wärmezähler in so einem Fall leer.
+Ist der [Strompreis](#strompreis) eingetragen, nennt der Hausverbrauch auch die Kosten:
 
-Gibt es Wärmeleistung und Leistung nur einmal für Heizen und Warmwasser, haben Sie zwei Möglichkeiten. Eine Zeile für
-beides nennt die Arbeitszahl über alles, also die Jahresarbeitszahl. Für getrennte Zeilen teilt ein kleines Skript auf
-Ihrer Anlage beide Werte nach der Betriebsart auf, etwa nach einer Variable „Warmwasserbetrieb“ des Reglers: im
-Warmwasserbetrieb in „Wärmeleistung Warmwasser“ und „Leistung Warmwasser“, sonst in die beiden Variablen fürs Heizen,
-die jeweils anderen auf 0. Alle vier müssen archiviert sein.
+> Kosten 38.21 € für 122.7 kWh Netzbezug (im Mittel 31.1 ct/kWh bezahlt, Durchschnittspreis 35.4 ct/kWh).
+> Einspeisung 60.47 €. Ohne PV und Batterie wären es 259.20 € gewesen.
 
-Mit `period=now` nennt **get_state** die Leistung jetzt in W, aufgebaut wie der Verbrauch: je Gerät mit
-Leistung der aktuelle Wert, dazu die Summe. Fürs ganze Haus rechnet das Modul die Hausleistung aus den
-Leistungen der Quellen, etwa „Hausleistung 1548 W (alle Geräte, period=now):
-Netzbezug 27, PV-Ertrag 0, Batterie entladen 1521, Einspeisung 0, Batterie geladen 0 W.“ und „Davon
-750 W durch 11 von 11 Gerät(en) mit Leistungsmessung, 798 W nicht erfasst.“ mW, W, kW und MW werden
-umgerechnet (Matter meldet mW), ohne Einheit gilt W. Haben Sie für das Netz nur einen Sensor mit Vorzeichen, gehört er
-ins Feld „Netzbezug Leistung“ (negativ heißt Einspeisung); ebenso ein Batteriesensor ins Feld „Batterie
-entladen Leistung“ (negativ heißt laden). Meldet ein Sensor andersherum, etwa eine Batterie, die beim Laden
-positiv zählt, setzen Sie in der Zeile den Haken „Vorzeichen umkehren“. Der Selbsttest nennt dann je Quelle den
-aktuellen Wert und wie er zählt („Energiebilanz: Batterie entladen Leistung "Marstek" Battery Power meldet jetzt
-1112 W und zählt als Batterie geladen 1112 W, durch den Haken umgekehrt“).
+Kosten gibt es nur fürs ganze Haus. In der Claude-App gehen sie auch als Diagramm, etwa als Summenkurve mit
+Hochrechnung bis zum Jahresende (siehe [Diagramme](#diagramme-gerätekarten-und-vorlagen-in-der-claude-app)).
 
-Für Messwerte (Temperatur, Feuchte, Luftqualität, sonstige Messwerte und die Ist-Temperatur eines
-Thermostats) liefern dieselben Zeiträume den **Verlauf**: je Stunde, Tag oder Monat Minimum, Mittel und
-Maximum, etwa „Wie warm war es die letzten 30 Tage im Gästezimmer?“. Die erste Zeile lautet dann
-„Verlauf von 1 Messwert(en) (room=Gast, type=temperature, from=2026-09-10, to=2026-10-09), je Tag:
-Minimum / Mittel / Maximum.“, darunter je Messwert eine Zeile mit dem tiefsten und höchsten Wert des ganzen
-Zeitraums samt Zeitpunkt („Minimum 20.6 °C (2026-09-30 05:40), Maximum 23.4 °C (2026-10-02 16:15)“) und je Zeitraum eine Zeile
-wie „2026-09-28 22.2 / 22.6 / 23.1“. Heute und gestern kommen stündlich, Wochen und Monate täglich,
-Jahre monatlich; bei `from` und `to` bis zu zwei Tage stündlich, bis zu 100 Tage täglich, darüber
-monatlich. Der Verlauf gilt, wenn nach einem Messwert-Typ gefragt wird oder unter den Treffern kein
-Gerät mit Zähler ist; fürs ganze Haus bleibt es beim Verbrauch. Höchstens fünf Messwerte gehen auf
-einmal, sonst bittet die Antwort um einen Raum oder Namen. Liest ein Thermostat denselben Fühler wie
-ein Temperaturgerät, kommt der Verlauf nur einmal. Der Messwert muss im Archiv geloggt sein, sonst sagt
-die Zeile „kein Verlauf archiviert“.
+### „Was zieht gerade Strom?“
 
-Nach der **Leistung über einen Zeitraum** fragt `type=power` zusammen mit `period` oder `from`/`to`, etwa „Wann hat
-der Trockner letzten Monat am meisten gezogen?“. Gemeint sind alle Treffer mit Leistung, auch Zähler. Je Gerät nennt
-eine Zeile die kleinste und die größte Leistung mit dem Zeitpunkt aus den Rohwerten des Archivs („Minimum 20.8 W
-(2026-10-08 22:40), Maximum 336.9 W (2026-10-01 20:46)“), bei nur einem Gerät folgt die Tabelle je Stunde, Tag oder
-Monat. Bis zu 20 Geräte gehen auf einmal. Ohne Raum und Name steht mit Energiebilanz dort die Hausleistung aus
-den Zählern der Bilanz mit dem niedrigsten und höchsten Stundenmittel, dazu Netzbezug und Einspeisung mit ihren
-Spitzen in kW. Stunden, in denen die Bilanz einen Hausverbrauch unter 0 ergibt, passen die Zähler nicht zusammen; sie
-zählen nicht mit, und die Antwort nennt ihre Anzahl und die Tage mit den meisten davon. Minimum und Maximum von Geräten,
-Netzbezug und Einspeisung sind als Momentanwerte gekennzeichnet; kein Mittel über 15 Minuten kann darüber liegen. Die Spitzen mehrerer Sensoren lassen sich aus dem Archiv nicht sekundengenau zusammenrechnen, deshalb
-gilt fürs Haus das Stundenmittel. Ohne Zeitraum liefert `type=power` die Leistung jetzt. Die Leistung muss im Archiv
-geloggt sein.
+Nach der Leistung jetzt nennt jedes Gerät mit Leistungsmessung seinen Wert, dazu kommt die Summe. Fürs ganze Haus
+rechnet das Modul die Hausleistung aus den Leistungen der Quellen:
 
-Für Geräte mit einem Zustand (an/aus, offen/zu, Bewegung, eine Auswahl wie die Betriebsart einer Batterie)
-liefern dieselben Zeiträume eine **Zeitleiste**: wie lange jeder Zustand galt und, bei bis zu zwölf Abschnitten,
-wann. Auf „Wann war die Haustür heute offen?“ antwortet das Modul etwa mit
-„Flur | Haustür | door | offen 12 min, geschlossen 15 h 36 min“ und darunter „offen 08:32, 09:17-09:18, …“.
-Hat ein Gerät auch einen Zähler, stehen Verbrauch und Zeiten in einer Zeile („0.2 kWh, an 3 h 31 min, aus
-12 h 18 min“). Bei mehr als fünf Geräten, mehr als zwölf Abschnitten oder mehr als zwei Tagen stehen nur die
-Summen mit der Anzahl da. Der Zustand muss im Archiv geloggt sein; ein Zustand ohne Archiv wird ausgelassen
-und gezählt. Fürs ganze Haus gibt es keine Zeitleiste.
+> Hausleistung 1548 W (alle Geräte, period=now): Netzbezug 27, PV-Ertrag 0, Batterie entladen 1521, Einspeisung 0,
+> Batterie geladen 0 W.
+>
+> Davon 750 W durch 11 von 11 Gerät(en) mit Leistungsmessung, 798 W nicht erfasst.
+
+Ein Zähler ohne eigene Leistung zählt dabei mit dem, was darunter gemessen ist. Bei einer Wärmepumpe mit
+Wärmeleistung kommt die Leistungszahl von jetzt dazu („500 W, Wärme 4188 W, Leistungszahl 8.4“).
+
+Auch nach der Leistung über einen Zeitraum kann man fragen, etwa „Wann hat der Trockner letzten Monat am meisten
+gezogen?“. Gemeint sind alle Treffer mit Leistung, auch Zähler. Je Gerät nennt eine Zeile die kleinste und die größte
+Leistung mit dem Zeitpunkt aus den Rohwerten des Archivs („Minimum 20.8 W (2026-10-08 22:40), Maximum 336.9 W
+(2026-10-01 20:46)“), bei nur einem Gerät folgt eine Tabelle je Stunde, Tag oder Monat. Diese Werte sind
+Momentanwerte und als solche gekennzeichnet; kein Mittel über 15 Minuten kann darüber liegen.
+
+Fürs ganze Haus nennt die Antwort die Hausleistung aus den Zählern der Bilanz mit dem niedrigsten und höchsten
+Stundenmittel, dazu Netzbezug und Einspeisung mit ihren Spitzen in kW. Die Spitzen mehrerer Sensoren lassen sich aus
+dem Archiv nicht sekundengenau zusammenrechnen, deshalb gilt fürs Haus das Stundenmittel. Ergibt die Bilanz in einer
+Stunde einen Hausverbrauch unter 0, passen die Zähler nicht zusammen. Solche Stunden zählen nicht mit, und die Antwort
+nennt ihre Anzahl und die Tage mit den meisten davon.
+
+### „Wie warm war es letzte Woche im Gästezimmer?“
+
+Für Messwerte (Temperatur, Feuchte, Luftqualität, sonstige Messwerte und die Ist-Temperatur eines Thermostats) liefern
+dieselben Zeiträume den **Verlauf**: je Stunde, Tag oder Monat Minimum, Mittel und Maximum. Die erste Zeile lautet etwa
+„Verlauf von 1 Messwert(en) (room=Gast, type=temperature, from=2026-09-10, to=2026-10-09), je Tag: Minimum / Mittel /
+Maximum.“ Darunter steht je Messwert der tiefste und der höchste Wert des ganzen Zeitraums mit Zeitpunkt („Minimum
+20.6 °C (2026-09-30 05:40), Maximum 23.4 °C (2026-10-02 16:15)“) und je Abschnitt eine Zeile wie „2026-09-28 22.2 /
+22.6 / 23.1“.
+
+Den Verlauf gibt es, wenn nach einem Messwert-Typ gefragt wird oder unter den Treffern kein Gerät mit Zähler ist;
+fürs ganze Haus bleibt es beim Verbrauch. Liest ein Thermostat denselben Fühler wie ein Temperaturgerät, kommt der
+Verlauf nur einmal.
+
+### „Wann war die Haustür heute offen?“
+
+Für Geräte mit einem Zustand (an/aus, offen/zu, Bewegung, eine Auswahl wie die Betriebsart einer Batterie) liefern
+dieselben Zeiträume eine **Zeitleiste**: wie lange jeder Zustand galt und, bei wenigen Abschnitten, wann. Die Antwort
+lautet dann etwa „Flur | Haustür | door | offen 12 min, geschlossen 15 h 36 min“ und darunter „offen 08:32,
+09:17-09:18, …“. Hat ein Gerät auch einen Zähler, stehen Verbrauch und Zeiten in einer Zeile („0.2 kWh, an 3 h 31 min,
+aus 12 h 18 min“). Ein Zustand ohne Archiv wird ausgelassen und gezählt. Fürs ganze Haus gibt es keine Zeitleiste.
+
+### Für Skripte
 
 Die Zustandsabfrage gibt es auch für Skripte:
 
@@ -610,6 +671,23 @@ erfasst“ aus der Energiebilanz. Hat ein Raum neben Zählern auch Messwerte, ze
 Messwerte; nach dem Verbrauch muss man dann ausdrücklich fragen. Ein Zähler, der nur einmal am Tag weiterzählt,
 steht in einem Stundendiagramm mit dem ganzen Tag in einer Stunde.
 
+Mit eingetragenem Strompreis zeigt das Diagramm den Hausverbrauch auch in Euro, als Stapel, als Heatmap und mit
+Vergleich. Eine Summenkurve addiert Verbrauch oder Kosten Tag für Tag auf und rechnet einen laufenden Zeitraum bis zu
+seinem Ende hoch, etwa „Bisher 10239.5 kWh, hochgerechnet 13079.9 kWh für den ganzen Zeitraum. Vergleich zur selben
+Zeit 9066.1 kWh (+13 %).“ Hochgerechnet wird mit dem Verlauf desselben Zeitraums im Vorjahr, so kommt der teure Winter
+richtig hinein; ohne Vorjahresdaten linear mit dem bisherigen Mittel. In Euro steht die Vergütung der Einspeisung als
+grüne Linie daneben, der Text nennt den Saldo („Einspeisung 786.59 €, Saldo 491.01 €.“).
+
+Statt des Hausverbrauchs zeigt das Diagramm auf Wunsch auch nur einen Teil der Energiebilanz: Netzbezug, Einspeisung,
+PV-Ertrag, Batterie geladen oder entladen, jede Quelle als eigene Reihe. Das geht als Balken, Summenkurve, Heatmap und
+mit Vergleich, beim Netzbezug auch in Euro und bei der Einspeisung als Vergütung. So beantwortet der Assistent etwa
+„Was habe ich dieses Jahr an Einspeisevergütung verdient, und wo lande ich am Jahresende?“ mit einem Diagramm. Bei
+mehreren PV-Anlagen steht „PV direkt“ im Diagramm des Hausverbrauchs je Anlage in Abstufungen der PV-Farbe, aufgeteilt
+nach ihrem Ertrag im Abschnitt; welche Anlage einspeist oder die Batterie lädt, misst niemand.
+
+Das Diagramm eines Zählers zeigt, was unter ihm hängt, und den Rest als „nicht erfasst“; das Diagramm des Hauses je
+Gerät zeigt mit Zählern die oberste Ebene.
+
 Mit „Zeig mir die Lichter im Wohnzimmer“ zeigt die Claude-App die Geräte als Karten, nach Art
 gruppiert. Jede Karte nennt den Zustand und groß den wichtigsten Wert (Helligkeit, Öffnungsgrad, Messwert oder Leistung);
 was an ist, ist farbig. Dazu kommen je nach Gerät ein Schalter, ein Balken für Helligkeit oder Öffnungsgrad, den man ziehen kann, Knöpfe für Auf, Stopp und Zu, der Sollwert mit
@@ -667,6 +745,7 @@ nach **Zeilen je Datei** (anfangs 5000) beginnt eine neue Datei, die vorige blei
 `homeagent_<InstanzID>.old.log`. So liegen ein bis zwei Tage vor. **Protokoll anzeigen** zeigt die letzten
 200 Zeilen, **Protokoll herunterladen** lädt beide Dateien als eine herunter (von jeder höchstens die letzten 3 MB), **Protokoll leeren** löscht
 sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmeldung stehen je Absender höchstens zehnmal in zehn Minuten darin, danach ein Hinweis.
+
 ## Grenzen
 
 - Farbe als Text geht noch nicht. Die Betriebsart eines Thermostats geht nur über eine Variable mit Aktion;
@@ -712,6 +791,17 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
 - **MCP:** Model Context Protocol, die Schnittstelle, über die KI-Assistenten Werkzeuge nutzen.
 - **Token:** das Kennwort, mit dem sich der Assistent anmeldet.
 - **Zugang:** ein Token samt seinen Einstellungen (Standardraum, nur abfragen).
+- **Energiebilanz:** die Rechnung, aus der das Modul den Verbrauch des ganzen Hauses ermittelt, aus Netzbezug,
+  PV-Ertrag, Batterie entladen, Einspeisung und Batterie geladen.
+- **Quelle:** eine Zeile der Energiebilanz, also ein Netzanschluss, eine PV-Anlage oder eine Batterie.
+- **Energiezähler:** die Variable, die die Energie eines Geräts aufsummiert, etwa `ENERGY_COUNTER`. Im Archiv braucht sie
+  die Aggregation „Zähler“.
+- **Zähler (Typ):** ein Gerät der Freigabeliste, das nur misst, etwa eine Unterverteilung, eine Wallbox oder ein
+  Wohnungszähler. Es zählt nie in einer Gerätesumme.
+- **Gemessen von:** der Zähler, hinter dem ein Gerät oder ein anderer Zähler hängt.
+- **Nicht erfasst:** der Teil eines Verbrauchs oder einer Leistung, den kein Gerät und kein Zähler darunter misst.
+- **Sonder-Sollwert:** ein Sollwert außerhalb des Bereichs eines Thermostats oder an seinem Rand mit eigenem Text, etwa
+  100 für „Ventil ganz offen“ oder 30,5 für „On“.
 
 ## Anhang Technik
 
@@ -728,3 +818,30 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
   doppelt), ein Gerät oder eine Szene mit fehlender Variable bzw. fehlendem Skript
   sperrt nur sich selbst; der Rest arbeitet weiter, Formular und Log nennen den Eintrag. Fehlt eine
   Variable der Energiebilanz, ist die ganze Bilanz gesperrt, sonst wäre der Hausverbrauch falsch.
+
+### Angaben der Werkzeuge
+
+Diese Angaben schickt der Assistent an **get_state**; die Werte stehen in der Beschreibung des Werkzeugs.
+
+| Angabe | Bedeutung |
+|---|---|
+| `room`, `floor`, `type`, `name` | Auswahl der Geräte. Ohne Raum gilt bei einem Zugang mit Standardraum dieser, `room=all` meint das ganze Haus. |
+| `active_only` | nur, was an, offen oder erkannt ist |
+| `period` | `today`, `yesterday`, `this_week`, `last_week`, `this_month`, `last_month`, `this_year`, `last_year` für Verbrauch, Verlauf und Zeitleiste, `now` für die Leistung jetzt. Den Parameter bekommt der Assistent nur, wenn mindestens ein freigegebenes Gerät einen Zähler hat oder die Energiebilanz eingetragen ist. |
+| `from`, `to` | freier Zeitraum statt `period`: erster und letzter Tag als JJJJ-MM-TT, beide eingeschlossen, ohne `to` nur der eine Tag, etwa „im Januar“ mit `from=2026-01-01` und `to=2026-01-31`. Mit Uhrzeit (JJJJ-MM-TT HH:MM) stundengenau, etwa `from=2026-10-12 13:00` und `to=2026-10-12 15:00`; dann ist `to` das Ende, ohne `to` gilt bis jetzt. Gerechnet wird mit ganzen Stunden, höchstens 48 am Stück. |
+| `type=power` | kein Gerätetyp: mit Zeitraum die Leistung über den Zeitraum, ohne Zeitraum die Leistung jetzt |
+
+Woher die Werte kommen und wo die Grenzen liegen:
+
+- Verbrauch: ganze Jahre und Monate aus den Jahres- und Monatswerten des Archivs, Stunden aus den Stundenwerten, alles
+  andere aus den Tageswerten.
+- Verlauf: heute und gestern stündlich, Wochen und Monate täglich, Jahre monatlich; bei `from` und `to` bis zu zwei
+  Tage stündlich, bis zu 100 Tage täglich, darüber monatlich. Höchstens fünf Messwerte auf einmal, sonst bittet die
+  Antwort um einen Raum oder Namen.
+- Leistung über einen Zeitraum: bis zu 20 Geräte auf einmal, fürs Haus höchstens 400 Tage.
+- Zeitleiste: die Zeitpunkte jedes Abschnitts bei bis zu zwölf Abschnitten. Bei mehr als fünf Geräten, mehr als zwölf
+  Abschnitten oder mehr als zwei Tagen stehen nur die Summen mit der Anzahl da.
+
+Für Diagramme (**show_chart**) kommen dazu: `compare` (`previous` oder `year_before`), `versus` (zweites Gerät für die
+Punktwolke), `heatmap`, `cumulative` (Summenkurve), `costs` (in Euro) und `part` (`grid`, `feed_in`, `pv`,
+`battery_charge` oder `battery_discharge`).
