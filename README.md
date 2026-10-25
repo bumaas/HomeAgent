@@ -54,10 +54,14 @@ geht und was bei einem Update zu tun ist, steht in [Einrichten und aktualisieren
    [Geräte aus Alexa übernehmen](#geräte-aus-alexa-übernehmen)). Ohne Alexa oder für weitere Geräte den
    Bereich **Geräte** aufklappen und in der Liste je Gerät Raum, Name und Typ eintragen; der Dialog fragt
    danach die passenden Variablen ab (siehe [Die Freigabeliste](#die-freigabeliste)).
-5. **Prüfen.** **Selbsttest ausführen** meldet fehlende Aktionen, die erkannte Richtung jedes Rollladens
+5. **Energiebilanz und Szenen (wahlweise).** Mit Zählern für Netz, PV oder Batterie tragen Sie im Bereich
+   **Energiebilanz** die Quellen ein, dann kennt der Assistent den Verbrauch des ganzen Hauses (siehe
+   [Energiebilanz und Zähler](#energiebilanz-und-zähler)). Skripte und Ablaufpläne, die er starten darf, kommen in
+   den Bereich **Szenen** (siehe [Szenen](#szenen)).
+6. **Prüfen.** **Selbsttest ausführen** meldet fehlende Aktionen, die erkannte Richtung jedes Rollladens
    und den Bereich jedes Thermostats und sagt, ob eine Energiebilanz eingetragen ist. **Zustand aller
    freigegebenen Geräte anzeigen** zeigt, was auch der Assistent sieht. Beides erscheint in einem eigenen Fenster.
-6. **Assistenten verbinden.** Unter der Zugangsliste steht im Bereich **Endpunkt und Zugänge** für jede Art von
+7. **Assistenten verbinden.** Unter der Zugangsliste steht im Bereich **Endpunkt und Zugänge** für jede Art von
    Assistent, was zu tun ist, mit den Adressen Ihrer Anlage.
 
    | Client | Einrichtung |
@@ -67,7 +71,7 @@ geht und was bei einem Update zu tun ist, steht in [Einrichten und aktualisieren
    | Home Assistant | Beim Zugang den Haken **Token auch in der Adresse** setzen. Die Integration **Model Context Protocol** mit der Adresse hinzufügen, die **Adresse anzeigen** für diesen Zugang liefert (`http://<Adresse>:3777/hook/homeagent/<InstanzID>/<Token>`), und beim Gesprächsagenten unter „Home Assistant steuern“ auswählen. In der Sprach-Pipeline „Befehle lokal bevorzugen“ ausschalten, sonst schaltet Home Assistant Sätze, die es selbst versteht, über seine eigenen Geräte. |
    | andere Clients | MCP über einfache HTTP-Anfragen mit `Authorization: Bearer <Token>`; kann der Client keinen Header schicken, das Token in der Adresse. |
 
-7. **Erste Fragen.** Diese Sätze zeigen schnell, ob alles stimmt:
+8. **Erste Fragen.** Diese Sätze zeigen schnell, ob alles stimmt:
 
    | Frage | Was zurückkommen sollte |
    |---|---|
@@ -172,6 +176,10 @@ Hinzufügen des Connectors eine neue Kopplung an und lässt die alte stehen; die
 welche noch in Gebrauch ist, die zuletzt benutzte steht oben. Der Selbsttest nennt die Zahl der
 gekoppelten Assistenten, ohne Connect sagt er, dass die Anmeldung nicht möglich ist.
 
+Diagramme zeichnet das Werkzeug `show_chart`. Es erscheint in den Einstellungen des Connectors unter „Interaktive
+Tools“, dort lässt es sich auf „Immer erlauben“ stellen. Ob die App nach einem Update des Moduls die neuen Werkzeuge
+kennt, zeigt die Spalte **Werkzeugliste** der [Zugänge](#zugänge).
+
 ## Räume und Etagen
 
 Räume legen Sie in der Liste **Räume** an, wahlweise mit weiteren Bezeichnungen und einer Etage. Danach
@@ -232,6 +240,16 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 
 Einen eigenen Typ für Rauchmelder gibt es nicht. Tragen Sie sie als sonstigen Messwert ein, schalten kann der
 Assistent einen Messwert ohnehin nicht.
+
+Bei einigen Geräten braucht es mehr als die Variable des Typs:
+
+- **Licht nur mit Helligkeit:** Liegt die kleinste Stufe über 0 (bei Matter etwa 1 bis 254), lässt sich das Licht
+  über die Helligkeit nicht ausschalten. Tragen Sie dann auch den Schaltzustand ein.
+- **Klimagerät:** Tragen Sie es als Thermostat ein, dazu Modus und Lüfterstufe. Beide Variablen brauchen eine Aktion
+  und eine Auswahl in der Darstellung oder im Profil.
+- **Mediaplayer des HomeAssistant-Moduls:** Dort ist die Wiedergabe nur eine Befehlsvariable. Tragen Sie als Ein/Aus
+  den Statustext ein (`playing`, `paused`, `idle`, `off` …), dann kennt das Modul den Zustand trotzdem. Ohne beides
+  steht dort nur der Titel, und der Player zählt bei den aktiven Geräten nicht mit.
 
 Fehlt einer Zeile die Variable ihres Typs, oder wird eine eingetragene Variable gelöscht, ist nur dieses
 Gerät gesperrt. Die Zeile wird rot, Formular und Log nennen sie, alle anderen Geräte bleiben erreichbar.
@@ -294,8 +312,9 @@ Zähler in den letzten 30 Tagen mehr als 105 % seines eigenen Werts, weist der S
 ### Strompreis
 
 Tragen Sie in der Energiebilanz den **Strompreis** ein, dann nennen die Antworten zum Hausverbrauch auch die Kosten.
-Der Strompreis ist eine archivierte Variable in ct/kWh oder €/kWh, als Einheit genügt „ct“. Bei einem dynamischen
-Tarif ist das etwa der aktuelle Preis aus dem Tibber-Modul. Dazu kommt die Einspeisevergütung. Gerechnet wird je
+Der Strompreis ist eine archivierte Variable in ct/kWh oder €/kWh, als Suffix der Darstellung oder des Profils genügt
+„ct“. Bei einem dynamischen Tarif ist das etwa der aktuelle Preis aus dem Tibber-Modul. Daneben tragen Sie die
+Einspeisevergütung in ct/kWh ein. Gerechnet wird je
 Stunde Netzbezug mal Stundenmittel des Preises. Das sind reine Arbeitskosten ohne Grundgebühr. Gegen die Abrechnung
 des Versorgers weicht das um wenige Prozent ab, weil der eigene Zähler etwas anders misst und das Archiv nur
 Stundenmittel kennt.
@@ -392,13 +411,9 @@ Zu einigen Typen gibt es mehr zu sagen:
   Heizkörper heizen?“ zählt ein Thermostat als aktiv, solange ein Ventil über 0 steht. Auf einem Sonder-Sollwert
   zählt es nie, denn „Ventil ganz offen“ hält das Ventil fest auf, ob der Raum Wärme braucht oder nicht. Die
   Gerätekarte zeigt die Stellung neben dem Sollwert.
-- **Klimagerät:** Tragen Sie es als Thermostat ein, dazu Modus und Lüfterstufe. Beide Variablen brauchen eine Aktion
-  und eine Auswahl in der Darstellung oder im Profil, der Assistent stellt sie per Name wie beim Luftentfeuchter.
-  „Schalte das Klimagerät aus“ stellt den Modus auf Aus, eingeschaltet wird über einen Modus wie Kühlen oder Heizen.
+- **Klimagerät:** Modus und Lüfterstufe stellt der Assistent per Name wie beim Luftentfeuchter. „Schalte das
+  Klimagerät aus“ stellt den Modus auf Aus, eingeschaltet wird über einen Modus wie Kühlen oder Heizen.
 - **Luftentfeuchter, Lüftung, Mediaplayer:** Sie zählen als aktiv, solange sie laufen bzw. spielen.
-- **Mediaplayer des HomeAssistant-Moduls:** Dort ist die Wiedergabe nur eine Befehlsvariable. Tragen Sie als Ein/Aus
-  den Statustext ein (`playing`, `paused`, `idle`, `off` …), dann kennt das Modul den Zustand trotzdem. Ohne beides
-  steht dort nur der Titel, und der Player zählt bei den aktiven Geräten nicht mit.
 
 ### „Wie viel Strom haben wir letzten Monat verbraucht?“
 
@@ -525,8 +540,8 @@ aus und gibt dazu einen Befehl oder einen Prozentwert an:
 
 Bei Lichtern schaltet 0 Prozent aus, jeder andere Wert schaltet ein. Ein Licht, für das nur eine
 Helligkeit eingetragen ist und dessen kleinste Stufe über 0 liegt (bei Matter etwa 1 bis 254), lässt
-sich so nicht ausschalten; die Antwort sagt das dann, statt die kleinste Stufe zu senden. Tragen Sie
-für solche Lichter auch den Schaltzustand ein. Bei Rollläden und Fenstern sagt die Zahl, wie weit sie
+sich so nicht ausschalten; die Antwort sagt das dann, statt die kleinste Stufe zu senden (siehe
+[Die Freigabeliste](#die-freigabeliste)). Bei Rollläden und Fenstern sagt die Zahl, wie weit sie
 offen sind: 0 ist ganz geschlossen, 100 ganz offen. Die Antwort nennt
 dieselbe Zahl: „offen“, „geschlossen“ oder „30 % offen“, bei einem Kippfenster „gekippt“ und „30 %
 gekippt“.
@@ -652,8 +667,7 @@ Heizgrenze selbst, und der Assistent bekommt den Zusammenhang in Worten („unte
 0,06 kW mehr, erklärt 84 %“). Auf der y-Achse steht ein Messwert, ein Zähler oder eine Leistung, ohne Gerät der
 Hausverbrauch. Eine Heatmap zeigt, wann am Tag etwas passiert, etwa „Hausverbrauch im September als Heatmap“: ein
 Kästchen je Stunde, eine Zeile je Tag, bei mehr als 62 Tagen eine Zeile je Wochentag mit dem Mittel. Der Assistent
-bekommt die stärkste und die schwächste Stunde und den Unterschied zwischen Werktag und Wochenende. Über jedem Diagramm steht der Zeitraum, etwa „Montag, 12. Oktober 2026“ oder „September 2026“. Das Werkzeug heißt `show_chart` und erscheint in den Einstellungen des Connectors unter „Interaktive
-Tools“; dort lässt es sich auf „Immer erlauben“ stellen. Andere Assistenten sehen es nicht.
+bekommt die stärkste und die schwächste Stunde und den Unterschied zwischen Werktag und Wochenende. Über jedem Diagramm steht der Zeitraum, etwa „Montag, 12. Oktober 2026“ oder „September 2026“. Andere Assistenten sehen das Werkzeug dafür nicht.
 
 Ist die Energiebilanz eingetragen, zeichnet das Modul auf Wunsch auch den Hausverbrauch, etwa „Zeig mir unseren
 Stromverbrauch in diesem Monat als Diagramm“: je Stunde, Tag oder Monat ein Balken aus Netz, PV direkt und Batterie,
@@ -698,9 +712,6 @@ Karten bedient wurde. Bei einem Zugang mit **Nur abfragen** zeigen die Karten nu
 Über „+“ → „Konnektoren“ → „Von … hinzufügen“ bietet die Claude-App fertige Vorlagen an: **Haus verlassen** und
 **Gute Nacht** prüfen, was noch offen oder an ist, **Energiebericht** nennt Verbrauch, Autarkie und die größten
 Verbraucher von gestern. Welche es gibt, richtet sich nach der Freigabeliste.
-
-Nach einem Update kann es eine Weile dauern, bis die Claude-App die neuen Werkzeuge kennt. Schneller geht es, wenn
-Sie den Connector neu hinzufügen.
 
 ### Szenen starten
 

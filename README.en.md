@@ -53,10 +53,14 @@ to do after an update is described in [Setting up and updating](EINRICHTUNG.en.m
    [Taking over devices from Alexa](#taking-over-devices-from-alexa)). Without Alexa or for further
    devices, expand the section **Devices** and enter room, name and type for each device in the list; the
    dialog then asks for the matching variables (see [The release list](#the-release-list)).
-5. **Check.** **Run self-test** reports missing actions, the recognised direction of each blind and the
+5. **Energy balance and scenes (optional).** With meters for the grid, solar or a battery, enter the sources in
+   the section **Energy balance**; the assistant then knows the consumption of the whole house (see
+   [Energy balance and meters](#energy-balance-and-meters)). Scripts and flow scripts it may start go into the
+   section **Scenes** (see [Scenes](#scenes)).
+6. **Check.** **Run self-test** reports missing actions, the recognised direction of each blind and the
    range of each thermostat and says whether an energy balance is set up. **Show state of all released
    devices** shows what the assistant sees. Both appear in a window of their own.
-6. **Connect the assistant.** Below the list of accesses, the section **Endpoint and accesses** says
+7. **Connect the assistant.** Below the list of accesses, the section **Endpoint and accesses** says
    for each kind of assistant what to do, with the addresses of your system.
 
    | Client | Setup |
@@ -66,7 +70,7 @@ to do after an update is described in [Setting up and updating](EINRICHTUNG.en.m
    | Home Assistant | Tick **Token also in the address** for the access. Add the integration **Model Context Protocol** with the address that **Show address** returns for this access (`http://<address>:3777/hook/homeagent/<InstanceID>/<token>`), and select it for the conversation agent under "Control Home Assistant". Turn off "Prefer handling commands locally" in the voice pipeline, otherwise Home Assistant switches sentences it understands itself through its own devices. |
    | other clients | MCP over plain HTTP requests with `Authorization: Bearer <token>`; if the client cannot send a header, the token in the address. |
 
-7. **First questions.** These sentences quickly show whether everything works:
+8. **First questions.** These sentences quickly show whether everything works:
 
    | Question | What should come back |
    |---|---|
@@ -165,6 +169,10 @@ leaves the old one; the column **Last used** shows which one is still in use, th
 The self-test shows the number of paired assistants; without Connect it says
 that sign-in is not available.
 
+Charts are drawn by the tool `show_chart`. It appears in the connector settings under "Interactive tools", where it
+can be set to "Always allow". Whether the app knows the new tools after an update of the module is shown by the
+column **Tool list** of the [accesses](#accesses).
+
 ## Rooms and floors
 
 You create rooms in the list **Rooms**, optionally with further names and a floor. After that
@@ -226,6 +234,16 @@ Which variables a device needs depends on its type:
 There is no type of its own for smoke detectors. Enter them as other measured value, the assistant cannot switch
 a measured value anyway.
 
+Some devices need more than the variable of their type:
+
+- **Light with brightness only:** If the smallest level is above 0 (with Matter for example 1 to 254), the light
+  cannot be switched off through the brightness. Enter the switch state as well.
+- **Air conditioner:** Add it as a thermostat together with mode and fan speed. Both variables need an action and a
+  selection in the presentation or the profile.
+- **Media players of the HomeAssistant module:** There playback is only a command variable. Enter its status text
+  (`playing`, `paused`, `idle`, `off` …) as on/off, and the module knows the state anyway. Without either only the
+  title is shown, and the player is not counted among the active devices.
+
 If a row lacks the variable of its type, or an entered variable is deleted, only this device is
 disabled. The row turns red, form and log name it, all other devices stay reachable. Symcon also
 names the instance as a reference when an entered variable is about to be deleted.
@@ -286,8 +304,9 @@ days, the self-test points it out.
 ### Electricity price
 
 If you enter the **electricity price** in the energy balance, the answers about the house consumption also name the
-costs. The price is an archived variable in ct/kWh or €/kWh, "ct" alone is enough as the unit. For a dynamic tariff
-this is for example the current price from the Tibber module. The feed-in tariff goes next to it. Each hour counts grid
+costs. The price is an archived variable in ct/kWh or €/kWh, "ct" alone is enough as the suffix of the presentation
+or profile. For a dynamic tariff this is for example the current price from the Tibber module. Next to it you enter
+the feed-in tariff in ct/kWh. Each hour counts grid
 import times the hourly mean price. These are working costs only, without base fee. Against the supplier's bill they
 differ by a few percent, because your own meter measures slightly differently and the archive only knows hourly means.
 
@@ -383,13 +402,9 @@ Some types need a few more words:
   radiators are heating?" a thermostat counts as active while a valve is above 0. On a special setpoint it never
   counts, because "valve fully open" keeps the valve open whether the room needs heat or not. The device card shows
   the position next to the setpoint.
-- **Air conditioner:** Add it as a thermostat together with mode and fan speed. Both variables need an action and a
-  selection in the presentation or the profile, and the assistant sets them by name as with the dehumidifier. "Turn
-  off the air conditioner" sets the mode to off; to turn it on, choose a mode such as cool or heat.
+- **Air conditioner:** The assistant sets mode and fan speed by name as with the dehumidifier. "Turn off the air
+  conditioner" sets the mode to off; to turn it on, choose a mode such as cool or heat.
 - **Dehumidifier, ventilation, media player:** They count as active while they run or play.
-- **Media players of the HomeAssistant module:** There playback is only a command variable. Enter its status text
-  (`playing`, `paused`, `idle`, `off` …) as on/off, and the module knows the state anyway. Without either only the
-  title is shown, and the player is not counted among the active devices.
 
 ### "How much electricity did we use last month?"
 
@@ -516,8 +531,8 @@ when querying and adds a command or a percent value:
 
 For lights 0 percent switches off, any other value switches on. A light that has only a brightness
 entered and whose smallest level is above 0 (with Matter for example 1 to 254) cannot be switched off
-this way; the answer then says so instead of sending the smallest level. Enter the switch state for
-such lights as well. For blinds and windows the number says how far they are open: 0 is fully closed,
+this way; the answer then says so instead of sending the smallest level (see
+[The release list](#the-release-list)). For blinds and windows the number says how far they are open: 0 is fully closed,
 100 fully open. The answer names the same number: "open", "closed" or "30 %
 open", for a tilt window "tilted" and "30 % tilted".
 
@@ -641,8 +656,7 @@ value, a meter or a power, without a device the house consumption. A heatmap sho
 happens, for example "house consumption in September as a heatmap": one cell per hour, one row per day, beyond 62
 days one row per weekday with the mean. The assistant gets the strongest and the weakest hour and the difference
 between weekdays and weekends.
-Each chart shows its period above it, for example "Monday, 12 October 2026" or "September 2026". The tool is called `show_chart` and appears in the connector settings under "Interactive tools", where it can be
-set to "Always allow". Other assistants do not see it.
+Each chart shows its period above it, for example "Monday, 12 October 2026" or "September 2026". Other assistants do not see the tool for it.
 
 With the energy balance filled in, the module also draws the house consumption on request, for example "Show me
 our electricity consumption this month as a chart": one bar per hour, day or month made of grid, solar used
@@ -688,9 +702,6 @@ on the cards. With a **Query only** access the cards only show the state.
 Under "+" → "Connectors" → "Add from …" the Claude app offers ready templates: **Leaving home** and **Good
 night** check what is still open or on, **Energy report** names consumption, self-sufficiency and the largest
 consumers of yesterday. Which ones exist depends on the release list.
-
-After an update it can take a while until the Claude app knows the new tools. It is faster to add the connector
-again.
 
 ### Starting scenes
 
