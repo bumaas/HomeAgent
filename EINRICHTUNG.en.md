@@ -97,7 +97,9 @@ content and never write it to another file. Every call is a POST with the body
 best sent from a file:
   curl.exe -s -K CREDENTIALS_FILE -H "Content-Type: application/json" -d @request.json
 (on Linux and macOS curl instead of curl.exe). Every Symcon function works this way, including those of
-the module (HAGT_…).
+the module (HAGT_…). Names and parameters of all Symcon functions are in the index
+https://www.symcon.de/en/llms/function-index.md. Fetch it with curl and search it instead of guessing names.
+An answer with "error" is an error, even if curl reports nothing.
 
 The module: IPS_GetInstanceListByModuleID("{89E40AE0-BB2A-40B8-A16F-C9C5FFBFC09F}") returns its
 instances, IPS_CreateInstance with the same ID creates a new one. You read the form of an instance with

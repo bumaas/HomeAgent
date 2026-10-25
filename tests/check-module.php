@@ -682,6 +682,9 @@ foreach (['EINRICHTUNG.md', 'EINRICHTUNG.en.md'] as $datei) {
     // erkennen ist
     $muster[] = AlexaImport::MODULE_ID;
     $muster[] = $datei === 'EINRICHTUNG.md' ? 'HasAction(<VariablenID>)' : 'HasAction(<VariableID>)';
+    // Prompttest 25.10.2026 (Qwen mit open-terminal): Das Modell riet Funktionsnamen und hielt Fehlerantworten für Daten
+    $muster[] = $datei === 'EINRICHTUNG.md' ? 'https://www.symcon.de/de/llms/function-index.md' : 'https://www.symcon.de/en/llms/function-index.md';
+    $muster[] = $datei === 'EINRICHTUNG.md' ? 'Eine Antwort mit „error“ ist ein Fehler' : 'An answer with "error" is an error';
     foreach ($muster as $muss) {
         pruefe(str_contains(preg_replace('/\s+/', ' ', $auftrag), $muss), $datei . ' nennt ' . $muss);
     }

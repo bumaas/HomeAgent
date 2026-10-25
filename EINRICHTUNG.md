@@ -99,6 +99,9 @@ Zeig ihren Inhalt nie an und schreib ihn in keine andere Datei. Jeder Aufruf ist
 am besten aus einer Datei:
   curl.exe -s -K ZUGANGSDATEI -H "Content-Type: application/json" -d @anfrage.json
 (unter Linux und macOS curl statt curl.exe). Jede Symcon-Funktion geht so, auch die des Moduls (HAGT_…).
+Namen und Parameter aller Symcon-Funktionen stehen im Index https://www.symcon.de/de/llms/function-index.md.
+Hol ihn mit curl und such darin, statt Namen zu raten. Eine Antwort mit „error“ ist ein Fehler, auch wenn
+curl nichts meldet.
 
 Das Modul: Seine Instanzen liefert IPS_GetInstanceListByModuleID("{89E40AE0-BB2A-40B8-A16F-C9C5FFBFC09F}"),
 eine neue legt IPS_CreateInstance mit derselben ID an. Das Formular einer Instanz liest du mit
