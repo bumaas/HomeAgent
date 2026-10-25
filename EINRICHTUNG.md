@@ -124,14 +124,15 @@ So gehst du vor:
    einen eigenen Namen (z. B. „Küche oben“ und „Küche unten“) und beide den gemeinsamen als Alias
    („Küche“). Vorhandene Räume behalten ihren Namen, eine Umbenennung schlägst du nur vor. Was schon in
    der Instanz steht oder aus Schritt 0 übernommen ist, geht vor. Für alles andere nimm die Gerätenamen
-   und Räume einer Alexa-Instanz als Vorlage, gibt es keine, die Kategorien im Objektbaum.
+   und Räume einer Alexa-Instanz als Vorlage (Modul-ID {CC759EB6-7821-4AA5-9267-EF08C6A6A5B3}), gibt es
+   keine, die Kategorien im Objektbaum.
 3. Geräte: Geh alle Geräteinstanzen durch, auch ModBus-, MQTT- und Cloud-Geräte, und schlag eine
    Freigabeliste vor, mit sprechbaren Namen, je Raum eindeutig.
    Aufnehmen:
    - Lichter, Steckdosen, Rollläden, Fenster und Türen, Thermostate, Mediaplayer, Heizung und Lüftung
      (Wärmepumpe, Warmwasser, Klimageräte, Lüftungsanlagen) und Messwerte wie Temperatur und
-     Luftfeuchte. Für alles, was schalten soll, nur Variablen mit Aktion; Messwerte ohne Aktion sind
-     in Ordnung.
+     Luftfeuchte. Für alles, was schalten soll, nur Variablen mit Aktion (HasAction(<VariablenID>)
+     liefert true); Messwerte ohne Aktion sind in Ordnung.
    - Melder zum Abfragen: Wassermelder als water_leak, Rauchmelder als measurement.
    - Leistung und Energiezähler, wo es sie gibt. Bei einer Wärmepumpe auch Wärmezähler oder
      Wärmeleistung; zwei Zeilen für Heizen und Warmwasser nur, wenn Wärme und Strom beide getrennt

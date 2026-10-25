@@ -678,6 +678,10 @@ foreach (['EINRICHTUNG.md', 'EINRICHTUNG.en.md'] as $datei) {
     $muster = $datei === 'EINRICHTUNG.md'
         ? ['aus Schritt 0 übernommen ist, geht vor', 'VariableUpdated', 'nicht mit leerem Raum', 'welcher Zähler über ihm misst (MeteredBy)']
         : ['taken over in step 0 comes first', 'VariableUpdated', 'do not add it with an empty', 'which meter measures above it (MeteredBy)'];
+    // Prompttest 25.10.2026 (Qwen über Open WebUI): Modul-ID der Alexa-Instanz und woran eine Variable mit Aktion zu
+    // erkennen ist
+    $muster[] = AlexaImport::MODULE_ID;
+    $muster[] = $datei === 'EINRICHTUNG.md' ? 'HasAction(<VariablenID>)' : 'HasAction(<VariableID>)';
     foreach ($muster as $muss) {
         pruefe(str_contains(preg_replace('/\s+/', ' ', $auftrag), $muss), $datei . ' nennt ' . $muss);
     }
