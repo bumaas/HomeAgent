@@ -27,21 +27,16 @@ die Geräte, die Sie freigeben.
 
 - **Symcon ab Version 9.0.** Das Modul ist selbst ein MCP-Server und braucht sonst nichts.
 - **Einen Assistenten, der MCP spricht.** Mikrofon, Spracherkennung und Sprachmodell bringt der
-  Assistent mit. Das Modul liefert ihm die Geräte und die Werkzeuge, um sie abzufragen und zu schalten.
-- **Einen passenden Client.** Verbinden kann sich jeder Client, der MCP über einfache HTTP-Anfragen
-  spricht und ein festes Token im Header `Authorization` mitschickt. Erprobt sind Claude Code, die
-  MCP-Integration von Home Assistant und die Claude-App. Home Assistant bekommt das Token in der
-  Adresse, die Claude-App meldet sich per [OAuth](#anmeldung-per-oauth) an. Claude Desktop (über
-  `mcp-remote`) und Open WebUI bieten das nach ihrer Dokumentation ebenfalls. Welche
-  Clients nicht gehen, steht unter [Grenzen](#grenzen).
+  Assistent mit. Erprobt sind Claude Code, Home Assistant und die Claude-App, Claude Desktop (über `mcp-remote`) und
+  Open WebUI bieten MCP nach ihrer Dokumentation ebenfalls. Wie sie sich verbinden, steht in Schritt 7 der
+  [ersten Schritte](#erste-schritte), welche Clients nicht gehen, unter [Grenzen](#grenzen).
 
 ## Erste Schritte
 
 Die Einrichtung kann auch ein KI-Assistent übernehmen, der Ihnen Räume und Geräte zur Freigabe vorschlägt. Wie das
 geht und was bei einem Update zu tun ist, steht in [Einrichten und aktualisieren](EINRICHTUNG.md).
 
-1. **Instanz anlegen.** Modul installieren und eine Instanz **Home Agent** anlegen. Das Formular ist in
-   aufklappbare Bereiche gegliedert, die sich merken, ob sie offen oder zu sind.
+1. **Instanz anlegen.** Modul installieren und eine Instanz **Home Agent** anlegen.
 2. **Zugang anlegen.** Im Bereich **Endpunkt und Zugänge** in der Liste **Zugänge** einen Zugang mit
    Namen anlegen. Das Token erzeugt das Modul beim Übernehmen selbst. Für den Anfang empfiehlt sich der
    Haken **Nur abfragen**: Der Assistent kann dann fragen, aber nichts schalten.
@@ -94,13 +89,9 @@ Formular gehen dabei verloren.
 
 Übernommen werden Lichter, Schalter, Rollläden, Thermostate und Temperatursensoren. Ein Rollladen,
 dessen Name mit „Fenster“ beginnt, wird ein Fenster mit Antrieb. Den Raum erkennt das Modul am Namen
-und am Pfad der Variable, zuerst über die Raumliste. Kennt die ihn nicht, nimmt das Modul eine Kategorie
-aus dem Objektbaum, deren Name auch im Alexa-Namen steht („Küche links“ unter `…\EG\Küche\…` kommt in den
-Raum Küche). Kategorien wie „EG“ oder „OG“ zählen dabei nicht als Raum, sondern werden die Etage des
-neuen Raums. Hängen die Geräte eines Raums unter verschiedenen Etagen, entsteht je Etage ein Raum
-(„Flur EG“, „Flur OG“), und alle bekommen den Alias „Flur“. Stimmt ein Raum nicht
-oder fehlt er, ändern Sie ihn im Fenster in der Spalte „Raum“. Ein Raum, den die Raumliste noch nicht
-kennt, wird dort beim Freigeben angelegt.
+und am Pfad der Variable, zuerst über die Raumliste, sonst über eine Kategorie des Objektbaums; Kategorien wie „EG“
+oder „OG“ werden dabei die Etage. Stimmt ein Raum nicht, ändern Sie ihn im Fenster in der Spalte „Raum“. Ein neuer
+Raum kommt beim Freigeben in die Raumliste.
 Aus „Deckenlicht Bad“ wird so „Deckenlicht“ im Raum Bad, und der Alexa-Name bleibt als Alias.
 Ein Temperatursensor wird die Ist-Temperatur des Thermostats im selben Raum. Was schon freigegeben ist,
 kommt nicht doppelt. Schlösser, Fernseher, Farblichter, Szenen und Rollläden, die nur Öffnen, Stop
@@ -202,19 +193,19 @@ Name, Alias, Typ und den Namen der Variablen.
 | Name, Aliase | Der Name und weitere Bezeichnungen, durch Komma getrennt. Ein Teilwort genügt beim Suchen. Wird ein Gerät über einen Alias gefunden, steht er in der Antwort in Klammern hinter dem Namen. |
 | Typ | Licht, Schalter, Steckdose, Gerät, Rollladen, Thermostat, Mediaplayer, Luftbe-/entfeuchter, Lüftung/Ventilator, Fenster, Tür, Anwesenheit, Wasserleck, Temperatur, Luftfeuchte, Luftqualität, sonstiger Messwert oder Zähler. |
 | Zustand oder Messwert | Die Variable für an/aus, offen/zu oder erkannt, bei Messwerten der Wert selbst. Beim Thermostat die Ist-Temperatur. |
-| Sollwert | Nur beim Thermostat: die Variable mit der Solltemperatur. Sie braucht eine Aktion. Bereich und Schrittweite liest das Modul aus der Darstellung oder dem Profil, ohne Schrittweite gilt der Abstand der Einträge (etwa 15,0, 15,5, 16,0). Ein Wert am Rand mit eigenem Text zählt nicht zum Bereich, ob der Text aus einem Eintrag des Profils oder aus einem Intervall der Darstellung mit festem Wert kommt, etwa „On“ bei 30,5. Der Selbsttest zeigt den Bereich je Thermostat. |
-| Ventilstellung, 2, 3 | Nur beim Thermostat, wahlweise und nebeneinander: bis zu drei Ventile seiner Heizkörper. Gezählt wird in Prozent des Bereichs der Variable. Bei Homematic IP steht die Stellung in `LEVEL`, nicht in `VALVE_STATE` (das ist der Status der Ventiladaption); ein Stellantrieb HM-CC-VD ist ein eigenes Gerät neben dem HM-CC-TC. |
-| Farbtemperatur | Nur beim Licht, wahlweise: die Variable mit der Farbtemperatur in Kelvin oder Mired. Sie braucht eine Aktion. |
-| Farbe | Nur beim Licht, wahlweise: die Variable mit der Farbe als Ganzzahl (RGB, etwa Profil `~HexColor`). Sie braucht eine Aktion. |
+| Sollwert | Die Variable mit der Solltemperatur. Sie braucht eine Aktion. Bereich und Schrittweite liest das Modul aus der Darstellung oder dem Profil, ohne Schrittweite gilt der Abstand der Einträge (etwa 15,0, 15,5, 16,0). Ein Wert am Rand mit eigenem Text zählt nicht zum Bereich, ob der Text aus einem Eintrag des Profils oder aus einem Intervall der Darstellung mit festem Wert kommt, etwa „On“ bei 30,5. Der Selbsttest zeigt den Bereich je Thermostat. |
+| Ventilstellung, 2, 3 | Wahlweise bis zu drei Ventile der Heizkörper, im Dialog nebeneinander. Gezählt wird in Prozent des Bereichs der Variable. Bei Homematic IP steht die Stellung in `LEVEL`, nicht in `VALVE_STATE` (das ist der Status der Ventiladaption); ein Stellantrieb HM-CC-VD ist ein eigenes Gerät neben dem HM-CC-TC. |
+| Farbtemperatur | Wahlweise: die Variable mit der Farbtemperatur in Kelvin oder Mired. Sie braucht eine Aktion. |
+| Farbe | Wahlweise: die Variable mit der Farbe als Ganzzahl (RGB, etwa Profil `~HexColor`). Sie braucht eine Aktion. |
 | Ist-Feuchte, Zielfeuchte, Modus, Lüfterstufe | Beim Luftbe-/entfeuchter: die gemessene Luftfeuchte, die Zielfeuchte, die der Assistent stellen darf (Bereich und Schrittweite aus Darstellung oder Profil), und zwei Auswahlvariablen, deren Einträge er per Name setzt. Bei der Lüftung nur Modus und Lüfterstufe. Der Zustand heißt dort „Ein/Aus“. |
-| Wiedergabe, Lautstärke, Stumm, Titel, Interpret | Nur beim Mediaplayer. Es sind die Variablen, die Symcon in der Darstellung „Media Player“ zusammenfasst: die Wiedergabe mit einem der Profile `~Playback`, `~PlaybackNoStop`, `~PlaybackPreviousNext`, `~PlaybackPreviousNextNoStop` oder `~PlayerStatus`, die Lautstärke (in Prozent ihres Bereichs angesagt), Stumm als Wahrheitswert, Titel und Interpret als Text. Beim Mediaplayer heißt der Zustand „Ein/Aus“. |
+| Wiedergabe, Lautstärke, Stumm, Titel, Interpret | Die Variablen, die Symcon in der Darstellung „Media Player“ zusammenfasst: die Wiedergabe mit einem der Profile `~Playback`, `~PlaybackNoStop`, `~PlaybackPreviousNext`, `~PlaybackPreviousNextNoStop` oder `~PlayerStatus`, die Lautstärke (in Prozent ihres Bereichs angesagt), Stumm als Wahrheitswert, Titel und Interpret als Text. Beim Mediaplayer heißt der Zustand „Ein/Aus“. |
 | Helligkeit/Position | Beim Licht die Helligkeit. Sie wird bei eingeschaltetem Licht mit angesagt und lässt sich in Prozent stellen. Beim Rollladen die Position, beim Fenster der Antrieb. |
-| Fahrstatus | Nur bei Rollladen und Fenster mit Antrieb und nur, wenn es so eine Variable gibt: sie meldet, ob er gerade fährt, etwa `WORKING` bei Homematic oder der Laufstatus beim Velux KLF200. Dann antwortet das Modul sofort mit „fährt“, auch wenn die Position erst am Ziel kommt. |
-| Stopp | Nur bei Rollladen und Fenster mit Antrieb, wahlweise: eine Variable, die die Fahrt anhält, also ein Wahrheitswert mit Aktion oder eine Auswahl mit dem Eintrag „Stop“ (etwa „Aktion“ beim HomeAssistant-Modul). Homematic- und Velux-KLF200-Geräte hält das Modul auch ohne sie an. |
-| Leistung | Nur bei Licht, Schalter, Steckdose, Gerät, Luftbe-/entfeuchter und Lüftung, wahlweise: die aktuelle Leistung, etwa `POWER` eines Homematic-Messkanals. Sie steht in jeder Antwort hinter dem Zustand, zum Beispiel „an (26.1 W)“. |
+| Fahrstatus | Wahlweise eine Variable, die meldet, ob der Rollladen gerade fährt, etwa `WORKING` bei Homematic oder der Laufstatus beim Velux KLF200. Dann antwortet das Modul sofort mit „fährt“, auch wenn die Position erst am Ziel kommt. |
+| Stopp | Wahlweise: eine Variable, die die Fahrt anhält, also ein Wahrheitswert mit Aktion oder eine Auswahl mit dem Eintrag „Stop“ (etwa „Aktion“ beim HomeAssistant-Modul). Homematic- und Velux-KLF200-Geräte hält das Modul auch ohne sie an. |
+| Leistung | Wahlweise: die aktuelle Leistung, etwa `POWER` eines Homematic-Messkanals. Sie steht in jeder Antwort hinter dem Zustand, zum Beispiel „an (26.1 W)“. |
 | Zähler | Ebenso wahlweise: der Energiezähler, etwa `ENERGY_COUNTER`. Für den Verbrauch über Zeiträume muss er im Archiv mit der Aggregation „Zähler“ geloggt sein (siehe [Was archiviert sein muss](#was-archiviert-sein-muss)). Hängt ein Gerät an einer Messsteckdose, dürfen beide Zeilen dieselbe Leistung und denselben Zähler tragen; Verbrauch und Leistung eines Raums oder des Hauses zählen jede Variable nur einmal, und der Selbsttest weist darauf hin. |
-| Wärmezähler | Nur beim Gerät, wahlweise: der Wärmemengenzähler einer Wärmepumpe, im Archiv mit der Aggregation „Zähler“. Er zählt nie im Stromverbrauch. |
-| Wärmeleistung | Nur beim Gerät, wahlweise: die Wärmeleistung jetzt, in W oder kW. Mit der Leistung des Geräts ergibt sie die Leistungszahl, ohne Wärmezähler auch die Wärme über Zeiträume; dann muss sie archiviert sein. |
+| Wärmezähler | Wahlweise: der Wärmemengenzähler einer Wärmepumpe, im Archiv mit der Aggregation „Zähler“. Er zählt nie im Stromverbrauch. |
+| Wärmeleistung | Wahlweise: die Wärmeleistung jetzt, in W oder kW. Mit der Leistung des Geräts ergibt sie die Leistungszahl, ohne Wärmezähler auch die Wärme über Zeiträume; dann muss sie archiviert sein. |
 | Gemessen von | Bei allem mit Leistung oder Zähler, wahlweise: der Zähler, hinter dem das Gerät oder der Zähler hängt, etwa die Unterverteilung OG. Zur Auswahl stehen die Zähler der gespeicherten Liste, ein neuer also erst nach dem Übernehmen. |
 | Umgekehrt | Haken setzen, wenn `true` „zu“ oder „aus“ bedeutet. Viele Fensterkontakte melden `true` für geschlossen. Bei Fenster, Tür und Meldern mit einer Zahl gilt sonst alles über 0 als offen bzw. erkannt, mit dem Haken nur die 0; so passt etwa der Türstatus von Matter (0 Geöffnet, 1 Geschlossen). Weitere Einträge wie „Angelehnt“ nennt die Antwort in Klammern. Bei Rollläden erkennt das Modul selbst, welcher Wert „offen“ bedeutet: aus der Darstellung „Rollladen“, aus dem Profil (ein Profilname mit „.Reversed“ zählt umgekehrt), beim HomeAssistant-Modul wie in Home Assistant 100 als offen. Der Selbsttest zeigt es je Rollladen, etwa „Rollladen Küche Rollladen: offen bei 1, geschlossen bei 0“. Stimmt das nicht, dreht der Haken, hier „Richtung umkehren“, es um. |
 | Kippfenster | Nur beim Fenster mit Antrieb: Haken setzen, wenn der Antrieb das Fenster nur kippt. Die Antwort sagt dann „gekippt“ und „50 % gekippt“ statt „offen“ und „50 % offen“. |
@@ -364,10 +355,15 @@ Befund.
 
 ## Szenen
 
-Eine Szene ist ein Skript oder Ablaufplan Ihrer Anlage, den der Assistent auf Zuruf starten darf, zum
-Beispiel „Filmabend“ oder „Gute Nacht“. Tragen Sie in der Liste **Freigegebene Szenen** je Szene einen
-Namen und das Skript bzw. den Ablaufplan ein, dazu nach Wunsch Aliase und einen Raum. Den Raum braucht es
-nur, wenn zwei Szenen gleich heißen. Ein Ablaufplan ohne Aktion lässt sich nicht starten.
+Eine Szene ist ein Skript oder Ablaufplan Ihrer Anlage, den der Assistent auf Zuruf starten darf, zum Beispiel
+„Filmabend“ oder „Gute Nacht“. Tragen Sie in der Liste **Freigegebene Szenen** je Szene einen Namen und das Skript bzw.
+den Ablaufplan ein, dazu nach Wunsch Aliase und einen Raum. Den Raum braucht es nur, wenn zwei Szenen gleich heißen.
+Ein Ablaufplan ohne Aktion lässt sich nicht starten.
+
+Die Namen stehen in der Beschreibung des Werkzeugs **run_scene**, der Assistent kennt sie also von Anfang an. Der Name
+muss genau eine Szene treffen, sonst startet nichts, und die Antwort nennt die Szenen. Die Antwort bestätigt den
+Start; was die Szene bewirkt hat, zeigt eine Abfrage danach. Ohne eingetragene Szene gibt es das Werkzeug nicht. Für
+Skripte: `HAGT_RunScene($InstanzID, '', 'Filmabend')`.
 
 ## Was der Assistent kann
 
@@ -566,10 +562,8 @@ steht in der Beschreibung des Werkzeugs.
 Werkzeug pausiert wurden. So klappt „Musik aus“ und später „weiter“, ohne den Raum zu wiederholen. Gibt
 es keinen solchen Player, verlangt das Werkzeug wie sonst einen Raum.
 
-Die Lautstärke rechnet das Modul in Prozent des Bereichs, den die Darstellung oder das Profil der
-Variable nennt. Beim Sonos-Modul geht er von 0 bis 100, beim HomeAssistant-Modul von 0 bis 1, bei einem
-Denon-Receiver von -80 bis 18 dB. Dort sind 50 % also -31 dB, und die Abfrage nennt beides
-(„Lautstärke 64 % = -17.5 dB“). Gesendet wird in der Schrittweite der Variable, beim Denon in halben dB.
+Die Lautstärke rechnet das Modul in Prozent des Bereichs der Variable und sendet in ihrer Schrittweite. Zählt sie in
+einer anderen Einheit, nennt die Abfrage beides, etwa „Lautstärke 64 % = -17.5 dB“.
 
 Eine Temperatur prüft das Modul gegen den [Bereich des Sollwerts](#die-freigabeliste). Liegt sie außerhalb, geht
 nichts hinaus, und die Antwort nennt den Bereich. Krumme Werte gehen auf die Schrittweite, aus 21,3 wird bei
@@ -595,9 +589,6 @@ Lichter und Steckdosen und lässt die Rollläden in Ruhe; die Antwort nennt am E
 ausgelassen wurden. Nennt der Assistent ein einzelnes Gerät mit einem Befehl, den es nicht versteht,
 ändert sich nichts, und die Antwort sagt, was das Gerät kann.
 
-Wie ein Rollladen intern zählt, müssen Sie nicht wissen. Manche Geräte melden 0 für offen, andere 0
-für geschlossen; das Modul erkennt es selbst (siehe [Die Freigabeliste](#die-freigabeliste), Spalte „Umgekehrt“).
-
 Damit nichts Falsches geschaltet wird, gelten vier Regeln:
 
 - Ohne Raum, Etage, Typ oder Name passiert nichts. „Alles aus“ ohne weitere Angabe gibt es nicht,
@@ -617,20 +608,16 @@ nicht bestätigt“ oder „fehlgeschlagen“ mit dem Grund. Ein Gerät, das sei
 (etwa weil es stromlos ist), erscheint also als nicht bestätigt, und die erste Zeile zählt es eigens.
 Scheitert ein Befehl erst nach der Antwort, steht der Grund im Meldungslog der Instanz.
 
-Rollläden brauchen für ihre Fahrt länger. Das Modul antwortet mit „fährt“, sobald sich zeigt, dass der
-Rollladen losgefahren ist: an seiner Position, an seinem Fahrstatus oder daran, dass er sich nach dem
-Befehl gemeldet hat (Homematic meldet sich beim Losfahren, auch wenn die Position noch die alte ist).
-Meldet er sich gar nicht, etwa ein Velux-Rollladen am KLF200 ohne eingetragenen Fahrstatus, lautet die
-Antwort „Fahrbefehl gesendet, noch keine Positionsmeldung“. Fragt der Assistent während der Fahrt
-nach, nennt die Antwort das Ziel: „fährt auf geschlossen (derzeit offen)“.
+Rollläden brauchen für ihre Fahrt länger. Das Modul antwortet mit „fährt“, sobald sich zeigt, dass der Rollladen
+losgefahren ist: an seiner Position, an seinem Fahrstatus oder daran, dass er sich nach dem Befehl gemeldet hat. Meldet
+er sich gar nicht, lautet die Antwort „Fahrbefehl gesendet, noch keine Positionsmeldung“. Fragt der Assistent während
+der Fahrt nach, nennt die Antwort das Ziel: „fährt auf geschlossen (derzeit offen)“.
 
 Mit `stop` hält das Modul einen fahrenden Rollladen an und meldet, wo er steht: „angehalten (68 %
 offen)“. Angehalten wird über die eingetragene Stoppvariable, sonst über das Modul des Geräts
 (Homematic und Velux KLF200); der Selbsttest nennt den Weg je Rollladen. `stop` gibt es nur, wenn
-mindestens ein Rollladen einen solchen Weg hat. Meldet der Fahrstatus, dass er schon steht, geht kein
-Befehl hinaus, die Antwort sagt dann „stand schon“. Ein Velux meldet seine Position erst rund 2,5 s nach
-dem Stopp; die Antwort lautet dann „Stopp gesendet, noch nicht bestätigt“, eine Nachfrage zeigt den
-Stand.
+mindestens ein Rollladen einen solchen Weg hat. Meldet der Fahrstatus, dass er schon steht, geht kein Befehl hinaus, die Antwort sagt dann
+„stand schon“. Meldet der Rollladen seine Position erst später, lautet sie „Stopp gesendet, noch nicht bestätigt“.
 
 Für Skripte gibt es das Schalten und das Stellen als zwei Funktionen:
 
@@ -641,84 +628,39 @@ echo HAGT_SetLevel($InstanzID, '', '', 'Deckenpanel', 30);
 
 ### Diagramme, Gerätekarten und Vorlagen in der Claude-App
 
-Fragt man die Claude-App nach einem Diagramm, etwa „Zeig mir die Temperatur im Gästezimmer der letzten 30 Tage
-als Diagramm“, zeichnet das Modul den Verlauf direkt im Chat: je Einheit ein Diagramm, ein Band von Minimum bis
-Maximum und eine Linie für das Mittel. Bei mehreren Linien in einem Diagramm fehlt das Band anfangs, ein Haken unter
-dem Diagramm blendet es ein und aus. Die Werte gehen nur an das Diagramm, das Sprachmodell bekommt Minimum und
-Maximum. Mit `type=power` zeichnet es ebenso die Leistung. Mehrere Räume lassen sich in einem Diagramm vergleichen, etwa „Vergleiche die Temperatur im Gästezimmer
-und draußen in der letzten Woche“. Zustände wie an/aus, offen/zu oder ein Batteriemodus erscheinen als Bänder
-über der Zeitachse, gefärbt nach Zustand, etwa bei „Zeig mir, wann die Haustür heute offen war“. Zwei Zeiträume
-lassen sich vergleichen, etwa „Hausverbrauch heute im Vergleich zu gestern“ oder „Temperatur im Gästezimmer diesen
-Monat gegen denselben Monat im Vorjahr“: beim Verlauf als gestrichelte Linie, beim Verbrauch als Marke je Balken.
-Läuft der Zeitraum noch, nennt die Antwort dazu den Verbrauch des Vergleichszeitraums bis zur selben Zeit. Für
-Zeitleisten gibt es keinen Vergleich. Eine Punktwolke zeigt, wie zwei Werte zusammenhängen, etwa „Leistung der
-Wärmepumpe gegen die Außentemperatur im September“: ein Punkt je Tag (bis zwei Tage je Stunde), dazu der Mittelwert
-je Temperaturklasse und eine Trendlinie. Steigt der Verbrauch erst unterhalb einer Grenze, findet das Modul diese
-Heizgrenze selbst, und der Assistent bekommt den Zusammenhang in Worten („unter etwa 16 °C je Grad kälter rund
-0,06 kW mehr, erklärt 84 %“). Auf der y-Achse steht ein Messwert, ein Zähler oder eine Leistung, ohne Gerät der
-Hausverbrauch. Eine Heatmap zeigt, wann am Tag etwas passiert, etwa „Hausverbrauch im September als Heatmap“: ein
-Kästchen je Stunde, eine Zeile je Tag, bei mehr als 62 Tagen eine Zeile je Wochentag mit dem Mittel. Der Assistent
-bekommt die stärkste und die schwächste Stunde und den Unterschied zwischen Werktag und Wochenende. Über jedem Diagramm steht der Zeitraum, etwa „Montag, 12. Oktober 2026“ oder „September 2026“. Andere Assistenten sehen das Werkzeug dafür nicht.
+In der Claude-App zeichnet das Modul auf Wunsch Diagramme direkt in den Chat. Die Werte gehen nur an das Diagramm, das
+Sprachmodell bekommt Kennzahlen wie Minimum und Maximum. Über jedem Diagramm steht der Zeitraum, etwa „Montag,
+12. Oktober 2026“ oder „September 2026“. Andere Assistenten sehen das Werkzeug dafür nicht.
 
-Ist die Energiebilanz eingetragen, zeichnet das Modul auf Wunsch auch den Hausverbrauch, etwa „Zeig mir unseren
-Stromverbrauch in diesem Monat als Diagramm“: je Stunde, Tag oder Monat ein Balken aus Netz, PV direkt und Batterie,
-die Einspeisung darunter. Zusammen ergibt jeder Balken den Hausverbrauch der Bilanz; lädt die Batterie aus dem
-Netz, zählt das als Netz. Darüber stehen zwei Ringe: Die Autarkie teilt den Hausverbrauch in PV direkt, Batterie und
-Netz, der Eigenverbrauch teilt den PV-Ertrag in direkt verbraucht, in die Batterie geladen und eingespeist. Mit
-„Zeig mir die Leistung jetzt als Diagramm“ kommen dieselben Ringe aus den Leistungen der Bilanz, dazu ein Ring mit
-der Hausleistung aus PV, Batterie und Netz. Ohne Batterie in der Bilanz fehlt sie in den Ringen. Mit einem Vergleich,
-etwa „verglichen mit dem Vorjahr“, steht oben rechts in jedem Ring der Anteil des Vergleichszeitraums, in einem
-laufenden Zeitraum bis zur selben Zeit.
+| Diagramm | Beispiel | Was man sieht |
+|---|---|---|
+| Verlauf | „Zeig mir die Temperatur im Gästezimmer der letzten 30 Tage als Diagramm“ | je Einheit ein Diagramm mit einem Band von Minimum bis Maximum und einer Linie für das Mittel, bei mehreren Linien blendet ein Haken das Band ein. Mit `type=power` ebenso die Leistung, mit mehreren Räumen alle in einem Diagramm („Vergleiche die Temperatur im Gästezimmer und draußen“). |
+| Zustände | „Zeig mir, wann die Haustür heute offen war“ | Bänder über der Zeitachse, gefärbt nach Zustand |
+| Vergleich | „Hausverbrauch heute im Vergleich zu gestern“, „Temperatur im Gästezimmer diesen Monat gegen denselben Monat im Vorjahr“ | beim Verlauf eine gestrichelte Linie, beim Verbrauch eine Marke je Balken; in einem laufenden Zeitraum nennt die Antwort den Vergleich bis zur selben Zeit. Nicht für Zustände. |
+| Punktwolke | „Leistung der Wärmepumpe gegen die Außentemperatur im September“ | ein Punkt je Tag (bis zwei Tage je Stunde), das Mittel je Temperaturklasse und eine Trendlinie. Eine Heizgrenze findet das Modul selbst („unter etwa 16 °C je Grad kälter rund 0,06 kW mehr, erklärt 84 %“). Auf der y-Achse ein Messwert, ein Zähler oder eine Leistung, ohne Gerät der Hausverbrauch. |
+| Heatmap | „Hausverbrauch im September als Heatmap“ | ein Kästchen je Stunde, eine Zeile je Tag, über 62 Tage eine Zeile je Wochentag mit dem Mittel. Der Assistent bekommt die stärkste und die schwächste Stunde und den Unterschied zwischen Werktag und Wochenende. |
+| Hausverbrauch | „Zeig mir unseren Stromverbrauch in diesem Monat als Diagramm“ | je Abschnitt ein Balken aus Netz, PV direkt und Batterie, die Einspeisung darunter (lädt die Batterie aus dem Netz, zählt das als Netz). Darüber die Ringe Autarkie und Eigenverbrauch, mit Vergleich oben rechts der Anteil des Vergleichszeitraums. Mehrere PV-Anlagen stehen in Abstufungen der PV-Farbe. |
+| Leistung jetzt | „Zeig mir die Leistung jetzt als Diagramm“ | dieselben Ringe aus den Leistungen der Bilanz, dazu ein Ring mit der Hausleistung aus PV, Batterie und Netz |
+| Verbrauch je Gerät | „Welche Geräte haben im September am meisten verbraucht? Als Diagramm“ | die fünf größten Geräte mit Zähler übereinander, der Rest als „übrige Geräte“, fürs Haus dazu „nicht erfasst“. Das Diagramm eines Zählers zeigt, was unter ihm hängt. |
+| Summenkurve | „Stromverbrauch dieses Jahr als Summenkurve“ | Verbrauch oder Kosten Tag für Tag aufaddiert, ein laufender Zeitraum hochgerechnet nach dem Verlauf im Vorjahr, ohne Vorjahr linear: „Bisher 10239.5 kWh, hochgerechnet 13079.9 kWh für den ganzen Zeitraum.“ |
+| Teil der Bilanz | „Was habe ich dieses Jahr an Einspeisevergütung verdient, und wo lande ich am Jahresende?“ | nur Netzbezug, Einspeisung, PV-Ertrag oder Batterie, je Quelle eine Reihe, als Balken, Summenkurve, Heatmap und mit Vergleich |
 
-Ebenso geht der Verbrauch je Gerät, etwa „Welche Geräte haben im September am meisten verbraucht? Als Diagramm“:
-die fünf größten Geräte mit Zähler übereinander, der Rest als „übrige Geräte“, fürs ganze Haus dazu „nicht
-erfasst“ aus der Energiebilanz. Hat ein Raum neben Zählern auch Messwerte, zeigt das Diagramm zunächst die
-Messwerte; nach dem Verbrauch muss man dann ausdrücklich fragen. Ein Zähler, der nur einmal am Tag weiterzählt,
-steht in einem Stundendiagramm mit dem ganzen Tag in einer Stunde.
+Mit eingetragenem Strompreis gehen Hausverbrauch, Netzbezug und Einspeisung auch in Euro. Die Summenkurve zeigt dann
+die Einspeisevergütung als grüne Linie und nennt den Saldo. Hat ein Raum neben Zählern auch Messwerte, zeigt das
+Diagramm zunächst die Messwerte; nach dem Verbrauch muss man dann ausdrücklich fragen. Ein Zähler, der nur einmal am
+Tag weiterzählt, steht im Stundendiagramm mit dem ganzen Tag in einer Stunde.
 
-Mit eingetragenem Strompreis zeigt das Diagramm den Hausverbrauch auch in Euro, als Stapel, als Heatmap und mit
-Vergleich. Eine Summenkurve addiert Verbrauch oder Kosten Tag für Tag auf und rechnet einen laufenden Zeitraum bis zu
-seinem Ende hoch, etwa „Bisher 10239.5 kWh, hochgerechnet 13079.9 kWh für den ganzen Zeitraum. Vergleich zur selben
-Zeit 9066.1 kWh (+13 %).“ Hochgerechnet wird mit dem Verlauf desselben Zeitraums im Vorjahr, so kommt der teure Winter
-richtig hinein; ohne Vorjahresdaten linear mit dem bisherigen Mittel. In Euro steht die Vergütung der Einspeisung als
-grüne Linie daneben, der Text nennt den Saldo („Einspeisung 786.59 €, Saldo 491.01 €.“).
-
-Statt des Hausverbrauchs zeigt das Diagramm auf Wunsch auch nur einen Teil der Energiebilanz: Netzbezug, Einspeisung,
-PV-Ertrag, Batterie geladen oder entladen, jede Quelle als eigene Reihe. Das geht als Balken, Summenkurve, Heatmap und
-mit Vergleich, beim Netzbezug auch in Euro und bei der Einspeisung als Vergütung. So beantwortet der Assistent etwa
-„Was habe ich dieses Jahr an Einspeisevergütung verdient, und wo lande ich am Jahresende?“ mit einem Diagramm. Bei
-mehreren PV-Anlagen steht „PV direkt“ im Diagramm des Hausverbrauchs je Anlage in Abstufungen der PV-Farbe, aufgeteilt
-nach ihrem Ertrag im Abschnitt; welche Anlage einspeist oder die Batterie lädt, misst niemand.
-
-Das Diagramm eines Zählers zeigt, was unter ihm hängt, und den Rest als „nicht erfasst“; das Diagramm des Hauses je
-Gerät zeigt mit Zählern die oberste Ebene.
-
-Mit „Zeig mir die Lichter im Wohnzimmer“ zeigt die Claude-App die Geräte als Karten, nach Art
-gruppiert. Jede Karte nennt den Zustand und groß den wichtigsten Wert (Helligkeit, Öffnungsgrad, Messwert oder Leistung);
-was an ist, ist farbig. Dazu kommen je nach Gerät ein Schalter, ein Balken für Helligkeit oder Öffnungsgrad, den man ziehen kann, Knöpfe für Auf, Stopp und Zu, der Sollwert mit
-Plus und Minus, die Wiedergabe mit Lautstärke, eine Auswahl für Betriebsart und Lüfterstufe (wenige Einträge als Knöpfe) und beim Licht ein Regler für die Farbtemperatur und Farbtupfer. Fährt ein Rollladen noch, holt die Karte den Stand nach, bis er steht. Ein Tippen auf der Karte schaltet sofort, ohne Umweg über das Sprachmodell, und
-die Karte zeigt danach den Zustand, den das Gerät zurückgemeldet hat; eine Meldung steht dort nur, wenn etwas nicht geklappt hat. Der Assistent erfährt im weiteren Gespräch, was auf den
-Karten bedient wurde. Bei einem Zugang mit **Nur abfragen** zeigen die Karten nur den Zustand.
+Mit „Zeig mir die Lichter im Wohnzimmer“ zeigt die Claude-App die Geräte als Karten, nach Art gruppiert. Jede Karte
+nennt den Zustand und groß den wichtigsten Wert, was an ist, ist farbig. Je nach Gerät gibt es einen Schalter, einen
+Balken für Helligkeit oder Öffnung, Knöpfe für Auf, Stopp und Zu, den Sollwert mit Plus und Minus, Wiedergabe und
+Lautstärke, Betriebsart und Lüfterstufe, beim Licht Farbtemperatur und Farbtupfer. Ein Tippen schaltet sofort, ohne
+Umweg über das Sprachmodell. Die Karte zeigt danach, was das Gerät zurückgemeldet hat, und folgt einem fahrenden
+Rollladen, bis er steht. Der Assistent erfährt im weiteren Gespräch, was bedient wurde. Bei einem Zugang mit **Nur
+abfragen** zeigen die Karten nur den Zustand.
 
 Über „+“ → „Konnektoren“ → „Von … hinzufügen“ bietet die Claude-App fertige Vorlagen an: **Haus verlassen** und
 **Gute Nacht** prüfen, was noch offen oder an ist, **Energiebericht** nennt Verbrauch, Autarkie und die größten
 Verbraucher von gestern. Welche es gibt, richtet sich nach der Freigabeliste.
-
-### Szenen starten
-
-**run_scene** startet eine Szene. Die Namen Ihrer Szenen stehen in der Beschreibung des Werkzeugs, der
-Assistent kennt sie also von Anfang an. Der Name muss genau eine Szene treffen. Passt er zu mehreren
-oder zu keiner, startet das Modul nichts und nennt die Szenen. Ohne eingetragene Szene bietet das
-Modul das Werkzeug nicht an.
-
-Die Antwort bestätigt, dass Symcon das Skript gestartet hat. Was es bewirkt hat, zeigt eine Abfrage
-danach.
-
-Für Skripte:
-
-```php
-echo HAGT_RunScene($InstanzID, '', 'Filmabend');
-```
 
 ## Was nicht geklappt hat
 
@@ -759,7 +701,6 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
   dem Fahrbefehl nicht, ob er fährt.
 - Fehler innerhalb eines Szenen-Skripts oder Ablaufplans sieht der Assistent nicht, er erfährt nur vom Start.
 - Die Prüfung der Zähler im Selbsttest findet nur Fehlwerte, die wieder verschwinden. Springt ein Zähler dauerhaft nach oben, etwa beim Tausch gegen einen Zähler mit höherem Stand, zählt das Archiv den Sprung als Verbrauch, ohne dass der Selbsttest es merkt. Kleine Fehlwerte unter einem Fünftel eines üblichen Monats und Monate kurz nach einer Rücksetzung prüft er nicht.
-- Die Hausleistung mit `type=power` umfasst höchstens 400 Tage.
 - Wärme, Arbeitszahl und Leistungszahl gibt es nur als Text, nicht im Diagramm und nicht mit `type=power`. Zählt der
   Regler einer Wärmepumpe nur einmal am Tag weiter, steht der ganze Vortag kurz nach Mitternacht im Archiv; „gestern“
   meint dann den Tag davor.
@@ -771,13 +712,10 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
   nur Clients mit einem Client ID Metadata Document an, erprobt ist die Claude-App. ChatGPT verbindet
   sich mit dem Token, mit OAuth ist es nicht erprobt.
 - Anfragen aus einem Browser mit fremder Herkunft (`Origin`) weist der Endpunkt ab, auch mit richtigem Token. Als eigen gelten die IP-Adressen der Anlage, `localhost`, ihr Rechnername (auch mit `.local`, `.fritz.box`, `.lan`, `.home.arpa`, `.home` oder `.internal`) und die Connect-Adresse.
-- Tokens und Kopplungscodes sind das einzige Schloss. Über Symcon Connect ist der Endpunkt aus dem
-  Internet erreichbar; verwenden Sie deshalb erzeugte Tokens. Abgewiesene Anmeldungen stehen im
-  Meldungsprotokoll (die erste einer Minute und danach ihre Anzahl), falsche Kopplungscodes zählen mit.
-  Nach 20 abgewiesenen Anmeldungen in einer Minute ist der Endpunkt für diesen Absender 60 Sekunden lang
-  gesperrt, auch mit richtigem Token. Über Symcon Connect zählt der Absender aus dem Internet, Ihre eigenen
-  Assistenten kommen also weiter durch. Nach 100 abgewiesenen Anmeldungen in einer Minute, gleich von wem,
-  ist der Endpunkt 60 Sekunden lang für alle gesperrt.
+- Tokens und Kopplungscodes sind das einzige Schloss, und über Symcon Connect ist der Endpunkt aus dem Internet
+  erreichbar; verwenden Sie deshalb erzeugte Tokens. Abgewiesene Anmeldungen und falsche Kopplungscodes stehen im
+  Meldungsprotokoll. Nach 20 davon in einer Minute ist der Endpunkt für diesen Absender 60 Sekunden gesperrt (über
+  Connect zählt der Absender im Internet, Ihre Assistenten kommen weiter durch), nach 100 von allen zusammen für alle.
 - Steht das Token in der Adresse, kann es in Logs, Verläufen und Einstellungsdateien des Clients
   landen. Setzen Sie den Haken nur bei Zugängen, deren Client die Anmeldung nicht im Header
   mitschicken kann.
