@@ -963,6 +963,17 @@ $geraete = array_values(array_filter(flach($formular['elements']), static fn ($e
 $spalten = array_column($geraete['columns'], null, 'name');
 pruefe(isset($spalten['StateLabel'], $spalten['LevelLabel']) && !isset($spalten['StateLabel']['edit']) && ($spalten['StateLabel']['add'] ?? null) === '-', 'sichtbar sind Textspalten ohne Variablenauswahl, neue Zeilen zeigen „-“');
 pruefe(($spalten['StateVariableID']['visible'] ?? true) === false && ($spalten['LevelVariableID']['visible'] ?? true) === false && isset($spalten['StateVariableID']['edit']), 'die Variablen selbst bleiben als unsichtbare, gespeicherte Spalten in der Zeile');
+// Schnellfilter (Burkhard 25.10.2026: „im gerätetab wäre es hilfreich, wenn man einen filter setzen könnte“, nur für die
+// Geräte): die Textspalten, die man sieht; Haken wie Umgekehrt und Nur abfragen haben keinen Text, die anderen Listen keinen Filter.
+$gefiltert = array_keys(array_filter($spalten, static fn (array $c): bool => ($c['quickFilter'] ?? false) === true));
+pruefe($gefiltert === ['Room', 'Name', 'Aliases', 'Type', 'StateLabel', 'LevelLabel'], 'Geräteliste mit Schnellfilter auf Raum, Name, Aliase, Typ und den Variablen: ' . json_encode($gefiltert));
+$andere = [];
+foreach (flach($formular['elements']) as $e) {
+    if (($e['type'] ?? '') === 'List' && ($e['name'] ?? '') !== 'Devices' && array_any($e['columns'] ?? [], static fn (array $c): bool => ($c['quickFilter'] ?? false) === true)) {
+        $andere[] = $e['name'];
+    }
+}
+pruefe($andere === [], 'die anderen Listen bleiben ohne Schnellfilter: ' . json_encode($andere));
 $werte = $geraete['values'] ?? [];
 pruefe(($werte[0] ?? null) === ['StateLabel' => 'Status', 'LevelLabel' => '-', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'ColorTempLabel' => '-', 'ColorLabel' => '-', 'PlaybackLabel' => '-', 'VolumeLabel' => '-', 'MuteLabel' => '-', 'TitleLabel' => '-', 'ArtistLabel' => '-', 'HumidityLabel' => '-', 'ModeLabel' => '-', 'FanLabel' => '-', 'HeatLabel' => '-', 'HeatPowerLabel' => '-', 'ValveLabel' => '-', 'Valve2Label' => '-', 'Valve3Label' => '-', 'rowColor' => ''], 'Licht ohne Helligkeit: Name der Variable und „-“: ' . json_encode($werte[0] ?? null, JSON_UNESCAPED_UNICODE));
 pruefe(($werte[1] ?? null) === ['StateLabel' => '-', 'LevelLabel' => '#69998 ?', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'ColorTempLabel' => '-', 'ColorLabel' => '-', 'PlaybackLabel' => '-', 'VolumeLabel' => '-', 'MuteLabel' => '-', 'TitleLabel' => '-', 'ArtistLabel' => '-', 'HumidityLabel' => '-', 'ModeLabel' => '-', 'FanLabel' => '-', 'HeatLabel' => '-', 'HeatPowerLabel' => '-', 'ValveLabel' => '-', 'Valve2Label' => '-', 'Valve3Label' => '-', 'rowColor' => '#FFC0C0'], 'Rollladen: der Zustand zählt nicht zum Typ, eine gelöschte Variable ist kenntlich und die Zeile rot: ' . json_encode($werte[1] ?? null, JSON_UNESCAPED_UNICODE));

@@ -358,6 +358,7 @@
             {
               "caption": "Room",
               "name": "Room",
+              "quickFilter": true,
               "width": "140px",
               "add": "",
               "edit": {
@@ -367,6 +368,7 @@
             {
               "caption": "Name",
               "name": "Name",
+              "quickFilter": true,
               "width": "180px",
               "add": "",
               "edit": {
@@ -376,6 +378,7 @@
             {
               "caption": "Aliases (comma separated)",
               "name": "Aliases",
+              "quickFilter": true,
               "width": "auto",
               "add": "",
               "edit": {
@@ -385,6 +388,7 @@
             {
               "caption": "Type",
               "name": "Type",
+              "quickFilter": true,
               "width": "140px",
               "add": "light",
               "edit": {
@@ -468,6 +472,7 @@
             {
               "caption": "State or measured value",
               "name": "StateLabel",
+              "quickFilter": true,
               "width": "220px",
               "add": "-"
             },
@@ -722,6 +727,7 @@
             {
               "caption": "Brightness/position",
               "name": "LevelLabel",
+              "quickFilter": true,
               "width": "220px",
               "add": "-"
             },

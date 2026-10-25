@@ -178,7 +178,8 @@ above the device list, and so does the self-test.
 ## The release list
 
 Each row is a device with its capabilities. In the edit dialog you choose the type, and the dialog
-then shows only the variables that belong to this type.
+then shows only the variables that belong to this type. The search field above the list filters by room,
+name, alias, type and the names of the variables.
 
 | Column | Meaning |
 |---|---|

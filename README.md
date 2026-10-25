@@ -185,7 +185,8 @@ nennt sie über der Geräteliste, der Selbsttest ebenso.
 ## Die Freigabeliste
 
 Jede Zeile ist ein Gerät mit seinen Fähigkeiten. Im Dialog zum Bearbeiten wählen Sie den Typ, danach
-zeigt der Dialog nur die Variablen, die zu diesem Typ gehören.
+zeigt der Dialog nur die Variablen, die zu diesem Typ gehören. Das Suchfeld über der Liste filtert nach Raum,
+Name, Alias, Typ und den Namen der Variablen.
 
 | Spalte | Bedeutung |
 |---|---|
