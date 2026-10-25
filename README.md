@@ -340,7 +340,12 @@ ein Zähler ohne eigene Leistung zählt dort mit dem, was darunter gemessen ist.
 Zähler der Liste ist, und Zähler, die sich im Kreis messen, sperren die Zeile. Liegt unter einem Zähler in den
 letzten 30 Tagen mehr als 105 % seines eigenen Werts, weist der Selbsttest darauf hin. Das Diagramm eines Zählers
 zeigt, was unter ihm hängt, und den Rest als „nicht erfasst“; das Diagramm des Hauses je Gerät zeigt mit Zählern die
-oberste Ebene. Die Erzeugung einer PV-Anlage gehört in die Energiebilanz, nicht in einen Zähler.
+oberste Ebene. Die Erzeugung einer PV-Anlage gehört in die Energiebilanz, nicht in einen Zähler. Auch der Zähler am
+Netzanschluss steht nur in den Quellen: Als Typ Zähler würde er den Netzbezug als Verbrauch melden, mit PV oder
+Batterie ist das weniger, als das Haus verbraucht.
+
+Eine Instanz hat genau eine Energiebilanz und einen Strompreis. Für einen zweiten Standort mit eigener Bilanz oder
+eigenem Tarif legen Sie eine zweite Instanz an.
 
 Tragen Sie in der Energiebilanz den **Strompreis** ein (eine archivierte Variable in ct/kWh oder €/kWh, als Einheit genügt „ct“, bei einem
 dynamischen Tarif etwa der aktuelle Preis aus dem Tibber-Modul) und die Einspeisevergütung, nennt der Hausverbrauch

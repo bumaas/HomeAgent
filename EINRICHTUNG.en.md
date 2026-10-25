@@ -114,8 +114,9 @@ How to proceed:
    and number of devices. Then ask me whether to use one of them or create a new one. For a new one ask
    for the target category and the name and, if there is an instance already, whether to copy its
    rooms, devices and sources; copied entries then count as existing. Ask at the same time which
-   assistants I want to connect to Home Agent (usually one, such as the Claude app). Do not create
-   anything before I have answered.
+   assistants I want to connect to Home Agent (usually one, such as the Claude app) and whether there
+   are several sites with their own energy balance or electricity price; each needs its own instance.
+   Do not create anything before I have answered.
 1. Read the text "Hint for scripts and AI assistants" in the configuration form of the instance. It
    names all properties, the device types and the fields of each type. Stick to it and do not guess
    field names.
@@ -142,7 +143,8 @@ How to proceed:
      otherwise one.
    - Intermediate meters such as sub-distributions as type meter with MeteredBy, an electricity price
      as PriceVariableID, the energy balance as the list Sources: one row per grid connection, solar
-     plant and battery with meter and power.
+     plant and battery with meter and power. The meter at the grid connection belongs only in Sources,
+     not also as type meter (it measures the grid import, not the consumption of the house).
    - If a device is evidently connected more than once (e.g. through Matter and a bridge, with the
      same name and room), take the connection whose variables were updated last (VariableUpdated from
      IPS_GetVariable, not VariableChanged) and name the other one.

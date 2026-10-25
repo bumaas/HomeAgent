@@ -117,7 +117,8 @@ So gehst du vor:
    einer neuen frag nach der Zielkategorie und dem Namen und, falls es schon eine Instanz gibt, ob du
    deren Räume, Geräte und Quellen übernehmen sollst; übernommene gelten danach als vorhanden. Frag
    im selben Zug, welche Assistenten ich mit Home Agent verbinden will (meist einer, etwa die
-   Claude-App). Leg nichts an, bevor ich geantwortet habe.
+   Claude-App) und ob es mehrere Standorte mit eigener Energiebilanz oder eigenem Strompreis gibt; jeder
+   braucht eine eigene Instanz. Leg nichts an, bevor ich geantwortet habe.
 1. Lies im Konfigurationsformular der Instanz den Text „Hinweis für Skripte und KI-Assistenten“. Dort
    stehen alle Properties, die Gerätetypen und die Felder je Typ. Halte dich daran und rate keine
    Feldnamen.
@@ -144,7 +145,8 @@ So gehst du vor:
      gemessen werden, sonst eine.
    - Zwischenzähler wie Unterverteilungen als Typ meter mit MeteredBy, einen Strompreis als
      PriceVariableID, die Energiebilanz als Liste Sources: je Netzanschluss, PV-Anlage und Batterie
-     eine Zeile mit Zähler und Leistung.
+     eine Zeile mit Zähler und Leistung. Der Zähler am Netzanschluss gehört nur in Sources, nicht
+     zusätzlich als meter (er misst den Netzbezug, nicht den Verbrauch des Hauses).
    - Ist ein Gerät erkennbar mehrfach angebunden (etwa über Matter und eine Bridge, mit gleichem Namen
      und Raum), nimm die Anbindung, deren Variablen zuletzt aktualisiert wurden (VariableUpdated aus
      IPS_GetVariable, nicht VariableChanged), und nenne die andere.

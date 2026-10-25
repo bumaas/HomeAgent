@@ -329,7 +329,11 @@ meter of the list, and meters that measure each other in a circle, disable the r
 value is measured below a meter in the last 30 days, the self test points it out. The chart of a meter shows what
 hangs below it and the rest as "not metered"; with meters the chart of the house per device shows the top level. The
 production of a solar plant
-belongs in the energy balance, not in a meter.
+belongs in the energy balance, not in a meter. The meter at the grid connection, too, belongs only in the sources: as
+type meter it would report the grid import as consumption, and with solar or a battery that is less than the house uses.
+
+An instance has exactly one energy balance and one electricity price. For a second site with its own balance or tariff,
+create a second instance.
 
 If you enter the **electricity price** in the energy balance (an archived variable in ct/kWh or €/kWh, "ct" alone is enough as the unit, for a dynamic
 tariff for example the current price from the Tibber module) and the feed-in tariff, the house consumption also names

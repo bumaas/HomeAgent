@@ -685,6 +685,9 @@ foreach (['EINRICHTUNG.md', 'EINRICHTUNG.en.md'] as $datei) {
     // Prompttest 25.10.2026 (Qwen mit open-terminal): Das Modell riet Funktionsnamen und hielt Fehlerantworten für Daten
     $muster[] = $datei === 'EINRICHTUNG.md' ? 'https://www.symcon.de/de/llms/function-index.md' : 'https://www.symcon.de/en/llms/function-index.md';
     $muster[] = $datei === 'EINRICHTUNG.md' ? 'Eine Antwort mit „error“ ist ein Fehler' : 'An answer with "error" is an error';
+    // Prompttest 25.10.2026 (doctee, zwei Standorte): Hauptzähler nur in Sources, je Standort mit eigener Bilanz eine Instanz
+    $muster[] = $datei === 'EINRICHTUNG.md' ? 'Der Zähler am Netzanschluss gehört nur in Sources' : 'The meter at the grid connection belongs only in Sources';
+    $muster[] = $datei === 'EINRICHTUNG.md' ? 'mehrere Standorte mit eigener Energiebilanz' : 'several sites with their own energy balance';
     foreach ($muster as $muss) {
         pruefe(str_contains(preg_replace('/\s+/', ' ', $auftrag), $muss), $datei . ' nennt ' . $muss);
     }
