@@ -2406,8 +2406,10 @@ class HomeAgent extends IPSModuleStrict
                 // B86: Ein Mediaplayer ohne schaltbares Ein/Aus pausiert bei off und setzt bei on mit type=media fort; dieselbe
                 // Prüfung wie in setState, auch ein Statustext ohne Aktion zählt (Review 18.10.2026, N11).
                 $pausesOnOff = $hasMedia && array_any($devices, static fn (array $e): bool => !$e['ReadOnly'] && $index->pausesOnOff($e));
+                $specials = array_any($devices, static fn (array $e): bool => !$e['ReadOnly'] && ($e['SpecialVia'] ?? []) !== []);
                 $parts = array_filter([
                     in_array('on', $commands, true) ? 'on/off switch a device' : '',
+                    $specials ? 'on/off set a thermostat to its special setpoint On/Off, only with type=thermostat or its name' : '',
                     $pausesOnOff ? 'off pauses a media player without power switch, on with type=media resumes it' : '',
                     $hasBlinds ? 'open/close move a blind or window all the way' : '',
                     $hasStop && $hasBlinds ? ($hasMedia ? 'stop halts a moving blind or window and ends playback of a media player' : 'stop halts a moving blind or window') : ($hasMedia ? 'stop ends playback' : ''),

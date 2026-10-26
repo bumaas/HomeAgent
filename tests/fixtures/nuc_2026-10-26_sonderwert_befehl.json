@@ -1,0 +1,201 @@
+{
+    "_quelle": "nuc 26.10.2026, 12:13 (Europe/Berlin), Symcon 9.1, gelesen über SymconDeviceBackend (read, unit, hasAction, setpointRange, options). Raumthermostate HM-CC-TC (SETPOINT 6 bis 30, Darstellung Wert mit Intervallen 0 = „Off“ und 100 = „On“, laut CCU VENT_CLOSED und VENT_OPEN) in Musikzimmer, Gast, Keller; Wandthermostat HM-TC-IT-WM-W-EU im Wintergarten (SET_TEMPERATURE 4,5 bis 30,5, Intervalle 4,5 „Off“ und 30,5 „On“ am Rand). Ist-Temperaturen ohne ihre Formateinträge „%.1f“. Angenommen, nicht gemessen: Trägheit 311 ms der SETPOINT-Variablen aus dem Mitschnitt vom 10.10.2026 (nuc_2026-10-10_thermostat.json). Anlass: Claude konnte „On“ nicht setzen und riet 30,5 °C für das Musikzimmer.",
+    "zeitzone": "Europe/Berlin",
+    "variablen": {
+        "48076": {
+            "name": "nuc: Hardware\\Homematic\\Musik\\Heizung\\Musik.Heizung.Thermostat:2\\SETPOINT [SETPOINT]",
+            "wert": 30,
+            "formatiert": "30.0 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            },
+            "optionen": [
+                [
+                    0,
+                    "Off"
+                ],
+                [
+                    100,
+                    "On"
+                ]
+            ],
+            "verhalten": "traege",
+            "verzoegerungMs": 311
+        },
+        "41945": {
+            "name": "nuc: Hardware\\Homematic\\Musik\\Heizung\\Musik.Heizung.Thermostat:1\\TEMPERATURE [TEMPERATURE]",
+            "wert": 20,
+            "formatiert": "20.0 °C",
+            "einheit": "°C",
+            "aktion": false
+        },
+        "27238": {
+            "name": "nuc: Hardware\\Homematic\\Musik\\Heizung\\Musik.Heizung.Stellantrieb:1\\VALVE_STATE [VALVE_STATE]",
+            "wert": 97,
+            "formatiert": "97 %",
+            "einheit": "%",
+            "aktion": false,
+            "sollbereich": {
+                "min": 0,
+                "max": 100,
+                "schritt": 1
+            }
+        },
+        "11093": {
+            "name": "nuc: Hardware\\Homematic\\Wintergarten\\Heizung\\Wintergarten.Heizung.Wandthermostat:2\\SET_TEMPERATURE [SET_TEMPERATURE]",
+            "wert": 20.5,
+            "formatiert": "20.5 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 5,
+                "max": 30,
+                "schritt": 0.5
+            },
+            "optionen": [
+                [
+                    4.5,
+                    "Off"
+                ],
+                [
+                    30.5,
+                    "On"
+                ]
+            ]
+        },
+        "19960": {
+            "name": "nuc: Hardware\\Homematic\\Wintergarten\\Heizung\\Wintergarten.Heizung.Wandthermostat:2\\ACTUAL_TEMPERATURE [ACTUAL_TEMPERATURE]",
+            "wert": 21.4,
+            "formatiert": "21.4 °C",
+            "einheit": "°C",
+            "aktion": false
+        },
+        "27311": {
+            "name": "nuc: Hardware\\Homematic\\Wintergarten\\Heizung\\Wintergarten.Heizung.Heizkörperthermostat:4\\VALVE_STATE [VALVE_STATE]",
+            "wert": 0,
+            "formatiert": "0 %",
+            "einheit": "%",
+            "aktion": false,
+            "sollbereich": {
+                "min": 0,
+                "max": 100,
+                "schritt": 1
+            }
+        },
+        "32272": {
+            "name": "nuc: Hardware\\Homematic\\Keller\\Heizung\\Keller.Heizung.Thermostat:2\\SETPOINT [SETPOINT]",
+            "wert": 17,
+            "formatiert": "17.0 °C",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            },
+            "optionen": [
+                [
+                    0,
+                    "Off"
+                ],
+                [
+                    100,
+                    "On"
+                ]
+            ],
+            "verhalten": "traege",
+            "verzoegerungMs": 311
+        },
+        "26722": {
+            "name": "nuc: Hardware\\Homematic\\Keller\\Heizung\\Keller.Heizung.Thermostat:1\\TEMPERATURE [TEMPERATURE]",
+            "wert": 21.8,
+            "formatiert": "21.8 °C",
+            "einheit": "°C",
+            "aktion": false
+        },
+        "10028": {
+            "name": "nuc: Hardware\\Homematic\\Gast\\Heizung\\Gast.Heizung.Thermostat:2\\SETPOINT [SETPOINT]",
+            "wert": 100,
+            "formatiert": "On",
+            "einheit": "°C",
+            "aktion": true,
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            },
+            "optionen": [
+                [
+                    0,
+                    "Off"
+                ],
+                [
+                    100,
+                    "On"
+                ]
+            ],
+            "verhalten": "traege",
+            "verzoegerungMs": 311
+        },
+        "41351": {
+            "name": "nuc: Hardware\\Homematic\\Gast\\Heizung\\Gast.Heizung.Thermostat:1\\TEMPERATURE [TEMPERATURE]",
+            "wert": 21.8,
+            "formatiert": "21.8 °C",
+            "einheit": "°C",
+            "aktion": false
+        },
+        "30333": {
+            "name": "nuc: Hardware\\Homematic\\Gast\\Heizung\\Gast.Heizung.Stellantrieb:1\\VALVE_STATE [VALVE_STATE]",
+            "wert": 98,
+            "formatiert": "98 %",
+            "einheit": "%",
+            "aktion": false,
+            "sollbereich": {
+                "min": 0,
+                "max": 100,
+                "schritt": 1
+            }
+        }
+    },
+    "geraete": [
+        {
+            "Room": "Gast",
+            "Name": "Heizung",
+            "Aliases": "Thermostat, Heizkörper",
+            "Type": "thermostat",
+            "StateVariableID": 41351,
+            "SetpointVariableID": 10028,
+            "ValveVariableID": 30333
+        },
+        {
+            "Room": "Wintergarten",
+            "Name": "Heizung",
+            "Aliases": "Wandthermostat",
+            "Type": "thermostat",
+            "StateVariableID": 19960,
+            "SetpointVariableID": 11093,
+            "ValveVariableID": 27311
+        },
+        {
+            "Room": "Keller",
+            "Name": "Thermostat",
+            "Aliases": "Heizkörper",
+            "Type": "thermostat",
+            "StateVariableID": 26722,
+            "SetpointVariableID": 32272
+        },
+        {
+            "Room": "Musikzimmer",
+            "Name": "Heizung",
+            "Aliases": "Thermostat, Heizkörper",
+            "Type": "thermostat",
+            "StateVariableID": 41945,
+            "SetpointVariableID": 48076,
+            "ValveVariableID": 27238
+        }
+    ]
+}

@@ -1533,7 +1533,10 @@ pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Thermostat mit So
 $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
 $schema = $werkzeuge['set_state']['inputSchema']['properties'] ?? [];
 pruefe(($schema['temperature']['type'] ?? '') === 'number' && str_contains($schema['temperature']['description'] ?? '', 'Target temperature in °C'), 'set_state hat temperature: ' . json_encode($schema['temperature'] ?? null));
-pruefe(!isset($schema['command']) && !isset($schema['percent']) && ($schema['type']['enum'] ?? []) === ['thermostat'], 'nur ein Thermostat: kein command, kein percent, Typ thermostat: ' . json_encode(array_keys($schema)));
+pruefe(!isset($schema['percent']) && ($schema['type']['enum'] ?? []) === ['thermostat'], 'nur ein Thermostat: kein percent, Typ thermostat: ' . json_encode(array_keys($schema)));
+// 30,5 „On“ im Profil ist ein Sonder-Sollwert: command bietet nur on an, und die Beschreibung sagt, wofür (26.10.2026).
+pruefe(($schema['command']['enum'] ?? null) === ['on'] && str_contains($schema['command']['description'] ?? '', 'special setpoint On/Off, only with type=thermostat or its name'),
+    'Sonder-Sollwert „On“: command mit on und seiner Beschreibung: ' . json_encode($schema['command'] ?? null));
 pruefe(str_contains($werkzeuge['set_state']['description'] ?? '', '"Set the heating in the guest room to 21 degrees" → room=Gast, temperature=21.'), 'die Beschreibung nennt ein Beispiel: ' . ($werkzeuge['set_state']['description'] ?? ''));
 pruefe(in_array('thermostat', $werkzeuge['get_state']['inputSchema']['properties']['type']['enum'] ?? [], true), 'get_state kennt den Typ thermostat');
 $text = $m->QueryState('Gast', 'thermostat', '', false);

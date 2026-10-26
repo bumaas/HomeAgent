@@ -517,7 +517,7 @@ when querying and adds a command or a percent value:
 | `volume_change` | makes a media player louder or quieter by that many percentage points, 10 without a number |
 | `mute` | mutes a media player (`true`) or unmutes it (`false`) |
 | `percent` | sets the brightness of a light or how far a blind or window is open |
-| `temperature` | sets the setpoint of a thermostat in °C |
+| `temperature` | sets the setpoint of a thermostat in °C; `on` and `off` set a thermostat without mode to its special setpoint "On" or "Off" if it has one, but only with `type=thermostat` or its name |
 | `humidity` | sets the target humidity of a humidifier or dehumidifier in percent |
 | `mode`, `fan_speed` | sets mode or fan speed by name, for example "Continuous" or "High" |
 | `color_temperature` | sets the colour temperature of a light in Kelvin, for example 2700 for warm white |
@@ -555,7 +555,9 @@ The module calculates the volume in percent of the range of the variable and sen
 in another unit, the query names both, for example "volume 64 % = -17.5 dB".
 
 The module checks a temperature against the [range of the setpoint](#the-release-list). Outside of it nothing is
-sent, and the answer names the range. Odd values go to the step size, with steps of 0.5 21.3 becomes 21.5, and the
+sent, and the answer names the range and the special setpoints that `on` and `off` set. The module takes their value
+from the entry with the text "On" or "Off", so 100 for an older Homematic thermostat and 30.5 for a wall thermostat.
+Odd values go to the step size, with steps of 0.5 21.3 becomes 21.5, and the
 answer names the value sent.
 
 The assistant gives the colour temperature in Kelvin. If the variable counts in mired (range up to 1000,

@@ -225,6 +225,15 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   von 0“, `set_state` rundete nicht). Das gilt nur für dichte Einträge (`associationStep`: mindestens drei Abstände, jeder
   ein Vielfaches des kleinsten, höchstens 1; Review 18.10.2026, M2: zwei Zahlen an den Rändern ergaben Schrittweite 24, und
   21 °C wurde 30 °C). Sonst bleibt sie 0, der Selbsttest sagt „ohne feste Schrittweite“.
+- **Sonder-Sollwert per Befehl** (26.10.2026): Claude sollte die Heizung im Musikzimmer auf „On“ stellen, bekam für
+  30,5 °C die Absage „außerhalb von 6 bis 30 °C“ und meldete, „On“ gehe über die Schnittstelle nicht. Das Thermostat ist
+  ein HM-CC-TC mit „On“ bei 100 und „Off“ bei 0 (Intervalle der Darstellung), 30,5 hatte das Modell vom Wandthermostat
+  geraten. Seitdem gehen `on` und `off` beim Thermostat ohne Modus auf den Sonderwert mit diesem Text (`specialSetpoints`
+  im Konstruktor wie `StopVia`, `runSpecialSetpoint` über `runSetpoint` mit dem Wert je Gerät, ein gemeinsames Warten),
+  und die Absage einer Temperatur außerhalb des Bereichs nennt sie (`specialHint`). Nur mit `type=thermostat` oder
+  Namen, weil „Musikzimmer aus“ das Licht meint und „Off“ beim HM-CC-TC das Ventil schließt. Keine Bedeutung im Text
+  (Regel „erfindet das Modul nicht“), keine Karte mit Schalter: „On“ heißt beim HM-CC-TC Ventil dauerhaft offen, ein
+  Antippen sollte das nicht auslösen (Burkhard: on und off beide). Mitschnitt `nuc_2026-10-26_sonderwert_befehl.json`.
 - **Luftbe-/entfeuchter** (Typ `humidifier`): `state` (Ein/Aus), `humidity` (Ist-Feuchte), `setpoint`
   (Zielfeuchte, Feld `humidity` von `set_state` über `runSetpoint`, Einheit ohne Angabe %). Gemessen am
   Luftentfeuchter über das HomeAssistant-Modul: Die Darstellung nennt 35 bis 85 in Einerschritten, das Gerät

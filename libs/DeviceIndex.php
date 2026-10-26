@@ -245,6 +245,9 @@ final class DeviceIndex
     /** Verben des Werkzeugs „set_state“, in der Reihenfolge, in der das Schema sie nennt. */
     public const COMMANDS = ['on', 'off', 'open', 'close', 'stop', 'play', 'pause', 'next', 'previous'];
 
+    /** Texte von Sonder-Sollwerten, die command on und off meinen (Homematic „On“ und „Off“). */
+    private const SPECIAL_WORDS = ['on' => 'on', 'ein' => 'on', 'an' => 'on', 'off' => 'off', 'aus' => 'off'];
+
     /** So lange wartet ein schaltendes Werkzeug höchstens auf die Rückmeldung der Geräte. */
     private const CONFIRM_TIMEOUT_MS = 2000;
 
@@ -393,6 +396,13 @@ final class DeviceIndex
             $entry['StopVia'] = self::moves($entry) && isset($entry['roles']['level'])
                 ? $backend->stopMethod($entry['roles']['level'], $entry['roles']['stop'] ?? 0)
                 : '';
+        }
+        unset($entry);
+        // Ebenso die Sonder-Sollwerte „On“ und „Off“ eines Thermostats ohne Modus; ein Klimagerät geht über den Modus aus.
+        foreach ($this->entries as &$entry) {
+            $entry['SpecialVia'] = $entry['Type'] === 'thermostat' && isset($entry['roles']['setpoint']) && !isset($entry['roles']['mode'])
+                ? self::specialSetpoints($backend, $entry['roles']['setpoint'])
+                : [];
         }
         unset($entry);
         $this->backend = $backend;
@@ -2613,10 +2623,19 @@ final class DeviceIndex
         // Musik starten (Burkhard 18.10.2026, Review Frage 1).
         $resumeOnly = $command === 'on' && $type !== 'media' ? array_filter($understand, fn (array $e): bool => $this->pausesOnOff($e)) : [];
         $understand = array_diff_key($understand, $resumeOnly);
-        $skipped = count($selection['entries']) - count($understand) + ($selection['windowsWithoutDrive'] ?? 0);
+        // Ein Sonder-Sollwert nur mit type=thermostat oder Namen: „Musikzimmer aus“ meint das Licht, nicht die Heizung auf „Off“.
+        $specialOnly = in_array($command, ['on', 'off'], true) && $type !== 'thermostat' && $name === ''
+            ? array_filter($understand, static fn (array $e): bool => $e['Type'] === 'thermostat' && ($e['SpecialVia'] ?? []) !== [])
+            : [];
+        $understand = array_diff_key($understand, $specialOnly);
+        $skipped = count($selection['entries']) - count($understand) - count($specialOnly) + ($selection['windowsWithoutDrive'] ?? 0);
         if ($understand === [] && $resumeOnly !== []) {
             $this->problem = 'not_understood';
             return $this->fail(sprintf($this->t('Nothing was changed: "on" resumes a media player without power switch only with type=media (%s).'), $filter));
+        }
+        if ($understand === [] && $specialOnly !== []) {
+            $this->problem = 'not_understood';
+            return $this->fail(sprintf($this->t('Nothing was changed: "%s" sets a thermostat to its special setpoint only with type=thermostat or its name (%s).'), $command, $filter));
         }
         if ($understand === []) {
             $this->problem = 'not_understood';
@@ -2644,6 +2663,9 @@ final class DeviceIndex
         $closing = $skipped > 0 ? [sprintf($this->t('%d device(s) of the selection do not understand "%s" and were left out.'), $skipped, $ability)] : [];
         if ($skipped > 0) {
             $this->problem = 'left_out';
+        }
+        if ($specialOnly !== []) {
+            $closing[] = sprintf($this->t('%d thermostat(s) left out: "%s" sets a special setpoint only with type=thermostat or a name.'), count($specialOnly), $command);
         }
         if ($color !== null) {
             $result = $this->runColor($understand, self::COLORS[$color]);
@@ -2719,9 +2741,22 @@ final class DeviceIndex
         if ($understand === []) {
             return $this->switchAnswer($result, $this->t($on ? 'playing back' : 'paused'), $filter, $closing);
         }
-        // Ein Klimagerät geht über den Modus aus; seine Rolle „state“ ist die Ist-Temperatur (Burkhard 13.10.2026).
+        // Ein Klimagerät geht über den Modus aus; seine Rolle „state“ ist die Ist-Temperatur (Burkhard 13.10.2026). Ein
+        // Thermostat ohne Modus geht auf seinen Sonder-Sollwert „On“ bzw. „Off“ (Burkhard 26.10.2026).
         $climate = array_filter($understand, static fn (array $e): bool => $e['Type'] === 'thermostat');
         $understand = array_diff_key($understand, $climate);
+        $specials = array_filter($climate, static fn (array $e): bool => !isset($e['roles']['mode']));
+        $climate = array_diff_key($climate, $specials);
+        if ($specials !== []) {
+            $special = $this->runSpecialSetpoint($specials, $command);
+            if ($result === null && $climate === [] && $understand === []) {
+                $head = $special['pending'] > 0
+                    ? sprintf($this->t('%d of %d devices set to %s, %d not confirmed yet (%s).'), $special['reached'], $special['total'], $special['caption'], $special['pending'], $filter)
+                    : sprintf($this->t('%d of %d devices set to %s (%s).'), $special['reached'], $special['total'], $special['caption'], $filter);
+                return $this->answer($head, $special, $closing);
+            }
+            $result = self::mergeResults($result, $special);
+        }
         $result = $climate === [] ? $result : self::mergeResults($result, $this->runOption($climate, 'mode', 'off'));
         $withState = array_filter($understand, static fn (array $e): bool => isset($e['roles']['state']));
         $levelOnly = array_diff_key($understand, $withState);
@@ -2825,8 +2860,10 @@ final class DeviceIndex
         }
         // Ein Thermostat stellt man auf eine Temperatur; ein Klimagerät hat dazu Modus und Lüfterstufe per Name
         // (B19). „off“ setzt dort den Modus „off“; „on“ gibt es nicht, Heizen, Kühlen und Auto wären alle möglich.
+        // Ohne Modus gehen on und off auf die Sonder-Sollwerte „On“ und „Off“, die erst die Anlage kennt (SpecialVia).
         if ($type === 'thermostat') {
-            return isset($roles['setpoint']) ? array_merge(['temperature'], isset($roles['mode']) ? ['mode'] : [], isset($roles['fan']) ? ['fan_speed'] : [], isset($roles['mode']) ? ['off'] : []) : [];
+            $specials = is_array($row['SpecialVia'] ?? null) ? array_keys($row['SpecialVia']) : [];
+            return isset($roles['setpoint']) ? array_merge(['temperature'], isset($roles['mode']) ? ['mode'] : [], isset($roles['fan']) ? ['fan_speed'] : [], isset($roles['mode']) ? ['off'] : $specials) : [];
         }
         // Ein Luftentfeuchter schaltet und stellt seine Zielfeuchte; eine Lüftung schaltet, Modus und Lüfterstufe
         // gehen bei beiden per Name.
@@ -3091,22 +3128,25 @@ final class DeviceIndex
      * @param array<int, array<string, mixed>> $entries Geräte, die Schlüssel bestimmen die Reihenfolge der Zeilen
      * @return array{lines: array<int, string>, total: int, reached: int, pending: int, failed: int, target: float}
      */
-    private function runSetpoint(array $entries, float $temperature): array
+    private function runSetpoint(array $entries, float $temperature, ?array $specials = null): array
     {
         $jobs = [];
         $targets = [];
         foreach ($entries as $index => $entry) {
             $variable = $entry['roles']['setpoint'];
             $unit = $this->temperatureUnit($variable, $entry['Type']);
-            $job = ['entry' => $entry, 'variable' => $variable, 'target' => $temperature, 'note' => null, 'done' => false];
+            // Ein Sonder-Sollwert (je Gerät sein Wert) liegt außerhalb des Bereichs und geht ungerundet hinaus.
+            $special = $specials[$index] ?? null;
+            $job = ['entry' => $entry, 'variable' => $variable, 'target' => $special ?? $temperature, 'note' => null, 'done' => false];
             $current = $this->backend->read($variable);
-            $range = $this->backend->setpointRange($variable);
+            $range = $special === null ? $this->backend->setpointRange($variable) : null;
             if ($current === null) {
                 $job['note'] = sprintf($this->t('not available (variable %d is missing)'), $variable);
             } elseif (!$this->backend->hasAction($variable)) {
                 $job['note'] = $this->t('cannot be set (the setpoint has no action)');
             } elseif ($range !== null && ($temperature < $range['min'] - 0.001 || $temperature > $range['max'] + 0.001)) {
-                $job['note'] = sprintf($this->t('not set: %s is outside %s to %s'), self::formatNumber($temperature) . ' ' . $unit, self::formatNumber($range['min']), self::formatNumber($range['max']) . ' ' . $unit);
+                $job['note'] = sprintf($this->t('not set: %s is outside %s to %s'), self::formatNumber($temperature) . ' ' . $unit, self::formatNumber($range['min']), self::formatNumber($range['max']) . ' ' . $unit)
+                    . $this->specialHint($entry);
             } else {
                 if ($range !== null && $range['step'] > 0) {
                     $job['target'] = round($range['min'] + round(($temperature - $range['min']) / $range['step']) * $range['step'], 3);
@@ -3114,7 +3154,7 @@ final class DeviceIndex
                 }
                 $targets[] = $job['target'];
                 if ((is_int($current['value']) || is_float($current['value'])) && abs($current['value'] - $job['target']) < 0.01) {
-                    $job['note'] = sprintf($this->t('already set to %s'), self::formatNumber($job['target']) . ' ' . $unit);
+                    $job['note'] = $special === null ? sprintf($this->t('already set to %s'), self::formatNumber($job['target']) . ' ' . $unit) : $this->mainStateOf($entry)['text'];
                     $job['done'] = true;
                 } else {
                     $error = $this->backend->request($variable, (float)$job['target']);
@@ -3165,6 +3205,53 @@ final class DeviceIndex
         $first = $entries === [] ? null : array_first($entries);
         $result['unit'] = $first === null ? '°C' : $this->temperatureUnit((int)$first['roles']['setpoint'], $first['Type']);
         return $result;
+    }
+
+    /**
+     * Stellt Thermostate auf ihren Sonder-Sollwert „On“ bzw. „Off“ (SpecialVia), jedes mit seinem Wert: HM-CC-TC 100 und 0,
+     * Wandthermostat 30,5 und 4,5 (nuc 26.10.2026). Die Kopfzeile nennt den Text des Eintrags, bei verschiedenen Texten on/off.
+     *
+     * @param array<int, array<string, mixed>> $entries
+     * @return array{lines: array<int, string>, total: int, reached: int, pending: int, failed: int, caption: string}
+     */
+    private function runSpecialSetpoint(array $entries, string $command): array
+    {
+        $values = array_map(static fn (array $e): float => $e['SpecialVia'][$command]['value'], $entries);
+        $captions = array_values(array_unique(array_map(static fn (array $e): string => $e['SpecialVia'][$command]['caption'], $entries)));
+        return $this->runSetpoint($entries, 0.0, $values) + ['caption' => count($captions) === 1 ? $captions[0] : $this->t($command)];
+    }
+
+    /** Zusatz zur Absage eines Sollwerts außerhalb des Bereichs: welche Sonder-Sollwerte command on und off setzen. */
+    private function specialHint(array $entry): string
+    {
+        $parts = [];
+        foreach ($entry['SpecialVia'] ?? [] as $command => $special) {
+            $parts[] = sprintf($this->t('command %s for “%s”'), $command, $special['caption']);
+        }
+        return $parts === [] ? '' : sprintf($this->t('; special setpoints: %s'), implode(', ', $parts));
+    }
+
+    /**
+     * Sonder-Sollwerte mit dem Text „On“ oder „Off“ außerhalb des Bereichs (HM-CC-TC 100 und 0 als Intervalle der Darstellung,
+     * Wandthermostat 30,5 und 4,5 am Rand), für command on und off; je Befehl zählt der erste Eintrag. Der Wert kommt immer
+     * von der Variable, das Modul rät keinen.
+     *
+     * @return array<string, array{value: float, caption: string}>
+     */
+    private static function specialSetpoints(DeviceBackend $backend, int $variable): array
+    {
+        $range = $backend->setpointRange($variable);
+        if ($range === null) {
+            return [];
+        }
+        $found = [];
+        foreach ($backend->options($variable) ?? [] as [$value, $caption]) {
+            $command = self::SPECIAL_WORDS[self::normalize((string)$caption)] ?? null;
+            if ($command !== null && !isset($found[$command]) && is_numeric($value) && self::outsideRange($range, (float)$value)) {
+                $found[$command] = ['value' => (float)$value, 'caption' => trim((string)$caption)];
+            }
+        }
+        return array_filter(['on' => $found['on'] ?? null, 'off' => $found['off'] ?? null]);
     }
 
     /**
@@ -6231,7 +6318,8 @@ final class DeviceIndex
         $moving = $this->blindMoving;
         $abilities = $readOnly ? [] : self::abilitiesOf($entry);
         $controls = [];
-        if (in_array('on', $abilities, true)) {
+        // Ein Thermostat mit „On“ als Sonder-Sollwert bekommt keinen Schalter: Ein Antippen öffnete das Ventil dauerhaft.
+        if (in_array('on', $abilities, true) && $entry['Type'] !== 'thermostat') {
             $controls['switch'] = true;
         }
         if (in_array('open', $abilities, true)) {

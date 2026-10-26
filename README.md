@@ -525,7 +525,7 @@ aus und gibt dazu einen Befehl oder einen Prozentwert an:
 | `volume_change` | macht einen Mediaplayer um so viele Prozentpunkte lauter oder leiser, ohne Zahl um 10 |
 | `mute` | schaltet einen Mediaplayer stumm (`true`) oder wieder laut (`false`) |
 | `percent` | stellt die Helligkeit eines Lichts oder die Öffnung eines Rollladens oder Fensters |
-| `temperature` | stellt den Sollwert eines Thermostats in °C |
+| `temperature` | stellt den Sollwert eines Thermostats in °C; `on` und `off` stellen ein Thermostat ohne Modus auf seinen Sonder-Sollwert „On“ bzw. „Off“, wenn es einen hat, aber nur mit `type=thermostat` oder seinem Namen |
 | `humidity` | stellt die Zielfeuchte eines Luftbe- oder -entfeuchters in Prozent |
 | `mode`, `fan_speed` | setzt Modus oder Lüfterstufe per Name, etwa „Kontinuierlich“ oder „Hoch“ |
 | `color_temperature` | stellt die Farbtemperatur eines Lichts in Kelvin, etwa 2700 für warmweiß |
@@ -566,7 +566,9 @@ Die Lautstärke rechnet das Modul in Prozent des Bereichs der Variable und sende
 einer anderen Einheit, nennt die Abfrage beides, etwa „Lautstärke 64 % = -17.5 dB“.
 
 Eine Temperatur prüft das Modul gegen den [Bereich des Sollwerts](#die-freigabeliste). Liegt sie außerhalb, geht
-nichts hinaus, und die Antwort nennt den Bereich. Krumme Werte gehen auf die Schrittweite, aus 21,3 wird bei
+nichts hinaus, und die Antwort nennt den Bereich und die Sonder-Sollwerte, die `on` und `off` setzen. Den Wert dafür
+nimmt das Modul aus dem Eintrag mit dem Text „On“ oder „Off“, bei einem älteren Homematic-Thermostat also 100, bei
+einem Wandthermostat 30,5. Krumme Werte gehen auf die Schrittweite, aus 21,3 wird bei
 0,5er-Schritten 21,5, und die Antwort nennt den gesendeten Wert.
 
 Die Farbtemperatur nimmt der Assistent in Kelvin an. Zählt die Variable in Mired (Bereich bis 1000, so
