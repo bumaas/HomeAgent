@@ -1521,11 +1521,15 @@ class HomeAgent extends IPSModuleStrict
         // benutzbar ist und dasselbe Token trägt (nur im Header, nie in der Adresse). Die
         // Connect-Adresse wird nur dann ermittelt, ein festes Token braucht sie nicht.
         $viaOAuth = false;
+        $oauthClient = '';
         $oauthBase = $access === null ? $this->oauthBase() : '';
         if ($access === null && $oauthBase !== '') {
-            $access = $this->oauthAccess((string)($_SERVER['HTTP_AUTHORIZATION'] ?? ''), $accesses);
+            $access = $this->oauthAccess((string)($_SERVER['HTTP_AUTHORIZATION'] ?? ''), $accesses, $oauthClient);
             $viaOAuth = $access !== null;
         }
+        // Der Connector von claude.ai merkt sich die Werkzeugliste je Konto, auch wenn Claude Code ohne Apps fragt; er
+        // bekommt deshalb immer die Liste mit Apps (26.10.2026).
+        $alwaysApps = $viaOAuth && OAuthServer::sharesToolList($oauthClient);
         // Die zuletzt ausgelieferte Werkzeugliste dieser Anfrage (mit oder ohne Apps), für die Spalte „Werkzeugliste“
         $served = null;
         $called = false;
@@ -1533,7 +1537,8 @@ class HomeAgent extends IPSModuleStrict
             $_SERVER['REQUEST_METHOD'] ?? 'GET',
             $access !== null,
             fn (): string => $this->requestBody(),
-            function (bool $apps = false) use ($access, &$served): array {
+            function (bool $apps = false) use ($access, &$served, $alwaysApps): array {
+                $apps = $apps || $alwaysApps;
                 $tools = $this->tools($access, $apps);
                 $served = [$apps, $tools];
                 return $tools;
@@ -1840,12 +1845,13 @@ class HomeAgent extends IPSModuleStrict
      *
      * @param array<int, array{Name: string, Token: string, DefaultRoom: string, ReadOnly: bool, InPath: bool}> $accesses benutzbare Zugänge
      */
-    private function oauthAccess(string $authorization, array $accesses): ?array
+    private function oauthAccess(string $authorization, array $accesses, string &$clientId = ''): ?array
     {
         $entry = OAuthServer::accessFor($this->storedJson('OAuthTokens'), $this->storedJson('OAuthGrants', true), $authorization, time());
         if ($entry === null) {
             return null;
         }
+        $clientId = (string)($entry['client_id'] ?? '');
         foreach ($accesses as $access) {
             if (hash_equals($entry['access'], hash('sha256', $access['Token']))) {
                 // Für „Zuletzt benutzt“ in der Liste der Kopplungen, höchstens alle zehn Minuten gespeichert

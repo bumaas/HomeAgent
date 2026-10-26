@@ -491,7 +491,13 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   `text/html;profile=mcp-app` anmelden (nach 2026-07-28 in jeder Anfrage, `McpProtocol::showsApps`; gemessen: Claude-App ja,
   Claude Code und HA nein) und nur mit einem Gerät mit Verlauf. Clients von Anthropic (`clientInfo.name` „Anthropic/…“)
   bekommen es immer: claude.ai holt die Liste für den Chat als „Anthropic/Toolbox“ ohne Apps-Fähigkeit (nuc, 12.10.2026,
-  danach stand in claude.ai nur „Get state“). claude.ai beachtet `ttlMs` nicht: Am 13.10.2026 holte es die
+  danach stand in claude.ai nur „Get state“). Am 26.10.2026 fehlten `show_chart` und `show_devices` im Chat auf nuc und
+  betreuter Anlage zugleich: Eine Claude-Code-Sitzung hatte sich um 11:45 über die claude.ai-Connectors (dieselbe
+  OAuth-Kopplung, client_id des Connectors von claude.ai) als `claude-code 2.1.310` ohne Apps-Fähigkeit die Liste geholt,
+  und claude.ai merkt sie je Konto (`cacheScope: private`). Seitdem bekommt jede Anfrage mit einem Zugriffstoken dieses
+  Clients die Liste mit Apps (`OAuthServer::sharesToolList`, Burkhard: Weg 2). Verworfen: nur `claude-code` als
+  Anthropic-Client zählen (bricht beim nächsten Client, einen „claude-ai 0.1.0“ gab es am selben Tag schon). Claude Code
+  mit eigener Kopplung (eigene client_id) bleibt bei der Regel nach Fähigkeit. claude.ai beachtet `ttlMs` nicht: Am 13.10.2026 holte es die
   Werkzeugliste nach rund 75 min wieder (10:28, dann 11:45 beim Öffnen eines neuen Chats), sofort nur nach neuem
   Hinzufügen des Connectors. Das Werkzeug trägt `_meta.ui.resourceUri`
   `ui://homeagent/chart/<8 Zeichen SHA-256 der Seite>` (`resourceUri`: claude.ai nahm am 13.10.2026 eine über eine halbe Stunde alte Seite aus dem Zwischenspeicher, ohne `resources/read`, trotz `ttlMs`; eine geänderte Seite bekommt so eine neue Adresse, sobald der Client die Werkzeugliste neu holt; `readResource` liefert auch zu alten Prüfsummen und ohne Prüfsumme die heutige Seite, bei den Karten ebenso), die Seite liefert `resources/read` aus `HomeAgent/chart.html` (ohne Bibliotheken, die CSP der

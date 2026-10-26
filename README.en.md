@@ -162,7 +162,9 @@ The self-test shows the number of paired assistants; without Connect it says
 that sign-in is not available.
 
 Charts are drawn by the tool `show_chart`. It appears in the connector settings under "Interactive tools", where it
-can be set to "Always allow". Whether the app knows the new tools after an update of the module is shown by the
+can be set to "Always allow". Claude Code also gets the chart and card tools through this connector; claude.ai keeps
+the tool list per account, and otherwise the chat would lose them afterwards. Whether the app knows the new tools after
+an update of the module is shown by the
 column **Tool list** of the [accesses](#accesses).
 
 ## Rooms and floors

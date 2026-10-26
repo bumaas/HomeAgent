@@ -2579,10 +2579,38 @@ $tokens = $koppeln();
 $zugriff = (string)($tokens['access_token'] ?? '');
 pruefe($zugriff !== '', 'Ausgangslage: Zugriffstoken über Kopplung, Code und Token-Endpunkt');
 
-// Der OAuth-Client bekommt genau die Werkzeuge und Antworten des gekoppelten Zugangs
+// Der OAuth-Client bekommt die Werkzeuge und Antworten des gekoppelten Zugangs. Über den Connector von claude.ai immer mit
+// Apps: claude.ai merkt sich die Liste je Konto, eine Claude-Code-Sitzung über dieselben Connectors holte sie ohne Apps,
+// und der Chat verlor show_chart und show_devices (nuc und betreute Anlage 26.10.2026, 11:45:28 claude-code 2.1.310).
 $perOAuth = $mcp('Bearer ' . $zugriff, 'tools/list');
 $perToken = $mcp('Bearer ' . $token, 'tools/list');
-pruefe($perOAuth['status'] === 200 && ($perOAuth['json']['result'] ?? null) === ($perToken['json']['result'] ?? false), 'tools/list mit dem Zugriffstoken gleicht dem des Zugangs (nur abfragen, Standardraum): ' . $perOAuth['status'] . ' ' . substr($perOAuth['body'], 0, 120));
+$namen = static fn (array $a): array => array_column($a['json']['result']['tools'] ?? [], 'name');
+pruefe($perOAuth['status'] === 200 && $namen($perOAuth) === ['get_state', 'show_chart', 'show_devices'] && $namen($perToken) === ['get_state'],
+    'tools/list über claude.ai mit Apps, mit dem festen Token ohne (nur abfragen): ' . json_encode([$namen($perOAuth), $namen($perToken)]));
+// Protokoll 2026-07-28 wie claude-code über die claude.ai-Connectors: ohne io.modelcontextprotocol/ui
+$modern = static function (string $auth, string $client) use ($hook, $m, $iid): array {
+    $_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $iid, 'REMOTE_ADDR' => '127.0.0.1', 'HTTP_X_FORWARDED_FOR' => '160.79.106.181',
+        'HTTP_AUTHORIZATION' => $auth, 'HTTP_MCP_PROTOCOL_VERSION' => '2026-07-28', 'HTTP_MCP_METHOD' => 'tools/list'];
+    HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list', 'params' => ['_meta' => [
+        'io.modelcontextprotocol/protocolVersion'    => '2026-07-28',
+        'io.modelcontextprotocol/clientInfo'         => ['name' => $client, 'version' => '2.1.310'],
+        'io.modelcontextprotocol/clientCapabilities' => (object)[],
+    ]]]);
+    $m->response = null;
+    ob_start();
+    try {
+        $hook->invoke($m);
+    } finally {
+        ob_end_clean();
+        HomeAgentHarness::$body = '';
+    }
+    $antwort = $m->response ?? ['status' => 0, 'headers' => [], 'body' => ''];
+    return $antwort + ['json' => json_decode($antwort['body'], true) ?? []];
+};
+$a = $modern('Bearer ' . $zugriff, 'claude-code');
+pruefe(in_array('show_chart', $namen($a), true), 'claude-code ohne Apps-Fähigkeit über den Connector von claude.ai: trotzdem mit Apps: ' . $a['status'] . ' ' . json_encode($namen($a)) . ' ' . substr($a['body'], 0, 120));
+$a = $modern('Bearer ' . $token, 'claude-code');
+pruefe($a['status'] === 200 && $namen($a) === ['get_state'], 'claude-code mit festem Token bleibt ohne Apps: ' . $a['status'] . ' ' . json_encode($namen($a)));
 $init = $mcp('Bearer ' . $zugriff, 'initialize', ['protocolVersion' => '2025-11-25', 'capabilities' => (object)[], 'clientInfo' => ['name' => 'claude-ai', 'version' => '0.1.0']]);
 pruefe(str_contains((string)($init['json']['result']['instructions'] ?? ''), 'only read'), 'die Anleitung sagt dem Assistenten, dass der Zugang nur abfragen kann: ' . substr((string)($init['json']['result']['instructions'] ?? ''), 0, 160));
 $aufruf = $mcp('Bearer ' . $zugriff, 'tools/call', ['name' => 'get_state', 'arguments' => (object)[]]);

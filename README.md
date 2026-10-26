@@ -168,7 +168,9 @@ welche noch in Gebrauch ist, die zuletzt benutzte steht oben. Der Selbsttest nen
 gekoppelten Assistenten, ohne Connect sagt er, dass die Anmeldung nicht möglich ist.
 
 Diagramme zeichnet das Werkzeug `show_chart`. Es erscheint in den Einstellungen des Connectors unter „Interaktive
-Tools“, dort lässt es sich auf „Immer erlauben“ stellen. Ob die App nach einem Update des Moduls die neuen Werkzeuge
+Tools“, dort lässt es sich auf „Immer erlauben“ stellen. Über diesen Connector bekommt auch Claude Code die Diagramm- und
+Kartenwerkzeuge; claude.ai merkt sich die Werkzeugliste je Konto, sonst fehlten sie danach im Chat. Ob die App nach
+einem Update des Moduls die neuen Werkzeuge
 kennt, zeigt die Spalte **Werkzeugliste** der [Zugänge](#zugänge).
 
 ## Räume und Etagen

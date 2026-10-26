@@ -103,6 +103,8 @@ Backend. So laufen die Tests mit echten Mitschnitten.
     `iss`. Körper an `oauth/*` höchstens 8 KB (413). Höchstens 50 Kopplungen. `lastUse` je Familie (`markUsed`,
     höchstens alle `USE_STEP` = 600 s geschrieben), Liste nach letzter Nutzung.
   - Kein automatisches Ersetzen gleicher Clients am selben Zugang (zwei Konten an einem Zugang würden sich abmelden).
+  - Der Connector von claude.ai bekommt immer die Werkzeugliste mit Apps (`OAuthServer::sharesToolList`), weil claude.ai
+    sie je Konto merkt, auch wenn Claude Code ohne Apps fragt. Test `check-module.php`, `check-oauth.php`.
 
 ## Werkzeuge
 
@@ -111,7 +113,7 @@ Backend. So laufen die Tests mit echten Mitschnitten.
 | `get_state` | Zustand, Verbrauch, Leistung, Verlauf, Zeitleiste; Filter `room`, `floor`, `type`, `name`, `active_only`, `period`/`from`/`to` | immer |
 | `set_state` | schalten und stellen (`command`, `percent`, `temperature`, `humidity`, `mode`, `fan_speed`, `color_temperature`, `color`, `volume`, `volume_change`, `mute`) | ohne „Nur abfragen“ |
 | `run_scene` | freigegebenes Skript oder Ablaufplan starten (`IPS_RunScript`, Ablaufplan braucht eine Aktion); Szenennamen in der Beschreibung | mit Szenen |
-| `show_chart` | Diagramm als MCP App | Clients mit Apps, Clients von Anthropic immer |
+| `show_chart` | Diagramm als MCP App | Clients mit Apps, Clients von Anthropic und der Connector von claude.ai (`sharesToolList`) immer |
 | `show_devices` | Gerätekarten als MCP App | ebenso |
 | `control_device` | Bedienung von der Karte (`_meta.ui.visibility: ["app"]`) | ohne „Nur abfragen“, aufrufbar auch ohne Apps |
 

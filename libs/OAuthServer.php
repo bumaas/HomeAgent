@@ -30,6 +30,14 @@ final class OAuthServer
     /** Scope für den Zugriff auf die Werkzeuge; offline_access fordert ein Erneuerungstoken an. */
     public const SCOPE = 'mcp';
 
+    /**
+     * Clients, deren Werkzeugliste ein Vermittler je Konto speichert: Der Connector von claude.ai fragt für die Claude-App
+     * und für Claude Code (über die claude.ai-Connectors) mit derselben Kopplung, gemerkt wird die zuletzt geholte Liste
+     * für alle. Am 26.10.2026 holte eine Claude-Code-Sitzung sie ohne Apps, und der Chat verlor auf nuc und betreuter
+     * Anlage show_chart und show_devices.
+     */
+    private const SHARED_TOOL_LIST_CLIENTS = ['https://claude.ai/oauth/mcp-oauth-client-metadata'];
+
     /** Kopplungscode: Gültigkeit und erlaubte Fehleingaben. */
     public const PAIRING_SECONDS = 600;
     public const PAIRING_ATTEMPTS = 5;
@@ -94,6 +102,12 @@ final class OAuthServer
         }
         $entry = $tokens[hash('sha256', $parts[1])] ?? null;
         return is_array($entry) && $entry['expires'] <= $now;
+    }
+
+    /** Bekommt dieser Client immer die Werkzeugliste mit Apps, weil sein Vermittler sie je Konto teilt? */
+    public static function sharesToolList(string $clientId): bool
+    {
+        return in_array($clientId, self::SHARED_TOOL_LIST_CLIENTS, true);
     }
 
     /**

@@ -344,4 +344,11 @@ $alt = $fam['fam-1'];
 $alt['expires'] = $t + 5000 + OAuthServer::REFRESH_SECONDS;
 pruefe(method_exists(OAuthServer::class, 'lastUse') && OAuthServer::lastUse($alt) === $t + 5000, 'ohne gemerkte Nutzung zählt die letzte Erneuerung');
 
+// Liste je Konto (26.10.2026): Über den Connector von claude.ai gibt es immer die Liste mit Apps. Claude Code mit eigener
+// Kopplung (eigene client_id) und fremde Clients entscheiden weiter nach ihrer Fähigkeit.
+$teilt = static fn (string $id): ?bool => method_exists(OAuthServer::class, 'sharesToolList') ? OAuthServer::sharesToolList($id) : null;
+pruefe($teilt('https://claude.ai/oauth/mcp-oauth-client-metadata') === true, 'der Connector von claude.ai teilt seine Werkzeugliste');
+pruefe($teilt('https://claude.ai/oauth/claude-code-client-metadata') === false && $teilt('https://chatgpt.com/oauth/client.json') === false && $teilt('') === false,
+    'Claude Code mit eigener Kopplung, fremde Clients und eine leere client_id nicht');
+
 ende('OAuth');
