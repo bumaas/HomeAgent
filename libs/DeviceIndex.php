@@ -6541,12 +6541,25 @@ final class DeviceIndex
             }
             return round($result, 2);
         };
-        return ['field' => $field, 'value' => $value,
+        $control = ['field' => $field, 'value' => $value,
             'min' => $range['min'] ?? null, 'max' => $range['max'] ?? null, 'step' => $step,
             'unit' => $this->temperatureUnit($variable, (string)$entry['Type']),
             // Beschriftet wie Modus und Lüfterstufe (Layoutvergleich 13.10.2026: „24 °C“ unter „21,0 °C“ ohne Hinweis)
             'label' => $this->t($field === 'humidity' ? 'Target humidity' : 'Setpoint'),
             'lower' => $target(-1), 'raise' => $target(1)];
+        // Knöpfe „Off“ und „On“ für die Sonder-Sollwerte, in der Reihenfolge wie −/+ (Burkhard 26.10.2026); auf einem
+        // Sonderwert zeigt die Karte dessen Text statt „100 °C“
+        if (($entry['SpecialVia'] ?? []) !== []) {
+            $control['valueCaption'] = $value !== null && self::outsideRange($range, $value) ? $this->specialCaption($variable, $value) : null;
+            $control['specials'] = [];
+            foreach (['off', 'on'] as $command) {
+                $special = $entry['SpecialVia'][$command] ?? null;
+                if ($special !== null) {
+                    $control['specials'][] = ['command' => $command, 'caption' => $special['caption'], 'active' => $value !== null && abs($value - $special['value']) < 0.01];
+                }
+            }
+        }
+        return $control;
     }
 
     /** Kein Treffer: Liegt es am Raum, am Namen oder an der Kombination? */

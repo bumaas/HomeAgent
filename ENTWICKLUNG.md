@@ -234,6 +234,8 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   Namen, weil „Musikzimmer aus“ das Licht meint und „Off“ beim HM-CC-TC das Ventil schließt. Keine Bedeutung im Text
   (Regel „erfindet das Modul nicht“), keine Karte mit Schalter: „On“ heißt beim HM-CC-TC Ventil dauerhaft offen, ein
   Antippen sollte das nicht auslösen (Burkhard: on und off beide). Mitschnitt `nuc_2026-10-26_sonderwert_befehl.json`.
+  Am selben Tag wollte Burkhard „On“ und „Off“ doch auf der Kachel: als Knopfleiste rechts in der Sollwertzeile (wie eine
+  Auswahl, gewählt in der Farbe der Art), nicht als Schalter; ein Sonderwert zeigt dort seinen Text statt „100 °C“.
 - **Luftbe-/entfeuchter** (Typ `humidifier`): `state` (Ein/Aus), `humidity` (Ist-Feuchte), `setpoint`
   (Zielfeuchte, Feld `humidity` von `set_state` über `runSetpoint`, Einheit ohne Angabe %). Gemessen am
   Luftentfeuchter über das HomeAssistant-Modul: Die Darstellung nennt 35 bis 85 in Einerschritten, das Gerät

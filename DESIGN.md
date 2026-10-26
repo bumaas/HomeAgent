@@ -136,7 +136,7 @@ Jede Karte behält ihre eigene Höhe (`align-items: start`); höher werden nur K
 | Auswahl bis fünf kurze Einträge (zusammen bis 24 Zeichen) | Knopfleiste, gewählter Eintrag in der Farbe der Art mit 22 % Fläche |
 | Auswahl mit mehr Einträgen | Aufklappliste im Stil der Knöpfe (graue Fläche, kein Rahmen) |
 | Balken / Schieberegler | 6 px hoch, Füllung in der Farbe der Art, runder Griff 14 px immer sichtbar; reine Anzeige ohne Griff |
-| Sollwert | −, Wert mit Einheit, + in einer Zeile unter der Beschriftung |
+| Sollwert | −, Wert mit Einheit, + in einer Zeile unter der Beschriftung. Ein Thermostat mit Sonder-Sollwerten hat rechts in derselben Zeile eine Knopfleiste mit ihren Texten („Off“, „On“), der gewählte wie ein gewählter Eintrag; steht der Sollwert auf einem Sonderwert, zeigt die Mitte dessen Text statt der Zahl |
 | Farbtemperatur | Schieberegler wie der Balken, Fläche von warm (#ffb46b) nach kalt (#cfe3ff) statt der Farbe der Art, Griff in `--fg`; Bereich der Lampe, höchstens 2000 bis 6500 K |
 | Farbe | Tupfer 18 px rund in einer Zeile (umbrechend), gewählter Tupfer mit Ring 2 px in `--fg`, Name als Tooltip; Weiß mit Rand `--border` |
 

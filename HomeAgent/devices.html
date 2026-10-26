@@ -69,6 +69,7 @@
   .reply { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
   .reply.error { color: var(--error); }
   .row { display: flex; align-items: center; gap: 6px; }
+  .row .specials { margin-left: auto; }
   .value { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; }
   button { font: inherit; font-size: 11px; color: var(--fg); background: color-mix(in srgb, var(--muted) 12%, transparent); border: 0; border-radius: 5px; padding: 4px 8px; cursor: pointer; min-width: 26px; line-height: 1.2; }
   button:hover { background: color-mix(in srgb, var(--tone) 25%, transparent); }
@@ -464,7 +465,7 @@
     if (c.setpoint) {
       var sp = c.setpoint;
       var setRow = node("div", "row");
-      var setValue = node("span", "value", sp.value === null ? "–" : number(sp.value) + " " + sp.unit);
+      var setValue = node("span", "value", sp.valueCaption ? sp.valueCaption : sp.value === null ? "–" : number(sp.value) + " " + sp.unit);
       // Die Ziele rechnet das Modul (auch für Sonderwerte außerhalb des Bereichs)
       var change = function (direction) {
         var target = direction < 0 ? sp.lower : sp.raise;
@@ -476,6 +477,18 @@
       setRow.appendChild(button("−", "lower", function () { change(-1); }));
       setRow.appendChild(setValue);
       setRow.appendChild(button("+", "raise", function () { change(1); }));
+      // Sonder-Sollwerte („Off“, „On“) rechts daneben als Knopfleiste; gesendet wird der Befehl, den Wert kennt das Modul
+      if (sp.specials && sp.specials.length) {
+        var specials = node("div", "seg specials");
+        sp.specials.forEach(function (special) {
+          var b = button(special.caption, (sp.label || "") + ": " + special.caption, function () {
+            if (!special.active) { control(card, { command: special.command }, el); }
+          });
+          if (special.active) { b.className = "on"; b.setAttribute("aria-pressed", "true"); }
+          specials.appendChild(b);
+        });
+        setRow.appendChild(specials);
+      }
       var setBox = node("div", "choice");
       if (sp.label) { setBox.appendChild(node("div", "caption", sp.label)); }
       setBox.appendChild(setRow);

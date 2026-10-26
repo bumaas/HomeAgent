@@ -656,7 +656,7 @@ Tag weiterzählt, steht im Stundendiagramm mit dem ganzen Tag in einer Stunde.
 
 Mit „Zeig mir die Lichter im Wohnzimmer“ zeigt die Claude-App die Geräte als Karten, nach Art gruppiert. Jede Karte
 nennt den Zustand und groß den wichtigsten Wert, was an ist, ist farbig. Je nach Gerät gibt es einen Schalter, einen
-Balken für Helligkeit oder Öffnung, Knöpfe für Auf, Stopp und Zu, den Sollwert mit Plus und Minus, Wiedergabe und
+Balken für Helligkeit oder Öffnung, Knöpfe für Auf, Stopp und Zu, den Sollwert mit Plus und Minus (bei Thermostaten mit Sonder-Sollwerten dazu Knöpfe „Off“ und „On“), Wiedergabe und
 Lautstärke, Betriebsart und Lüfterstufe, beim Licht Farbtemperatur und Farbtupfer. Ein Tippen schaltet sofort, ohne
 Umweg über das Sprachmodell. Die Karte zeigt danach, was das Gerät zurückgemeldet hat, und folgt einem fahrenden
 Rollladen, bis er steht. Der Assistent erfährt im weiteren Gespräch, was bedient wurde. Bei einem Zugang mit **Nur

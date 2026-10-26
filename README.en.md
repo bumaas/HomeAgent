@@ -645,7 +645,7 @@ once a day shows the whole day in one hour of an hourly chart.
 
 With "Show me the lights in the living room" the Claude app shows the devices as cards, grouped by kind. Each card
 shows the state and, in large print, the main value; what is on is coloured. Depending on the device there is a
-switch, a bar for brightness or opening, buttons for open, stop and close, the setpoint with plus and minus, playback
+switch, a bar for brightness or opening, buttons for open, stop and close, the setpoint with plus and minus (for thermostats with special setpoints also buttons "Off" and "On"), playback
 and volume, operating mode and fan speed, and for lights colour temperature and colour swatches. A tap switches at
 once, without a detour through the language model. The card then shows what the device reported back and follows a
 moving blind until it stops. The assistant learns in the further conversation what was operated. With a **Query

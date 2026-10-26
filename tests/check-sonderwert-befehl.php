@@ -109,5 +109,21 @@ $idx = index($liste, $werte);
 $r = rufe(static fn () => $idx->cards(['room' => 'Musikzimmer'], false));
 $karte = $r['structuredContent']['cards'][0] ?? [];
 pruefe(!isset($karte['controls']['switch']) && isset($karte['controls']['setpoint']), 'die Karte behält den Sollwert, ohne Schalter: ' . json_encode($karte['controls'] ?? null));
+// Knöpfe „Off“ und „On“ am Sollwert (Burkhard 26.10.2026), in der Reihenfolge Off, On wie −, +
+pruefe(($karte['controls']['setpoint']['specials'] ?? null) === [['command' => 'off', 'caption' => 'Off', 'active' => false], ['command' => 'on', 'caption' => 'On', 'active' => false]]
+    && array_key_exists('valueCaption', $karte['controls']['setpoint'] ?? []) && $karte['controls']['setpoint']['valueCaption'] === null,
+    'Musikzimmer auf 30 °C: Knöpfe Off und On, keiner gewählt: ' . json_encode($karte['controls']['setpoint'] ?? null, JSON_UNESCAPED_UNICODE));
+$r = rufe(static fn () => $idx->cards(['room' => 'Gast'], false));
+$gast = $r['structuredContent']['cards'][0]['controls']['setpoint'] ?? [];
+pruefe(($gast['valueCaption'] ?? null) === 'On' && ($gast['specials'][1]['active'] ?? null) === true && ($gast['specials'][0]['active'] ?? null) === false,
+    'Gast auf 100: der Wert heißt „On“, der Knopf On ist gewählt: ' . json_encode($gast, JSON_UNESCAPED_UNICODE));
+$r = rufe(static fn () => $idx->cards(['room' => 'Gast'], true));
+pruefe(!isset($r['structuredContent']['cards'][0]['controls']['setpoint']), 'nur abfragen: keine Bedienung, also auch keine Knöpfe');
+$schluessel = $karte['key'] ?? '';
+$r = rufe(static fn () => $idx->controlDevice(['device' => $schluessel, 'command' => 'on']));
+pruefe($anlage->requests === [[48076, 100.0]] && ($r['structuredContent']['cards'][0]['controls']['setpoint']['valueCaption'] ?? null) === 'On',
+    'Knopf On auf der Karte sendet 100, die neue Karte zeigt „On“: ' . json_encode($anlage->requests) . ' ' . ($r['text'] ?? ''));
+$r = rufe(static fn () => $idx->controlDevice(['device' => $schluessel, 'temperature' => 21]));
+pruefe(end($anlage->requests) === [48076, 21.0], 'von „On“ zurück auf eine Temperatur: ' . json_encode($anlage->requests));
 
 ende('Sonder-Sollwert per command');

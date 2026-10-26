@@ -164,7 +164,7 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   Schrittweite“). Batteriegeräte melden den Sollwert oft vor der Übernahme. Ein Sonderwert nennt den Text seines Eintrags
   (`specialCaption`), eine Bedeutung erfindet das Modul nicht. Test `check-sollwert.php`.
 - **Sonder-Sollwert per Befehl:** Thermostat ohne Modus mit Sonderwert „On“/„Off“ (`SpecialVia`, Wert aus der Variable)
-  versteht `on`/`off`, nur mit `type=thermostat` oder Namen; Karte ohne Schalter. Test `check-sonderwert-befehl.php`.
+  versteht `on`/`off`, nur mit `type=thermostat` oder Namen; Karte ohne Schalter, mit Knöpfen „Off“/„On“ am Sollwert\n  (`specials`, `valueCaption`). Test `check-sonderwert-befehl.php`.
 - **Ventile** (B101): `valve`, `valve2`, `valve3` am `thermostat`, im Dialog nebeneinander (`ValveRow`); es zählt das offenste
   in Prozent des Bereichs (`valveOf`). Aktiv nur mit Ventil über 0 und nie auf einem Sonder-Sollwert (`heatingActive`); der
   Selbsttest nennt Ventilvariablen mit nur benannten Einträgen (HmIP `VALVE_STATE`). Noch nicht: Verlauf. Test `check-ventil.php`.
