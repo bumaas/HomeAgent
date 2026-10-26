@@ -209,6 +209,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   (`heatText`), nie als Mittel der Leistungszahl. Ohne Wärmezähler Wärme aus der Wärmeleistung (`heatOf`,
   `powerKilowattHours`), mit Leistung am Gerät auch der Strom daraus, als eigener Block in der Zeile; der Verbrauch bleibt
   der Zähler. Noch nicht: Diagramme, `type=power`. Test `check-waermepumpe.php`.
+- **Umweltertrag** (`HeatIsYield`): Zählen Wärmezähler und Wärmeleistung nur den Ertrag aus der Umwelt (Vaillant über ebusd),
+  ist die Wärme Ertrag + Strom, ohne Strom nennt die Zeile nur den Ertrag (`yieldWithoutElectricity` im Selbsttest).
+  Test `check-umweltertrag.php`.
 - **Kosten** (`PriceVariableID` in ct/kWh oder €/kWh, Werte ohne Suffix über 2 sind Cent; `FeedInTariff`, `setTariff`;
   nur mit Bilanz, nur fürs Haus, ohne Grundgebühr): `hourlyCosts` je Stunde, `costLine` in `get_state`, `costs=true` in
   `show_chart`. Test `check-kosten.php`.

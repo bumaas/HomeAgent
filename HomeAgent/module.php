@@ -441,6 +441,10 @@ class HomeAgent extends IPSModuleStrict
                 $lines[] = sprintf($this->Translate('Note: %s: the heat output %s is not archived, so there is no heat over periods'), $this->entryLabel($entry), $named($output));
             }
         }
+        // Umweltertrag ohne Strom: Die Wärme wäre zu niedrig, das Modul nennt dann nur den Ertrag
+        foreach (DeviceIndex::yieldWithoutElectricity($list) as $index) {
+            $lines[] = sprintf($this->Translate('Note: %s: the heat is the environmental yield, but without energy meter and power there is no electricity to add'), $this->entryLabel($list[$index]));
+        }
         // Energiebilanz: Jeder Zähler muss als Zähler archiviert sein, sonst gibt es keinen Hausverbrauch, und jede
         // Leistung eine Leistung; die Hinweise nennen die Quelle mit Namen.
         foreach ($this->usableSources() as $source) {
@@ -3590,6 +3594,8 @@ class HomeAgent extends IPSModuleStrict
         $fields['MeteredBy'] = ['visible' => array_intersect(['energy', 'power'], DeviceIndex::TYPE_ROLES[$type]['roles']) !== [], 'caption' => $this->Translate('Measured by (meter above it)')];
         // Ein Kippfenster heißt ganz offen „gekippt“.
         $fields['Tilt'] = ['visible' => $type === 'window', 'caption' => $this->Translate('Tilt window (fully open means tilted)')];
+        // Umweltertrag (Vaillant über ebusd): nur bei Typen mit Wärme
+        $fields['HeatIsYield'] = ['visible' => in_array('heat', DeviceIndex::TYPE_ROLES[$type]['roles'], true), 'caption' => $this->Translate('Heat is the environmental yield (electricity is added)')];
         // „Nur abfragen“ ergibt nur bei Typen Sinn, die sich sonst schalten ließen.
         $fields['ReadOnly'] = ['visible' => in_array($type, DeviceIndex::CONTROLLABLE, true) || $type === 'window', 'caption' => $this->Translate('Query only (the assistant must not switch this device)')];
         return $fields;

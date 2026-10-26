@@ -142,7 +142,8 @@ So gehst du vor:
      Thermostat (bis zu drei).
    - Leistung und Energiezähler, wo es sie gibt. Bei einer Wärmepumpe auch Wärmezähler oder
      Wärmeleistung; zwei Zeilen für Heizen und Warmwasser nur, wenn Wärme und Strom beide getrennt
-     gemessen werden, sonst eine.
+     gemessen werden, sonst eine. Zählt die Wärme nur den Umweltertrag (Vaillant über ebusd:
+     „Energieertrag“, „Ertragsleistung“), HeatIsYield auf true.
    - Zwischenzähler wie Unterverteilungen als Typ meter mit MeteredBy, einen Strompreis als
      PriceVariableID, die Energiebilanz als Liste Sources: je Netzanschluss, PV-Anlage und Batterie
      eine Zeile mit Zähler und Leistung. Der Zähler am Netzanschluss gehört nur in Sources, nicht

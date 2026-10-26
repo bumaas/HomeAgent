@@ -140,7 +140,8 @@ How to proceed:
      thermostat (up to three).
    - Power and energy meters where they exist. For a heat pump also a heat meter or heat output; two
      rows for heating and hot water only if both heat and electricity are measured separately,
-     otherwise one.
+     otherwise one. If the heat only counts the environmental yield (Vaillant over ebusd:
+     "Energieertrag", "Ertragsleistung"), set HeatIsYield to true.
    - Intermediate meters such as sub-distributions as type meter with MeteredBy, an electricity price
      as PriceVariableID, the energy balance as the list Sources: one row per grid connection, solar
      plant and battery with meter and power. The meter at the grid connection belongs only in Sources,

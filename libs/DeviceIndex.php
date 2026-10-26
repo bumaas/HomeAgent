@@ -382,6 +382,8 @@ final class DeviceIndex
             'Invert'   => (bool)($e['Invert'] ?? false),
             'ReadOnly' => (bool)($e['ReadOnly'] ?? false),
             'Tilt'     => (bool)($e['Tilt'] ?? false),
+            // Wärmezähler und Wärmeleistung zählen nur den Umweltertrag, der Strom kommt dazu (Vaillant über ebusd)
+            'HeatIsYield' => (bool)($e['HeatIsYield'] ?? false),
             'roles'    => self::rolesOf($e),
             // Zähler, an dem das Gerät hängt (B82): seine Energievariable, 0 = keiner
             'MeteredBy' => self::meteredByOf($e),
@@ -1396,6 +1398,9 @@ final class DeviceIndex
      * seine Zähler erst um Mitternacht für den Vortag bucht, ergäbe gegen Wärme aus der Leistung sonst Unsinn (betreute
      * Anlage 21.10.2026: gestern 15.6 statt 6.9). Jede Variable zählt nur einmal ($seen).
      *
+     * Mit „Wärme ist Umweltertrag“ ist die Wärme Ertrag + Strom des Zeitraums (nuc 26.10.2026: Arbeitszahl 3,5 statt 4,5);
+     * ohne Strom gibt es dann keine Wärme, nur den Ertrag.
+     *
      * @param array<int, true> $seen
      * @return null|array{text: string, heat: ?float, electricity: ?float} electricity = Strom der Arbeitszahl, null = keiner
      */
@@ -1408,10 +1413,17 @@ final class DeviceIndex
             return null;
         }
         $seen[$id] = true;
+        $yield = $entry['HeatIsYield'] ?? false;
         if ($counter > 0) {
             $heat = $this->heatKilowattHours($counter, $level, $from, $to);
-            return is_string($heat)
-                ? ['text' => sprintf($this->t('heat: %s'), $heat), 'heat' => null, 'electricity' => null]
+            if (is_string($heat)) {
+                return ['text' => sprintf($this->t('heat: %s'), $heat), 'heat' => null, 'electricity' => null];
+            }
+            if ($yield && $electricityKwh === null) {
+                return ['text' => sprintf($this->t('environmental yield %s kWh, no electricity to add'), self::formatNumber($heat)), 'heat' => null, 'electricity' => null];
+            }
+            return $yield
+                ? ['text' => $this->heatText($heat + $electricityKwh, $electricityKwh, false, false, $heat), 'heat' => $heat + $electricityKwh, 'electricity' => $electricityKwh]
                 : ['text' => $this->heatText($heat, $electricityKwh, false, false), 'heat' => $heat, 'electricity' => $electricityKwh];
         }
         $heat = $this->powerKilowattHours($output, $from, $to);
@@ -1420,7 +1432,11 @@ final class DeviceIndex
         }
         $power = isset($entry['roles']['power']) ? $this->powerKilowattHours($entry['roles']['power'], $from, $to) : null;
         $electricity = $power ?? $electricityKwh;
-        return ['text' => $this->heatText($heat, $electricity, true, $power !== null), 'heat' => $heat, 'electricity' => $electricity,
+        if ($yield && $electricity === null) {
+            return ['text' => sprintf($this->t('environmental yield %s kWh, no electricity to add'), self::formatNumber($heat)), 'heat' => null, 'electricity' => null];
+        }
+        $total = $yield ? $heat + $electricity : $heat;
+        return ['text' => $this->heatText($total, $electricity, true, $power !== null, $yield ? $heat : null), 'heat' => $total, 'electricity' => $electricity,
             'block' => $power !== null && $power > 0];
     }
 
@@ -1463,16 +1479,37 @@ final class DeviceIndex
      * values: heat 89 kWh from 12.5 kWh electricity, performance factor 7.1“): Stand dort nur die Arbeitszahl neben den
      * 6 kWh des Zählers, rechnete die Claude-App 89 ÷ 6 = 14.8 und hielt den Zähler für gerundet (Hardcopy 21.10.2026).
      */
-    private function heatText(float $heatKwh, ?float $electricityKwh, bool $fromOutput, bool $fromPower): string
+    private function heatText(float $heatKwh, ?float $electricityKwh, bool $fromOutput, bool $fromPower, ?float $yieldKwh = null): string
     {
+        // Ist die Wärme aus dem Umweltertrag gerechnet, steht der Ertrag dahinter, damit der Wert an der Anlage wiederzufinden ist
+        $yield = $yieldKwh === null ? '' : sprintf($this->t(' (environmental yield %s kWh plus electricity)'), self::formatNumber($yieldKwh));
         if ($fromPower && $electricityKwh !== null && $electricityKwh > 0) {
-            return sprintf($this->t('from power values: heat %s kWh from %s kWh electricity, performance factor %s'), self::formatNumber($heatKwh), self::formatNumber($electricityKwh), self::formatNumber($heatKwh / $electricityKwh));
+            return sprintf($this->t('from power values: heat %s kWh from %s kWh electricity, performance factor %s'), self::formatNumber($heatKwh), self::formatNumber($electricityKwh), self::formatNumber($heatKwh / $electricityKwh)) . $yield;
         }
         $text = sprintf($this->t($fromOutput ? 'heat %s kWh from heat output' : 'heat %s kWh'), self::formatNumber($heatKwh));
         if ($electricityKwh !== null && $electricityKwh > 0) {
             $text .= sprintf($this->t(', performance factor %s'), self::formatNumber($heatKwh / $electricityKwh));
         }
-        return $text;
+        return $text . $yield;
+    }
+
+    /**
+     * Zeilen mit „Wärme ist Umweltertrag“, aber ohne Stromzähler und ohne Leistung: Ihnen fehlt der Strom, der zur Wärme
+     * gehört (Selbsttest).
+     *
+     * @param list<array<string, mixed>> $rows Zeilen der Property Devices
+     * @return list<int> Stellen in $rows
+     */
+    public static function yieldWithoutElectricity(array $rows): array
+    {
+        $found = [];
+        foreach ($rows as $index => $row) {
+            $roles = self::rolesOf($row);
+            if (($row['HeatIsYield'] ?? false) === true && (isset($roles['heat']) || isset($roles['heatpower'])) && !isset($roles['energy']) && !isset($roles['power'])) {
+                $found[] = $index;
+            }
+        }
+        return $found;
     }
 
     /**
@@ -2212,11 +2249,11 @@ final class DeviceIndex
             }
             $total += $watts;
             $withValue++;
-            $heat = isset($entry['roles']['heatpower']) ? ', ' . $this->heatPowerText($entry['roles']['heatpower'], $watts) : '';
+            $heat = isset($entry['roles']['heatpower']) ? ', ' . $this->heatPowerText($entry['roles']['heatpower'], $watts, $entry['HeatIsYield']) : '';
             $rows[] = ['line' => $this->line($entry, self::formatWatts($watts) . ' W' . $heat), 'value' => $watts];
         }
         foreach ($heatOnly as $entry) {
-            $rows[] = ['line' => $this->line($entry, $this->heatPowerText($entry['roles']['heatpower'], null)), 'value' => null];
+            $rows[] = ['line' => $this->line($entry, $this->heatPowerText($entry['roles']['heatpower'], null, $entry['HeatIsYield'])), 'value' => null];
         }
         $lines = $this->rankedLines($rows, $wholeHouse, static fn (float $watts): string => self::formatWatts($watts) . ' W');
         $skipped = count($matches) - count($measured) - count($heatOnly);
@@ -2357,7 +2394,7 @@ final class DeviceIndex
      * „heat 4188 W, COP 8.4“: Wärmeleistung und Leistungszahl von jetzt (B83). Die Leistungszahl schwankt mit Vorlauf und
      * Außentemperatur; über einen Zeitraum gilt die Arbeitszahl aus den Zählern.
      */
-    private function heatPowerText(int $variableId, ?float $electricWatts): string
+    private function heatPowerText(int $variableId, ?float $electricWatts, bool $yield = false): string
     {
         $heat = $this->wattsOf($variableId);
         if (is_array($heat)) {
@@ -2365,11 +2402,15 @@ final class DeviceIndex
                 ? sprintf($this->t('not available (variable %d is missing)'), $variableId)
                 : sprintf($this->t('not a power value (unit %s)'), $heat['unit']));
         }
-        $text = sprintf($this->t('heat %s W'), self::formatWatts($heat));
-        if ($electricWatts !== null && $electricWatts > 0) {
-            $text .= sprintf($this->t(', COP %s'), self::formatNumber($heat / $electricWatts));
+        // Umweltertrag: Wärme = Ertrag + Strom, ohne Strom nur der Ertrag
+        if ($yield && $electricWatts === null) {
+            return sprintf($this->t('environmental yield %s W, no electricity to add'), self::formatWatts($heat));
         }
-        return $text;
+        $text = sprintf($this->t('heat %s W'), self::formatWatts($yield ? $heat + $electricWatts : $heat));
+        if ($electricWatts !== null && $electricWatts > 0) {
+            $text .= sprintf($this->t(', COP %s'), self::formatNumber(($yield ? $heat + $electricWatts : $heat) / $electricWatts));
+        }
+        return $text . ($yield ? sprintf($this->t(' (environmental yield %s W plus electricity)'), self::formatWatts($heat)) : '');
     }
 
     /** Zählt eine Variable mit dieser Einheit Leistung (mW, W, kW, MW oder ohne Einheit)? */

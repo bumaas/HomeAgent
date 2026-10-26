@@ -208,6 +208,7 @@ Name, Alias, Typ und den Namen der Variablen.
 | Zähler | Ebenso wahlweise: der Energiezähler, etwa `ENERGY_COUNTER`. Für den Verbrauch über Zeiträume muss er im Archiv mit der Aggregation „Zähler“ geloggt sein (siehe [Was archiviert sein muss](#was-archiviert-sein-muss)). Hängt ein Gerät an einer Messsteckdose, dürfen beide Zeilen dieselbe Leistung und denselben Zähler tragen; Verbrauch und Leistung eines Raums oder des Hauses zählen jede Variable nur einmal, und der Selbsttest weist darauf hin. |
 | Wärmezähler | Wahlweise: der Wärmemengenzähler einer Wärmepumpe, im Archiv mit der Aggregation „Zähler“. Er zählt nie im Stromverbrauch. |
 | Wärmeleistung | Wahlweise: die Wärmeleistung jetzt, in W oder kW. Mit der Leistung des Geräts ergibt sie die Leistungszahl, ohne Wärmezähler auch die Wärme über Zeiträume; dann muss sie archiviert sein. |
+| Wärme ist Umweltertrag | Haken setzen, wenn Wärmezähler und Wärmeleistung nur die Wärme aus der Umwelt zählen, ohne den Strom. So ist es bei Vaillant über ebusd („Energieertrag“, „Ertragsleistung“). Das Modul rechnet den Strom dann dazu. |
 | Gemessen von | Bei allem mit Leistung oder Zähler, wahlweise: der Zähler, hinter dem das Gerät oder der Zähler hängt, etwa die Unterverteilung OG. Zur Auswahl stehen die Zähler der gespeicherten Liste, ein neuer also erst nach dem Übernehmen. |
 | Umgekehrt | Haken setzen, wenn `true` „zu“ oder „aus“ bedeutet. Viele Fensterkontakte melden `true` für geschlossen. Bei Fenster, Tür und Meldern mit einer Zahl gilt sonst alles über 0 als offen bzw. erkannt, mit dem Haken nur die 0; so passt etwa der Türstatus von Matter (0 Geöffnet, 1 Geschlossen). Weitere Einträge wie „Angelehnt“ nennt die Antwort in Klammern. Bei Rollläden erkennt das Modul selbst, welcher Wert „offen“ bedeutet: aus der Darstellung „Rollladen“, aus dem Profil (ein Profilname mit „.Reversed“ zählt umgekehrt), beim HomeAssistant-Modul wie in Home Assistant 100 als offen. Der Selbsttest zeigt es je Rollladen, etwa „Rollladen Küche Rollladen: offen bei 1, geschlossen bei 0“. Stimmt das nicht, dreht der Haken, hier „Richtung umkehren“, es um. |
 | Kippfenster | Nur beim Fenster mit Antrieb: Haken setzen, wenn der Antrieb das Fenster nur kippt. Die Antwort sagt dann „gekippt“ und „50 % gekippt“ statt „offen“ und „50 % offen“. |
@@ -322,6 +323,10 @@ Die Arbeitszahl ist so gut wie die Zähler. Zählt der Stromzähler nur den Verd
 mancher Wärmepumpen, fehlen Umwälzpumpen und Heizstab, und sie fällt zu gut aus. Manche Regler schätzen die Wärme nur
 und buchen ihre Zähler erst um Mitternacht. Lassen Sie den Wärmezähler dann leer, das Modul rechnet die Wärme aus der
 Wärmeleistung.
+
+Manche Wärmepumpen zählen als Ertrag nur die Wärme aus der Umwelt, Vaillant über ebusd etwa als „Energieertrag“ und
+„Ertragsleistung“. Die Arbeitszahl fällt dann um rund 1 zu niedrig aus. Mit dem Haken „Wärme ist Umweltertrag“ rechnet
+das Modul den Strom zur Wärme dazu und nennt den Ertrag in Klammern dahinter.
 
 Gibt es Wärmeleistung und Leistung nur einmal für Heizen und Warmwasser, haben Sie zwei Möglichkeiten. Eine Zeile für
 beides nennt die Arbeitszahl über alles, also die Jahresarbeitszahl. Für getrennte Zeilen teilt ein kleines Skript auf

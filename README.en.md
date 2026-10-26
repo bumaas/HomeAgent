@@ -202,6 +202,7 @@ name, alias, type and the names of the variables.
 | Energy meter | Also optional: the energy counter, for example `ENERGY_COUNTER`. For consumption over periods the archive must log it with the aggregation "counter" (see [What must be archived](#what-must-be-archived)). If a device hangs on a metering socket, both rows may carry the same power and energy meter; consumption and power of a room or the house count each variable only once, and the self test points it out. |
 | Heat meter | Optional: the heat meter of a heat pump, logged in the archive with the aggregation "counter". It never counts in the electricity consumption. |
 | Heat output | Optional: the current heat output, in W or kW. Together with the power of the appliance it gives the COP, and without a heat meter also the heat over periods; it must then be archived. |
+| Heat is the environmental yield | Tick this if heat meter and heat output only count the heat from the environment, without the electricity. This is the case for Vaillant over ebusd ("Energieertrag", "Ertragsleistung"). The module then adds the electricity. |
 | Measured by | For everything with power or an energy meter, optional: the meter the device or meter hangs on, for example the sub-distribution of the upper floor. The choice lists the meters of the saved list, so a new one appears after Apply. |
 | Inverted | Tick this if `true` means "closed" or "off". Many window contacts report `true` for closed. For windows, doors and sensors with a number, anything above 0 otherwise counts as open or detected, with the tick only 0; this fits the Matter door state, for example (0 open, 1 closed). Further entries such as "ajar" appear in brackets in the answer. For blinds the module finds out by itself which value means "open": from the "blind" presentation, from the profile (a profile name containing ".Reversed" counts the other way round), for the HomeAssistant module 100 as open, like Home Assistant. The self-test shows it for every blind, for example "Blind Küche Rollladen: open at 1, closed at 0". If that is wrong, the tick, here "Reverse direction", turns it round. |
 | Tilt window | Only for a window with a drive: tick this if the drive only tilts the window. The answer then says "tilted" and "50 % tilted" instead of "open" and "50 % open". |
@@ -314,6 +315,10 @@ The performance factor is only as good as the meters. If the energy meter only c
 consumption values in the controller of some heat pumps, the circulation pumps and the heating element are missing and
 it comes out too good. Some controllers only estimate the heat and book their meters at midnight. Leave the heat meter
 empty then, the module calculates the heat from the heat output.
+
+Some heat pumps count as yield only the heat from the environment, Vaillant over ebusd for example as "Energieertrag" and
+"Ertragsleistung". The performance factor then comes out about 1 too low. With the tick "Heat is the environmental
+yield" the module adds the electricity to the heat and names the yield in brackets after it.
 
 If heat output and power exist only once for heating and hot water, you have two options. One line for both gives the
 performance factor over everything, that is the seasonal performance factor. For separate lines a small script on your

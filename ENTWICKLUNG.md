@@ -394,6 +394,16 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   Claude-App 89 ÷ 6 = 14,8 und hielt den Zähler für gerundet (Hardcopy 21.10.2026). Der Verbrauch bleibt der Zähler. Ein
   Wärmezähler geht vor; der Selbsttest meldet eine nicht archivierte Wärmeleistung nur ohne Wärmezähler.
   Test `check-waermepumpe.php`.
+- **Umweltertrag** (Burkhard 26.10.2026: „die Arbeitszahl kommt mir zu niedrig vor“): Am nuc (Vaillant aroTHERM über
+  ebusd) meldete Home Agent für September 173 kWh Wärme aus 50 kWh Strom, also 3,5. „Energieertrag gesamt Heizen“ und
+  „Ertragsleistung“ der HMU sind aber der Umweltertrag ohne den Strom: Heizen + Warmwasser + Kühlen der HMU ergaben
+  94452 kWh gegen 94417 kWh „Umweltertrag gesamt“ des Reglers 700; die Arbeitszahl Warmwasser der HMU (2,8) kommt nur mit
+  dem Strom heraus ((4782 + 2602) ÷ 2602); um 13:55 lieferte der Heizkreis 1205 l/h × 3,5 K = 4,9 kW bei 3,9 kW
+  Ertragsleistung und 1,0 kW Strom. Seitdem der Haken `HeatIsYield` an der Zeile (Weg 1, Burkhard): Wärme = Ertrag + Strom
+  des Zeitraums (Zähler oder Leistung, wie die Arbeitszahl), jetzt Ertragsleistung + Leistung; der Ertrag steht in
+  Klammern dahinter, damit der Wert an der Anlage wiederzufinden ist. Ohne Strom keine Wärme, nur der Ertrag. Verworfen:
+  eine berechnete Wärmevariable auf der Anlage (Archiv per `AC_AddLoggedValues` nachbauen, hilft nur einer Anlage).
+  Mitschnitt `nuc_2026-10-26_umweltertrag.json`; darin auch ein Sprung von #56021 im Oktober (Monatssumme 5,3 Mio. kWh).
 - **Kosten in Euro** (B72, Burkhard 13.10.2026): Properties `PriceVariableID` (archivierte Variable in ct/kWh oder €/kWh,
   Einheit aus dem Suffix, ohne Suffix gelten Werte über 2 als Cent) und `FeedInTariff` (ct/kWh), an den Index über
   `setTariff`; nur mit Bilanz. `hourlyCosts` rechnet je Stunde Netzbezug × Stundenmittel, Einspeisung × Vergütung und

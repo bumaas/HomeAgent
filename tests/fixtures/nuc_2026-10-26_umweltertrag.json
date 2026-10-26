@@ -1,0 +1,4085 @@
+{
+    "_quelle": "nuc 26.10.2026 (Europe/Berlin), nur gelesen (Mitschnitt umweltertrag_mitschnitt.php nach b83_mitschnitt.php): die Zeile „Wärmepumpe“ der Freigabeliste (Vaillant aroTHERM über ebusd: Strom Heizen #46487 vom Regler 700, Wärme #56021 „Energieertrag gesamt Heizen“ und #52797 „Ertragsleistung“ von der HMU, elektrische Leistung #10025), dazu zur Gegenprobe Umweltertrag gesamt #48903 und Strom gesamt #20404 des Reglers, Ertrag Warmwasser #53399 und Strom Warmwasser #20166. Aggregate (AC_GetAggregatedValues, vom ältesten zum neuesten) der Stufen 0 (ab gestern), 1 und 3 (ab 01.09.2026); Zähler mit summe = Avg. Der Ertrag der HMU ist der Umweltertrag ohne den Strom: Heizen + Warmwasser + Kühlen ergab am 26.10. 94452 kWh gegen 94417 kWh Umweltertrag gesamt des Reglers, und um 13:55 lieferte der Heizkreis 1205 l/h × 3,5 K = 4,9 kW bei 3,9 kW Ertragsleistung und 1,0 kW Strom.",
+    "jetzt": 1793022659,
+    "zeitzone": "Europe/Berlin",
+    "geraete": [
+        {
+            "Room": "Keller",
+            "Name": "Wärmepumpe",
+            "Aliases": "Heizung, WP",
+            "Type": "appliance",
+            "StateVariableID": 1,
+            "LevelVariableID": 1,
+            "MovingVariableID": 1,
+            "StopVariableID": 1,
+            "PowerVariableID": 10025,
+            "EnergyVariableID": 46487,
+            "Invert": false,
+            "Tilt": false,
+            "ReadOnly": true,
+            "SetpointVariableID": 1,
+            "ColorTempVariableID": 1,
+            "ColorVariableID": 1,
+            "PlaybackVariableID": 1,
+            "VolumeVariableID": 1,
+            "MuteVariableID": 1,
+            "TitleVariableID": 1,
+            "ArtistVariableID": 1,
+            "HumidityVariableID": 1,
+            "ModeVariableID": 1,
+            "FanVariableID": 1,
+            "HeatVariableID": 56021,
+            "HeatPowerVariableID": 52797
+        }
+    ],
+    "variablen": {
+        "48903": {
+            "name": "Umweltertrag gesamt",
+            "wert": 94417,
+            "formatiert": "94417 kWh",
+            "einheit": "kWh",
+            "archiviert": true,
+            "aggregationstyp": 1,
+            "aggregate": {
+                "0": [
+                    {
+                        "zeit": 1792879200,
+                        "summe": 58
+                    },
+                    {
+                        "zeit": 1792882800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792886400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792890000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792893600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792897200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792900800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792904400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792908000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792911600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792915200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792918800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792922400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792926000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792929600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792933200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792936800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792940400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792944000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792947600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792951200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792954800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792958400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792962000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792965600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "summe": 58
+                    },
+                    {
+                        "zeit": 1792972800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792976400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792980000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792983600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792987200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792990800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792994400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792998000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793001600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793005200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793008800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793012400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793016000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793019600,
+                        "summe": 0
+                    }
+                ],
+                "1": [
+                    {
+                        "zeit": 1788213600,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1788300000,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788386400,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788472800,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1788559200,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788645600,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1788732000,
+                        "summe": 9
+                    },
+                    {
+                        "zeit": 1788818400,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788904800,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788991200,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1789077600,
+                        "summe": 9
+                    },
+                    {
+                        "zeit": 1789164000,
+                        "summe": 9
+                    },
+                    {
+                        "zeit": 1789250400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789336800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789423200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789509600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1789596000,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1789682400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789768800,
+                        "summe": 8
+                    },
+                    {
+                        "zeit": 1789855200,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1789941600,
+                        "summe": 15
+                    },
+                    {
+                        "zeit": 1790028000,
+                        "summe": 22
+                    },
+                    {
+                        "zeit": 1790114400,
+                        "summe": 33
+                    },
+                    {
+                        "zeit": 1790200800,
+                        "summe": 29
+                    },
+                    {
+                        "zeit": 1790287200,
+                        "summe": 19
+                    },
+                    {
+                        "zeit": 1790373600,
+                        "summe": 26
+                    },
+                    {
+                        "zeit": 1790460000,
+                        "summe": 17
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790632800,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1790719200,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790892000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790978400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1791064800,
+                        "summe": 17
+                    },
+                    {
+                        "zeit": 1791151200,
+                        "summe": 20
+                    },
+                    {
+                        "zeit": 1791237600,
+                        "summe": 16
+                    },
+                    {
+                        "zeit": 1791324000,
+                        "summe": 16
+                    },
+                    {
+                        "zeit": 1791410400,
+                        "summe": 9
+                    },
+                    {
+                        "zeit": 1791496800,
+                        "summe": 17
+                    },
+                    {
+                        "zeit": 1791583200,
+                        "summe": 36
+                    },
+                    {
+                        "zeit": 1791669600,
+                        "summe": 35
+                    },
+                    {
+                        "zeit": 1791756000,
+                        "summe": 47
+                    },
+                    {
+                        "zeit": 1791842400,
+                        "summe": 33
+                    },
+                    {
+                        "zeit": 1791928800,
+                        "summe": 24
+                    },
+                    {
+                        "zeit": 1792015200,
+                        "summe": 38
+                    },
+                    {
+                        "zeit": 1792101600,
+                        "summe": 39
+                    },
+                    {
+                        "zeit": 1792188000,
+                        "summe": 13
+                    },
+                    {
+                        "zeit": 1792274400,
+                        "summe": 32
+                    },
+                    {
+                        "zeit": 1792360800,
+                        "summe": 39
+                    },
+                    {
+                        "zeit": 1792447200,
+                        "summe": 42
+                    },
+                    {
+                        "zeit": 1792533600,
+                        "summe": 62
+                    },
+                    {
+                        "zeit": 1792620000,
+                        "summe": 44
+                    },
+                    {
+                        "zeit": 1792706400,
+                        "summe": 50
+                    },
+                    {
+                        "zeit": 1792792800,
+                        "summe": 46
+                    },
+                    {
+                        "zeit": 1792879200,
+                        "summe": 58
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "summe": 58
+                    }
+                ],
+                "3": [
+                    {
+                        "zeit": 1788213600,
+                        "summe": 242
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 797
+                    }
+                ]
+            }
+        },
+        "20404": {
+            "name": "Stromverbr.gesamt",
+            "wert": 27256,
+            "formatiert": "27256 kWh",
+            "einheit": "kWh",
+            "archiviert": true,
+            "aggregationstyp": 1,
+            "aggregate": {
+                "0": [
+                    {
+                        "zeit": 1792879200,
+                        "summe": 17
+                    },
+                    {
+                        "zeit": 1792882800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792886400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792890000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792893600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792897200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792900800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792904400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792908000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792911600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792915200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792918800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792922400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792926000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792929600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792933200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792936800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792940400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792944000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792947600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792951200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792954800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792958400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792962000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792965600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "summe": 15
+                    },
+                    {
+                        "zeit": 1792972800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792976400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792980000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792983600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792987200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792990800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792994400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792998000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793001600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793005200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793008800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793012400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793016000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793019600,
+                        "summe": 0
+                    }
+                ],
+                "1": [
+                    {
+                        "zeit": 1788213600,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1788300000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1788386400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1788472800,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1788559200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1788645600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788732000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1788818400,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1788904800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1788991200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789077600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1789164000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789250400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789336800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789423200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1789509600,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789596000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789682400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1789768800,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1789855200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789941600,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1790028000,
+                        "summe": 6
+                    },
+                    {
+                        "zeit": 1790114400,
+                        "summe": 9
+                    },
+                    {
+                        "zeit": 1790200800,
+                        "summe": 8
+                    },
+                    {
+                        "zeit": 1790287200,
+                        "summe": 5
+                    },
+                    {
+                        "zeit": 1790373600,
+                        "summe": 7
+                    },
+                    {
+                        "zeit": 1790460000,
+                        "summe": 5
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790632800,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790719200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1790892000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790978400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1791064800,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1791151200,
+                        "summe": 5
+                    },
+                    {
+                        "zeit": 1791237600,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1791324000,
+                        "summe": 6
+                    },
+                    {
+                        "zeit": 1791410400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1791496800,
+                        "summe": 5
+                    },
+                    {
+                        "zeit": 1791583200,
+                        "summe": 9
+                    },
+                    {
+                        "zeit": 1791669600,
+                        "summe": 9
+                    },
+                    {
+                        "zeit": 1791756000,
+                        "summe": 13
+                    },
+                    {
+                        "zeit": 1791842400,
+                        "summe": 10
+                    },
+                    {
+                        "zeit": 1791928800,
+                        "summe": 6
+                    },
+                    {
+                        "zeit": 1792015200,
+                        "summe": 10
+                    },
+                    {
+                        "zeit": 1792101600,
+                        "summe": 10
+                    },
+                    {
+                        "zeit": 1792188000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792274400,
+                        "summe": 8
+                    },
+                    {
+                        "zeit": 1792360800,
+                        "summe": 18708
+                    },
+                    {
+                        "zeit": 1792447200,
+                        "summe": 11
+                    },
+                    {
+                        "zeit": 1792533600,
+                        "summe": 21
+                    },
+                    {
+                        "zeit": 1792620000,
+                        "summe": 10
+                    },
+                    {
+                        "zeit": 1792706400,
+                        "summe": 15
+                    },
+                    {
+                        "zeit": 1792792800,
+                        "summe": 12
+                    },
+                    {
+                        "zeit": 1792879200,
+                        "summe": 17
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "summe": 15
+                    }
+                ],
+                "3": [
+                    {
+                        "zeit": 1788213600,
+                        "summe": 86
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 18916
+                    }
+                ]
+            }
+        },
+        "53399": {
+            "name": "Energieertrag gesamt Warmwasser",
+            "wert": 4782,
+            "formatiert": "4782 kWh",
+            "einheit": "kWh",
+            "archiviert": true,
+            "aggregationstyp": 1,
+            "aggregate": {
+                "0": [
+                    {
+                        "zeit": 1792879200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792882800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792886400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792890000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792893600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792897200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792900800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792904400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792908000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792911600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792915200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792918800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792922400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792926000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792929600,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792933200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792936800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792940400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792944000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792947600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792951200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792954800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792958400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792962000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792965600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792972800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792976400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792980000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792983600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792987200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792990800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792994400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792998000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793001600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793005200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793008800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793012400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793016000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1793019600,
+                        "summe": 0
+                    }
+                ],
+                "1": [
+                    {
+                        "zeit": 1788213600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788300000,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788386400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1788472800,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788559200,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1788645600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788732000,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788818400,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788904800,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788991200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789077600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789164000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789250400,
+                        "summe": 60607
+                    },
+                    {
+                        "zeit": 1789336800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789423200,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1789509600,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1789596000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789682400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789768800,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1789855200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789941600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1790028000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790114400,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1790200800,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790287200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790373600,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790460000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1790632800,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1790719200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790892000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790978400,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1791064800,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1791151200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1791237600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1791324000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1791410400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1791496800,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1791583200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1791669600,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1791756000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1791842400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1791928800,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792015200,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1792101600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792188000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792274400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792360800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1792447200,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1792533600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792620000,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1792706400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792792800,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792879200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "summe": 2
+                    }
+                ],
+                "3": [
+                    {
+                        "zeit": 1788213600,
+                        "summe": 60676
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 52
+                    }
+                ]
+            }
+        },
+        "20166": {
+            "name": "Stromverbr.gesamt WW",
+            "wert": 2602,
+            "formatiert": "2602 kWh",
+            "einheit": "kWh",
+            "archiviert": true,
+            "aggregationstyp": 1,
+            "aggregate": {
+                "0": [
+                    {
+                        "zeit": 1792879200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792882800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792886400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792890000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792893600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792897200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792900800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792904400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792908000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792911600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792915200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792918800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792922400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792926000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792929600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792933200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792936800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792940400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792944000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792947600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792951200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792954800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792958400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792962000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792965600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1792972800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792976400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792980000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792983600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792987200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792990800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792994400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792998000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793001600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793005200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793008800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793012400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793016000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793019600,
+                        "summe": 0
+                    }
+                ],
+                "1": [
+                    {
+                        "zeit": 1788213600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788300000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1788386400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1788472800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1788559200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1788645600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788732000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1788818400,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1788904800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1788991200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789077600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1789164000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789250400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789336800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789423200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789509600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1789596000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789682400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1789768800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1789855200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789941600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1790028000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1790114400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790200800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1790287200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1790373600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1790460000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1790632800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1790719200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1790892000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1790978400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1791064800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1791151200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1791237600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1791324000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1791410400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1791496800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1791583200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1791669600,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1791756000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1791842400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1791928800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1792015200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792101600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1792188000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792274400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1792360800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792447200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1792533600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1792620000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792706400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792792800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1792879200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "summe": 1
+                    }
+                ],
+                "3": [
+                    {
+                        "zeit": 1788213600,
+                        "summe": 37
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 30
+                    }
+                ]
+            }
+        },
+        "10025": {
+            "name": "elektrische Leistungsaufnahme",
+            "wert": 0,
+            "formatiert": "0.0 kW",
+            "einheit": "kW",
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "aggregate": {
+                "0": [
+                    {
+                        "zeit": 1792879200,
+                        "min": 0.5,
+                        "mittel": 0.533,
+                        "max": 0.6,
+                        "minzeit": 1792879200,
+                        "maxzeit": 1792881492
+                    },
+                    {
+                        "zeit": 1792882800,
+                        "min": 0.6,
+                        "mittel": 0.6878,
+                        "max": 0.8,
+                        "minzeit": 1792882800,
+                        "maxzeit": 1792884504
+                    },
+                    {
+                        "zeit": 1792886400,
+                        "min": 0.6,
+                        "mittel": 0.6226,
+                        "max": 0.7,
+                        "minzeit": 1792887215,
+                        "maxzeit": 1792886400
+                    },
+                    {
+                        "zeit": 1792890000,
+                        "min": 0.6,
+                        "mittel": 0.6,
+                        "max": 0.6,
+                        "minzeit": 1792890000,
+                        "maxzeit": 1792890000
+                    },
+                    {
+                        "zeit": 1792893600,
+                        "min": 0.6,
+                        "mittel": 0.6,
+                        "max": 0.6,
+                        "minzeit": 1792893600,
+                        "maxzeit": 1792893600
+                    },
+                    {
+                        "zeit": 1792897200,
+                        "min": 0.5,
+                        "mittel": 0.5423,
+                        "max": 0.6,
+                        "minzeit": 1792898722,
+                        "maxzeit": 1792897200
+                    },
+                    {
+                        "zeit": 1792900800,
+                        "min": 0.5,
+                        "mittel": 0.5,
+                        "max": 0.5,
+                        "minzeit": 1792900800,
+                        "maxzeit": 1792900800
+                    },
+                    {
+                        "zeit": 1792904400,
+                        "min": 0.5,
+                        "mittel": 0.5,
+                        "max": 0.5,
+                        "minzeit": 1792904400,
+                        "maxzeit": 1792904400
+                    },
+                    {
+                        "zeit": 1792908000,
+                        "min": 0,
+                        "mittel": 0.3846,
+                        "max": 0.9,
+                        "minzeit": 1792908060,
+                        "maxzeit": 1792909627
+                    },
+                    {
+                        "zeit": 1792911600,
+                        "min": 0.5,
+                        "mittel": 0.5377,
+                        "max": 0.6,
+                        "minzeit": 1792911600,
+                        "maxzeit": 1792913844
+                    },
+                    {
+                        "zeit": 1792915200,
+                        "min": 0.5,
+                        "mittel": 0.5142,
+                        "max": 0.6,
+                        "minzeit": 1792915712,
+                        "maxzeit": 1792915200
+                    },
+                    {
+                        "zeit": 1792918800,
+                        "min": 0.5,
+                        "mittel": 0.9001,
+                        "max": 1.1,
+                        "minzeit": 1792918800,
+                        "maxzeit": 1792919687
+                    },
+                    {
+                        "zeit": 1792922400,
+                        "min": 0.6,
+                        "mittel": 0.7353,
+                        "max": 0.8,
+                        "minzeit": 1792925411,
+                        "maxzeit": 1792922400
+                    },
+                    {
+                        "zeit": 1792926000,
+                        "min": 0.7,
+                        "mittel": 0.7,
+                        "max": 0.7,
+                        "minzeit": 1792926000,
+                        "maxzeit": 1792926000
+                    },
+                    {
+                        "zeit": 1792929600,
+                        "min": 0,
+                        "mittel": 1.3152,
+                        "max": 2.2,
+                        "minzeit": 1792932098,
+                        "maxzeit": 1792931435
+                    },
+                    {
+                        "zeit": 1792933200,
+                        "min": 0,
+                        "mittel": 0.4593,
+                        "max": 0.9,
+                        "minzeit": 1792935653,
+                        "maxzeit": 1792936255
+                    },
+                    {
+                        "zeit": 1792936800,
+                        "min": 0,
+                        "mittel": 0.5049,
+                        "max": 0.9,
+                        "minzeit": 1792940231,
+                        "maxzeit": 1792937219
+                    },
+                    {
+                        "zeit": 1792940400,
+                        "min": 0,
+                        "mittel": 0,
+                        "max": 0,
+                        "minzeit": 1792940400,
+                        "maxzeit": 1792940400
+                    },
+                    {
+                        "zeit": 1792944000,
+                        "min": 0,
+                        "mittel": 0.6334,
+                        "max": 1.1,
+                        "minzeit": 1792944000,
+                        "maxzeit": 1792945412
+                    },
+                    {
+                        "zeit": 1792947600,
+                        "min": 0.5,
+                        "mittel": 0.5,
+                        "max": 0.5,
+                        "minzeit": 1792947600,
+                        "maxzeit": 1792947600
+                    },
+                    {
+                        "zeit": 1792951200,
+                        "min": 0.5,
+                        "mittel": 0.5,
+                        "max": 0.5,
+                        "minzeit": 1792951200,
+                        "maxzeit": 1792951200
+                    },
+                    {
+                        "zeit": 1792954800,
+                        "min": 0.5,
+                        "mittel": 0.5,
+                        "max": 0.5,
+                        "minzeit": 1792954800,
+                        "maxzeit": 1792954800
+                    },
+                    {
+                        "zeit": 1792958400,
+                        "min": 0.5,
+                        "mittel": 0.5373,
+                        "max": 0.6,
+                        "minzeit": 1792958400,
+                        "maxzeit": 1792959932
+                    },
+                    {
+                        "zeit": 1792962000,
+                        "min": 0.6,
+                        "mittel": 0.6,
+                        "max": 0.6,
+                        "minzeit": 1792962000,
+                        "maxzeit": 1792962000
+                    },
+                    {
+                        "zeit": 1792965600,
+                        "min": 0.6,
+                        "mittel": 0.6,
+                        "max": 0.6,
+                        "minzeit": 1792965600,
+                        "maxzeit": 1792965600
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "min": 0.6,
+                        "mittel": 0.6,
+                        "max": 0.6,
+                        "minzeit": 1792969200,
+                        "maxzeit": 1792969200
+                    },
+                    {
+                        "zeit": 1792972800,
+                        "min": 0.6,
+                        "mittel": 0.6,
+                        "max": 0.6,
+                        "minzeit": 1792972800,
+                        "maxzeit": 1792972800
+                    },
+                    {
+                        "zeit": 1792976400,
+                        "min": 0.6,
+                        "mittel": 0.6,
+                        "max": 0.6,
+                        "minzeit": 1792976400,
+                        "maxzeit": 1792976400
+                    },
+                    {
+                        "zeit": 1792980000,
+                        "min": 0.6,
+                        "mittel": 0.6,
+                        "max": 0.6,
+                        "minzeit": 1792980000,
+                        "maxzeit": 1792980000
+                    },
+                    {
+                        "zeit": 1792983600,
+                        "min": 0.6,
+                        "mittel": 0.6,
+                        "max": 0.6,
+                        "minzeit": 1792983600,
+                        "maxzeit": 1792983600
+                    },
+                    {
+                        "zeit": 1792987200,
+                        "min": 0.6,
+                        "mittel": 0.6,
+                        "max": 0.6,
+                        "minzeit": 1792987200,
+                        "maxzeit": 1792987200
+                    },
+                    {
+                        "zeit": 1792990800,
+                        "min": 0.6,
+                        "mittel": 0.6,
+                        "max": 0.6,
+                        "minzeit": 1792990800,
+                        "maxzeit": 1792990800
+                    },
+                    {
+                        "zeit": 1792994400,
+                        "min": 0.6,
+                        "mittel": 0.6,
+                        "max": 0.6,
+                        "minzeit": 1792994400,
+                        "maxzeit": 1792994400
+                    },
+                    {
+                        "zeit": 1792998000,
+                        "min": 0.5,
+                        "mittel": 0.589,
+                        "max": 0.6,
+                        "minzeit": 1793001145,
+                        "maxzeit": 1792998000
+                    },
+                    {
+                        "zeit": 1793001600,
+                        "min": 0.5,
+                        "mittel": 0.5,
+                        "max": 0.5,
+                        "minzeit": 1793001600,
+                        "maxzeit": 1793001600
+                    },
+                    {
+                        "zeit": 1793005200,
+                        "min": 0.5,
+                        "mittel": 0.9739,
+                        "max": 1.3,
+                        "minzeit": 1793005200,
+                        "maxzeit": 1793006207
+                    },
+                    {
+                        "zeit": 1793008800,
+                        "min": 0.8,
+                        "mittel": 0.8,
+                        "max": 0.8,
+                        "minzeit": 1793008800,
+                        "maxzeit": 1793008800
+                    },
+                    {
+                        "zeit": 1793012400,
+                        "min": 0.6,
+                        "mittel": 0.6476,
+                        "max": 0.8,
+                        "minzeit": 1793013497,
+                        "maxzeit": 1793012400
+                    },
+                    {
+                        "zeit": 1793016000,
+                        "min": 0.6,
+                        "mittel": 1.6191,
+                        "max": 2.2,
+                        "minzeit": 1793016000,
+                        "maxzeit": 1793018016
+                    },
+                    {
+                        "zeit": 1793019600,
+                        "min": 0,
+                        "mittel": 0.1349,
+                        "max": 0.8,
+                        "minzeit": 1793020185,
+                        "maxzeit": 1793019600
+                    }
+                ],
+                "1": [
+                    {
+                        "zeit": 1788213600,
+                        "min": 0,
+                        "mittel": 0.0547,
+                        "max": 2.4,
+                        "minzeit": 1788213600,
+                        "maxzeit": 1788262761
+                    },
+                    {
+                        "zeit": 1788300000,
+                        "min": 0,
+                        "mittel": 0.0444,
+                        "max": 2.4,
+                        "minzeit": 1788300000,
+                        "maxzeit": 1788348627
+                    },
+                    {
+                        "zeit": 1788386400,
+                        "min": 0,
+                        "mittel": 0.0425,
+                        "max": 2.4,
+                        "minzeit": 1788386400,
+                        "maxzeit": 1788434963
+                    },
+                    {
+                        "zeit": 1788472800,
+                        "min": 0,
+                        "mittel": 0.0499,
+                        "max": 2.4,
+                        "minzeit": 1788472800,
+                        "maxzeit": 1788521603
+                    },
+                    {
+                        "zeit": 1788559200,
+                        "min": 0,
+                        "mittel": 0.097,
+                        "max": 2.5,
+                        "minzeit": 1788559200,
+                        "maxzeit": 1788614174
+                    },
+                    {
+                        "zeit": 1788645600,
+                        "min": 0,
+                        "mittel": 0.1157,
+                        "max": 2.5,
+                        "minzeit": 1788645600,
+                        "maxzeit": 1788694562
+                    },
+                    {
+                        "zeit": 1788732000,
+                        "min": 0,
+                        "mittel": 0.0553,
+                        "max": 2.4,
+                        "minzeit": 1788732000,
+                        "maxzeit": 1788781139
+                    },
+                    {
+                        "zeit": 1788818400,
+                        "min": 0,
+                        "mittel": 0.0615,
+                        "max": 2.5,
+                        "minzeit": 1788818400,
+                        "maxzeit": 1788867815
+                    },
+                    {
+                        "zeit": 1788904800,
+                        "min": 0,
+                        "mittel": 0.0561,
+                        "max": 2.4,
+                        "minzeit": 1788904800,
+                        "maxzeit": 1788953967
+                    },
+                    {
+                        "zeit": 1788991200,
+                        "min": 0,
+                        "mittel": 0.1085,
+                        "max": 2.3,
+                        "minzeit": 1788991200,
+                        "maxzeit": 1789039890
+                    },
+                    {
+                        "zeit": 1789077600,
+                        "min": 0,
+                        "mittel": 0.0758,
+                        "max": 1.5,
+                        "minzeit": 1789077600,
+                        "maxzeit": 1789094079
+                    },
+                    {
+                        "zeit": 1789164000,
+                        "min": 0,
+                        "mittel": 0,
+                        "max": 0,
+                        "minzeit": 1789164000,
+                        "maxzeit": 1789164000
+                    },
+                    {
+                        "zeit": 1789250400,
+                        "min": 0,
+                        "mittel": 0,
+                        "max": 0,
+                        "minzeit": 1789250400,
+                        "maxzeit": 1789250400
+                    },
+                    {
+                        "zeit": 1789336800,
+                        "min": 0,
+                        "mittel": 0,
+                        "max": 0,
+                        "minzeit": 1789336800,
+                        "maxzeit": 1789336800
+                    },
+                    {
+                        "zeit": 1789423200,
+                        "min": 0,
+                        "mittel": 0.0643,
+                        "max": 2.4,
+                        "minzeit": 1789423200,
+                        "maxzeit": 1789449430
+                    },
+                    {
+                        "zeit": 1789509600,
+                        "min": 0,
+                        "mittel": 0.0644,
+                        "max": 2.4,
+                        "minzeit": 1789509600,
+                        "maxzeit": 1789559091
+                    },
+                    {
+                        "zeit": 1789596000,
+                        "min": 0,
+                        "mittel": 0.0451,
+                        "max": 2.4,
+                        "minzeit": 1789596000,
+                        "maxzeit": 1789644825
+                    },
+                    {
+                        "zeit": 1789682400,
+                        "min": 0,
+                        "mittel": 0.1016,
+                        "max": 2.3,
+                        "minzeit": 1789682400,
+                        "maxzeit": 1789731088
+                    },
+                    {
+                        "zeit": 1789768800,
+                        "min": 0,
+                        "mittel": 0.0581,
+                        "max": 2.4,
+                        "minzeit": 1789768800,
+                        "maxzeit": 1789818002
+                    },
+                    {
+                        "zeit": 1789855200,
+                        "min": 0,
+                        "mittel": 0.1618,
+                        "max": 2.4,
+                        "minzeit": 1789855200,
+                        "maxzeit": 1789904036
+                    },
+                    {
+                        "zeit": 1789941600,
+                        "min": 0,
+                        "mittel": 0.2212,
+                        "max": 2.4,
+                        "minzeit": 1789968141,
+                        "maxzeit": 1789990911
+                    },
+                    {
+                        "zeit": 1790028000,
+                        "min": 0,
+                        "mittel": 0.3157,
+                        "max": 2.3,
+                        "minzeit": 1790028000,
+                        "maxzeit": 1790076584
+                    },
+                    {
+                        "zeit": 1790114400,
+                        "min": 0,
+                        "mittel": 0.3175,
+                        "max": 2.4,
+                        "minzeit": 1790141168,
+                        "maxzeit": 1790163096
+                    },
+                    {
+                        "zeit": 1790200800,
+                        "min": 0,
+                        "mittel": 0.1908,
+                        "max": 2.4,
+                        "minzeit": 1790200800,
+                        "maxzeit": 1790249610
+                    },
+                    {
+                        "zeit": 1790287200,
+                        "min": 0,
+                        "mittel": 0.2875,
+                        "max": 2.4,
+                        "minzeit": 1790292626,
+                        "maxzeit": 1790335823
+                    },
+                    {
+                        "zeit": 1790373600,
+                        "min": 0,
+                        "mittel": 0.1929,
+                        "max": 2.4,
+                        "minzeit": 1790379453,
+                        "maxzeit": 1790422018
+                    },
+                    {
+                        "zeit": 1790460000,
+                        "min": 0,
+                        "mittel": 0.0378,
+                        "max": 2.4,
+                        "minzeit": 1790460000,
+                        "maxzeit": 1790508531
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "min": 0,
+                        "mittel": 0.0546,
+                        "max": 2.4,
+                        "minzeit": 1790546400,
+                        "maxzeit": 1790595224
+                    },
+                    {
+                        "zeit": 1790632800,
+                        "min": 0,
+                        "mittel": 0.0487,
+                        "max": 2.4,
+                        "minzeit": 1790632800,
+                        "maxzeit": 1790681721
+                    },
+                    {
+                        "zeit": 1790719200,
+                        "min": 0,
+                        "mittel": 0.0381,
+                        "max": 2.4,
+                        "minzeit": 1790719200,
+                        "maxzeit": 1790769861
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "min": 0,
+                        "mittel": 0.0441,
+                        "max": 2.5,
+                        "minzeit": 1790805600,
+                        "maxzeit": 1790854316
+                    },
+                    {
+                        "zeit": 1790892000,
+                        "min": 0,
+                        "mittel": 0.0515,
+                        "max": 2.4,
+                        "minzeit": 1790892000,
+                        "maxzeit": 1790941028
+                    },
+                    {
+                        "zeit": 1790978400,
+                        "min": 0,
+                        "mittel": 0.161,
+                        "max": 2.4,
+                        "minzeit": 1790978400,
+                        "maxzeit": 1791027075
+                    },
+                    {
+                        "zeit": 1791064800,
+                        "min": 0,
+                        "mittel": 0.1994,
+                        "max": 2.4,
+                        "minzeit": 1791064800,
+                        "maxzeit": 1791113917
+                    },
+                    {
+                        "zeit": 1791151200,
+                        "min": 0,
+                        "mittel": 0.1698,
+                        "max": 2.4,
+                        "minzeit": 1791151200,
+                        "maxzeit": 1791201560
+                    },
+                    {
+                        "zeit": 1791237600,
+                        "min": 0,
+                        "mittel": 0.1659,
+                        "max": 2.4,
+                        "minzeit": 1791237600,
+                        "maxzeit": 1791286552
+                    },
+                    {
+                        "zeit": 1791324000,
+                        "min": 0,
+                        "mittel": 0.0967,
+                        "max": 2.4,
+                        "minzeit": 1791324000,
+                        "maxzeit": 1791372565
+                    },
+                    {
+                        "zeit": 1791410400,
+                        "min": 0,
+                        "mittel": 0.1921,
+                        "max": 2.3,
+                        "minzeit": 1791410400,
+                        "maxzeit": 1791459421
+                    },
+                    {
+                        "zeit": 1791496800,
+                        "min": 0,
+                        "mittel": 0.3515,
+                        "max": 2.2,
+                        "minzeit": 1791496800,
+                        "maxzeit": 1791545966
+                    },
+                    {
+                        "zeit": 1791583200,
+                        "min": 0,
+                        "mittel": 0.3418,
+                        "max": 2.3,
+                        "minzeit": 1791586150,
+                        "maxzeit": 1791632422
+                    },
+                    {
+                        "zeit": 1791669600,
+                        "min": 0,
+                        "mittel": 0.4827,
+                        "max": 2.2,
+                        "minzeit": 1791669600,
+                        "maxzeit": 1791718217
+                    },
+                    {
+                        "zeit": 1791756000,
+                        "min": 0,
+                        "mittel": 0.3566,
+                        "max": 2.3,
+                        "minzeit": 1791758282,
+                        "maxzeit": 1791804677
+                    },
+                    {
+                        "zeit": 1791842400,
+                        "min": 0,
+                        "mittel": 0.2529,
+                        "max": 2.3,
+                        "minzeit": 1791845705,
+                        "maxzeit": 1791891676
+                    },
+                    {
+                        "zeit": 1791928800,
+                        "min": 0,
+                        "mittel": 0.3473,
+                        "max": 2.3,
+                        "minzeit": 1791928800,
+                        "maxzeit": 1791977110
+                    },
+                    {
+                        "zeit": 1792015200,
+                        "min": 0,
+                        "mittel": 0.3708,
+                        "max": 2.3,
+                        "minzeit": 1792015200,
+                        "maxzeit": 1792063568
+                    },
+                    {
+                        "zeit": 1792101600,
+                        "min": 0,
+                        "mittel": 0.1027,
+                        "max": 1.5,
+                        "minzeit": 1792101600,
+                        "maxzeit": 1792127854
+                    },
+                    {
+                        "zeit": 1792188000,
+                        "min": 0,
+                        "mittel": 0.3142,
+                        "max": 2.2,
+                        "minzeit": 1792188000,
+                        "maxzeit": 1792236301
+                    },
+                    {
+                        "zeit": 1792274400,
+                        "min": 0,
+                        "mittel": 0.3418,
+                        "max": 1.4,
+                        "minzeit": 1792280222,
+                        "maxzeit": 1792289922
+                    },
+                    {
+                        "zeit": 1792360800,
+                        "min": 0,
+                        "mittel": 0.4292,
+                        "max": 2.2,
+                        "minzeit": 1792361076,
+                        "maxzeit": 1792409396
+                    },
+                    {
+                        "zeit": 1792447200,
+                        "min": 0,
+                        "mittel": 0.7962,
+                        "max": 2.5,
+                        "minzeit": 1792513213,
+                        "maxzeit": 1792498030
+                    },
+                    {
+                        "zeit": 1792533600,
+                        "min": 0,
+                        "mittel": 0.4041,
+                        "max": 1.2,
+                        "minzeit": 1792541891,
+                        "maxzeit": 1792619315
+                    },
+                    {
+                        "zeit": 1792620000,
+                        "min": 0,
+                        "mittel": 0.5425,
+                        "max": 2.2,
+                        "minzeit": 1792671013,
+                        "maxzeit": 1792669633
+                    },
+                    {
+                        "zeit": 1792706400,
+                        "min": 0,
+                        "mittel": 0.4652,
+                        "max": 2.2,
+                        "minzeit": 1792731322,
+                        "maxzeit": 1792755060
+                    },
+                    {
+                        "zeit": 1792792800,
+                        "min": 0,
+                        "mittel": 0.6431,
+                        "max": 2.2,
+                        "minzeit": 1792858417,
+                        "maxzeit": 1792842330
+                    },
+                    {
+                        "zeit": 1792879200,
+                        "min": 0,
+                        "mittel": 0.5803,
+                        "max": 2.2,
+                        "minzeit": 1792908060,
+                        "maxzeit": 1792931435
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "min": 0,
+                        "mittel": 0.6768,
+                        "max": 2.2,
+                        "minzeit": 1793020185,
+                        "maxzeit": 1793018016
+                    }
+                ],
+                "3": [
+                    {
+                        "zeit": 1788213600,
+                        "min": 0,
+                        "mittel": 0.0987,
+                        "max": 2.5,
+                        "minzeit": 1788213600,
+                        "maxzeit": 1788614174
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "min": 0,
+                        "mittel": 0.3369,
+                        "max": 2.5,
+                        "minzeit": 1790805600,
+                        "maxzeit": 1790854316
+                    }
+                ]
+            }
+        },
+        "46487": {
+            "name": "Stromverbr.gesamt Hzg.",
+            "wert": 24556,
+            "formatiert": "24556 kWh",
+            "einheit": "kWh",
+            "archiviert": true,
+            "aggregationstyp": 1,
+            "aggregate": {
+                "0": [
+                    {
+                        "zeit": 1792879200,
+                        "summe": 15
+                    },
+                    {
+                        "zeit": 1792882800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792886400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792890000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792893600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792897200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792900800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792904400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792908000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792911600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792915200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792918800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792922400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792926000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792929600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792933200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792936800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792940400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792944000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792947600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792951200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792954800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792958400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792962000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792965600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "summe": 14
+                    },
+                    {
+                        "zeit": 1792972800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792976400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792980000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792983600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792987200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792990800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792994400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792998000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793001600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793005200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793008800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793012400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793016000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1793019600,
+                        "summe": 0
+                    }
+                ],
+                "1": [
+                    {
+                        "zeit": 1788213600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1788300000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1788386400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1788472800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1788559200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1788645600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1788732000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1788818400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1788904800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1788991200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789077600,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789164000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789250400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789336800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789423200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1789509600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1789596000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789682400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789768800,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1789855200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789941600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1790028000,
+                        "summe": 5
+                    },
+                    {
+                        "zeit": 1790114400,
+                        "summe": 7
+                    },
+                    {
+                        "zeit": 1790200800,
+                        "summe": 7
+                    },
+                    {
+                        "zeit": 1790287200,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1790373600,
+                        "summe": 6
+                    },
+                    {
+                        "zeit": 1790460000,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1790632800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1790719200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1790892000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1790978400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1791064800,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1791151200,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1791237600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1791324000,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1791410400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1791496800,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1791583200,
+                        "summe": 8
+                    },
+                    {
+                        "zeit": 1791669600,
+                        "summe": 7
+                    },
+                    {
+                        "zeit": 1791756000,
+                        "summe": 12
+                    },
+                    {
+                        "zeit": 1791842400,
+                        "summe": 9
+                    },
+                    {
+                        "zeit": 1791928800,
+                        "summe": 5
+                    },
+                    {
+                        "zeit": 1792015200,
+                        "summe": 8
+                    },
+                    {
+                        "zeit": 1792101600,
+                        "summe": 9
+                    },
+                    {
+                        "zeit": 1792188000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792274400,
+                        "summe": 7
+                    },
+                    {
+                        "zeit": 1792360800,
+                        "summe": 9
+                    },
+                    {
+                        "zeit": 1792447200,
+                        "summe": 10
+                    },
+                    {
+                        "zeit": 1792533600,
+                        "summe": 18
+                    },
+                    {
+                        "zeit": 1792620000,
+                        "summe": 10
+                    },
+                    {
+                        "zeit": 1792706400,
+                        "summe": 13
+                    },
+                    {
+                        "zeit": 1792792800,
+                        "summe": 11
+                    },
+                    {
+                        "zeit": 1792879200,
+                        "summe": 15
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "summe": 14
+                    }
+                ],
+                "3": [
+                    {
+                        "zeit": 1788213600,
+                        "summe": 50
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 187
+                    }
+                ]
+            }
+        },
+        "56021": {
+            "name": "Energieertrag gesamt Heizen",
+            "wert": 88937,
+            "formatiert": "88937 kWh",
+            "einheit": "kWh",
+            "archiviert": true,
+            "aggregationstyp": 1,
+            "aggregate": {
+                "0": [
+                    {
+                        "zeit": 1792879200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792882800,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1792886400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792890000,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1792893600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1792897200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792900800,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792904400,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1792908000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1792911600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1792915200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792918800,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1792922400,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1792926000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792929600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1792933200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792936800,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792940400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1792944000,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1792947600,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792951200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792954800,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792958400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792962000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792965600,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792972800,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792976400,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792980000,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1792983600,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792987200,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792990800,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1792994400,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1792998000,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1793001600,
+                        "summe": 2
+                    },
+                    {
+                        "zeit": 1793005200,
+                        "summe": 4
+                    },
+                    {
+                        "zeit": 1793008800,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1793012400,
+                        "summe": 3
+                    },
+                    {
+                        "zeit": 1793016000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1793019600,
+                        "summe": 0
+                    }
+                ],
+                "1": [
+                    {
+                        "zeit": 1788213600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1788300000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1788386400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1788472800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1788559200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1788645600,
+                        "summe": 6
+                    },
+                    {
+                        "zeit": 1788732000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1788818400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1788904800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1788991200,
+                        "summe": 7
+                    },
+                    {
+                        "zeit": 1789077600,
+                        "summe": 9
+                    },
+                    {
+                        "zeit": 1789164000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789250400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789336800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789423200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789509600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789596000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789682400,
+                        "summe": 6
+                    },
+                    {
+                        "zeit": 1789768800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1789855200,
+                        "summe": 13
+                    },
+                    {
+                        "zeit": 1789941600,
+                        "summe": 19
+                    },
+                    {
+                        "zeit": 1790028000,
+                        "summe": 31
+                    },
+                    {
+                        "zeit": 1790114400,
+                        "summe": 26
+                    },
+                    {
+                        "zeit": 1790200800,
+                        "summe": 17
+                    },
+                    {
+                        "zeit": 1790287200,
+                        "summe": 24
+                    },
+                    {
+                        "zeit": 1790373600,
+                        "summe": 15
+                    },
+                    {
+                        "zeit": 1790460000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1790632800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1790719200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1790892000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1790978400,
+                        "summe": 14
+                    },
+                    {
+                        "zeit": 1791064800,
+                        "summe": 18
+                    },
+                    {
+                        "zeit": 1791151200,
+                        "summe": 14
+                    },
+                    {
+                        "zeit": 1791237600,
+                        "summe": 13
+                    },
+                    {
+                        "zeit": 1791324000,
+                        "summe": 7
+                    },
+                    {
+                        "zeit": 1791410400,
+                        "summe": 15
+                    },
+                    {
+                        "zeit": 1791496800,
+                        "summe": 33
+                    },
+                    {
+                        "zeit": 1791583200,
+                        "summe": 33
+                    },
+                    {
+                        "zeit": 1791669600,
+                        "summe": 45
+                    },
+                    {
+                        "zeit": 1791756000,
+                        "summe": 31
+                    },
+                    {
+                        "zeit": 1791842400,
+                        "summe": 22
+                    },
+                    {
+                        "zeit": 1791928800,
+                        "summe": 36
+                    },
+                    {
+                        "zeit": 1792015200,
+                        "summe": 36
+                    },
+                    {
+                        "zeit": 1792101600,
+                        "summe": 13
+                    },
+                    {
+                        "zeit": 1792188000,
+                        "summe": 5285236
+                    },
+                    {
+                        "zeit": 1792274400,
+                        "summe": 39
+                    },
+                    {
+                        "zeit": 1792360800,
+                        "summe": 41
+                    },
+                    {
+                        "zeit": 1792447200,
+                        "summe": 58
+                    },
+                    {
+                        "zeit": 1792533600,
+                        "summe": 44
+                    },
+                    {
+                        "zeit": 1792620000,
+                        "summe": 47
+                    },
+                    {
+                        "zeit": 1792706400,
+                        "summe": 44
+                    },
+                    {
+                        "zeit": 1792792800,
+                        "summe": 56
+                    },
+                    {
+                        "zeit": 1792879200,
+                        "summe": 56
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "summe": 33
+                    }
+                ],
+                "3": [
+                    {
+                        "zeit": 1788213600,
+                        "summe": 173
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "summe": 5285984
+                    }
+                ]
+            }
+        },
+        "52797": {
+            "name": "Ertragsleistung",
+            "wert": 0,
+            "formatiert": "0.0 kW",
+            "einheit": "kW",
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "aggregate": {
+                "0": [
+                    {
+                        "zeit": 1792879200,
+                        "min": 2.1,
+                        "mittel": 2.19,
+                        "max": 2.3,
+                        "minzeit": 1792879563,
+                        "maxzeit": 1792879322
+                    },
+                    {
+                        "zeit": 1792882800,
+                        "min": 2.1,
+                        "mittel": 2.7281,
+                        "max": 3.2,
+                        "minzeit": 1792883058,
+                        "maxzeit": 1792884264
+                    },
+                    {
+                        "zeit": 1792886400,
+                        "min": 2.5,
+                        "mittel": 2.5837,
+                        "max": 2.7,
+                        "minzeit": 1792887215,
+                        "maxzeit": 1792886432
+                    },
+                    {
+                        "zeit": 1792890000,
+                        "min": 2.5,
+                        "mittel": 2.5623,
+                        "max": 2.6,
+                        "minzeit": 1792890227,
+                        "maxzeit": 1792890000
+                    },
+                    {
+                        "zeit": 1792893600,
+                        "min": 2.5,
+                        "mittel": 2.5698,
+                        "max": 2.7,
+                        "minzeit": 1792893963,
+                        "maxzeit": 1792893601
+                    },
+                    {
+                        "zeit": 1792897200,
+                        "min": 1.9,
+                        "mittel": 2.2913,
+                        "max": 2.7,
+                        "minzeit": 1792899472,
+                        "maxzeit": 1792897276
+                    },
+                    {
+                        "zeit": 1792900800,
+                        "min": 2,
+                        "mittel": 2.2048,
+                        "max": 2.3,
+                        "minzeit": 1792900831,
+                        "maxzeit": 1792902036
+                    },
+                    {
+                        "zeit": 1792904400,
+                        "min": 2.2,
+                        "mittel": 2.2453,
+                        "max": 2.4,
+                        "minzeit": 1792904400,
+                        "maxzeit": 1792907879
+                    },
+                    {
+                        "zeit": 1792908000,
+                        "min": 0,
+                        "mittel": 1.7593,
+                        "max": 4.1,
+                        "minzeit": 1792908060,
+                        "maxzeit": 1792909747
+                    },
+                    {
+                        "zeit": 1792911600,
+                        "min": 2,
+                        "mittel": 2.2814,
+                        "max": 2.7,
+                        "minzeit": 1792912277,
+                        "maxzeit": 1792914508
+                    },
+                    {
+                        "zeit": 1792915200,
+                        "min": 1.9,
+                        "mittel": 2.2538,
+                        "max": 2.6,
+                        "minzeit": 1792916013,
+                        "maxzeit": 1792915200
+                    },
+                    {
+                        "zeit": 1792918800,
+                        "min": 2.3,
+                        "mittel": 3.7649,
+                        "max": 4.8,
+                        "minzeit": 1792918800,
+                        "maxzeit": 1792920049
+                    },
+                    {
+                        "zeit": 1792922400,
+                        "min": 2.5,
+                        "mittel": 2.855,
+                        "max": 3.2,
+                        "minzeit": 1792924990,
+                        "maxzeit": 1792922400
+                    },
+                    {
+                        "zeit": 1792926000,
+                        "min": 2.5,
+                        "mittel": 2.686,
+                        "max": 2.8,
+                        "minzeit": 1792926016,
+                        "maxzeit": 1792928725
+                    },
+                    {
+                        "zeit": 1792929600,
+                        "min": -5.2,
+                        "mittel": 2.2449,
+                        "max": 4.4,
+                        "minzeit": 1792931918,
+                        "maxzeit": 1792932943
+                    },
+                    {
+                        "zeit": 1792933200,
+                        "min": -0.1,
+                        "mittel": 1.8149,
+                        "max": 3.7,
+                        "minzeit": 1792933785,
+                        "maxzeit": 1792936315
+                    },
+                    {
+                        "zeit": 1792936800,
+                        "min": -0.1,
+                        "mittel": 1.8736,
+                        "max": 2.9,
+                        "minzeit": 1792936978,
+                        "maxzeit": 1792937399
+                    },
+                    {
+                        "zeit": 1792940400,
+                        "min": 0,
+                        "mittel": 0,
+                        "max": 0,
+                        "minzeit": 1792940400,
+                        "maxzeit": 1792940400
+                    },
+                    {
+                        "zeit": 1792944000,
+                        "min": 0,
+                        "mittel": 2.7092,
+                        "max": 4.9,
+                        "minzeit": 1792944000,
+                        "maxzeit": 1792945625
+                    },
+                    {
+                        "zeit": 1792947600,
+                        "min": 1.8,
+                        "mittel": 2.0341,
+                        "max": 2.3,
+                        "minzeit": 1792948364,
+                        "maxzeit": 1792947641
+                    },
+                    {
+                        "zeit": 1792951200,
+                        "min": 1.9,
+                        "mittel": 2.0004,
+                        "max": 2.1,
+                        "minzeit": 1792951497,
+                        "maxzeit": 1792953847
+                    },
+                    {
+                        "zeit": 1792954800,
+                        "min": 1.9,
+                        "mittel": 1.9983,
+                        "max": 2,
+                        "minzeit": 1792958245,
+                        "maxzeit": 1792954800
+                    },
+                    {
+                        "zeit": 1792958400,
+                        "min": 1.9,
+                        "mittel": 2.1021,
+                        "max": 2.3,
+                        "minzeit": 1792958486,
+                        "maxzeit": 1792960173
+                    },
+                    {
+                        "zeit": 1792962000,
+                        "min": 2.2,
+                        "mittel": 2.3422,
+                        "max": 2.5,
+                        "minzeit": 1792963908,
+                        "maxzeit": 1792962101
+                    },
+                    {
+                        "zeit": 1792965600,
+                        "min": 2.1,
+                        "mittel": 2.2101,
+                        "max": 2.3,
+                        "minzeit": 1792968367,
+                        "maxzeit": 1792965716
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "min": 2.2,
+                        "mittel": 2.2201,
+                        "max": 2.3,
+                        "minzeit": 1792969200,
+                        "maxzeit": 1792970356
+                    },
+                    {
+                        "zeit": 1792972800,
+                        "min": 2.1,
+                        "mittel": 2.1934,
+                        "max": 2.2,
+                        "minzeit": 1792973971,
+                        "maxzeit": 1792972800
+                    },
+                    {
+                        "zeit": 1792976400,
+                        "min": 2.1,
+                        "mittel": 2.2117,
+                        "max": 2.3,
+                        "minzeit": 1792977347,
+                        "maxzeit": 1792976564
+                    },
+                    {
+                        "zeit": 1792980000,
+                        "min": 2.1,
+                        "mittel": 2.1884,
+                        "max": 2.2,
+                        "minzeit": 1792980539,
+                        "maxzeit": 1792980000
+                    },
+                    {
+                        "zeit": 1792983600,
+                        "min": 2.1,
+                        "mittel": 2.2211,
+                        "max": 2.3,
+                        "minzeit": 1792984214,
+                        "maxzeit": 1792983853
+                    },
+                    {
+                        "zeit": 1792987200,
+                        "min": 2.1,
+                        "mittel": 2.1967,
+                        "max": 2.3,
+                        "minzeit": 1792987589,
+                        "maxzeit": 1792990480
+                    },
+                    {
+                        "zeit": 1792990800,
+                        "min": 2.1,
+                        "mittel": 2.203,
+                        "max": 2.3,
+                        "minzeit": 1792993295,
+                        "maxzeit": 1792990842
+                    },
+                    {
+                        "zeit": 1792994400,
+                        "min": 2.2,
+                        "mittel": 2.203,
+                        "max": 2.3,
+                        "minzeit": 1792994400,
+                        "maxzeit": 1792994577
+                    },
+                    {
+                        "zeit": 1792998000,
+                        "min": 2.1,
+                        "mittel": 2.2409,
+                        "max": 2.3,
+                        "minzeit": 1792998321,
+                        "maxzeit": 1792998073
+                    },
+                    {
+                        "zeit": 1793001600,
+                        "min": 2,
+                        "mittel": 2.1809,
+                        "max": 2.3,
+                        "minzeit": 1793004098,
+                        "maxzeit": 1793001749
+                    },
+                    {
+                        "zeit": 1793005200,
+                        "min": 2.1,
+                        "mittel": 3.7646,
+                        "max": 5,
+                        "minzeit": 1793005200,
+                        "maxzeit": 1793006388
+                    },
+                    {
+                        "zeit": 1793008800,
+                        "min": 2.8,
+                        "mittel": 2.9703,
+                        "max": 3,
+                        "minzeit": 1793008858,
+                        "maxzeit": 1793009340
+                    },
+                    {
+                        "zeit": 1793012400,
+                        "min": 2.3,
+                        "mittel": 2.5422,
+                        "max": 3,
+                        "minzeit": 1793013926,
+                        "maxzeit": 1793012413
+                    },
+                    {
+                        "zeit": 1793016000,
+                        "min": 2.5,
+                        "mittel": 3.3096,
+                        "max": 6.5,
+                        "minzeit": 1793016000,
+                        "maxzeit": 1793018619
+                    },
+                    {
+                        "zeit": 1793019600,
+                        "min": 0,
+                        "mittel": 0.5678,
+                        "max": 3.6,
+                        "minzeit": 1793020186,
+                        "maxzeit": 1793019600
+                    }
+                ],
+                "1": [
+                    {
+                        "zeit": 1788213600,
+                        "min": 0,
+                        "mittel": 0.119,
+                        "max": 4.9,
+                        "minzeit": 1788213600,
+                        "maxzeit": 1788260837
+                    },
+                    {
+                        "zeit": 1788300000,
+                        "min": 0,
+                        "mittel": 0.0929,
+                        "max": 4.7,
+                        "minzeit": 1788300000,
+                        "maxzeit": 1788347127
+                    },
+                    {
+                        "zeit": 1788386400,
+                        "min": 0,
+                        "mittel": 0.088,
+                        "max": 4.8,
+                        "minzeit": 1788386400,
+                        "maxzeit": 1788433521
+                    },
+                    {
+                        "zeit": 1788472800,
+                        "min": 0,
+                        "mittel": 0.1159,
+                        "max": 5.5,
+                        "minzeit": 1788472800,
+                        "maxzeit": 1788519740
+                    },
+                    {
+                        "zeit": 1788559200,
+                        "min": 0,
+                        "mittel": 0.1872,
+                        "max": 4.9,
+                        "minzeit": 1788559200,
+                        "maxzeit": 1788606422
+                    },
+                    {
+                        "zeit": 1788645600,
+                        "min": 0,
+                        "mittel": 0.3638,
+                        "max": 7.1,
+                        "minzeit": 1788645600,
+                        "maxzeit": 1788671911
+                    },
+                    {
+                        "zeit": 1788732000,
+                        "min": 0,
+                        "mittel": 0.1166,
+                        "max": 4.5,
+                        "minzeit": 1788732000,
+                        "maxzeit": 1788779938
+                    },
+                    {
+                        "zeit": 1788818400,
+                        "min": 0,
+                        "mittel": 0.1414,
+                        "max": 5.5,
+                        "minzeit": 1788818400,
+                        "maxzeit": 1788865532
+                    },
+                    {
+                        "zeit": 1788904800,
+                        "min": 0,
+                        "mittel": 0.1128,
+                        "max": 4.5,
+                        "minzeit": 1788904800,
+                        "maxzeit": 1788951987
+                    },
+                    {
+                        "zeit": 1788991200,
+                        "min": 0,
+                        "mittel": 0.391,
+                        "max": 8,
+                        "minzeit": 1788991200,
+                        "maxzeit": 1789031780
+                    },
+                    {
+                        "zeit": 1789077600,
+                        "min": 0,
+                        "mittel": 0.3537,
+                        "max": 6.7,
+                        "minzeit": 1789077600,
+                        "maxzeit": 1789094201
+                    },
+                    {
+                        "zeit": 1789164000,
+                        "min": 0,
+                        "mittel": 0,
+                        "max": 0,
+                        "minzeit": 1789164000,
+                        "maxzeit": 1789164000
+                    },
+                    {
+                        "zeit": 1789250400,
+                        "min": 0,
+                        "mittel": 0,
+                        "max": 0,
+                        "minzeit": 1789250400,
+                        "maxzeit": 1789250400
+                    },
+                    {
+                        "zeit": 1789336800,
+                        "min": 0,
+                        "mittel": 0,
+                        "max": 0,
+                        "minzeit": 1789336800,
+                        "maxzeit": 1789336800
+                    },
+                    {
+                        "zeit": 1789423200,
+                        "min": 0,
+                        "mittel": 0.1298,
+                        "max": 4.7,
+                        "minzeit": 1789423200,
+                        "maxzeit": 1789447027
+                    },
+                    {
+                        "zeit": 1789509600,
+                        "min": 0,
+                        "mittel": 0.1371,
+                        "max": 5.1,
+                        "minzeit": 1789509600,
+                        "maxzeit": 1789556726
+                    },
+                    {
+                        "zeit": 1789596000,
+                        "min": 0,
+                        "mittel": 0.0857,
+                        "max": 4,
+                        "minzeit": 1789596000,
+                        "maxzeit": 1789643204
+                    },
+                    {
+                        "zeit": 1789682400,
+                        "min": -0.3,
+                        "mittel": 0.3586,
+                        "max": 8.7,
+                        "minzeit": 1789729288,
+                        "maxzeit": 1789719564
+                    },
+                    {
+                        "zeit": 1789768800,
+                        "min": 0,
+                        "mittel": 0.1184,
+                        "max": 4.8,
+                        "minzeit": 1789768800,
+                        "maxzeit": 1789815941
+                    },
+                    {
+                        "zeit": 1789855200,
+                        "min": 0,
+                        "mittel": 0.6356,
+                        "max": 7.7,
+                        "minzeit": 1789855200,
+                        "maxzeit": 1789927347
+                    },
+                    {
+                        "zeit": 1789941600,
+                        "min": -0.2,
+                        "mittel": 0.8548,
+                        "max": 4.4,
+                        "minzeit": 1789973548,
+                        "maxzeit": 1789988748
+                    },
+                    {
+                        "zeit": 1790028000,
+                        "min": 0,
+                        "mittel": 1.3755,
+                        "max": 11.9,
+                        "minzeit": 1790028000,
+                        "maxzeit": 1790077245
+                    },
+                    {
+                        "zeit": 1790114400,
+                        "min": 0,
+                        "mittel": 1.1669,
+                        "max": 5.8,
+                        "minzeit": 1790141168,
+                        "maxzeit": 1790163397
+                    },
+                    {
+                        "zeit": 1790200800,
+                        "min": -0.1,
+                        "mittel": 0.7714,
+                        "max": 8.8,
+                        "minzeit": 1790251773,
+                        "maxzeit": 1790237835
+                    },
+                    {
+                        "zeit": 1790287200,
+                        "min": 0,
+                        "mittel": 1.0625,
+                        "max": 6.2,
+                        "minzeit": 1790292626,
+                        "maxzeit": 1790371709
+                    },
+                    {
+                        "zeit": 1790373600,
+                        "min": 0,
+                        "mittel": 0.7237,
+                        "max": 4.6,
+                        "minzeit": 1790379453,
+                        "maxzeit": 1790399263
+                    },
+                    {
+                        "zeit": 1790460000,
+                        "min": 0,
+                        "mittel": 0.0809,
+                        "max": 4.7,
+                        "minzeit": 1790460000,
+                        "maxzeit": 1790506908
+                    },
+                    {
+                        "zeit": 1790546400,
+                        "min": 0,
+                        "mittel": 0.1186,
+                        "max": 4.7,
+                        "minzeit": 1790546400,
+                        "maxzeit": 1790593421
+                    },
+                    {
+                        "zeit": 1790632800,
+                        "min": 0,
+                        "mittel": 0.1059,
+                        "max": 4.4,
+                        "minzeit": 1790632800,
+                        "maxzeit": 1790679816
+                    },
+                    {
+                        "zeit": 1790719200,
+                        "min": 0,
+                        "mittel": 0.0805,
+                        "max": 4.5,
+                        "minzeit": 1790719200,
+                        "maxzeit": 1790768359
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "min": 0,
+                        "mittel": 0.0967,
+                        "max": 5,
+                        "minzeit": 1790805600,
+                        "maxzeit": 1790852711
+                    },
+                    {
+                        "zeit": 1790892000,
+                        "min": 0,
+                        "mittel": 0.1042,
+                        "max": 4.7,
+                        "minzeit": 1790892000,
+                        "maxzeit": 1790939227
+                    },
+                    {
+                        "zeit": 1790978400,
+                        "min": 0,
+                        "mittel": 0.6561,
+                        "max": 7.1,
+                        "minzeit": 1790978400,
+                        "maxzeit": 1790999726
+                    },
+                    {
+                        "zeit": 1791064800,
+                        "min": -0.2,
+                        "mittel": 0.8191,
+                        "max": 6.9,
+                        "minzeit": 1791100365,
+                        "maxzeit": 1791082419
+                    },
+                    {
+                        "zeit": 1791151200,
+                        "min": 0,
+                        "mittel": 0.6788,
+                        "max": 6.5,
+                        "minzeit": 1791151200,
+                        "maxzeit": 1791159836
+                    },
+                    {
+                        "zeit": 1791237600,
+                        "min": -0.2,
+                        "mittel": 0.6376,
+                        "max": 6.8,
+                        "minzeit": 1791270947,
+                        "maxzeit": 1791251799
+                    },
+                    {
+                        "zeit": 1791324000,
+                        "min": 0,
+                        "mittel": 0.3754,
+                        "max": 8.7,
+                        "minzeit": 1791324000,
+                        "maxzeit": 1791360982
+                    },
+                    {
+                        "zeit": 1791410400,
+                        "min": 0,
+                        "mittel": 0.7191,
+                        "max": 7.4,
+                        "minzeit": 1791410400,
+                        "maxzeit": 1791464949
+                    },
+                    {
+                        "zeit": 1791496800,
+                        "min": -2.2,
+                        "mittel": 1.4045,
+                        "max": 5.6,
+                        "minzeit": 1791546388,
+                        "maxzeit": 1791552774
+                    },
+                    {
+                        "zeit": 1791583200,
+                        "min": 0,
+                        "mittel": 1.4369,
+                        "max": 6.8,
+                        "minzeit": 1791586150,
+                        "maxzeit": 1791640195
+                    },
+                    {
+                        "zeit": 1791669600,
+                        "min": 0,
+                        "mittel": 1.9013,
+                        "max": 7.4,
+                        "minzeit": 1791669600,
+                        "maxzeit": 1791719181
+                    },
+                    {
+                        "zeit": 1791756000,
+                        "min": -0.3,
+                        "mittel": 1.4007,
+                        "max": 7.1,
+                        "minzeit": 1791801542,
+                        "maxzeit": 1791831726
+                    },
+                    {
+                        "zeit": 1791842400,
+                        "min": 0,
+                        "mittel": 0.9683,
+                        "max": 5.6,
+                        "minzeit": 1791845705,
+                        "maxzeit": 1791852633
+                    },
+                    {
+                        "zeit": 1791928800,
+                        "min": -1.4,
+                        "mittel": 1.5557,
+                        "max": 7.6,
+                        "minzeit": 1791977654,
+                        "maxzeit": 1791943491
+                    },
+                    {
+                        "zeit": 1792015200,
+                        "min": 0,
+                        "mittel": 1.5739,
+                        "max": 6,
+                        "minzeit": 1792015200,
+                        "maxzeit": 1792044469
+                    },
+                    {
+                        "zeit": 1792101600,
+                        "min": 0,
+                        "mittel": 0.5209,
+                        "max": 7.3,
+                        "minzeit": 1792101600,
+                        "maxzeit": 1792127974
+                    },
+                    {
+                        "zeit": 1792188000,
+                        "min": -5,
+                        "mittel": 1.2953,
+                        "max": 7.5,
+                        "minzeit": 1792237024,
+                        "maxzeit": 1792212647
+                    },
+                    {
+                        "zeit": 1792274400,
+                        "min": 0,
+                        "mittel": 1.5755,
+                        "max": 6,
+                        "minzeit": 1792280222,
+                        "maxzeit": 1792290043
+                    },
+                    {
+                        "zeit": 1792360800,
+                        "min": -9.5,
+                        "mittel": 1.7522,
+                        "max": 5.6,
+                        "minzeit": 1792409938,
+                        "maxzeit": 1792396683
+                    },
+                    {
+                        "zeit": 1792447200,
+                        "min": 0,
+                        "mittel": 2.5159,
+                        "max": 6.1,
+                        "minzeit": 1792513213,
+                        "maxzeit": 1792494055
+                    },
+                    {
+                        "zeit": 1792533600,
+                        "min": 0,
+                        "mittel": 1.7764,
+                        "max": 5.2,
+                        "minzeit": 1792541891,
+                        "maxzeit": 1792578945
+                    },
+                    {
+                        "zeit": 1792620000,
+                        "min": -11.9,
+                        "mittel": 2.0411,
+                        "max": 5.2,
+                        "minzeit": 1792670114,
+                        "maxzeit": 1792705113
+                    },
+                    {
+                        "zeit": 1792706400,
+                        "min": -0.4,
+                        "mittel": 1.8586,
+                        "max": 6,
+                        "minzeit": 1792778797,
+                        "maxzeit": 1792758073
+                    },
+                    {
+                        "zeit": 1792792800,
+                        "min": 0,
+                        "mittel": 2.3715,
+                        "max": 5.1,
+                        "minzeit": 1792858417,
+                        "maxzeit": 1792847993
+                    },
+                    {
+                        "zeit": 1792879200,
+                        "min": -5.2,
+                        "mittel": 2.2522,
+                        "max": 4.9,
+                        "minzeit": 1792931918,
+                        "maxzeit": 1792945625
+                    },
+                    {
+                        "zeit": 1792969200,
+                        "min": 0,
+                        "mittel": 2.3668,
+                        "max": 6.5,
+                        "minzeit": 1793020186,
+                        "maxzeit": 1793018619
+                    }
+                ],
+                "3": [
+                    {
+                        "zeit": 1788213600,
+                        "min": -0.3,
+                        "mittel": 0.3296,
+                        "max": 11.9,
+                        "minzeit": 1789729288,
+                        "maxzeit": 1790077245
+                    },
+                    {
+                        "zeit": 1790805600,
+                        "min": -11.9,
+                        "mittel": 1.319,
+                        "max": 8.7,
+                        "minzeit": 1792670114,
+                        "maxzeit": 1791360982
+                    }
+                ]
+            }
+        }
+    }
+}
