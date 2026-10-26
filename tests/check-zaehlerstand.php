@@ -79,6 +79,16 @@ pruefe(array_keys(monate($n[56021] ?? null)) === ['2026-07', '2026-08', '2026-10
 pruefe((monate($n[56021] ?? null)['2026-08'] ?? 0) > 4.2e9, 'der August mit über vier Milliarden kWh: ' . json_encode(monate($n[56021] ?? null)));
 // B99: „Name (Raum)“ wie die Fehler der Liste, nicht „Raum Name“ ohne Grenze
 pruefe(($n[56021]['label'] ?? '') === 'Wärmepumpe Heizen (Keller)', 'mit Raum in Klammern: ' . ($n[56021]['label'] ?? ''));
+pruefe(($n[56021]['heat'] ?? null) === false, 'als Energiezähler ist der Befund keiner eines Wärmezählers: ' . json_encode($n[56021]['heat'] ?? null));
+// Derselbe Zähler als Wärmezähler einer Wärmepumpe (so steht er am nuc, 26.10.2026): Der Fehlwert
+// vom 17.10. ergab im Oktober 5,3 Mio. kWh Wärme, der Selbsttest sagte nichts.
+$wp = ['Room' => 'Keller', 'Name' => 'Wärmepumpe', 'Aliases' => '', 'Type' => 'appliance', 'StateVariableID' => 0, 'PowerVariableID' => 0, 'EnergyVariableID' => 0, 'HeatVariableID' => 56021];
+$w = sprunge('nuc', [$wp], []);
+pruefe(array_keys(monate($w[56021] ?? null)) === ['2026-07', '2026-08', '2026-10'], 'Wärmezähler: dieselben Fehlwerte im Juli, August und Oktober: ' . json_encode(monate($w[56021] ?? null)));
+pruefe(($w[56021]['label'] ?? '') === 'Wärmepumpe (Keller)' && ($w[56021]['heat'] ?? null) === true && ($w[56021]['key'] ?? null) === '', 'der Befund nennt das Gerät und ist einer eines Wärmezählers: ' . json_encode(array_diff_key($w[56021] ?? [], ['months' => 0]), JSON_UNESCAPED_UNICODE));
+// Ein Zähler, der Energie- und Wärmezähler zugleich ist, zählt einmal, als Energiezähler
+$beides = sprunge('nuc', [$wp, ['Room' => 'Keller', 'Name' => 'Wärmepumpe Heizen', 'Aliases' => '', 'Type' => 'meter', 'EnergyVariableID' => 56021]], []);
+pruefe(count($beides) === 1 && ($beides[56021]['heat'] ?? null) === false, 'eine Variable einmal, zuerst als Energiezähler: ' . json_encode(array_map(static fn (array $s): array => array_diff_key($s, ['months' => 0]), $beides), JSON_UNESCAPED_UNICODE));
 pruefe(!isset($n[47491]), 'Einspeisung: 2.5 kWh Abweichung im November 2024 sind kein Befund: ' . json_encode(monate($n[47491] ?? null)));
 pruefe(monate($n[36579] ?? null) === ['2026-05' => 27.2], 'Wallbox in Wh, gerechnet in kWh: 41 Rücksprünge im Mai 2026, der einzelne im August und kleine unter einem Fünftel eines üblichen Monats zählen nicht: ' . json_encode(monate($n[36579] ?? null)));
 pruefe(!isset($n[16183]), 'Schalterleiste: Rücksetzungen auf 0 in 2023 und 2024 sind kein Befund: ' . json_encode(monate($n[16183] ?? null)));

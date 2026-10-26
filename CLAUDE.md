@@ -218,7 +218,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Plausibilität der Zähler im Selbsttest** (`counterJumps`): erst die Gesamtprobe, dann je Monat Summe gegen Zuwachs des
   Zählerstands (`counterReadings`); die Schwellen (2 kWh, ein Fünftel des Medians, drei Viertel, zwei Mediane,
   `JUMP_KWH`, `JUMP_ABOVE`) sind an echten Fällen gemessen. Stand nach jetzt = Wert der Variable, wenn im letzten Tag
-  aktualisiert (`DeviceBackend::LATEST`, `FRESH_SECONDS`). Test `check-zaehlerstand.php`.
+  aktualisiert (`DeviceBackend::LATEST`, `FRESH_SECONDS`). Wärmezähler ebenso, nach den Energiezählern (`heat` im Befund).
+  Test `check-zaehlerstand.php`.
 
 ## Verlauf und Diagramme
 

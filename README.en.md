@@ -347,7 +347,7 @@ mW, W, kW and MW is converted (Matter reports mW), without a unit W is assumed.
 ### Meter readings in the self-test
 
 The self-test also checks whether the archive matches the meter reading. A single wrong value going up and back counts
-as consumption in the archive. The self-test then names the meter with its ID and the months, for example "the archive
+as consumption in the archive, for a heat meter as heat. The self-test then names the meter with its ID and the months, for example "the archive
 counts more than the meter reading rose (01/2024 +659.8 kWh)". Delete the wrong value in the archive and reaggregate
 the variable. If a meter resets, for example after a power failure, the archive keeps counting correctly; that is not
 reported.

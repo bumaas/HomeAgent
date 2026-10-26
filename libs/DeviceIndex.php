@@ -869,29 +869,34 @@ final class DeviceIndex
      * in einer betreuten Anlage ergab in der Punktwolke 32,8 Mio. kWh. Erst eine Probe über das ganze Archiv (Summe der Jahre
      * gegen den Zuwachs seit dem ersten Satz), nur bei einer Abweichung die Monate. Jede Variable einmal, die der Bilanz zuerst.
      *
-     * @return list<array{variable: int, key: string, label: string, months: array<int, float>}> key ist der Teil der Bilanz
-     *         ('' bei Geräten), label der Name der Quelle bzw. „Name (Raum)“ des Geräts, months Monatsbeginn => kWh zu viel
+     * Wärmezähler ebenso, nach allen Energiezählern (nuc 26.10.2026: ein Fehlwert ergab im Oktober 5,3 Mio. kWh Wärme).
+     *
+     * @return list<array{variable: int, key: string, label: string, heat: bool, months: array<int, float>}> key ist der Teil
+     *         der Bilanz ('' bei Geräten), label der Name der Quelle bzw. „Name (Raum)“ des Geräts, heat ein Wärmezähler,
+     *         months Monatsbeginn => kWh zu viel
      */
     public function counterJumps(): array
     {
         $counters = [];
         foreach ($this->balanceVars as $key => $vars) {
             foreach ($vars as $var) {
-                $counters[$var['variable']] ??= [$key, $var['name']];
+                $counters[$var['variable']] ??= [$key, $var['name'], false];
             }
         }
-        foreach ($this->entries as $entry) {
-            $id = $entry['roles']['energy'] ?? 0;
-            if ($id > 0) {
-                // „Name (Raum)“ wie die Fehler der Liste (B99)
-                $counters[$id] ??= ['', trim($entry['Room']) === '' ? $entry['Name'] : $entry['Name'] . ' (' . trim($entry['Room']) . ')'];
+        foreach (['energy' => false, 'heat' => true] as $role => $heat) {
+            foreach ($this->entries as $entry) {
+                $id = $entry['roles'][$role] ?? 0;
+                if ($id > 0) {
+                    // „Name (Raum)“ wie die Fehler der Liste (B99)
+                    $counters[$id] ??= ['', trim($entry['Room']) === '' ? $entry['Name'] : $entry['Name'] . ' (' . trim($entry['Room']) . ')', $heat];
+                }
             }
         }
         $jumps = [];
-        foreach ($counters as $id => [$key, $label]) {
+        foreach ($counters as $id => [$key, $label, $heat]) {
             $months = $this->counterExcess($id);
             if ($months !== []) {
-                $jumps[] = ['variable' => $id, 'key' => $key, 'label' => $label, 'months' => $months];
+                $jumps[] = ['variable' => $id, 'key' => $key, 'label' => $label, 'heat' => $heat, 'months' => $months];
             }
         }
         return $jumps;

@@ -556,7 +556,9 @@ class HomeAgent extends IPSModuleStrict
             }
             $caption = $jump['key'] === '' ? $jump['label'] : $this->balanceCaption($jump['key']) . ' "' . $jump['label'] . '"';
             // Mit der ID: Zähler an Aktor und Messgerät heißen oft gleich (Tester 22.10.2026: zweimal „Gesamter Verbrauch“).
-            $lines[] = sprintf($this->Translate('Note: %s %s: the archive counts more than the meter reading rose (%s). Usually that is a single wrong value, which counts as consumption'), $caption, IPS_GetName($jump['variable']) . ' (#' . $jump['variable'] . ')', $months);
+            $lines[] = sprintf($this->Translate($jump['heat'] ?? false
+                ? 'Note: %s %s: the archive counts more than the heat meter reading rose (%s). Usually that is a single wrong value, which counts as heat'
+                : 'Note: %s %s: the archive counts more than the meter reading rose (%s). Usually that is a single wrong value, which counts as consumption'), $caption, IPS_GetName($jump['variable']) . ' (#' . $jump['variable'] . ')', $months);
         }
         // Thermostate: in welchem Bereich und mit welcher Schrittweite der Assistent stellen darf.
         foreach ($list as $entry) {

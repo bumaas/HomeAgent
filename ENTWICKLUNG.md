@@ -403,7 +403,10 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   des Zeitraums (Zähler oder Leistung, wie die Arbeitszahl), jetzt Ertragsleistung + Leistung; der Ertrag steht in
   Klammern dahinter, damit der Wert an der Anlage wiederzufinden ist. Ohne Strom keine Wärme, nur der Ertrag. Verworfen:
   eine berechnete Wärmevariable auf der Anlage (Archiv per `AC_AddLoggedValues` nachbauen, hilft nur einer Anlage).
-  Mitschnitt `nuc_2026-10-26_umweltertrag.json`; darin auch ein Sprung von #56021 im Oktober (Monatssumme 5,3 Mio. kWh).
+  Mitschnitt `nuc_2026-10-26_umweltertrag.json`; darin auch ein Sprung von #56021 im Oktober (Monatssumme 5,3 Mio. kWh,
+  ein Satz am 17.10. um 12:34:52, mit OK von Burkhard gelöscht). Der Selbsttest sagte nichts, weil `counterJumps` nur
+  Energiezähler prüfte; seitdem auch Wärmezähler, mit eigenem Text („zählt als Wärme“). Eine Variable, die Energie- und
+  Wärmezähler zugleich ist, zählt einmal als Energiezähler.
 - **Kosten in Euro** (B72, Burkhard 13.10.2026): Properties `PriceVariableID` (archivierte Variable in ct/kWh oder €/kWh,
   Einheit aus dem Suffix, ohne Suffix gelten Werte über 2 als Cent) und `FeedInTariff` (ct/kWh), an den Index über
   `setTariff`; nur mit Bilanz. `hourlyCosts` rechnet je Stunde Netzbezug × Stundenmittel, Einspeisung × Vergütung und

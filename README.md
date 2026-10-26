@@ -355,7 +355,7 @@ nicht mit. Leistungen in mW, W, kW und MW rechnet das Modul um (Matter meldet mW
 ### Zählerstände im Selbsttest
 
 Der Selbsttest prüft auch, ob das Archiv zum Zählerstand passt. Ein einzelner Fehlwert nach oben und zurück zählt im
-Archiv als Verbrauch. Dann nennt der Selbsttest den Zähler mit seiner ID und die Monate, etwa „Das Archiv zählt mehr,
+Archiv als Verbrauch, beim Wärmezähler als Wärme. Dann nennt der Selbsttest den Zähler mit seiner ID und die Monate, etwa „Das Archiv zählt mehr,
 als der Zählerstand gestiegen ist (01/2024 +659.8 kWh)“. Den Fehlwert löschen Sie im Archiv und aggregieren die
 Variable neu. Setzt ein Zähler zurück, etwa nach einem Stromausfall, zählt das Archiv richtig weiter, das ist kein
 Befund.

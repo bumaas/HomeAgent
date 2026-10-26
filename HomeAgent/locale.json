@@ -243,6 +243,7 @@
             "Tilt window (fully open means tilted)": "Kippfenster (ganz offen heißt gekippt)",
             "Tilt window": "Kippfenster",
             "Environmental yield": "Umweltertrag",
+            "Note: %s %s: the archive counts more than the heat meter reading rose (%s). Usually that is a single wrong value, which counts as heat": "Hinweis: %s %s: Das Archiv zählt mehr, als der Stand des Wärmezählers gestiegen ist (%s). Meist ist das ein einzelner Fehlwert, der als Wärme zählt",
             "Heat is the environmental yield (electricity is added)": "Wärme ist Umweltertrag (der Strom wird dazugerechnet)",
             "environmental yield %s kWh, no electricity to add": "Umweltertrag %s kWh, kein Strom zum Dazurechnen",
             " (environmental yield %s kWh plus electricity)": " (Umweltertrag %s kWh plus Strom)",
