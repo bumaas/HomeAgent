@@ -124,6 +124,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   „fährt“, sobald Position, Fahrstatus oder ein Lebenszeichen es zeigen; das Ziel merkt sich der Buffer `Travels`.
 - **`set_state`** ohne Raum, Etage, Typ oder Name tut nichts; ein Name muss genau ein Gerät treffen, sonst
   Kandidatenliste. Widersprüche werden abgewiesen, Geräte, die den Befehl nicht verstehen, ausgelassen und gezählt.
+  `open`/`close` mit `percent` stellt den Öffnungsgrad (`$direction`, nur Geräte mit diesem Befehl); `close` mit 100 und
+  `open` mit 0 bleiben Widersprüche. Test `check-switch.php`.
 - **Namenssuche** in Stufen, nur die beste zählt: genauer Name oder Alias, Anfrage als Teil des Namens, Name in der
   Anfrage nur an einem Wortanfang. Genannte Geräte gehören in `name`, nicht in `type` (steht in der Beschreibung).
 - **Vokabular:** Die Beschreibung von `room` nennt die bekannten Räume, die von `mode`/`fan_speed` die Einträge der

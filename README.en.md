@@ -523,7 +523,7 @@ when querying and adds a command or a percent value:
 | `volume` | sets the volume of a media player in percent, also together with `play`, `pause` or `stop` ("quiet music on") |
 | `volume_change` | makes a media player louder or quieter by that many percentage points, 10 without a number |
 | `mute` | mutes a media player (`true`) or unmutes it (`false`) |
-| `percent` | sets the brightness of a light or how far a blind or window is open |
+| `percent` | sets the brightness of a light or how far a blind or window is open. If `open` or `close` comes with it, the percentage counts. |
 | `temperature` | sets the setpoint of a thermostat in °C; `on` and `off` set a thermostat without mode to its special setpoint "On" or "Off" if it has one, but only with `type=thermostat` or its name |
 | `humidity` | sets the target humidity of a humidifier or dehumidifier in percent |
 | `mode`, `fan_speed` | sets mode or fan speed by name, for example "Continuous" or "High" |

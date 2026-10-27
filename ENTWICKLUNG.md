@@ -141,7 +141,11 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   dieselben Zeiträume den Verlauf (Minimum / Mittel / Maximum je Stunde, Tag oder Monat).
 - **`set_state`** mit `command` (`on`, `off`, `open`, `close`, `stop`), `percent` oder `temperature`;
   Widersprüche werden abgewiesen. `percent` ist bei Rollläden und Fenstern der Öffnungsgrad (0 zu,
-  100 offen). Ohne Raum, Etage, Typ oder Name passiert nichts; ein Name muss genau ein Gerät treffen,
+  100 offen). `open` oder `close` mit `percent` gilt seit 27.10.2026 als `percent` (joga1_2000, Qwen3 14B über HA:
+  „mache Rollladen halb runter“ kam als `close` mit 50 %, die Absage kostete eine Runde); der Befehl wählt dann nur
+  Geräte, die ihn verstehen, ein Licht bekommt also nichts. `close` mit 100 und `open` mit 0 bleiben Widersprüche.
+  Offen bleibt, dass ein Modell `close` mit 80 als „80 % zu“ meinen könnte; die Beschreibung von `percent` nennt den
+  Öffnungsgrad. Ohne Raum, Etage, Typ oder Name passiert nichts; ein Name muss genau ein Gerät treffen,
   sonst kommt die Kandidatenliste mit Zustand. Geräte einer Gruppe, die den Befehl nicht verstehen,
   werden ausgelassen und gezählt.
 - **`run_scene`** startet ein freigegebenes Skript; die Szenennamen stehen in der Beschreibung.

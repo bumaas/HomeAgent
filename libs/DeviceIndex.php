@@ -2655,6 +2655,14 @@ final class DeviceIndex
         if ($command === '' && $percent === null && $temperature === null && $kelvin === null && $color === null && $sound === [] && $humidity === null && $choice === []) {
             return $this->fail(sprintf($this->t('Nothing was changed: give a command (%s), a percent value or a temperature.'), implode(', ', self::COMMANDS)));
         }
+        // open oder close mit einem Wert stellt den Öffnungsgrad: „halb runter“ kam von Qwen3 14B als close mit
+        // 50 % (joga1_2000, t/144611 #63, 26.10.2026). Der Befehl wählt nur noch die Geräte, die ihn verstehen.
+        // Ganz offen mit close und ganz zu mit open bleiben ein Widerspruch.
+        $direction = '';
+        if ($percent !== null && ($command === 'close' && (float)$percent < 100.0 || $command === 'open' && (float)$percent > 0.0)) {
+            $direction = $command;
+            $command = '';
+        }
         // Nur „on“ verträgt einen Wert, und dann einen über 0: „an und 0 %“ wäre zugleich aus.
         if ($percent !== null && $command !== '' && ($command !== 'on' || (float)$percent <= 0.0)) {
             return $this->fail(sprintf($this->t('Nothing was changed: command "%s" and percent %s contradict each other. Give only one of them.'), $command, self::formatNumber((float)$percent)));
@@ -2673,7 +2681,10 @@ final class DeviceIndex
 
         // Was verlangt ist, heißt wie das Feld des Werkzeugs; so kann der Assistent es korrigieren.
         $ability = $mode !== null ? 'mode' : ($fanSpeed !== null ? 'fan_speed' : ($mute !== null ? 'mute' : ($volumeChange !== null ? 'volume_change' : ($volume !== null ? 'volume' : ($color !== null ? 'color' : ($kelvin !== null ? 'color_temperature' : ($humidity !== null ? 'humidity' : ($temperature !== null ? 'temperature' : ($percent !== null ? 'percent' : $command)))))))));
-        $understand = array_filter($selection['entries'], static fn (array $e): bool => in_array($ability, self::abilitiesOf($e), true) && (!$withPlayback || in_array($command, self::abilitiesOf($e), true)));
+        $understand = array_filter($selection['entries'], static fn (array $e): bool => in_array($ability, self::abilitiesOf($e), true) && (!$withPlayback || in_array($command, self::abilitiesOf($e), true))
+            && ($direction === '' || in_array($direction, self::abilitiesOf($e), true)));
+        // In Absagen der Befehl, sonst hieße es beim Licht „versteht percent nicht, versteht percent“
+        $named = $direction !== '' ? $direction : $ability;
         // „an“ setzt einen Mediaplayer ohne schaltbares Ein/Aus nur mit type=media fort (B86); „Wintergarten an“ soll keine
         // Musik starten (Burkhard 18.10.2026, Review Frage 1).
         $resumeOnly = $command === 'on' && $type !== 'media' ? array_filter($understand, fn (array $e): bool => $this->pausesOnOff($e)) : [];
@@ -2699,9 +2710,9 @@ final class DeviceIndex
             if ($name !== '') {
                 $entry = $selection['entries'][0];
                 $label = $entry['Name'] . ($entry['Room'] !== '' ? ' (' . $entry['Room'] . ')' : '');
-                return $this->fail(sprintf($this->t('Nothing was changed: %s cannot do "%s". It understands: %s.'), $label, $ability, $list));
+                return $this->fail(sprintf($this->t('Nothing was changed: %s cannot do "%s". It understands: %s.'), $label, $named, $list));
             }
-            return $this->fail(sprintf($this->t('Nothing was changed: no device matching %s understands "%s". They understand: %s.'), $filter, $ability, $list));
+            return $this->fail(sprintf($this->t('Nothing was changed: no device matching %s understands "%s". They understand: %s.'), $filter, $named, $list));
         }
         // „Wohnzimmer auf 50 %“ meint Helligkeit oder Öffnung, nicht beides auf einmal. Rollläden und
         // Fenster zählen beide als Öffnungsgrad und dürfen zusammen gestellt werden.
@@ -2715,7 +2726,7 @@ final class DeviceIndex
             }
         }
 
-        $closing = $skipped > 0 ? [sprintf($this->t('%d device(s) of the selection do not understand "%s" and were left out.'), $skipped, $ability)] : [];
+        $closing = $skipped > 0 ? [sprintf($this->t('%d device(s) of the selection do not understand "%s" and were left out.'), $skipped, $named)] : [];
         if ($skipped > 0) {
             $this->problem = 'left_out';
         }

@@ -567,9 +567,23 @@ $r = stelle($idx, ['name' => 'Testlampe', 'room' => 'Testraum', 'command' => 'on
 pruefe($b->requests === [[49888, 77], [15886, true]] && str_starts_with($r['text'], '1 von 1 Geräten auf 30 % gestellt'), 'on mit percent: ' . json_encode($b->requests) . ' ' . $r['text']);
 merke($b);
 
-// Widersprüche: nichts wird geschaltet, die Antwort sagt warum
+// open oder close mit percent: percent gewinnt. „Mache den Rollladen halb runter“ schickte Qwen3 14B als
+// close mit 50 %, das wurde abgewiesen und kostete eine Runde (joga1_2000, t/144611 #63, 26.10.2026).
+foreach ([['close', 50, 50], ['open', 30, 70], ['close', 0, 100], ['open', 100, 0]] as [$befehl, $prozent, $roh]) {
+    [$idx, $b] = anlage();
+    $r = stelle($idx, ['name' => 'Rollladen', 'room' => 'Testraum', 'command' => $befehl, 'percent' => $prozent]);
+    pruefe(!$r['isError'] && $b->requests === [[13696, $roh]] && str_starts_with($r['text'], '1 von 1 Geräten auf ' . $prozent . ' % gestellt'), $befehl . ' mit percent ' . $prozent . ' stellt den Öffnungsgrad: ' . json_encode($b->requests) . ' ' . $r['text']);
+    merke($b);
+}
+// Nur Geräte, die den Befehl auch verstehen: Ein Licht kennt kein close, also bekommt es nichts
 [$idx, $b] = anlage();
-foreach ([['off', 50], ['on', 0], ['open', 20], ['close', 100]] as [$befehl, $prozent]) {
+$r = stelle($idx, ['room' => 'Testraum', 'command' => 'close', 'percent' => 50, 'type' => 'light']);
+pruefe($r['isError'] && $b->requests === [] && str_contains($r['text'], 'versteht „close“'), 'close mit percent stellt kein Licht und nennt den Befehl: ' . json_encode($b->requests) . ' ' . $r['text']);
+merke($b);
+
+// Widersprüche: nichts wird geschaltet, die Antwort sagt warum. close ganz offen und open ganz zu bleiben einer.
+[$idx, $b] = anlage();
+foreach ([['off', 50], ['on', 0], ['open', 0], ['close', 100]] as [$befehl, $prozent]) {
     $r = stelle($idx, ['name' => 'Testlampe', 'room' => 'Testraum', 'command' => $befehl, 'percent' => $prozent]);
     pruefe($r['isError'] && $b->requests === [] && $r['text'] === 'Nichts geändert: Der Befehl „' . $befehl . '“ und percent ' . $prozent . ' widersprechen sich. Gib nur eines von beiden an.', $befehl . ' mit percent ' . $prozent . ' wird abgewiesen: ' . $r['text']);
 }

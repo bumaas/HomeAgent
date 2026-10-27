@@ -531,7 +531,7 @@ aus und gibt dazu einen Befehl oder einen Prozentwert an:
 | `volume` | stellt die Lautstärke eines Mediaplayers in Prozent, auch zusammen mit `play`, `pause` oder `stop` („Musik leise an“) |
 | `volume_change` | macht einen Mediaplayer um so viele Prozentpunkte lauter oder leiser, ohne Zahl um 10 |
 | `mute` | schaltet einen Mediaplayer stumm (`true`) oder wieder laut (`false`) |
-| `percent` | stellt die Helligkeit eines Lichts oder die Öffnung eines Rollladens oder Fensters |
+| `percent` | stellt die Helligkeit eines Lichts oder die Öffnung eines Rollladens oder Fensters. Kommt dazu `open` oder `close`, gilt der Prozentwert. |
 | `temperature` | stellt den Sollwert eines Thermostats in °C; `on` und `off` stellen ein Thermostat ohne Modus auf seinen Sonder-Sollwert „On“ bzw. „Off“, wenn es einen hat, aber nur mit `type=thermostat` oder seinem Namen |
 | `humidity` | stellt die Zielfeuchte eines Luftbe- oder -entfeuchters in Prozent |
 | `mode`, `fan_speed` | setzt Modus oder Lüfterstufe per Name, etwa „Kontinuierlich“ oder „Hoch“ |
