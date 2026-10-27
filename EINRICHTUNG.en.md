@@ -138,6 +138,9 @@ How to proceed:
    - Detectors for querying: water detectors as water_leak, smoke detectors as measurement.
    - For radiator thermostats also the valve positions, several actuators of a room on the same
      thermostat (up to three).
+   - For blinds also the moving state (MovingVariableID) where there is one. If with KNX the position
+     instance has no feedback address, name that as an open question to me: its variable then only
+     shows the value sent.
    - Power and energy meters where they exist. For a heat pump also a heat meter or heat output; two
      rows for heating and hot water only if both heat and electricity are measured separately,
      otherwise one. If the heat only counts the environmental yield (Vaillant over ebusd:

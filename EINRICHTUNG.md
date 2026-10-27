@@ -140,6 +140,9 @@ So gehst du vor:
    - Melder zum Abfragen: Wassermelder als water_leak, Rauchmelder als measurement.
    - Bei Heizkörperthermostaten auch die Ventilstellungen, mehrere Antriebe eines Raums am selben
      Thermostat (bis zu drei).
+   - Bei Rollläden auch den Fahrstatus (MovingVariableID), wo es ihn gibt. Hat bei KNX die Instanz der
+     Position keine Rückmeldeadresse, nennst du mir das als offene Frage: Ihre Variable zeigt dann nur
+     den gesendeten Wert.
    - Leistung und Energiezähler, wo es sie gibt. Bei einer Wärmepumpe auch Wärmezähler oder
      Wärmeleistung; zwei Zeilen für Heizen und Warmwasser nur, wenn Wärme und Strom beide getrennt
      gemessen werden, sonst eine. Zählt die Wärme nur den Umweltertrag (Vaillant über ebusd:
