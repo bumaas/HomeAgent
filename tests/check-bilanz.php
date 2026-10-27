@@ -106,7 +106,7 @@ pruefe(DeviceIndex::abilitiesOf($liste[3]) === [], 'ohne Schaltzustand versteht 
 $r = frage($idx, ['name' => 'Wärmepumpe']);
 pruefe(str_ends_with($r['text'], "\nTechnik | Wärmepumpe | appliance | 0.0 kW"), 'die Zeile nennt die Leistung als Zustand: ' . $r['text']);
 $r = frage($idx, ['type' => 'appliance', 'active_only' => true]);
-pruefe(str_starts_with($r['text'], '0 of 0 checked devices active (type=appliance).') && str_ends_with($r['text'], "\n1 device(s) without on/off were not counted (appliance)."), 'bei „nur aktive“ zählt sie als Gerät ohne an/aus: ' . $r['text']);
+pruefe($r['text'] === "1 device(s) found (type=appliance). None of them knows on/off, so all are listed with their state.\nTechnik | Wärmepumpe | appliance | 0.0 kW", 'bei „nur aktive“ kennt sie kein an/aus und steht mit Zustand da: ' . $r['text']);
 $r = frage($idx, ['name' => 'Wärmepumpe', 'command' => 'off'], true);
 pruefe($r['isError'] && $r['text'] === 'Nothing was changed: the devices matching name=Wärmepumpe can only be read.', 'schalten lässt sie sich nicht: ' . $r['text']);
 

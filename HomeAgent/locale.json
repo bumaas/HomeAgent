@@ -251,6 +251,7 @@
             " (environmental yield %s W plus electricity)": " (Umweltertrag %s W plus Strom)",
             "Note: %s: the heat is the environmental yield, but without energy meter and power there is no electricity to add": "Hinweis: %s: Die Wärme ist der Umweltertrag, ohne Stromzähler und Leistung fehlt aber der Strom dazu",
             "%d device(s) without on/off were not counted (%s).": "%d Gerät(e) ohne an/aus wurden nicht gezählt (%s).",
+            "%d device(s) found (%s). None of them knows on/off, so all are listed with their state.": "%d Gerät(e) gefunden (%s). Keins davon kennt an/aus, deshalb alle mit Zustand.",
             "%d device(s) found (%s).": "%d Gerät(e) gefunden (%s).",
             "not available (variable %d is missing)": "nicht verfügbar (Variable %d fehlt)",
             "all devices": "alle Geräte",

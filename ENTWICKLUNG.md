@@ -123,7 +123,12 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
 ## Werkzeuge
 
 - **`get_state`** filtert nach Raum, Etage, Typ und Name, `active_only` zählt nur Geräte mit an/aus und
-  nennt die übrigen in einer Schlusszeile. `period` bzw. `from`/`to` liefern den Verbrauch aus den
+  nennt die übrigen in einer Schlusszeile. Kennt keins der Geräte an/aus, gilt `active_only` nicht, dann kommen alle
+  mit Zustand (joga1_2000 26.10.2026 mit Qwen3 14B über HA: „Ist der Rollladen offen?“ als `type=blind` mit
+  `active_only` ergab „0 von 0 geprüften Geräten aktiv“ und die Schlusszeile, Qwen antwortete „nicht offen“, obwohl er
+  offen war; Claude fragte in diesem Fall von sich aus ohne `active_only` nach). Rollläden zählen weiter nicht als
+  aktiv (Entscheidung 08.10.2026), gemischte Treffer bleiben bei der Schlusszeile. Verworfen: die nicht gezählten
+  Geräte immer mit Zustand nennen (fürs ganze Haus gut 100 Zeilen). `period` bzw. `from`/`to` liefern den Verbrauch aus den
   Archiv-Aggregaten, `period=now` die Leistung; fürs ganze Haus aus der Energiebilanz (Bezug + PV +
   Batterie entladen − Einspeisung − Batterie geladen), mit Autarkie und den fünf größten Geräten.
   Ein einzelner Netz- bzw. Batteriesensor mit Vorzeichen zählt wie bei Home Assistant (negativ = Einspeisung bzw.

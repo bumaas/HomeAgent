@@ -561,8 +561,15 @@ final class DeviceIndex
         $uncounted = [];
         $windows = 0;
         $driven = 0;
-        foreach ($matches as $entry) {
-            $state = $this->stateOf($entry);
+        $states = array_map(fn (array $entry): array => $this->stateOf($entry), $matches);
+        // Kennt keins an/aus, gilt active_only nicht: „0 von 0 aktiv“ las Qwen3 als „kein Rollladen offen“,
+        // obwohl einer offen war (joga1_2000, t/144611 #63, 26.10.2026). Dann alle mit ihrem Zustand.
+        $noneCountable = $activeOnly && $matches !== [] && !array_any($states, static fn (array $s): bool => $s['active'] !== null);
+        if ($noneCountable) {
+            $activeOnly = false;
+        }
+        foreach ($matches as $i => $entry) {
+            $state = $states[$i];
             if ($state['active'] !== null) {
                 $checked++;
                 if ($state['active']) {
@@ -595,6 +602,8 @@ final class DeviceIndex
             if ($uncounted !== []) {
                 $lines[] = sprintf($this->t('%d device(s) without on/off were not counted (%s).'), count($uncounted), implode(', ', array_unique($uncounted)));
             }
+        } elseif ($noneCountable) {
+            $head = sprintf($this->t('%d device(s) found (%s). None of them knows on/off, so all are listed with their state.'), count($matches), $filter);
         } else {
             $head = sprintf($this->t('%d device(s) found (%s).'), count($matches), $filter);
         }

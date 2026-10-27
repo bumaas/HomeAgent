@@ -763,7 +763,7 @@ The assistant sends these arguments to **get_state**; the values are part of the
 | Argument | Meaning |
 |---|---|
 | `room`, `floor`, `type`, `name` | Selection of the devices. Without a room, an access with a default room uses that one, `room=all` means the whole house. |
-| `active_only` | only what is on, open or detected |
+| `active_only` | only what is on, open or detected. If none of the devices knows on and off, blinds or measured values for example, all of them come with their state. |
 | `period` | `today`, `yesterday`, `this_week`, `last_week`, `this_month`, `last_month`, `this_year`, `last_year` for consumption, history and timeline, `now` for the power right now. The assistant only gets the parameter if at least one released device has an energy meter or the energy balance is set up. |
 | `from`, `to` | free period instead of `period`: first and last day as YYYY-MM-DD, both included, without `to` only that one day, for example "in January" with `from=2026-01-01` and `to=2026-01-31`. With a time (YYYY-MM-DD HH:MM) by the hour, for example `from=2026-10-12 13:00` and `to=2026-10-12 15:00`; then `to` is the end, without `to` it runs until now. The module counts whole hours, at most 48 at a time. |
 | `type=power` | not a device type: with a period the power over the period, without a period the power right now |

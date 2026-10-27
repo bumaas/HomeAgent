@@ -775,7 +775,7 @@ Diese Angaben schickt der Assistent an **get_state**; die Werte stehen in der Be
 | Angabe | Bedeutung |
 |---|---|
 | `room`, `floor`, `type`, `name` | Auswahl der Geräte. Ohne Raum gilt bei einem Zugang mit Standardraum dieser, `room=all` meint das ganze Haus. |
-| `active_only` | nur, was an, offen oder erkannt ist |
+| `active_only` | nur, was an, offen oder erkannt ist. Kennt keins der Geräte an und aus, etwa bei Rollläden oder Messwerten, kommen alle mit ihrem Zustand. |
 | `period` | `today`, `yesterday`, `this_week`, `last_week`, `this_month`, `last_month`, `this_year`, `last_year` für Verbrauch, Verlauf und Zeitleiste, `now` für die Leistung jetzt. Den Parameter bekommt der Assistent nur, wenn mindestens ein freigegebenes Gerät einen Zähler hat oder die Energiebilanz eingetragen ist. |
 | `from`, `to` | freier Zeitraum statt `period`: erster und letzter Tag als JJJJ-MM-TT, beide eingeschlossen, ohne `to` nur der eine Tag, etwa „im Januar“ mit `from=2026-01-01` und `to=2026-01-31`. Mit Uhrzeit (JJJJ-MM-TT HH:MM) stundengenau, etwa `from=2026-10-12 13:00` und `to=2026-10-12 15:00`; dann ist `to` das Ende, ohne `to` gilt bis jetzt. Gerechnet wird mit ganzen Stunden, höchstens 48 am Stück. |
 | `type=power` | kein Gerätetyp: mit Zeitraum die Leistung über den Zeitraum, ohne Zeitraum die Leistung jetzt |

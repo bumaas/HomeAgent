@@ -779,6 +779,16 @@ merke($b);
 $r = $idx->getState(['room' => 'Testraum', 'active_only' => true]);
 pruefe($r['text'] === "0 von 4 geprüften Geräten aktiv (room=Testraum).\n2 Gerät(e) ohne an/aus wurden nicht gezählt (blind).", 'Rollläden werden genannt, nicht verschwiegen: ' . $r['text']);
 merke($b);
+// Kennt keins der Geräte an/aus, gilt active_only nicht: „0 von 0 aktiv“ las Qwen3 als „kein Rollladen
+// offen“, obwohl einer offen war (joga1_2000, t/144611 #63, 26.10.2026). Dann alle mit Zustand.
+[$idx, $b] = anlage();
+$alle = explode("\n", $idx->getState(['type' => 'blind'])['text']);
+$r = $idx->getState(['type' => 'blind', 'active_only' => true]);
+$z = explode("\n", $r['text']);
+pruefe(!$r['isError'] && $z[0] === '2 Gerät(e) gefunden (type=blind). Keins davon kennt an/aus, deshalb alle mit Zustand.', 'die Kopfzeile sagt, warum alle kommen: ' . $r['text']);
+pruefe(count($alle) === 3 && array_slice($z, 1) === array_slice($alle, 1), 'dieselben Zeilen wie ohne active_only: ' . $r['text']);
+pruefe(!str_contains($r['text'], 'nicht gezählt'), 'keine Schlusszeile, es fehlt ja keins: ' . $r['text']);
+merke($b);
 
 // Befund 5 des Blindtests: Ein Treffer über einen Alias zeigt den Alias in Klammern. Vorher stand
 // bei „Probelicht“ nur „Testlampe“, und in der Kandidatenliste zu „Lampe“ ein rätselhafter „Esstisch“.

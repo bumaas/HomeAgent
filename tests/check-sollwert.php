@@ -80,7 +80,7 @@ $r = rufe(index($ohneIst, $werte), 'get', ['type' => 'temperature']);
 pruefe($r['isError'], 'ein Thermostat ohne Ist-Temperatur ist kein Temperaturmesser: ' . $r['text']);
 
 $r = rufe($idx, 'get', ['type' => 'thermostat', 'active_only' => true]);
-pruefe($zeile($r, 0) === '0 of 0 checked devices active (type=thermostat).' && $zeile($r, 1) === '2 device(s) without on/off were not counted (thermostat).', 'Thermostate kennen kein an und aus: ' . $r['text']);
+pruefe($zeile($r, 0) === '2 device(s) found (type=thermostat). None of them knows on/off, so all are listed with their state.' && count(explode("\n", $r['text'])) === 3, 'Thermostate kennen kein an und aus, also alle mit Zustand: ' . $r['text']);
 
 /* --- set_state: ein Thermostat -------------------------------------------------------------- */
 

@@ -129,6 +129,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Vokabular:** Die Beschreibung von `room` nennt die bekannten Räume, die von `mode`/`fan_speed` die Einträge der
   freigegebenen Geräte (kein `enum`). Mit Apps verweist `get_state` fürs Zeigen auf `show_devices` und für Diagramme
   (auch Heatmap, Summenkurve, Punktwolke beim Namen) auf `show_chart`; für Leistungsverläufe nennt es `type=power`.
+- **`active_only`** zählt nur Geräte mit an/aus, die übrigen nennt eine Schlusszeile. Kennt keins an/aus, gilt es nicht
+  und alle Geräte kommen mit Zustand (`noneCountable`; „0 von 0 aktiv“ las ein Modell als „nichts offen“). Test
+  `check-switch.php`.
 - **Nur-Lese-Zugang:** `instructions` und die Beschreibung von `get_state` sagen es, damit der Assistent eine Absage
   richtig begründet.
 - **Datum und Uhrzeit** hängt `withNow()` in `module.php` an jede Antwort von `get_state`, nicht an Anleitung oder
