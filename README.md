@@ -617,10 +617,11 @@ nicht bestätigt“ oder „fehlgeschlagen“ mit dem Grund. Ein Gerät, das sei
 (etwa weil es stromlos ist), erscheint also als nicht bestätigt, und die erste Zeile zählt es eigens.
 Scheitert ein Befehl erst nach der Antwort, steht der Grund im Meldungslog der Instanz.
 
-Rollläden brauchen für ihre Fahrt länger. Das Modul antwortet mit „fährt“, sobald sich zeigt, dass der Rollladen
-losgefahren ist: an seiner Position, an seinem Fahrstatus oder daran, dass er sich nach dem Befehl gemeldet hat. Meldet
-er sich gar nicht, lautet die Antwort „Fahrbefehl gesendet, noch keine Positionsmeldung“. Fragt der Assistent während
-der Fahrt nach, nennt die Antwort das Ziel: „fährt auf geschlossen (derzeit offen)“.
+Rollläden brauchen für ihre Fahrt länger. Das Modul antwortet mit „fährt auf 50 % offen, noch nicht am Ziel“, sobald
+sich zeigt, dass der Rollladen losgefahren ist: an seiner Position, an seinem Fahrstatus oder daran, dass er sich nach
+dem Befehl gemeldet hat. Meldet er sich gar nicht, lautet die Antwort „Fahrbefehl auf 50 % offen gesendet, noch nicht
+am Ziel“. Fragt der Assistent während der Fahrt nach, nennt die Antwort ebenfalls das Ziel: „fährt auf geschlossen
+(derzeit offen)“.
 
 Mit `stop` hält das Modul einen fahrenden Rollladen an und meldet, wo er steht: „angehalten (68 %
 offen)“. Angehalten wird über die eingetragene Stoppvariable, sonst über das Modul des Geräts

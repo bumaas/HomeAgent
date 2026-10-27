@@ -3168,13 +3168,17 @@ final class DeviceIndex
                         $result['underway'] = ($result['underway'] ?? 0) + 1;
                     }
                     // Viele Rollläden melden ihre Position erst am Ende der Fahrt (Velux KLF200), andere
-                    // unterwegs. Beides ist kein Fehlschlag und bekommt deshalb einen eigenen Text.
-                    $text = match (true) {
-                        !self::moves($job['entry'])       => 'sent, but the device has not confirmed yet (currently %s)',
-                        $this->isMoving($job)             => 'moving (currently %s)',
-                        default                           => 'command sent, no position report yet (currently %s)',
-                    };
-                    $job['note'] = sprintf($this->t($text), $this->levelText($job['entry'], $now, '?'));
+                    // unterwegs. Beides ist kein Fehlschlag und bekommt deshalb einen eigenen Text. Er nennt das
+                    // Ziel und „noch nicht am Ziel“ selbst: HA gibt die instructions nicht ans Modell, und Qwen3
+                    // machte aus „Fahrbefehl gesendet … (derzeit geschlossen)“ „halb runter“ (t/144611 #63).
+                    $current = $this->levelText($job['entry'], $now, '?');
+                    if (!self::moves($job['entry'])) {
+                        $job['note'] = sprintf($this->t('sent, but the device has not confirmed yet (currently %s)'), $current);
+                    } else {
+                        $target = $this->levelText($job['entry'], ['value' => $job['target'], 'formatted' => '']);
+                        $text = $this->isMoving($job) ? 'moving to %s, not there yet (currently %s)' : 'command to %s sent, not there yet (last position %s)';
+                        $job['note'] = sprintf($this->t($text), $target, $current);
+                    }
                 }
             } else {
                 $result['failed']++;

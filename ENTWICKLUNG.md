@@ -154,7 +154,14 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   `IPS_RequestAction(<Instanz>, 'ActionFailed', …)` zurück.
 - **Rückmeldung:** erst alle Aktionen auslösen, dann gemeinsam bis 2 s auf die Variablen warten.
   Rollläden gelten als „fährt“, sobald Position, Fahrstatus oder ein Lebenszeichen (Aktualisierung nach
-  dem Befehl) es zeigen; das Ziel einer Fahrt merkt sich der Buffer `Travels`.
+  dem Befehl) es zeigen; das Ziel einer Fahrt merkt sich der Buffer `Travels`. Seit 27.10.2026 nennt die Zeile von
+  `set_state` dabei Ziel und „noch nicht am Ziel“ („fährt auf 50 % offen, noch nicht am Ziel (derzeit offen)“,
+  „Fahrbefehl auf … gesendet, noch nicht am Ziel (letzte Position …)“). Anlass joga1_2000 (t/144611 #63): Qwen3 14B
+  über HA meldete „halb runter“, Home Agent hatte „Fahrbefehl gesendet, noch keine Positionsmeldung (derzeit
+  geschlossen)“ geantwortet. Der Satz der `instructions` zu „fährt“ kam dort nie an, weil die MCP-Integration von HA
+  nur „The following tools are available from a remote server named …“ in den Prompt setzt
+  (`components/mcp/__init__.py`); die Spezifikation stellt das frei („MAY be added to the system prompt“). Verworfen:
+  den Satz zusätzlich in die Beschreibung von `set_state` (rund 25 Tokens je Anfrage für alle Clients).
 - **Datum und Uhrzeit** hängt das Modul an jede Antwort von `get_state` (`withNow()` in `module.php`, nicht in
   `DeviceIndex`, damit Skriptfunktionen und Bibliothekstests ohne sie bleiben). In Anleitung oder Werkzeugliste
   veraltete sie, weil Claude-App und HA beides lange zwischenspeichern.

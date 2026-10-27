@@ -122,6 +122,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   blockieren `RequestAction` bis zum Ziel). Fehlschläge meldet das Skript per `IPS_RequestAction(<Instanz>, 'ActionFailed', …)`.
 - **Rückmeldung:** erst alle Aktionen auslösen, dann gemeinsam bis 2 s auf die Variablen warten. Rollläden gelten als
   „fährt“, sobald Position, Fahrstatus oder ein Lebenszeichen es zeigen; das Ziel merkt sich der Buffer `Travels`.
+  Die Zeile nennt Ziel und „noch nicht am Ziel“ selbst, weil HA die `instructions` nicht ans Modell gibt.
+  Test `check-switch.php`.
 - **`set_state`** ohne Raum, Etage, Typ oder Name tut nichts; ein Name muss genau ein Gerät treffen, sonst
   Kandidatenliste. Widersprüche werden abgewiesen, Geräte, die den Befehl nicht verstehen, ausgelassen und gezählt.
   `open`/`close` mit `percent` stellt den Öffnungsgrad (`$direction`, nur Geräte mit diesem Befehl); `close` mit 100 und

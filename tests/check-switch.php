@@ -85,6 +85,14 @@ $neueZaehlung = static fn (string $text): string => (string)preg_replace_callbac
     static fn (array $m): string => str_contains($m[0], 'gestellt') ? 'auf ' . (100 - (int)$m[1]) . ' % gestellt' : (100 - (int)$m[1]) . ' % offen',
     $text
 );
+// Seit build 263 nennt set_state bei einer unbestätigten Fahrt das Ziel und „noch nicht am Ziel“: Qwen3 14B
+// über HA meldete „halb runter“ zu „Fahrbefehl gesendet, noch keine Positionsmeldung (derzeit geschlossen)“, und
+// HA gibt die instructions des Servers nicht weiter (joga1_2000, t/144611 #63, 26.10.2026).
+$mitZiel = static fn (string $text, string $ziel): string => str_replace(
+    ['| fährt (derzeit ', '| Fahrbefehl gesendet, noch keine Positionsmeldung (derzeit '],
+    ['| fährt auf ' . $ziel . ', noch nicht am Ziel (derzeit ', '| Fahrbefehl auf ' . $ziel . ' gesendet, noch nicht am Ziel (letzte Position '],
+    $text
+);
 [$idx, $b] = anlage();
 $r = stelle($idx, ['name' => 'Rollo', 'percent' => 30]);
 pruefe($r['text'] === $neueZaehlung($mitAlias($fx['beobachtet']['set_state name=Rollo percent=70']['text'], 'Rollladen', 'Rollo')), 'Rollladen 30 % offen, Rohwert wie beobachtet: ' . $r['text']);
@@ -183,7 +191,7 @@ merke($b);
 // Rollladen mit Zwischenmeldungen: sobald er sichtbar fährt, kommt die Antwort
 [$idx, $b] = anlage();
 $r = stelle($idx, ['name' => 'Fahrender Rollladen', 'percent' => 30]);
-pruefe($r['text'] === $neueZaehlung($fx['beobachtet']['set_state name=Fahrender Rollladen percent=70']['text']), 'fahrender Rollladen wie beobachtet, als Öffnungsgrad: ' . $r['text']);
+pruefe($r['text'] === $mitZiel($neueZaehlung($fx['beobachtet']['set_state name=Fahrender Rollladen percent=70']['text']), '30 % offen'), 'fahrender Rollladen wie beobachtet, als Öffnungsgrad: ' . $r['text']);
 pruefe($b->requests === [[26493, 70]] && $b->slept === 500, 'gewartet wird nur bis zur ersten Positionsmeldung (500 ms): ' . $b->slept);
 pruefe(!$r['isError'], 'ein fahrender Rollladen ist kein Fehler');
 merke($b);
@@ -198,12 +206,12 @@ $velux = [
 $r = stelle($idx, ['room' => 'Bad', 'type' => 'blind', 'percent' => 30]);
 pruefe($b->requests === [[47677, 35840]], 'Velux 0 bis 51200: 30 % offen sind 35840: ' . json_encode($b->requests));
 pruefe($b->slept === 2000, 'blockierendes RequestAction: die Antwort kommt nach 2 Sekunden, nicht erst nach der Fahrt: ' . $b->slept . ' ms');
-pruefe($r['text'] === $neueZaehlung($fx['beobachtet']['nuc set_state room=Bad type=blind percent=70']['text']) && !$r['isError'], 'Velux unterwegs, wie am nuc beobachtet: ' . $r['text']);
+pruefe($r['text'] === $mitZiel($neueZaehlung($fx['beobachtet']['nuc set_state room=Bad type=blind percent=70']['text']), '30 % offen') && !$r['isError'], 'Velux unterwegs, wie am nuc beobachtet: ' . $r['text']);
 $b->sleep(30000);
 $r = $idx->getState(['room' => 'Bad']);
 pruefe($b->value(47677) === 35840 && str_ends_with($r['text'], '| 30 % offen'), 'nach der Fahrt steht der Rollladen am Ziel, eine Abfrage zeigt es: ' . $r['text']);
 $r = stelle($idx, ['room' => 'Bad', 'type' => 'blind', 'percent' => 100]);
-pruefe($r['text'] === $neueZaehlung($fx['beobachtet']['nuc set_state room=Bad type=blind percent=0']['text']), 'Rückfahrt wie am nuc beobachtet: ' . $r['text']);
+pruefe($r['text'] === $mitZiel($neueZaehlung($fx['beobachtet']['nuc set_state room=Bad type=blind percent=0']['text']), 'offen'), 'Rückfahrt wie am nuc beobachtet: ' . $r['text']);
 merke($b);
 
 // Zwei solche Rollläden auf einmal: beide Befehle gehen sofort hinaus, nicht nacheinander je 31 Sekunden
@@ -547,7 +555,7 @@ merke($b);
 [$idx, $b] = anlage();
 $r = stelle($idx, ['room' => 'Testraum', 'type' => 'blind', 'command' => 'close']);
 pruefe($b->requests === [[13696, 100], [26493, 100]], 'command=close für die Gruppe: ' . json_encode($b->requests));
-pruefe($r['text'] === "1 von 2 Geräten sind jetzt geschlossen, 1 noch nicht bestätigt (room=Testraum, type=blind).\nTestraum | Rollladen | blind | geschlossen\nTestraum | Fahrender Rollladen | blind | fährt (derzeit 90 % offen)" && !$r['isError'], 'einer zu, einer fährt noch: ' . $r['text']);
+pruefe($r['text'] === "1 von 2 Geräten sind jetzt geschlossen, 1 noch nicht bestätigt (room=Testraum, type=blind).\nTestraum | Rollladen | blind | geschlossen\nTestraum | Fahrender Rollladen | blind | fährt auf geschlossen, noch nicht am Ziel (derzeit 90 % offen)" && !$r['isError'], 'einer zu, einer fährt noch: ' . $r['text']);
 merke($b);
 
 // open und close bei erkannter umgekehrter Richtung, und mit dem Haken
@@ -868,7 +876,7 @@ $merker = static fn (FakeBackend $b, int $id): ?array => $b->rememberedTravel($i
 // übersah das Modul diese Meldung und antwortete erst nach 2 s „noch keine Positionsmeldung“.
 [$idx, $b] = anlage($gast());
 $r = stelle($idx, ['room' => 'Gast', 'name' => 'Rollladen', 'command' => 'close']);
-pruefe(str_ends_with($r['text'], 'Gast | Rollladen | blind | fährt (derzeit offen)'), 'Homematic aus der Endlage: die Startmeldung ohne Wertänderung zählt als „fährt“: ' . $r['text']);
+pruefe(str_ends_with($r['text'], 'Gast | Rollladen | blind | fährt auf geschlossen, noch nicht am Ziel (derzeit offen)'), 'Homematic aus der Endlage: die Startmeldung ohne Wertänderung zählt als „fährt“: ' . $r['text']);
 pruefe($b->slept <= 350, 'die Antwort kommt mit der Startmeldung nach rund 300 ms, nicht nach 2 s: ' . $b->slept . ' ms');
 pruefe($merker($b, 59648) !== null, 'das Ziel der Fahrt ist gemerkt');
 
@@ -886,20 +894,20 @@ merke($b);
 // 0,505 sind 50,5 % offen, gerundet 51 % (als Schließgrad waren es 49,5 %, gerundet 50).
 [$idx, $b] = anlage($gast(), ['59648' => ['wert' => 0.5]]);
 $r = stelle($idx, ['room' => 'Gast', 'name' => 'Rollladen', 'command' => 'open']);
-pruefe(str_ends_with($r['text'], 'Gast | Rollladen | blind | fährt (derzeit 51 % offen)') && $b->slept <= 350, 'aus 50 % heraus wie bisher: ' . $b->slept . ' ms, ' . $r['text']);
+pruefe(str_ends_with($r['text'], 'Gast | Rollladen | blind | fährt auf offen, noch nicht am Ziel (derzeit 51 % offen)') && $b->slept <= 350, 'aus 50 % heraus wie bisher: ' . $b->slept . ' ms, ' . $r['text']);
 merke($b);
 
 // Grenze: Symcon kennt die Aktualisierung nur auf die Sekunde. Lag die vorige in derselben Sekunde
 // wie die Startmeldung, ist kein Lebenszeichen zu sehen; dann bleibt es beim bisherigen Verhalten.
 [$idx, $b] = anlage($gast(), ['59648' => ['aktualisiert' => 0]]);
 $r = stelle($idx, ['room' => 'Gast', 'name' => 'Rollladen', 'command' => 'close']);
-pruefe(str_ends_with($r['text'], 'Gast | Rollladen | blind | Fahrbefehl gesendet, noch keine Positionsmeldung (derzeit offen)') && $b->slept === 2000, 'Aktualisierung in derselben Sekunde: Rückfall auf „noch keine Positionsmeldung“: ' . $b->slept . ' ms, ' . $r['text']);
+pruefe(str_ends_with($r['text'], 'Gast | Rollladen | blind | Fahrbefehl auf geschlossen gesendet, noch nicht am Ziel (letzte Position offen)') && $b->slept === 2000, 'Aktualisierung in derselben Sekunde: Rückfall auf „noch keine Positionsmeldung“: ' . $b->slept . ' ms, ' . $r['text']);
 merke($b);
 
 // Fahrstatus: der Velux meldet die Position erst nach 31 s, den Laufstatus nach 0,4 s
 [$idx, $b] = anlage($veluxBad(44396));
 $r = stelle($idx, ['room' => 'Bad', 'name' => 'Rollladen', 'percent' => 30]);
-pruefe(str_ends_with($r['text'], 'Bad | Rollladen | blind | fährt (derzeit offen)'), 'Velux mit Fahrstatus: „fährt“ statt „noch keine Positionsmeldung“: ' . $r['text']);
+pruefe(str_ends_with($r['text'], 'Bad | Rollladen | blind | fährt auf 30 % offen, noch nicht am Ziel (derzeit offen)'), 'Velux mit Fahrstatus: „fährt“ statt „noch keine Positionsmeldung“: ' . $r['text']);
 pruefe($b->slept <= 450, 'die Antwort kommt mit dem Laufstatus nach rund 400 ms: ' . $b->slept . ' ms');
 $b->sleep(10000);
 $r = $idx->getState(['room' => 'Bad', 'name' => 'Rollladen']);
@@ -909,7 +917,7 @@ merke($b);
 // Velux ohne Fahrstatus: unverändert (seine Position kommt erst am Ende, kein Lebenszeichen)
 [$idx, $b] = anlage($veluxBad());
 $r = stelle($idx, ['room' => 'Bad', 'name' => 'Rollladen', 'percent' => 30]);
-pruefe(str_ends_with($r['text'], 'Bad | Rollladen | blind | Fahrbefehl gesendet, noch keine Positionsmeldung (derzeit offen)') && $b->slept === 2000, 'Velux ohne Fahrstatus wie bisher: ' . $b->slept . ' ms, ' . $r['text']);
+pruefe(str_ends_with($r['text'], 'Bad | Rollladen | blind | Fahrbefehl auf 30 % offen gesendet, noch nicht am Ziel (letzte Position offen)') && $b->slept === 2000, 'Velux ohne Fahrstatus wie bisher: ' . $b->slept . ' ms, ' . $r['text']);
 merke($b);
 
 // Am Wandtaster angehalten: Der Fahrstatus steht seit mehr als 3 s, der Merker gilt als veraltet
@@ -960,7 +968,7 @@ pruefe(str_starts_with($r['text'], '1 von 1 geprüften Geräten aktiv (type=wind
 // Schließen: Rohwert 0, „fährt“ mit der Startmeldung, Nachfrage nennt das Ziel, am Ende geschlossen
 $r = stelle($idx, ['room' => 'Flur', 'name' => 'Fenster', 'command' => 'close']);
 pruefe($b->requests === [[20009, 0.0]], 'close setzt den Antrieb auf geschlossen (Rohwert 0): ' . json_encode($b->requests));
-pruefe($r['text'] === "0 von 1 Geräten sind jetzt geschlossen, 1 noch nicht bestätigt (room=Flur, name=Fenster).\nFlur | Fenster | window | fährt (derzeit gekippt)" && $b->slept <= 350, 'Antwort mit der Startmeldung: ' . $b->slept . ' ms, ' . $r['text']);
+pruefe($r['text'] === "0 von 1 Geräten sind jetzt geschlossen, 1 noch nicht bestätigt (room=Flur, name=Fenster).\nFlur | Fenster | window | fährt auf geschlossen, noch nicht am Ziel (derzeit gekippt)" && $b->slept <= 350, 'Antwort mit der Startmeldung: ' . $b->slept . ' ms, ' . $r['text']);
 $b->sleep(5000);
 pruefe(str_ends_with($idx->getState(['room' => 'Flur'])['text'], '| window | fährt auf geschlossen (derzeit gekippt, mit Antrieb)'), 'Nachfrage während der Fahrt nennt das Ziel: ' . $idx->getState(['room' => 'Flur'])['text']);
 $b->sleep(45000);

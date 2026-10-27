@@ -606,10 +606,10 @@ each device what happened: "on", "already on", "sent, but the device has not con
 example) therefore shows up as not confirmed, and the first line counts it separately. If a command
 fails only after the answer, the reason is in the message log of the instance.
 
-Blinds take longer to travel. The module answers "moving" as soon as the blind has visibly started: from its
-position, from its moving state, or because it reported back after the command. If it does not report at all, the
-answer reads "command sent, no position report yet". A query during the travel names the target: "moving to closed
-(currently open)".
+Blinds take longer to travel. The module answers "moving to 50 % open, not there yet" as soon as the blind has visibly
+started: from its position, from its moving state, or because it reported back after the command. If it does not
+report at all, the answer reads "command to 50 % open sent, not there yet". A query during the travel names the
+target as well: "moving to closed (currently open)".
 
 With `stop` the module halts a moving blind and reports where it stands: "stopped (68 % open)". It
 stops through the stop variable you entered, otherwise through the module of the device (Homematic and
