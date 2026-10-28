@@ -630,8 +630,9 @@ foreach ([
     'Depending on the released devices set_state also offers humidity, mode, fan_speed, color_temperature, color, volume, volume_change and mute, and the commands play, pause, next and previous.' => 'Je nach freigegebenen Geräten bietet set_state außerdem humidity, mode, fan_speed, color_temperature, color, volume, volume_change und mute sowie die Befehle play, pause, next und previous.',
     // Energiebilanz als Liste der Quellen (B82, Burkhard 17.10.2026), mit Vorzeichen je Zeile (B77)
     'The energy balance is the property Sources, a JSON list with one row per grid connection, solar plant or battery: Type (grid, solar or battery), Name, EnergyIn and EnergyOut (energy meters archived as counters: grid import and export, solar production, battery discharge and charge), PowerIn and PowerOut (the current power in the same order) and Invert. Solar only has EnergyIn and PowerIn.' => 'Die Energiebilanz ist die Property Sources, eine JSON-Liste mit einer Zeile je Netzanschluss, PV-Anlage oder Batterie: Type (grid, solar oder battery), Name, EnergyIn und EnergyOut (als Zähler archivierte Energiezähler: Netzbezug und Einspeisung, PV-Ertrag, Batterie entladen und geladen), PowerIn und PowerOut (die aktuelle Leistung in derselben Reihenfolge) und Invert. solar hat nur EnergyIn und PowerIn.',
-    'A single signed power in PowerIn counts negative as export or charging, Invert reverses it; HAGT_RunSelfTest shows how the current value counts. The older properties GridImportVariableID and so on are moved into Sources on apply.' => 'Eine einzelne Leistung mit Vorzeichen in PowerIn zählt negativ als Einspeisung bzw. Laden, Invert kehrt sie um; HAGT_RunSelfTest zeigt, wie der aktuelle Wert zählt. Die älteren Properties GridImportVariableID und so weiter übernimmt das Modul beim Übernehmen in Sources.',
-    'An access without a token gets one on apply (64 hex characters); a token set by script needs at least 24 characters.'                         => 'Ein Zugang ohne Token bekommt beim Übernehmen eines (64 Hex-Zeichen); ein per Skript gesetztes Token braucht mindestens 24 Zeichen.',
+    'A single signed power in PowerIn counts negative as export or charging, Invert reverses it; HAGT_RunSelfTest shows how the current value counts.' => 'Eine einzelne Leistung mit Vorzeichen in PowerIn zählt negativ als Einspeisung bzw. Laden, Invert kehrt sie um; HAGT_RunSelfTest zeigt, wie der aktuelle Wert zählt.',
+    // Seit build 267 füllt ApplyChanges kein Token mehr nach (Store-Richtlinie 13)
+    'A new access gets a token of 64 hex characters, in the form and with HAGT_AddAccess; a token set by script needs at least 24 characters.' => 'Ein neuer Zugang bekommt ein Token aus 64 Hex-Zeichen, im Formular und mit HAGT_AddAccess; ein per Skript gesetztes Token braucht mindestens 24 Zeichen.',
     'Room names are the words the user speaks (Küche, Bad oben), without technical additions.'                                                      => 'Raumnamen sind die Wörter, die der Anwender spricht (Küche, Bad oben), ohne technische Zusätze.',
     // Zähler mit „gemessen von“ (B82, 17.10.2026)
     'water_leak, temperature, humidity, air_quality, measurement, meter.' => 'water_leak, temperature, humidity, air_quality, measurement, meter.',
@@ -667,6 +668,8 @@ foreach ([
     pruefe(str_contains($hinweis, $en), 'Hinweistext nennt: ' . $en);
     pruefe(str_contains($hinweisDe, $de), 'Hinweistext deutsch nennt: ' . $de);
 }
+// Seit build 268 sind die alten Felder der Bilanz keine Properties mehr; ein Skript, das sie setzt, liefe ins Leere.
+pruefe(!str_contains($hinweis, 'GridImportVariableID') && !str_contains($hinweisDe, 'GridImportVariableID'), 'der Hinweistext nennt die alten Felder der Bilanz nicht mehr');
 // Der Einrichtungsauftrag in beiden Fassungen (Review 22.10.2026): Modul-GUID statt Suche, Sichern und Prüfen über
 // ExportConfiguration statt IPS_GetProperty (gab die Tokens aus), Speichern mit voller Signatur
 foreach (['EINRICHTUNG.md', 'EINRICHTUNG.en.md'] as $datei) {
@@ -3785,7 +3788,9 @@ pruefe(str_contains($testQ, 'Source "Garage nochmal": a variable of this row is 
 $werkzeugeQ = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(null, true), $q, HomeAgent::class)()), true), null, 'name');
 pruefe(!isset($werkzeugeQ['get_state']['inputSchema']['properties']['period']), 'eine doppelte Variable sperrt die Bilanz: ' . json_encode(array_keys($werkzeugeQ['get_state']['inputSchema']['properties'] ?? [])));
 
-// Übernahme der alten Felder: Beim Übernehmen wandern sie als benannte Zeilen vor die Liste, die Felder werden leer.
+// Übernahme der alten Felder bis build 191: Sie wandern als benannte Zeilen vor die Liste. Seit build 268 in Migrate
+// (Store-Richtlinie 13: kein IPS_SetProperty), die alten Properties sind nicht mehr registriert und stehen nur noch in
+// der Persistenz, wie in der settings.json einer alten Instanz. Der Stub ruft Migrate wie der Kernel nach einem Update.
 // Orakel ist die Rechnung der Bibliothek mit den Feldern (Konstruktor wie bis build 191); die Zahlen müssen gleich sein.
 $u = neueInstanz();
 $uid = (int)(new ReflectionProperty(IPSModuleStrict::class, 'InstanceID'))->getValue($u);
@@ -3801,11 +3806,19 @@ $orakel->addSources([$garage]);
 $zahlen = static fn (string $text): string => (string)preg_replace('/ \(of this [^)]*\)/', '', (string)strtok($text, "\n"));
 $erwartet = $zahlen($orakel->getState(['period' => 'now'])['text']);
 IPS_SetProperty($uid, 'Accesses', json_encode([['Name' => 'Test', 'Token' => str_repeat('e', 32), 'DefaultRoom' => '', 'ReadOnly' => true, 'InPath' => false]]));
-foreach ($f as $property => $variableId) {
-    IPS_SetProperty($uid, $property, $variableId);
-}
-IPS_SetProperty($uid, 'InvertGridPower', true);
 IPS_SetProperty($uid, 'Sources', json_encode([$garage]));
+IPS_ApplyChanges($uid);
+$alteFelder = array_merge(array_keys($f), ['InvertGridPower', 'InvertBatteryPower']);
+$registriert = array_keys(json_decode((string)IPS_GetConfiguration($uid), true));
+pruefe(array_intersect($alteFelder, $registriert) === [], 'die alten Felder sind keine Properties mehr: ' . json_encode(array_values(array_intersect($alteFelder, $registriert))));
+$persistenz = $u->GetPersistence();
+foreach ($f as $property => $variableId) {
+    $persistenz['configuration'][$property] = $variableId;
+}
+$persistenz['configuration']['InvertGridPower'] = true;
+$persistenz['configuration']['InvertBatteryPower'] = false;
+$u->ApplyPersistence($persistenz);
+pruefe(\IPS\InstanceManager::migrateInstance($uid) === true, 'Migrate übernimmt die alten Felder beim Update');
 IPS_ApplyChanges($uid);
 $uebernommen = json_decode((string)IPS_GetProperty($uid, 'Sources'), true);
 pruefe($uebernommen === [
@@ -3814,11 +3827,12 @@ pruefe($uebernommen === [
     $bilanzZeile('battery', 'Battery', $f['BatteryDischargeVariableID'], $f['BatteryChargeVariableID'], $f['BatteryDischargePowerVariableID'], $f['BatteryChargePowerVariableID']),
     $garage,
 ], 'Übernahme: die Felder stehen als Zeilen vor der Liste: ' . json_encode($uebernommen));
-$leer = array_filter(array_map(static fn (string $p): mixed => IPS_GetProperty($uid, $p), array_merge(array_keys($f), ['InvertGridPower', 'InvertBatteryPower'])));
-pruefe($leer === [], 'Übernahme: die alten Felder sind danach leer: ' . json_encode($leer));
+$rest = array_intersect_key($u->GetPersistence()['configuration'], array_flip($alteFelder));
+pruefe($rest === [], 'Übernahme: die alten Felder sind danach aus der Persistenz verschwunden: ' . json_encode($rest));
 $indexU = oderNull(static fn () => \Closure::bind(fn () => $this->deviceIndex(), $u, HomeAgent::class)());
 $gerechnet = $indexU instanceof DeviceIndex ? $zahlen($indexU->getState(['period' => 'now'])['text']) : '';
 pruefe($gerechnet === $erwartet && $erwartet !== '', 'Übernahme ändert die Hausleistung nicht: ' . $gerechnet . ' / Orakel ' . $erwartet);
+pruefe(\IPS\InstanceManager::migrateInstance($uid) === false, 'ein zweiter Lauf von Migrate ändert nichts');
 IPS_ApplyChanges($uid);
 pruefe(count(json_decode((string)IPS_GetProperty($uid, 'Sources'), true)) === 4, 'ein zweites Übernehmen übernimmt nichts doppelt');
 pruefe(IPS_GetInstance($uid)['InstanceStatus'] === IS_ACTIVE, 'nach der Übernahme aktiv: ' . IPS_GetInstance($uid)['InstanceStatus']);

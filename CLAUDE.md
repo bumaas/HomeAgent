@@ -199,8 +199,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   (`firstPerVariable`); der Selbsttest nennt solche Variablen.
 - **Bilanz** (Bezug + PV + Batterie entladen − Einspeisung − Batterie geladen) aus der Liste **`Sources`** (Type
   grid/solar/battery, Name, EnergyIn, EnergyOut, PowerIn, PowerOut, Invert; `addSources`, `SOURCE_KEYS`). Die alten
-  Properties (`BALANCE`, `BALANCE_POWER`, `InvertGridPower`, `InvertBatteryPower`) bleiben registriert und werden in
-  `ApplyChanges` per `legacySources()` in die Liste übernommen. PowerIn ohne PowerOut ist ein Sensor mit Vorzeichen wie
+  Felder (`BALANCE`, `BALANCE_POWER`, `InvertGridPower`, `InvertBatteryPower`) sind nicht mehr registriert, `Migrate()`
+  schreibt sie beim Laden der Konfiguration vor die Liste und entfernt sie (nie `IPS_SetProperty`, Store-Richtlinie 13). PowerIn ohne PowerOut ist ein Sensor mit Vorzeichen wie
   bei HA (negativ = Einspeisung bzw. laden), `Invert` dreht es (`signedOf`). Fehler (`sourceProblems`: unknown_type,
   empty, solar_out, duplicate, fehlende Variable) sperren die ganze Bilanz. Mehrere Variablen je Teil: `partText` nennt
   sie. Tests `check-quellen.php`, `check-vorzeichen.php`, `check-module.php`.

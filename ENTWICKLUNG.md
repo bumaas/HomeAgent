@@ -360,7 +360,12 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   ist wie eine Zeile mit PowerIn ohne PowerOut ein Sensor mit Vorzeichen, also dieselbe Rechnung), `sources()` rechnet
   sie mit, und `ApplyChanges` schreibt sie vor die Liste, leert die Felder und übernimmt über den einmaligen Timer
   erneut (auch ein Skript, das noch die alten Properties setzt, landet so in der Liste). Test in `check-module.php`:
-  Orakel ist die Rechnung der Bibliothek mit den Feldern im Konstruktor. Der Dialog entsteht je Art über
+  Orakel ist die Rechnung der Bibliothek mit den Feldern im Konstruktor. **Seit build 268** übernimmt `Migrate()` die
+  Felder: Symcon ruft es beim Start und nach einem Modul-Update mit der gespeicherten Konfiguration auf, auch mit nicht
+  mehr registrierten Properties. Die alten Felder sind nicht mehr registriert, `legacySources()` und der Timer sind weg.
+  Anlass Store-Richtlinie 13 (kein `IPS_SetProperty`), Prüfung der Beta 19641 am 28.10.2026. Abgewogen gegen das
+  ersatzlose Streichen (Burkhard 28.10.2026): Tester aus dem Testing-Kanal ab build 183 könnten noch unter build 192
+  stehen, `Migrate` kostet kaum Code. Der Kernel-Stub bildet den Aufruf mit `IPS\InstanceManager::migrateInstance` nach. Der Dialog entsteht je Art über
   `UISourceForm`/`UISourceChanged` wie der Gerätedialog (bei PV werden zweiter Zähler, zweite Leistung und Umkehr
   geleert, mit zweiter Leistung auch die Umkehr, die dann nichts dreht; ein unbekannter Typ bekommt in der Auswahl einen
   eigenen Eintrag, sonst verweigert die Konsole das Übernehmen; Review 18.10.2026, N9 und N10), sichtbar sind die Textspalten `EnergyLabel` und `PowerLabel` (`sourceLabels`; eine Leistung allein im ersten Feld steht dort als „… (mit Vorzeichen)“

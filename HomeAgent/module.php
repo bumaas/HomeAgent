@@ -149,12 +149,6 @@ class HomeAgent extends IPSModuleStrict
         // Protokoll zur Fehlersuche, standardmäßig aus (Burkhard 12.10.2026).
         $this->RegisterPropertyBoolean('LogEnabled', false);
         $this->RegisterPropertyInteger('LogLines', 5000);
-        // Die Felder der Bilanz bis build 191; ApplyChanges übernimmt sie in die Liste „Quellen“ und leert sie (B82).
-        foreach (array_merge(array_values(DeviceIndex::BALANCE), array_values(DeviceIndex::BALANCE_POWER)) as $property) {
-            $this->RegisterPropertyInteger($property, 0);
-        }
-        $this->RegisterPropertyBoolean('InvertGridPower', false);
-        $this->RegisterPropertyBoolean('InvertBatteryPower', false);
         // Energiebilanz (B82, Burkhard 17.10.2026): je Netzanschluss, PV-Anlage und Batterie eine Zeile mit Namen
         $this->RegisterPropertyString('Sources', '[]');
         // Kosten in Euro (B72): Strompreis als archivierte Variable (ct/kWh oder €/kWh) und Einspeisevergütung in ct/kWh
@@ -162,6 +156,56 @@ class HomeAgent extends IPSModuleStrict
         $this->RegisterPropertyFloat('FeedInTariff', 0.0);
 
         $this->RegisterHook($this->hookPath());
+    }
+
+    /**
+     * Beim Laden der gespeicherten Konfiguration (Start, Modul-Update): Bis build 191 stand die Bilanz in Einzelfeldern
+     * (B82, Burkhard 17.10.2026: „Wie kann ich mir Listen und Felder vorstellen? Ist das nicht verwirrend“). Sie wandern
+     * als benannte Zeilen vor die Liste „Quellen“ und verschwinden aus der Konfiguration. Bis build 267 tat das
+     * ApplyChanges per IPS_SetProperty, was die Store-Richtlinie 13 verbietet (Prüfung der Beta 19641, 28.10.2026).
+     */
+    public function Migrate(string $JSONData): string
+    {
+        // Laut Doku Pflicht
+        parent::Migrate($JSONData);
+
+        // Als Objekte lesen, damit leere Objekte der Persistenz beim Zurückschreiben Objekte bleiben
+        $data = json_decode($JSONData);
+        if (!is_object($data) || !is_object($data->configuration ?? null)) {
+            return '';
+        }
+        $config = $data->configuration;
+        $legacy = array_merge(array_values(DeviceIndex::BALANCE), array_values(DeviceIndex::BALANCE_POWER), ['InvertGridPower', 'InvertBatteryPower']);
+        if (!array_any($legacy, static fn (string $name): bool => property_exists($config, $name))) {
+            return '';
+        }
+        $id = static function (?string $name) use ($config): int {
+            $value = $name === null ? 0 : (int)($config->{$name} ?? 0);
+            return $value > 1 ? $value : 0;
+        };
+        $invert = ['grid' => (bool)($config->InvertGridPower ?? false), 'solar' => false, 'battery' => (bool)($config->InvertBatteryPower ?? false)];
+        // Die Rechnung bleibt dieselbe: Ein einzelnes Leistungsfeld ohne Gegenfeld war ein Sensor mit Vorzeichen, wie eine
+        // Zeile mit PowerIn ohne PowerOut.
+        $rows = [];
+        foreach (DeviceIndex::SOURCE_KEYS as $type => [$in, $out]) {
+            $row = ['Type' => $type, 'Name' => $this->Translate(self::SOURCE_NAMES[$type]),
+                'EnergyIn' => $id(DeviceIndex::BALANCE[$in]), 'EnergyOut' => $id($out === null ? null : DeviceIndex::BALANCE[$out]),
+                'PowerIn' => $id(DeviceIndex::BALANCE_POWER[$in]), 'PowerOut' => $id($out === null ? null : DeviceIndex::BALANCE_POWER[$out]),
+                'Invert' => $invert[$type]];
+            if (max($row['EnergyIn'], $row['EnergyOut'], $row['PowerIn'], $row['PowerOut']) > 1) {
+                $rows[] = $row;
+            }
+        }
+        if ($rows !== []) {
+            $stored = $config->Sources ?? '[]';
+            $list = is_string($stored) ? json_decode($stored, true) : json_decode((string)json_encode($stored), true);
+            $merged = array_merge($rows, is_array($list) ? array_values($list) : []);
+            $config->Sources = is_string($stored) ? (string)json_encode($merged) : $merged;
+        }
+        foreach ($legacy as $name) {
+            unset($config->{$name});
+        }
+        return (string)json_encode($data);
     }
 
     public function ApplyChanges(): void
@@ -179,25 +223,7 @@ class HomeAgent extends IPSModuleStrict
         // Ein fehlendes Token füllt ApplyChanges nicht nach: Die Property gehört dem Anwender (Store-Richtlinie 13,
         // Prüfung der Beta 19641 am 28.10.2026). Das Token entsteht im Formular als Startwert der Spalte oder mit
         // „Neues Token“ (UIAccessAdded, UIGenerateToken) und wird mit „Übernehmen“ gespeichert.
-        // Bis build 191 stand die Bilanz in Einzelfeldern. Sie wandern als benannte Zeilen vor die Liste „Quellen“, die
-        // Felder werden leer (B82, Burkhard 17.10.2026: „Wie kann ich mir Listen und Felder vorstellen? Ist das nicht
-        // verwirrend“). Bis dahin rechnet sources() sie schon mit.
-        $legacy = $this->legacySources();
-        $staleInvert = (bool)@$this->ReadPropertyBoolean('InvertGridPower') || (bool)@$this->ReadPropertyBoolean('InvertBatteryPower');
-        if ($legacy !== [] || $staleInvert) {
-            IPS_SetProperty($this->InstanceID, 'Sources', (string)json_encode(array_merge($legacy, $this->storedSources())));
-            foreach (array_merge(array_values(DeviceIndex::BALANCE), array_values(DeviceIndex::BALANCE_POWER)) as $property) {
-                IPS_SetProperty($this->InstanceID, $property, 0);
-            }
-            IPS_SetProperty($this->InstanceID, 'InvertGridPower', false);
-            IPS_SetProperty($this->InstanceID, 'InvertBatteryPower', false);
-        }
-        // Übernommen wird über einen einmaligen Timer: Ein IPS_ApplyChanges auf sich selbst lehnt die
-        // Rust-Edition als re-entranten Aufruf ab, die Instanz blieb dann auf 104 (Blindtest 12.10.2026).
-        if ($legacy !== [] || $staleInvert) {
-            $this->RegisterOnceTimer('ApplyTokens', 'IPS_ApplyChanges(' . $this->InstanceID . ');');
-            return;
-        }
+        // Die Felder der Bilanz bis build 191 übernimmt Migrate() in die Liste „Quellen“.
 
         if (IPS_GetKernelRunlevel() === KR_READY) {
             $this->registerReferences();
@@ -1441,8 +1467,14 @@ class HomeAgent extends IPSModuleStrict
     }
 
     /**
-     * Hängt einen Zugang ohne Token an und übernimmt ihn, das Token erzeugt ApplyChanges. Ein Assistent kennt die Tokens
-     * nicht (ExportConfiguration maskiert sie); schriebe er die Liste Accesses selbst, ersetzte <token> die echten.
+     * Hängt einen Zugang mit neuem Token an die gespeicherte Liste Accesses an und übernimmt ihn. Für Skripte und den
+     * Einrichtungsauftrag (EINRICHTUNG.md): Sie lesen die Konfiguration nur über ExportConfiguration, das jedes Token als
+     * <token> ausgibt. Schrieben sie die Liste Accesses selbst zurück, ersetzte <token> die echten Tokens, und jeder
+     * verbundene Assistent wäre getrennt.
+     *
+     * Store-Richtlinie 13 (IPS_SetProperty, IPS_ApplyChanges): bewusste Ausnahme, die einzige im Modul. Die Funktion
+     * ändert nichts von sich aus. Sie läuft nur, wenn der Anwender oder sein Skript sie ausdrücklich aufruft, wirkt also wie
+     * dessen eigenes IPS_SetProperty, und lässt die vorhandenen Zugänge unverändert.
      */
     public function AddAccess(string $Name, bool $ReadOnly, bool $InPath, string $DefaultRoom): string
     {
@@ -2999,14 +3031,13 @@ class HomeAgent extends IPSModuleStrict
     }
 
     /**
-     * Quellen der Bilanz (B82): die alten Felder als Zeilen, solange ApplyChanges sie noch nicht übernommen hat, dann die
-     * Liste „Quellen“.
+     * Quellen der Bilanz (B82), die Liste „Quellen“. Die alten Felder bis build 191 übernimmt Migrate().
      *
      * @return list<array<string, mixed>>
      */
     private function sources(): array
     {
-        return array_merge($this->legacySources(), $this->storedSources());
+        return $this->storedSources();
     }
 
     /** @return list<array<string, mixed>> */
@@ -3019,28 +3050,6 @@ class HomeAgent extends IPSModuleStrict
 
     /** Namen der übernommenen Felder je Art, in der Sprache der Anlage. */
     private const SOURCE_NAMES = ['grid' => 'Grid', 'solar' => 'Solar', 'battery' => 'Battery'];
-
-    /**
-     * Die Felder der Bilanz bis build 191 als Zeilen der Liste, je Art eine. Die Rechnung bleibt dieselbe: Ein einzelnes
-     * Leistungsfeld ohne Gegenfeld war ein Sensor mit Vorzeichen, wie eine Zeile mit PowerIn ohne PowerOut.
-     *
-     * @return list<array<string, mixed>>
-     */
-    private function legacySources(): array
-    {
-        $energy = $this->balance();
-        $power = $this->powerBalance();
-        $invert = ['grid' => (bool)@$this->ReadPropertyBoolean('InvertGridPower'), 'solar' => false, 'battery' => (bool)@$this->ReadPropertyBoolean('InvertBatteryPower')];
-        $rows = [];
-        foreach (DeviceIndex::SOURCE_KEYS as $type => [$in, $out]) {
-            $row = ['Type' => $type, 'Name' => $this->Translate(self::SOURCE_NAMES[$type]), 'EnergyIn' => $energy[$in] ?? 0, 'EnergyOut' => $out === null ? 0 : ($energy[$out] ?? 0),
-                'PowerIn' => $power[$in] ?? 0, 'PowerOut' => $out === null ? 0 : ($power[$out] ?? 0), 'Invert' => $invert[$type]];
-            if (max($row['EnergyIn'], $row['EnergyOut'], $row['PowerIn'], $row['PowerOut']) > 1) {
-                $rows[] = $row;
-            }
-        }
-        return $rows;
-    }
 
     private function sourcesUsable(): bool
     {
@@ -3146,43 +3155,6 @@ class HomeAgent extends IPSModuleStrict
         $missing = array_values($missing);
         sort($missing, SORT_STRING | SORT_FLAG_CASE);
         return $missing;
-    }
-
-    /**
-     * Zähler der Energiebilanz, die eingetragen sind: Schlüssel aus DeviceIndex::BALANCE => Variable.
-     *
-     * @return array<string, int>
-     */
-    private function balance(): array
-    {
-        return $this->balanceOf(DeviceIndex::BALANCE);
-    }
-
-    /**
-     * Leistungen der Energiebilanz, die eingetragen sind: Schlüssel aus DeviceIndex::BALANCE_POWER => Variable.
-     *
-     * @return array<string, int>
-     */
-    private function powerBalance(): array
-    {
-        return $this->balanceOf(DeviceIndex::BALANCE_POWER);
-    }
-
-    /**
-     * @param array<string, string> $properties Schlüssel => Property
-     * @return array<string, int>
-     */
-    private function balanceOf(array $properties): array
-    {
-        $balance = [];
-        foreach ($properties as $key => $property) {
-            // Vor dem Neuladen der Bibliothek gibt es die Property bei bestehenden Instanzen noch nicht.
-            $id = (int)@$this->ReadPropertyInteger($property);
-            if ($id > 1) {
-                $balance[$key] = $id;
-            }
-        }
-        return $balance;
     }
 
     /** Beschriftung einer Leistung der Energiebilanz in Selbsttest und Log, in der Sprache der Anlage. */
