@@ -176,20 +176,9 @@ class HomeAgent extends IPSModuleStrict
 
         $this->SetSummary($this->GetEndpoint());
 
-        // Ein Zugang ohne Token bekommt beim Übernehmen eines. Der Anwender braucht es nur für Clients, die es im
-        // Header schicken („Token anzeigen“), oder in der Adresse („Adresse anzeigen“), Burkhard 12.10.2026.
-        $accesses = $this->listProperty('Accesses');
-        $filled = false;
-        foreach ($accesses as &$row) {
-            if (trim((string)($row['Token'] ?? '')) === '') {
-                $row['Token'] = bin2hex(random_bytes(32));
-                $filled = true;
-            }
-        }
-        unset($row);
-        if ($filled) {
-            IPS_SetProperty($this->InstanceID, 'Accesses', (string)json_encode($accesses));
-        }
+        // Ein fehlendes Token füllt ApplyChanges nicht nach: Die Property gehört dem Anwender (Store-Richtlinie 13,
+        // Prüfung der Beta 19641 am 28.10.2026). Das Token entsteht im Formular als Startwert der Spalte oder mit
+        // „Neues Token“ (UIAccessAdded, UIGenerateToken) und wird mit „Übernehmen“ gespeichert.
         // Bis build 191 stand die Bilanz in Einzelfeldern. Sie wandern als benannte Zeilen vor die Liste „Quellen“, die
         // Felder werden leer (B82, Burkhard 17.10.2026: „Wie kann ich mir Listen und Felder vorstellen? Ist das nicht
         // verwirrend“). Bis dahin rechnet sources() sie schon mit.
@@ -205,7 +194,7 @@ class HomeAgent extends IPSModuleStrict
         }
         // Übernommen wird über einen einmaligen Timer: Ein IPS_ApplyChanges auf sich selbst lehnt die
         // Rust-Edition als re-entranten Aufruf ab, die Instanz blieb dann auf 104 (Blindtest 12.10.2026).
-        if ($filled || $legacy !== [] || $staleInvert) {
+        if ($legacy !== [] || $staleInvert) {
             $this->RegisterOnceTimer('ApplyTokens', 'IPS_ApplyChanges(' . $this->InstanceID . ');');
             return;
         }
@@ -708,6 +697,14 @@ class HomeAgent extends IPSModuleStrict
                 $element['visible'] = $base !== '' && $rows !== [];
             }
             if ($name === 'Accesses') {
+                // Eine neue Zeile bekommt ihr Token als Startwert der Spalte, gespeichert mit „Übernehmen“
+                // (Store-Richtlinie 13); nach jedem Hinzufügen setzt UIAccessAdded einen neuen.
+                foreach ($element['columns'] as &$column) {
+                    if ($column['name'] === 'Token') {
+                        $column['add'] = self::newToken();
+                    }
+                }
+                unset($column);
                 // Nur die Spalte Verbindung; die Konsole ergänzt die gespeicherten Zeilen der Reihe nach,
                 // die Tokens kommen also nicht in die Werte.
                 $element['values'] = array_map(fn (array $access): array => ['Connection' => $this->connectionOf($access), 'Tools' => $this->toolListStatus($access)], $this->accessList());
@@ -1095,13 +1092,37 @@ class HomeAgent extends IPSModuleStrict
     }
 
     /**
-     * Nur für den Bearbeiten-Dialog eines Zugangs („Neues Token“): leert das unsichtbare Feld „Token“, das neue
-     * Token entsteht beim Übernehmen. Gezeigt wird es nicht; dafür gibt es „Token anzeigen“ und „Adresse anzeigen“.
+     * Nur für den Bearbeiten-Dialog eines Zugangs („Neues Token“): schreibt ein neues Token in das unsichtbare Feld
+     * „Token“, gespeichert wird es mit OK und „Übernehmen“. Gezeigt wird es nicht; dafür gibt es „Token anzeigen“ und
+     * „Adresse anzeigen“.
      */
     public function UIGenerateToken(): string
     {
-        $this->UpdateFormField('Token', 'value', '');
-        return $this->Translate('The new token is created with OK and Apply. Afterwards "Show token" or "Show address" shows it.');
+        $this->UpdateFormField('Token', 'value', self::newToken());
+        return $this->Translate('A new token has been created. It takes effect when you close this dialog with OK and then press "Apply". You can then show it under "Connect other assistants" ("Show token") or "Connect Home Assistant" ("Show address").');
+    }
+
+    /**
+     * Nur für die Zugangsliste (onAdd): Die nächste neue Zeile bekommt ein anderes Token als Startwert, sonst hätten
+     * zwei Zeilen, die vor dem Übernehmen hinzukommen, dasselbe.
+     */
+    public function UIAccessAdded(): void
+    {
+        $form = json_decode((string)file_get_contents(__DIR__ . '/form.json'), true);
+        foreach (self::allElements($form['elements']) as $element) {
+            if (($element['name'] ?? '') === 'Accesses') {
+                $index = array_search('Token', array_column($element['columns'], 'name'), true);
+                if ($index !== false) {
+                    $this->UpdateFormField('Accesses', 'columns.' . $index . '.add', self::newToken());
+                }
+            }
+        }
+    }
+
+    /** Neues Token eines Zugangs: 64 Hex-Zeichen. */
+    private static function newToken(): string
+    {
+        return bin2hex(random_bytes(32));
     }
 
     /** Nur für das Formular: das Token eines Zugangs für Clients, die es im Header schicken, erst auf Knopfdruck. */
@@ -1435,11 +1456,11 @@ class HomeAgent extends IPSModuleStrict
                 return sprintf($this->Translate('There is already an access named "%s"'), $name);
             }
         }
-        $accesses[] = ['Name' => $name, 'Token' => '', 'DefaultRoom' => trim($DefaultRoom), 'ReadOnly' => $ReadOnly, 'InPath' => $InPath];
+        $accesses[] = ['Name' => $name, 'Token' => self::newToken(), 'DefaultRoom' => trim($DefaultRoom), 'ReadOnly' => $ReadOnly, 'InPath' => $InPath];
         IPS_SetProperty($this->InstanceID, 'Accesses', (string)json_encode($accesses));
         // Übernehmen über den einmaligen Timer wie in ApplyChanges, ein Selbstaufruf lehnt die Rust-Edition ab
         $this->RegisterOnceTimer('ApplyTokens', 'IPS_ApplyChanges(' . $this->InstanceID . ');');
-        return sprintf($this->Translate('Access "%s" added, it gets its token on apply in a few seconds'), $name);
+        return sprintf($this->Translate('Access "%s" added with a new token, it is applied in a few seconds'), $name);
     }
 
     /**

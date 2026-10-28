@@ -722,9 +722,16 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   Textspalte `Connection`
   (`connectionOf`: per OAuth angemeldet mit dem Namen aus `clientLabel`, Claude-App und Claude Code wie die Unterbereiche, sonst Name und Host, Adresse mit Token oder Token im Header; nur diese Spalte kommt in
   `values`, die Tokens nicht). Token und `InPath` sind unsichtbare Spalten mit `save: true`, bearbeitet im eigenen
-  `form` der Liste (Doku List, Beispiel 1). Das Token steht dort nur als unsichtbares Feld: Ein Zugang ohne Token
-  bekommt in `ApplyChanges` eines (64 Hex-Zeichen, danach Property setzen und über einen einmaligen Timer erneut übernehmen: ein `IPS_ApplyChanges` auf sich selbst lehnt die Rust-Edition als re-entranten Aufruf ab, die Instanz blieb auf 104, Blindtest 12.10.2026). **Neues Token**
-  (`UIGenerateToken`, mit Rückfrage) leert das Feld nur. Sichtbar wird ein Token erst auf Knopfdruck, und nur wo es
+  `form` der Liste (Doku List, Beispiel 1). Das Token steht dort nur als unsichtbares Feld. Bis build 266 bekam ein
+  Zugang ohne Token in `ApplyChanges` eines (Property setzen, über einen einmaligen Timer erneut übernehmen, weil die
+  Rust-Edition einen Selbstaufruf ablehnt, Blindtest 12.10.2026), und **Neues Token** leerte das Feld nur. Das
+  verstößt gegen Store-Richtlinie 13 (Prüfung der Beta 19641 über den Store-MCP am 28.10.2026). Seit build 267 setzt
+  `configurationForm()` ein frisches Token als Startwert (`add`) der Spalte, `onAdd` (`UIAccessAdded`) setzt danach
+  per `UpdateFormField('Accesses', 'columns.<n>.add', …)` einen neuen, damit zwei neue Zeilen vor dem Übernehmen nicht
+  dasselbe bekommen, und **Neues Token** (`UIGenerateToken`, mit Rückfrage) schreibt ein neues ins Feld. Gespeichert
+  wird mit „Übernehmen“. Eine leer gespeicherte Zeile bleibt rot, bis der Anwender „Neues Token“ drückt. Der Startwert
+  per `add`-Strategie `random-string` wäre sauberer, braucht aber 9.1 (verworfen 06.10.2026). Sichtbar wird ein Token
+  erst auf Knopfdruck, und nur wo es
   gebraucht wird: **Token anzeigen** (`UIShowToken`, Auswahl `TokenAccess`) für Clients mit Header, **Adresse
   anzeigen** für Home Assistant; bei OAuth nie. Anlass (Burkhard 12.10.2026, build 81 bis 83): Im Kennwortfeld sah
   man das erzeugte Token nicht, als Textfeld stand es offen da, und gebraucht wird es fast nie.
@@ -746,7 +753,8 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   mit den Tokens in der curl-Ausgabe im Chat. Der Export liefert alle Properties, Listen als Liste, Tokens als
   `<token>`, ein leeres bleibt leer (daran sieht der Agent ein fehlendes). Schreibt der Agent die Liste Accesses aus dem
   Export zurück, ersetzt `<token>` die echten Tokens; deshalb `HAGT_AddAccess`, das an die gespeicherte Liste anhängt
-  und über den einmaligen Timer `ApplyTokens` übernimmt. Verworfen: Filterbefehl im Auftrag (hängt an der Shell des
+  (seit build 267 gleich mit Token) und über den einmaligen Timer `ApplyTokens` übernimmt. Es schreibt die Property
+  selbst, eine offene Frage zu Store-Richtlinie 13 (ein Skript kann nichts im Formular bestätigen). Verworfen: Filterbefehl im Auftrag (hängt an der Shell des
   Assistenten), `<token>` in `ApplyChanges` auf das alte Token zurückführen (das alte ist nach `IPS_SetProperty` nicht
   mehr lesbar, eine Kopie im Attribut wäre ein zweiter Speicher für Geheimnisse).
   Im selben Review: Rauchmelder ohne ReadOnly (das Feld gibt es bei `measurement` nicht, auch nicht im Dialog), Modul-ID

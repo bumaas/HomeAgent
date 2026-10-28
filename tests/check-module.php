@@ -232,10 +232,9 @@ IPS_ApplyChanges($zid);
 $antwort = (string)oderNull(static fn () => $z->AddAccess('Claude-App', false, false, 'Küche'));
 $zugaenge = json_decode((string)IPS_GetProperty($zid, 'Accesses'), true);
 pruefe(count($zugaenge) === 2 && $zugaenge[0]['Token'] === 'alt-token-0123456789abcdef', 'AddAccess hängt an und lässt das vorhandene Token: ' . $antwort);
-// Der Stub führt den einmaligen Timer sofort aus, unter Symcon kommt das Token einige Sekunden später.
 pruefe(array_diff_key($zugaenge[1] ?? [], ['Token' => 0]) === ['Name' => 'Claude-App', 'DefaultRoom' => 'Küche', 'ReadOnly' => false, 'InPath' => false], 'die neue Zeile hat alle Felder: ' . json_encode(array_diff_key($zugaenge[1] ?? [], ['Token' => 0])));
-IPS_ApplyChanges($zid);
-pruefe(strlen((string)(json_decode((string)IPS_GetProperty($zid, 'Accesses'), true)[1]['Token'] ?? '')) === 64, 'beim Übernehmen bekommt der neue Zugang sein Token');
+// Store-Richtlinie 13 (28.10.2026): ApplyChanges füllt kein Token mehr nach, AddAccess bringt seins selbst mit.
+pruefe(preg_match('/^[0-9a-f]{64}$/', (string)($zugaenge[1]['Token'] ?? '')) === 1 && $antwort === 'Access "Claude-App" added with a new token, it is applied in a few seconds', 'AddAccess legt den Zugang gleich mit Token an: ' . $antwort);
 $doppelt = (string)oderNull(static fn () => $z->AddAccess('claude-app', true, false, ''));
 pruefe(count(json_decode((string)IPS_GetProperty($zid, 'Accesses'), true)) === 2 && str_contains($doppelt, 'already'), 'ein Name, den es schon gibt, legt nichts an: ' . $doppelt);
 $leer = (string)oderNull(static fn () => $z->AddAccess(' ', true, false, ''));
@@ -363,12 +362,14 @@ $geraeteStart = json_decode(IPS_GetProperty($iid, 'Devices'), true);
 
 $setze('Accesses', [$zugang('Leer', '')]);
 $gefuellt = json_decode(IPS_GetProperty($iid, 'Accesses'), true);
-pruefe(preg_match('/^[0-9a-f]{64}$/', (string)($gefuellt[0]['Token'] ?? '')) === 1 && $status() === IS_ACTIVE, 'ein Zugang ohne Token bekommt beim Übernehmen eines (64 Hex-Zeichen) und ist aktiv: ' . $status());
+// Store-Richtlinie 13 (Prüfung der Beta 19641, 28.10.2026): Die Property gehört dem Anwender. Das Token entsteht
+// beim Hinzufügen im Formular (Startwert der Spalte) oder mit „Neues Token“ und wird mit „Übernehmen“ gespeichert.
+pruefe(($gefuellt[0]['Token'] ?? null) === '' && $status() === 104, 'ApplyChanges schreibt kein Token in die Property, ohne Token bleibt der Endpunkt zu: ' . $status());
 $setze('Accesses', [$zugang('A', 'abc-token-0123456789abcdef'), $zugang('', 'def-token-0123456789abcdef'), $zugang('C', ''), $zugang('D', 'abc-token-0123456789abcdef'), $zugang('E', 'xyz-token-0123456789abcdef', 'Dachboden')]);
 pruefe($status() === IS_ACTIVE, 'fehlerhafte Zugänge sperren nur sich selbst, A hält den Endpunkt offen: Status ' . $status());
 pruefe(str_contains($logText(), 'Faulty entries are disabled until they are corrected: '), 'das Log sagt, dass die fehlerhaften Zugänge gesperrt sind: ' . $logText());
 $log = $logText();
-pruefe(str_contains($log, 'Access without a name: name is missing') && !str_contains($log, 'Access "C": token is missing') && str_contains($log, 'Access "D": token is used twice'), 'Log nennt Zugänge ohne Name, ohne Token und mit doppeltem Token: ' . $log);
+pruefe(str_contains($log, 'Access without a name: name is missing') && str_contains($log, 'Access "C": token is missing') && str_contains($log, 'Access "D": token is used twice'), 'Log nennt Zugänge ohne Name, ohne Token und mit doppeltem Token: ' . $log);
 // B96 (Durchsicht des Formulars 24.10.2026): Ein unbekannter Standardraum sperrt den Zugang nicht mehr. Ein neuer
 // Zugang mit Standardraum vor der Raumliste schloss sonst den ganzen Endpunkt. Er wirkt nur nicht, bis er stimmt.
 pruefe(!str_contains($log, 'default room "Dachboden"'), 'unbekannter Standardraum ist kein Fehler der Zeile: ' . $log);
@@ -655,7 +656,8 @@ foreach ([
     // Review des Einrichtungsauftrags 22.10.2026: Sichern ohne Tokens, Speichern mit voller Signatur
     'HAGT_ExportConfiguration(int $InstanceID): string returns all properties as JSON, lists as lists and every token as <token> (an empty token stays empty); no other function reads Accesses without tokens.' => 'HAGT_ExportConfiguration(int $InstanceID): string liefert alle Properties als JSON, Listen als Liste und jedes Token als <token> (ein leeres Token bleibt leer); keine andere Funktion liest Accesses ohne Tokens.',
     'Properties are written with IPS_SetProperty(int $InstanceID, string $Name, mixed $Value), a list as JSON text, and take effect with IPS_ApplyChanges(int $InstanceID).' => 'Properties schreibt IPS_SetProperty(int $InstanceID, string $Name, mixed $Value), eine Liste als JSON-Text, wirksam werden sie mit IPS_ApplyChanges(int $InstanceID).',
-    'HAGT_AddAccess(int $InstanceID, string $Name, bool $ReadOnly, bool $InPath, string $DefaultRoom): string adds an access without a token and applies it; the module then creates the token. A script that does not know the tokens adds accesses this way and never writes Accesses itself.' => 'HAGT_AddAccess(int $InstanceID, string $Name, bool $ReadOnly, bool $InPath, string $DefaultRoom): string legt einen Zugang ohne Token an und übernimmt ihn; das Token erzeugt dann das Modul. Ein Skript, das die Tokens nicht kennt, legt Zugänge so an und schreibt Accesses nie selbst.',
+    // Store-Richtlinie 13 (28.10.2026): ApplyChanges füllt kein Token mehr nach
+    'HAGT_AddAccess(int $InstanceID, string $Name, bool $ReadOnly, bool $InPath, string $DefaultRoom): string adds an access with a new token and applies it. A script that does not know the tokens adds accesses this way and never writes Accesses itself.' => 'HAGT_AddAccess(int $InstanceID, string $Name, bool $ReadOnly, bool $InPath, string $DefaultRoom): string legt einen Zugang mit neuem Token an und übernimmt ihn. Ein Skript, das die Tokens nicht kennt, legt Zugänge so an und schreibt Accesses nie selbst.',
     // Prompttest 23.10.2026: Neben „ct/kWh“ blieb offen, ob die Einheit „ct“ allein genügt
     'PriceVariableID (electricity price, archived, in ct/kWh or €/kWh; a suffix containing ct or Cent means cents, ct alone is enough, with € or EUR euros, otherwise values above 2 count as cents)' => 'PriceVariableID (Strompreis, archiviert, in ct/kWh oder €/kWh; ein Suffix, das ct oder Cent enthält, bedeutet Cent, ct allein genügt, mit € oder EUR Euro, sonst zählen Werte über 2 als Cent)',
     'Other assistants such as ChatGPT, Codex or Claude Code use their own token, in the header or with InPath in the address.' => 'Andere Assistenten wie ChatGPT, Codex oder Claude Code nutzen ihr eigenes Token, im Header oder mit InPath in der Adresse.',
@@ -1935,8 +1937,27 @@ try {
     pruefe(false, 'UIGenerateToken fehlt: ' . $e->getMessage());
 }
 $geleert = array_values(array_filter($m->formUpdates, static fn (array $u): bool => $u[0] === 'Token' && $u[1] === 'value'));
-pruefe(count($geleert) === 2 && $geleert[0][2] === '', 'der Knopf „Neues Token“ leert das unsichtbare Feld, das neue Token entsteht beim Übernehmen: ' . json_encode($geleert));
+// Store-Richtlinie 13: Das neue Token steht gleich im Dialogfeld, gespeichert wird es mit OK und „Übernehmen“.
+pruefe(count($geleert) === 2 && preg_match('/^[0-9a-f]{64}$/', (string)$geleert[0][2]) === 1 && preg_match('/^[0-9a-f]{64}$/', (string)$geleert[1][2]) === 1 && $geleert[0][2] !== $geleert[1][2], 'der Knopf „Neues Token“ schreibt je Klick ein neues Token ins unsichtbare Feld');
+// Neue Zeilen bekommen ihr Token als Startwert der Spalte; nach jedem Hinzufügen setzt onAdd einen neuen, damit
+// zwei Zeilen vor dem Übernehmen nicht dasselbe bekommen.
+$tokenSpalte = static function (array $formular): array {
+    $liste = array_values(array_filter(flach($formular['elements']), static fn ($e) => ($e['name'] ?? '') === 'Accesses'))[0] ?? [];
+    $index = array_search('Token', array_column($liste['columns'] ?? [], 'name'), true);
+    return [$index, (string)($liste['columns'][$index]['add'] ?? ''), (string)($liste['onAdd'] ?? '')];
+};
+[$tokenIndex, $start1, $onAdd] = $tokenSpalte(json_decode($m->GetConfigurationForm(), true));
+[, $start2] = $tokenSpalte(json_decode($m->GetConfigurationForm(), true));
+pruefe(preg_match('/^[0-9a-f]{64}$/', $start1) === 1 && $start1 !== $start2, 'jedes Formular trägt ein frisches Token als Startwert der Spalte');
+pruefe($onAdd === 'HAGT_UIAccessAdded($id);', 'die Zugangsliste meldet das Hinzufügen: ' . $onAdd);
+$m->formUpdates = [];
+oderNull(static fn () => $m->UIAccessAdded());
+$naechster = array_values(array_filter($m->formUpdates, static fn (array $u): bool => $u[0] === 'Accesses' && $u[1] === 'columns.' . $tokenIndex . '.add'));
+pruefe(count($naechster) === 1 && preg_match('/^[0-9a-f]{64}$/', (string)$naechster[0][2]) === 1 && $naechster[0][2] !== $start2, 'nach dem Hinzufügen bekommt die nächste Zeile ein neues Token: ' . json_encode($naechster));
 pruefe(preg_match('/[0-9a-f]{24,}/', $ausgaben[0] ?? '') === 0 && str_contains($ausgaben[0] ?? '', 'Show token'), 'er zeigt kein Token und sagt, wo man das neue findet: ' . json_encode($ausgaben[0] ?? null));
+// Burkhard 28.10.2026: „nicht ganz verständlich“. Das Token ist schon da, gilt nach OK und „Übernehmen“, und die
+// Meldung nennt die Bereiche, in denen die Knöpfe stehen.
+pruefe(($ausgaben[0] ?? '') === 'A new token has been created. It takes effect when you close this dialog with OK and then press "Apply". You can then show it under "Connect other assistants" ("Show token") or "Connect Home Assistant" ("Show address").', 'die Meldung sagt, wann das Token gilt und wo es steht: ' . json_encode($ausgaben[0] ?? null));
 $formular = json_decode($m->GetConfigurationForm(), true);
 $knopf = array_values(array_filter(flach(array_column(array_filter(flach($formular['elements']), static fn ($e) => ($e['name'] ?? '') === 'Accesses'), 'form')[0] ?? []), static fn ($e) => str_contains((string)($e['onClick'] ?? ''), 'HAGT_UIGenerateToken')))[0] ?? [];
 pruefe(($knopf['onClick'] ?? '') === 'echo HAGT_UIGenerateToken($id);' && ($knopf['caption'] ?? '') === 'New token', 'der Knopf „Neues Token“ steht im Bearbeiten-Dialog: ' . json_encode($knopf));
@@ -3014,14 +3035,11 @@ pruefe($leer === [], 'mit einem neuen Zugang ohne Token trägt jede Auswahl eine
 HomeAgentRustProbe::$abgelehnt = 0;
 IPS_ApplyChanges($probe);
 pruefe(HomeAgentRustProbe::$abgelehnt === 0, 'ApplyChanges ruft sich nicht selbst auf (Rust lehnt das ab): ' . HomeAgentRustProbe::$abgelehnt . ' abgelehnte Aufrufe');
-foreach (HomeAgentRustProbe::$timer as [$skript, $ziel]) {
-    IPS_RunScriptTextEx($skript, ['TARGET' => $ziel]);
-}
+// Store-Richtlinie 13 (28.10.2026): Ein fehlendes Token füllt ApplyChanges nicht mehr nach, also auch kein Timer
+pruefe(HomeAgentRustProbe::$timer === [], 'ohne alte Bilanzfelder plant ApplyChanges kein zweites Übernehmen: ' . json_encode(HomeAgentRustProbe::$timer));
 HomeAgentRustProbe::$timer = [];
 $probeZugang = json_decode(IPS_GetProperty($probe, 'Accesses'), true);
-pruefe(preg_match('/^[0-9a-f]{64}$/', (string)($probeZugang[0]['Token'] ?? '')) === 1, 'der Zugang hat danach ein Token (64 Hex-Zeichen)');
-pruefe(IPS_GetInstance($probe)['InstanceStatus'] === IS_ACTIVE, 'die Instanz ist danach aktiv, ohne zweites Übernehmen: ' . IPS_GetInstance($probe)['InstanceStatus']);
-pruefe(HomeAgentRustProbe::$abgelehnt === 0, 'auch der nachgeholte Aufruf wird nicht abgelehnt: ' . HomeAgentRustProbe::$abgelehnt);
+pruefe(($probeZugang[0]['Token'] ?? null) === '' && IPS_GetInstance($probe)['InstanceStatus'] === 104, 'der Zugang bleibt ohne Token, die Instanz meldet es: ' . IPS_GetInstance($probe)['InstanceStatus']);
 IPS_DeleteInstance($probe);
 
 /* --- Adressen für Skripte und KI-Assistenten (Backlog B59, Blindtest 12.10.2026) ------------------- */

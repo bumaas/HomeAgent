@@ -283,8 +283,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - Bereiche als `ExpansionPanel` (Zustand im Attribut `ExpandedPanels`, `UITogglePanel`, Namen in `PANELS`), in
   „Endpunkt und Zugänge“ die Unterbereiche `PanelClaude`, `PanelHA`, `PanelOther`.
 - **Zugänge für Einsteiger:** sichtbar Name, Nur abfragen, Standardraum und `Connection` (`connectionOf`), Token und
-  `InPath` unsichtbar. Ein Zugang ohne Token bekommt in `ApplyChanges` eines (64 Hex), danach Übernehmen über einen
-  einmaligen Timer (Selbstaufruf lehnt Rust ab). **Neues Token** leert nur. Sichtbar wird ein Token nur auf Knopfdruck
+  `InPath` unsichtbar. Das Token (64 Hex) ist Startwert der Spalte, je Formular frisch und nach jedem Hinzufügen neu
+  (`UIAccessAdded`); **Neues Token** schreibt eines ins Feld. Nie per `IPS_SetProperty` nachfüllen (Store-Richtlinie
+  13), außer in `HAGT_AddAccess`. Sichtbar wird ein Token nur auf Knopfdruck
   (`UIShowToken`, `UIShowAddress`, Fenster `SecretPopup`), bei OAuth nie. Claude-App: Kopplungscode mit `PairingAccess`,
   Liste `OAuthClients` mit „✖ widerrufen“, `ClaudeNoConnect`/`ClaudeConnectDown`. Andere Assistenten: `localEndpoint`
   (erste private IPv4, Port 3777), `HAGT_GetAddresses` mit `<token>`.

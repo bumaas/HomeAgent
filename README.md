@@ -38,7 +38,7 @@ geht und was bei einem Update zu tun ist, steht in [Einrichten und aktualisieren
 
 1. **Instanz anlegen.** Modul installieren und eine Instanz **Home Agent** anlegen.
 2. **Zugang anlegen.** Im Bereich **Endpunkt und Zugänge** in der Liste **Zugänge** einen Zugang mit
-   Namen anlegen. Das Token erzeugt das Modul beim Übernehmen selbst. Für den Anfang empfiehlt sich der
+   Namen anlegen und übernehmen. Das Token erzeugt das Modul selbst. Für den Anfang empfiehlt sich der
    Haken **Nur abfragen**: Der Assistent kann dann fragen, aber nichts schalten.
 3. **Räume anlegen (wahlweise).** Im Bereich **Räume** die Räume mit weiteren Bezeichnungen und Etage
    eintragen, etwa „Gast“ mit dem Alias „Gästezimmer“. Das lohnt sich vor dem nächsten Schritt, denn der
@@ -112,7 +112,7 @@ Zugänge einer Instanz sehen dieselbe Freigabeliste. Die Liste hat diese Spalten
 | Verbindung | Wie sich der Assistent anmeldet: „Token im Header“, „Adresse mit Token“ oder bei der Anmeldung per OAuth „angemeldet:“ mit den gekoppelten Assistenten. |
 | Werkzeugliste | Ob der Assistent die aktuelle Werkzeugliste kennt: **aktuell**, **veraltet** oder **noch nicht geholt**, mit der Uhrzeit des letzten Abholens. Die Liste ändert sich mit einem Update des Moduls und mit Ihren Einstellungen, etwa einem Gerät mit neuem Typ, einem neuen Raum oder einer neuen Szene. Steht dort **veraltet**, öffnen Sie in der Claude-App einen neuen Chat; hilft das nicht, trennen Sie den Connector und verbinden ihn neu. |
 
-Das Token ist das Kennwort des Zugangs. Das Modul erzeugt es beim Übernehmen (64 Zeichen), ein per Skript gesetztes
+Das Token ist das Kennwort des Zugangs. Das Modul erzeugt es beim Anlegen des Zugangs (64 Zeichen), ein per Skript gesetztes
 braucht mindestens 24. Sichtbar wird es nur auf Knopfdruck: **Token anzeigen** für Claude Code und ähnliche Clients,
 **Adresse anzeigen** für Home Assistant. Im Dialog einer Zeile stehen dazu der Haken **Token auch in der Adresse** für
 Clients, die keine Anmeldung im Header mitschicken können, und **Neues Token**. Das ersetzt das Token beim

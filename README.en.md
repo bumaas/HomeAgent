@@ -37,7 +37,7 @@ to do after an update is described in [Setting up and updating](EINRICHTUNG.en.m
 
 1. **Create the instance.** Install the module and create a **Home Agent** instance.
 2. **Create an access.** In the section **Endpoint and accesses**, create an access with a name in the
-   list **Accesses**. The module creates the token itself on apply. To start with, tick **Query only**: the
+   list **Accesses** and apply. The module creates the token itself. To start with, tick **Query only**: the
    assistant can then ask but not switch anything.
 3. **Create rooms (optional).** In the section **Rooms**, enter the rooms with further names and a floor,
    for example "Gast" with the alias "Gästezimmer". This pays off before the next step, because the
@@ -108,7 +108,7 @@ an instance see the same release list. The list has these columns:
 | Connection | How the assistant signs in: "token in the header", "address with token" or, with sign-in by OAuth, "signed in:" with the paired assistants. |
 | Tool list | Whether the assistant knows the current tool list: **current**, **outdated** or **not fetched yet**, with the time of the last fetch. The list changes with an update of the module and with your settings, for example a device of a new type, a new room or a new scene. If it says **outdated**, open a new chat in the Claude app; if that does not help, disconnect the connector and connect it again. |
 
-The token is the password of the access. The module creates it on apply (64 characters), one set by script needs at
+The token is the password of the access. The module creates it when the access is added (64 characters), one set by script needs at
 least 24. It only shows on request: **Show token** for Claude Code and similar clients, **Show address** for
 Home Assistant. The dialog of a row also has the tick **Token also in the address** for clients that cannot send the
 login in the header, and **New token**. It replaces the token on apply, all assistants of this access then need the
