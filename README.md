@@ -473,7 +473,8 @@ rechnet das Modul die Hausleistung aus den Leistungen der Quellen:
 > Davon 750 W durch 11 von 11 Gerät(en) mit Leistungsmessung, 798 W nicht erfasst.
 
 Ein Zähler ohne eigene Leistung zählt dabei mit dem, was darunter gemessen ist. Bei einer Wärmepumpe mit
-Wärmeleistung kommt die Leistungszahl von jetzt dazu („500 W, Wärme 4188 W, Leistungszahl 8.4“).
+Wärmeleistung kommt die Leistungszahl von jetzt dazu („500 W, Wärme 4188 W, Leistungszahl 8.4“). Steht sie im
+Stand-by, heißt es nur „Wärme 0 W“.
 
 Auch nach der Leistung über einen Zeitraum kann man fragen, etwa „Wann hat der Trockner letzten Monat am meisten
 gezogen?“. Gemeint sind alle Treffer mit Leistung, auch Zähler. Je Gerät nennt eine Zeile die kleinste und die größte

@@ -2416,6 +2416,10 @@ final class DeviceIndex
                 ? sprintf($this->t('not available (variable %d is missing)'), $variableId)
                 : sprintf($this->t('not a power value (unit %s)'), $heat['unit']));
         }
+        // Ohne Wärme (Stand-by) keine Leistungszahl; mit Haken wäre der Stand-by-Strom sonst Wärme mit COP 1
+        if ($heat <= 0) {
+            return sprintf($this->t('heat %s W'), self::formatWatts(0.0));
+        }
         // Umweltertrag: Wärme = Ertrag + Strom, ohne Strom nur der Ertrag
         if ($yield && $electricWatts === null) {
             return sprintf($this->t('environmental yield %s W, no electricity to add'), self::formatWatts($heat));

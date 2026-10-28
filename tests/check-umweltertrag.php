@@ -115,4 +115,18 @@ pruefe(str_contains($r['text'], 'environmental yield 173 kWh, no electricity to 
 $ohne = method_exists(DeviceIndex::class, 'yieldWithoutElectricity') ? DeviceIndex::yieldWithoutElectricity([$ohneStrom, $ertrag, $zeile]) : null;
 pruefe($ohne === [0], 'der Selbsttest findet die Zeile ohne Strom: ' . json_encode($ohne));
 
+/* --- Stand-by: kein Ertrag, keine Leistungszahl --------------------------------------------------- */
+
+// Mitschnitt nuc 28.10.2026 12:06 nach der Umstellung auf #20987 (W, mit Stand-by): Verdichter aus, Ertragsleistung 0,
+// Stand-by 8,5 W. Vorher meldete die Zeile „heat 9 W, COP 1 (environmental yield 0 W plus electricity)“.
+$standby = fixture('nuc_2026-10-28_standby.json');
+$anlage = new FakeBackend($standby['variablen']);
+$anlage->jetzt = $standby['jetzt'];
+foreach ([['type' => 'power'], ['period' => 'now']] as $argumente) {
+    $r = (new DeviceIndex($standby['geraete'], $anlage))->getState(['name' => 'Wärmepumpe'] + $argumente);
+    pruefe(str_contains($r['text'], 'heat 0 W') && !str_contains($r['text'], 'COP') && !str_contains($r['text'], 'plus electricity'), 'Stand-by mit Haken (' . json_encode($argumente) . '): Wärme 0 W, keine Leistungszahl, kein Ertragszusatz: ' . $r['text']);
+}
+$r = frage([$zeile], ['name' => 'Wärmepumpe', 'type' => 'power'], [52797 => 0.0, 10025 => 0.0085]);
+pruefe(str_contains($r['text'], 'heat 0 W') && !str_contains($r['text'], 'COP'), 'Stand-by ohne Haken: keine Leistungszahl 0: ' . $r['text']);
+
 ende('Wärme als Umweltertrag');

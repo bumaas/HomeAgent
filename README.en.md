@@ -465,7 +465,7 @@ the module calculates the house power from the powers of the sources:
 > Of this, 750 W by 11 of 11 device(s) with power measurement, 798 W not metered.
 
 A meter without power of its own counts there with what is measured below it. For a heat pump with heat output the COP
-of the moment is added ("500 W, heat 4188 W, COP 8.4").
+of the moment is added ("500 W, heat 4188 W, COP 8.4"). In standby it only says "heat 0 W".
 
 The power over a period can be asked for as well, for example "When did the dryer draw the most power last month?". It
 covers all matches with a power value, meters included. Per device a line gives the lowest and highest power with the

@@ -1,0 +1,70 @@
+{
+    "_quelle": "nuc 28.10.2026 12:06, Home Agent #15877: Zeile Wärmepumpe nach der Umstellung auf #49836/#20987, Momentanwerte im Stand-by (Verdichter aus, Ertragsleistung 0, Stand-by 8,5 W)",
+    "jetzt": 1793185593,
+    "zeitzone": "Europe/Berlin",
+    "geraete": [
+        {
+            "Room": "Keller",
+            "Name": "Wärmepumpe",
+            "Aliases": "Heizung, WP",
+            "Type": "appliance",
+            "StateVariableID": 1,
+            "LevelVariableID": 1,
+            "MovingVariableID": 1,
+            "StopVariableID": 1,
+            "PowerVariableID": 20987,
+            "EnergyVariableID": 49836,
+            "Invert": false,
+            "Tilt": false,
+            "ReadOnly": true,
+            "SetpointVariableID": 1,
+            "ColorTempVariableID": 1,
+            "ColorVariableID": 1,
+            "PlaybackVariableID": 1,
+            "VolumeVariableID": 1,
+            "MuteVariableID": 1,
+            "TitleVariableID": 1,
+            "ArtistVariableID": 1,
+            "HumidityVariableID": 1,
+            "ModeVariableID": 1,
+            "FanVariableID": 1,
+            "HeatVariableID": 56021,
+            "HeatPowerVariableID": 52797,
+            "HeatIsYield": true
+        }
+    ],
+    "variablen": {
+        "20987": {
+            "name": "elektrische Leistungsaufnahme",
+            "wert": 8.5,
+            "formatiert": "8.500 W",
+            "einheit": "W",
+            "archiviert": true,
+            "aggregationstyp": 0
+        },
+        "52797": {
+            "name": "Ertragsleistung",
+            "wert": 0,
+            "formatiert": "0.0 kW",
+            "einheit": "kW",
+            "archiviert": true,
+            "aggregationstyp": 0
+        },
+        "49836": {
+            "name": "Energieverbrauch gesamt",
+            "wert": 26411,
+            "formatiert": "26411 kWh",
+            "einheit": "kWh",
+            "archiviert": true,
+            "aggregationstyp": 1
+        },
+        "56021": {
+            "name": "Energieertrag gesamt Heizen",
+            "wert": 89007,
+            "formatiert": "89007 kWh",
+            "einheit": "kWh",
+            "archiviert": true,
+            "aggregationstyp": 1
+        }
+    }
+}
