@@ -44,8 +44,8 @@ geht und was bei einem Update zu tun ist, steht in [Einrichten und aktualisieren
    eintragen, etwa „Gast“ mit dem Alias „Gästezimmer“. Das lohnt sich vor dem nächsten Schritt, denn der
    Vorschlag aus Alexa erkennt diese Räume auch an anderen Namen und kennt danach ihre Etage.
 4. **Geräte freigeben.** Mit einer Alexa-Instanz geht es am schnellsten: unten im Formular **Geräte aus
-   Alexa vorschlagen**, im Fenster die gewünschten Geräte anhaken und **Ausgewählte freigeben** (siehe
-   [Geräte aus Alexa übernehmen](#geräte-aus-alexa-übernehmen)). Ohne Alexa oder für weitere Geräte den
+   Alexa vorschlagen**, im Fenster die gewünschten Geräte anhaken, **Ausgewählte freigeben** und danach
+   **Übernehmen** (siehe [Geräte aus Alexa übernehmen](#geräte-aus-alexa-übernehmen)). Ohne Alexa oder für weitere Geräte den
    Bereich **Geräte** aufklappen und in der Liste je Gerät Raum, Name und Typ eintragen; der Dialog fragt
    danach die passenden Variablen ab (siehe [Die Freigabeliste](#die-freigabeliste)).
 5. **Energiebilanz und Szenen (wahlweise).** Mit Zählern für Netz, PV oder Batterie tragen Sie im Bereich
@@ -84,14 +84,15 @@ eintragen. Wählen Sie unten im Formular die Alexa-Instanz und drücken Sie **Ge
 vorschlagen**. Ein Fenster zeigt die Vorschläge mit Raum, Name, Typ und Alias, jeder mit einem Haken.
 Nehmen Sie den Haken bei allem weg, was der Assistent nicht sehen soll, und drücken Sie **Ausgewählte
 freigeben**. **Alle anhaken** und **Keine anhaken** über der Liste setzen die Haken auf einmal. Die
-angehakten Geräte kommen in die Liste und sind sofort gespeichert; ungespeicherte Änderungen im
-Formular gehen dabei verloren.
+angehakten Geräte kommen in die Geräteliste, gespeichert werden sie wie jede Änderung im Formular erst mit
+**Übernehmen**. Was Sie vorher in der Geräte- oder Raumliste von Hand geändert und nicht übernommen haben, geht
+dabei verloren.
 
 Übernommen werden Lichter, Schalter, Rollläden, Thermostate und Temperatursensoren. Ein Rollladen,
 dessen Name mit „Fenster“ beginnt, wird ein Fenster mit Antrieb. Den Raum erkennt das Modul am Namen
 und am Pfad der Variable, zuerst über die Raumliste, sonst über eine Kategorie des Objektbaums; Kategorien wie „EG“
 oder „OG“ werden dabei die Etage. Stimmt ein Raum nicht, ändern Sie ihn im Fenster in der Spalte „Raum“. Ein neuer
-Raum kommt beim Freigeben in die Raumliste.
+Raum kommt beim Freigeben in die Raumliste und wird mit ihr übernommen.
 Aus „Deckenlicht Bad“ wird so „Deckenlicht“ im Raum Bad, und der Alexa-Name bleibt als Alias.
 Ein Temperatursensor wird die Ist-Temperatur des Thermostats im selben Raum. Was schon freigegeben ist,
 kommt nicht doppelt. Schlösser, Fernseher, Farblichter, Szenen und Rollläden, die nur Öffnen, Stop

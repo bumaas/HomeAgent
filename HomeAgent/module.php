@@ -171,6 +171,9 @@ class HomeAgent extends IPSModuleStrict
 
         parent::ApplyChanges();
 
+        // Eingetragene Vorschläge aus Alexa sind jetzt gespeichert (oder verworfen)
+        $this->SetBuffer('AlexaPending', '');
+
         $this->SetSummary($this->GetEndpoint());
 
         // Ein Zugang ohne Token bekommt beim Übernehmen eines. Der Anwender braucht es nur für Clients, die es im
@@ -635,6 +638,8 @@ class HomeAgent extends IPSModuleStrict
 
     public function GetConfigurationForm(): string
     {
+        // Ein neu geladenes Formular zeigt die gespeicherten Listen; nicht Übernommenes aus Alexa ist wieder Vorschlag.
+        $this->SetBuffer('AlexaPending', '');
         // Einmal prüfen für das ganze Formular: Die Spalte „Werkzeugliste“ baut je Zugang die Werkzeugliste, und jede
         // prüfte die Listen erneut (Review 14.10.2026: über 30 volle Prüfungen bei vier Zugängen)
         return $this->checkedOnce(fn (): string => $this->configurationForm());
@@ -886,7 +891,10 @@ class HomeAgent extends IPSModuleStrict
             }
             return ['parent' => IPS_GetParent($id), 'path' => IPS_GetLocation($id), 'profile' => $profile];
         };
-        $result = AlexaImport::propose(is_array($config) ? $config : [], $info, $this->deviceList(), $this->roomIndex(), fn (string $text): string => $this->Translate($text));
+        // Schon eingetragen, aber noch nicht übernommen zählt als freigegeben, sonst käme es doppelt in die Liste.
+        $pending = $this->alexaPending();
+        $result = AlexaImport::propose(is_array($config) ? $config : [], $info, array_merge($this->deviceList(), $pending['Devices']),
+            new RoomIndex(array_merge($this->listProperty('Rooms'), $pending['Rooms'])), fn (string $text): string => $this->Translate($text));
         $this->SetBuffer('AlexaProposals', (string)json_encode($result['rows']));
         // Etage und Alias der Räume aus dem Objektbaum, für die Raumliste beim Freigeben.
         $this->SetBuffer('AlexaRooms', (string)json_encode($result['rooms']));
@@ -899,8 +907,9 @@ class HomeAgent extends IPSModuleStrict
     }
 
     /**
-     * Nur für das Vorschlagsfenster, Knopf „Ausgewählte freigeben“: hängt die angehakten Vorschläge
-     * an die Freigabeliste an, speichert sie und lädt das Formular neu.
+     * Nur für das Vorschlagsfenster, Knopf „Ausgewählte freigeben“: trägt die angehakten Vorschläge in die
+     * Geräteliste des Formulars ein, neue Räume in die Raumliste. Gespeichert wird erst mit „Übernehmen“
+     * (Store-Richtlinie 13: Properties gehören dem Anwender, Review 28.10.2026).
      *
      * @param string $Selected JSON-Liste der Nummern der angehakten Vorschläge
      */
@@ -912,7 +921,9 @@ class HomeAgent extends IPSModuleStrict
         }
         // Je angehakter Zeile die Nummer und der Raum aus dem Fenster; eine bloße Nummer behält den Raum.
         $selection = json_decode($Selected, true);
-        $rooms = $this->roomIndex();
+        $pending = $this->alexaPending();
+        $storedRooms = $this->listProperty('Rooms');
+        $rooms = new RoomIndex(array_merge($storedRooms, $pending['Rooms']));
         $chosen = [];
         $newRooms = [];
         foreach (is_array($selection) ? $selection : [] as $item) {
@@ -934,7 +945,7 @@ class HomeAgent extends IPSModuleStrict
         if ($chosen === []) {
             return $this->Translate('Nothing was selected.');
         }
-        IPS_SetProperty($this->InstanceID, 'Devices', (string)json_encode(array_merge($this->deviceList(), $chosen)));
+        $pending['Devices'] = array_merge($pending['Devices'], $chosen);
         if ($newRooms !== []) {
             $proposed = [];
             foreach (json_decode($this->GetBuffer('AlexaRooms'), true) ?: [] as $room) {
@@ -945,17 +956,61 @@ class HomeAgent extends IPSModuleStrict
                 'Aliases' => (string)($proposed[DeviceIndex::normalize($name)]['Aliases'] ?? ''),
                 'Floor'   => (string)($proposed[DeviceIndex::normalize($name)]['Floor'] ?? ''),
             ], array_values($newRooms));
-            IPS_SetProperty($this->InstanceID, 'Rooms', (string)json_encode(array_merge($this->listProperty('Rooms'), $added)));
+            $pending['Rooms'] = array_merge($pending['Rooms'], $added);
         }
-        IPS_ApplyChanges($this->InstanceID);
+        // Die Listen im Formular entstehen aus den gespeicherten und allem, was seit dem Öffnen eingetragen wurde;
+        // ein zweiter Vorschlag vor dem Übernehmen verliert so das erste nicht. Ungespeicherte Änderungen von Hand an
+        // diesen Listen gehen verloren (steht in der README).
+        $this->SetBuffer('AlexaPending', (string)json_encode($pending));
+        $this->UpdateFormField('Devices', 'values', (string)json_encode($this->listValues('Devices', array_merge($this->deviceList(), $pending['Devices']))));
+        if ($pending['Rooms'] !== []) {
+            $this->UpdateFormField('Rooms', 'values', (string)json_encode($this->listValues('Rooms', array_merge($storedRooms, $pending['Rooms']))));
+        }
         $this->SetBuffer('AlexaProposals', '');
         $this->UpdateFormField('AlexaPopup', 'visible', false);
-        $this->ReloadForm();
         // Ein Popup-Knopf zeigt jede Ausgabe rot im Popup, außer sie beginnt mit „MESSAGE:“ (Doku
         // PopupAlert, buttons). Absagen bleiben rot im offenen Fenster, der Erfolg schließt es.
         return 'MESSAGE:' . ($newRooms === []
-            ? sprintf($this->Translate('%d device(s) released.'), count($chosen))
-            : sprintf($this->Translate('%d device(s) released, %d room(s) added to the room list.'), count($chosen), count($newRooms)));
+            ? sprintf($this->Translate('%d device(s) added to the device list, save them with "Apply".'), count($chosen))
+            : sprintf($this->Translate('%d device(s) added to the device list and %d room(s) to the room list, save them with "Apply".'), count($chosen), count($newRooms)));
+    }
+
+    /**
+     * Aus Alexa eingetragene, noch nicht übernommene Geräte und Räume (Buffer `AlexaPending`), bis zum nächsten
+     * Übernehmen oder Öffnen des Formulars.
+     *
+     * @return array{Devices: list<array<string, mixed>>, Rooms: list<array<string, mixed>>}
+     */
+    private function alexaPending(): array
+    {
+        $pending = json_decode($this->GetBuffer('AlexaPending'), true);
+        return [
+            'Devices' => is_array($pending['Devices'] ?? null) ? array_values($pending['Devices']) : [],
+            'Rooms'   => is_array($pending['Rooms'] ?? null) ? array_values($pending['Rooms']) : [],
+        ];
+    }
+
+    /**
+     * Ganze Zeilen einer Liste für UpdateFormField: Anders als beim Laden des Formulars ergänzt die Konsole hier
+     * nichts aus der Property. Dazu wie in configurationForm() die Beschriftungen der Geräte und die Farbe
+     * fehlerhafter gespeicherter Zeilen; Spalten ohne edit speichert die Konsole nicht.
+     *
+     * @param list<array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    private function listValues(string $list, array $rows): array
+    {
+        $failed = [];
+        foreach ($this->validateLists() as $problem) {
+            if ($problem['list'] === $list) {
+                $failed[$problem['index']] = true;
+            }
+        }
+        $values = [];
+        foreach (array_values($rows) as $index => $row) {
+            $values[] = array_merge($row, $list === 'Devices' ? $this->deviceLabels($row) : [], ['rowColor' => isset($failed[$index]) ? self::ROW_COLOR_ERROR : '']);
+        }
+        return $values;
     }
 
     /**

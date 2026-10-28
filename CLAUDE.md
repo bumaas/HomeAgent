@@ -298,8 +298,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   Auswahl wie der Raum, `UIDeviceChanged` leert es beim Ausblenden. Dialog „Quellen“ über `UISourceForm`/
   `UISourceChanged`, Textspalten `EnergyLabel`/`PowerLabel` (`sourceLabels`).
 - **Alexa-Vorschlag** im `PopupAlert` mit Haken und Raum je Vorschlag; Räume nur, wenn die Raumliste nichts weiß
-  (`proposeRooms`, Buffer `AlexaRooms`). Ein Knopf in `popup.buttons` zeigt Ausgaben rot, außer mit `MESSAGE:`. Test
-  `check-raumvorschlag.php`.
+  (`proposeRooms`, Buffer `AlexaRooms`). Ein Knopf in `popup.buttons` zeigt Ausgaben rot, außer mit `MESSAGE:`.
+  Freigeben trägt per `UpdateFormField` ein (`listValues`, Buffer `AlexaPending`), nie per `IPS_SetProperty`
+  (Store-Richtlinie 13); gespeichert wird mit „Übernehmen“. Tests `check-module.php`, `check-raumvorschlag.php`.
 - Fehlerhafte Zeilen rot (`rowColor`), Meldungen oben im Formular. Spalte **„Werkzeugliste“** je Zugang
   (`ToolLists`, `toolListStatus`: aktuell, veraltet, noch nicht geholt).
 - **Was nicht geklappt hat:** `problem()` in `DeviceIndex`/`SceneIndex` nennt die Art, `logged()` merkt Aufrufe mit

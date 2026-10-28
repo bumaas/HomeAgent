@@ -43,8 +43,8 @@ to do after an update is described in [Setting up and updating](EINRICHTUNG.en.m
    for example "Gast" with the alias "Gästezimmer". This pays off before the next step, because the
    proposal from Alexa then also recognises these rooms by their other names and knows their floor.
 4. **Release devices.** With an Alexa instance it is quickest: at the bottom of the form press **Propose
-   devices from Alexa**, tick the devices you want in the window and press **Release selected** (see
-   [Taking over devices from Alexa](#taking-over-devices-from-alexa)). Without Alexa or for further
+   devices from Alexa**, tick the devices you want in the window, press **Release selected** and then
+   **Apply** (see [Taking over devices from Alexa](#taking-over-devices-from-alexa)). Without Alexa or for further
    devices, expand the section **Devices** and enter room, name and type for each device in the list; the
    dialog then asks for the matching variables (see [The release list](#the-release-list)).
 5. **Energy balance and scenes (optional).** With meters for the grid, solar or a battery, enter the sources in
@@ -82,14 +82,14 @@ If your devices are already set up in Symcon's Alexa instance, you do not need t
 Choose the Alexa instance at the bottom of the form and press **Propose devices from Alexa**. A window
 shows the proposals with room, name, type and alias, each with a tick. Untick everything the assistant
 should not see and press **Release selected**. **Tick all** and **Tick none** above the list set all
-ticks at once. The ticked devices go into the list and are saved right away; unsaved changes in the form
-are lost.
+ticks at once. The ticked devices go into the device list and, like every change in the form, are saved
+with **Apply**. Changes you made by hand to the device or room list before and did not apply are lost.
 
 Lights, switches, blinds, thermostats and temperature sensors are taken over. A blind whose name starts
 with "Fenster" becomes a window with a drive. The module recognises the room from the name
 and the path of the variable, first through the room list, otherwise through a category of the object tree;
 categories such as "EG" or "OG" become the floor. If a room is wrong, change it in the window in the column "Room".
-A new room is added to the room list on release. "Deckenlicht Bad" thus becomes
+A new room is added to the room list on release and saved with it. "Deckenlicht Bad" thus becomes
 "Deckenlicht" in the room Bad, and the Alexa name stays as an alias. A temperature sensor becomes the
 current temperature of the thermostat in the same room. Devices that are already released are not added
 twice. Locks, televisions, colour lights, scenes and blinds that only know open, stop and close (profile

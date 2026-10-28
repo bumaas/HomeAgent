@@ -697,8 +697,14 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
 - Der Bearbeitungsdialog einer Geräte-Zeile entsteht je Typ über `UIDeviceForm`; sichtbare Spalten sind
   Textspalten mit dem Namen der Variable, die IDs stehen in unsichtbaren Spalten.
 - „Geräte aus Alexa vorschlagen“ öffnet ein `PopupAlert` mit Haken und bearbeitbarem Raum je Vorschlag;
-  „Ausgewählte freigeben“ speichert direkt. Ein Knopf in `popup.buttons` zeigt jede Ausgabe rot im
-  Popup, außer sie beginnt mit `MESSAGE:`.
+  „Ausgewählte freigeben“ speicherte bis build 265 direkt (`IPS_SetProperty`, `IPS_ApplyChanges`). Seit build 266 trägt
+  es per `UpdateFormField` in die Listen `Devices` und `Rooms` des Formulars ein, gespeichert wird mit „Übernehmen“:
+  Store-Richtlinie 13 (Properties gehören dem Anwender), Prüfung der Beta 19641 über den Store-MCP am 28.10.2026.
+  Beim Füllen per `UpdateFormField` ergänzt die Konsole nichts aus der Property, deshalb gehen ganze Zeilen samt
+  Beschriftung und `rowColor` hin (`listValues`). Eingetragenes merkt der Buffer `AlexaPending` bis zum Übernehmen oder
+  neuen Öffnen des Formulars: Ein zweiter Vorschlag zählt es als freigegeben, sein Freigeben behält das erste. Der Test
+  spielt das Übernehmen der Konsole nach (Spalten ohne `edit` fallen weg, Doku List). Ein Knopf in `popup.buttons`
+  zeigt jede Ausgabe rot im Popup, außer sie beginnt mit `MESSAGE:`.
 - **Raumvorschlag beim Alexa-Import** (`AlexaImport::proposeRooms`), nur wenn die Raumliste nichts
   weiß: erste Kategorie im eigenen Pfad (ohne Instanz und Variable), die ein Wort mit dem Alexa-Namen
   teilt, sonst ein Wort des Namens, das bei einem anderen Vorschlag Kategorie ist. Kategorien aus

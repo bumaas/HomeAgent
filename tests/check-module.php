@@ -1722,35 +1722,96 @@ $haken = static function (bool $an) use ($m): ?array {
 pruefe($haken(false) === [false, false], 'keine anhaken: ' . json_encode($haken(false)));
 pruefe($haken(true) === [true, true], 'alle anhaken: ' . json_encode($haken(true)));
 
+// Store-Richtlinie 13 (Review 28.10.2026): Properties gehören dem Anwender. Die angehakten Vorschläge kommen per
+// UpdateFormField in die Listen des Formulars, gespeichert wird erst mit „Übernehmen“. $uebernehmen spielt die Konsole
+// nach (Doku List, „Speichern und Laden von Listen“): Spalten ohne edit und save fallen weg, ebenso rowColor, Werte
+// ohne Spalte bleiben.
+$ohneEdit = ['Devices' => [], 'Rooms' => []];
+$sammeln = static function (array $elemente) use (&$sammeln, &$ohneEdit): void {
+    foreach ($elemente as $element) {
+        if (!is_array($element)) {
+            continue;
+        }
+        if (isset($ohneEdit[$element['name'] ?? ''])) {
+            foreach ($element['columns'] as $spalte) {
+                if (!isset($spalte['edit']) && !($spalte['save'] ?? false)) {
+                    $ohneEdit[$element['name']][] = $spalte['name'];
+                }
+            }
+        }
+        $sammeln($element['items'] ?? []);
+    }
+};
+$sammeln(json_decode((string)file_get_contents(__DIR__ . '/../HomeAgent/form.json'), true)['elements']);
+pruefe(in_array('StateLabel', $ohneEdit['Devices'], true) && $ohneEdit['Rooms'] === [], 'Beschriftungsspalten der Geräteliste werden nicht gespeichert: ' . json_encode($ohneEdit));
+$listenImFormular = static function () use ($m): array {
+    $listen = [];
+    foreach ($m->formUpdates as [$feld, $parameter, $wert]) {
+        if (in_array($feld, ['Devices', 'Rooms'], true) && $parameter === 'values') {
+            $listen[$feld] = json_decode((string)$wert, true);
+        }
+    }
+    return $listen;
+};
+$uebernehmen = static function (array $listen) use ($iid, $ohneEdit): void {
+    foreach ($listen as $liste => $zeilen) {
+        $weg = array_flip(array_merge($ohneEdit[$liste], ['rowColor']));
+        IPS_SetProperty($iid, $liste, (string)json_encode(array_map(static fn (array $zeile): array => array_diff_key($zeile, $weg), $zeilen)));
+    }
+    IPS_ApplyChanges($iid);
+};
+
 $m->formUpdates = [];
 $meldung = (string)oderNull(static fn () => $m->UIApplyAlexa('[1]'));
+$imFormular = $listenImFormular();
+$geraeteImFormular = $imFormular['Devices'] ?? [];
+$neu = end($geraeteImFormular) ?: [];
+// Ein Popup-Knopf zeigt jede Ausgabe rot im Popup, außer sie beginnt mit „MESSAGE:“ (Doku PopupAlert, buttons).
+pruefe($meldung === 'MESSAGE:1 device(s) added to the device list, save them with "Apply".', 'Erfolg als Meldungsdialog mit Hinweis auf Übernehmen: ' . $meldung);
+pruefe(IPS_GetProperty($iid, 'Devices') === $vorher, 'das Freigeben schreibt keine Property (Store-Richtlinie 13)');
+pruefe(count($imFormular['Devices'] ?? []) === count(json_decode($vorher, true)) + 1 && ($neu['Room'] ?? '') === 'Flur' && ($neu['StateVariableID'] ?? 0) === $flurlicht && ($neu['StateLabel'] ?? '-') !== '-', 'die Geräteliste im Formular bekommt die angehakte Zeile mit Beschriftung: ' . json_encode($neu, JSON_UNESCAPED_UNICODE));
+pruefe(!isset($imFormular['Rooms']) && in_array(['AlexaPopup', 'visible', false], $m->formUpdates, true), 'ohne neuen Raum bleibt die Raumliste, das Fenster geht zu');
+$uebernehmen($imFormular);
 $liste = json_decode(IPS_GetProperty($iid, 'Devices'), true);
 $neu = end($liste) ?: [];
-// Ein Popup-Knopf zeigt jede Ausgabe rot im Popup, außer sie beginnt mit „MESSAGE:“ (Doku PopupAlert, buttons).
-pruefe($meldung === 'MESSAGE:1 device(s) released.', 'Erfolg als Meldungsdialog, nicht als rote Fehlermeldung: ' . $meldung);
-pruefe(count($liste) === count(json_decode($vorher, true)) + 1 && ($neu['Room'] ?? '') === 'Flur' && ($neu['StateVariableID'] ?? 0) === $flurlicht, 'nur die angehakte Zeile ist gespeichert: ' . json_encode($neu, JSON_UNESCAPED_UNICODE));
-pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && in_array(['AlexaPopup', 'visible', false], $m->formUpdates, true), 'Instanz aktiv, Fenster zu');
+pruefe(count($liste) === count(json_decode($vorher, true)) + 1 && ($neu['Room'] ?? '') === 'Flur' && ($neu['StateVariableID'] ?? 0) === $flurlicht && !isset($neu['StateLabel']), 'nach dem Übernehmen ist nur die angehakte Zeile gespeichert: ' . json_encode($neu, JSON_UNESCAPED_UNICODE));
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'Instanz aktiv');
 pruefe((string)oderNull(static fn () => $m->UIApplyAlexa('[0]')) === 'Propose devices first.', 'ohne neuen Vorschlag gibt es nichts freizugeben');
 oderNull(static fn () => $m->UIImportAlexa($alexa));
-pruefe((string)oderNull(static fn () => $m->UIApplyAlexa('[]')) === 'Nothing was selected.' && count(json_decode(IPS_GetProperty($iid, 'Devices'), true)) === count($liste), 'ohne Haken wird nichts gespeichert');
+$m->formUpdates = [];
+pruefe((string)oderNull(static fn () => $m->UIApplyAlexa('[]')) === 'Nothing was selected.' && $listenImFormular() === [], 'ohne Haken ändert sich keine Liste');
 $m->formUpdates = [];
 $meldung = (string)oderNull(static fn () => $m->UIImportAlexa($alexa));
 pruefe(str_starts_with($meldung, '1 device(s) proposed, 1 already released'), 'beim nächsten Vorschlag ist das Flurlicht schon freigegeben: ' . $meldung);
 
 // Stufe 1 der Räume (Burkhard, 10.10.2026): Raum im Fenster ändern, ein neuer Raum kommt in die Raumliste
+$m->formUpdates = [];
 $meldung = (string)oderNull(static fn () => $m->UIApplyAlexa('[[0, "Wohnküche"]]'));
+$imFormular = $listenImFormular();
+pruefe($meldung === 'MESSAGE:1 device(s) added to the device list and 1 room(s) to the room list, save them with "Apply".', 'Meldung nennt den neuen Raum: ' . $meldung);
+pruefe(array_column($imFormular['Rooms'] ?? [], 'Name') === ['Küche', 'Flur', 'Wohnküche'] && count(json_decode(IPS_GetProperty($iid, 'Rooms'), true)) === 2, 'der neue Raum steht in der Raumliste des Formulars, gespeichert ist er noch nicht: ' . json_encode($imFormular['Rooms'] ?? null, JSON_UNESCAPED_UNICODE));// Bis zum Übernehmen zählt das Eingetragene als freigegeben; ein zweiter Vorschlag böte es sonst noch einmal an, und
+// sein Freigeben ersetzte die Liste ohne das erste.
+$meldung = (string)oderNull(static fn () => $m->UIImportAlexa($alexa));
+pruefe(str_starts_with($meldung, '0 device(s) proposed, 2 already released'), 'eingetragen, aber nicht übernommen, zählt als freigegeben: ' . $meldung);
+$uebernehmen($imFormular);
 $liste = json_decode(IPS_GetProperty($iid, 'Devices'), true);
 $raumNamen = array_column(json_decode(IPS_GetProperty($iid, 'Rooms'), true), 'Name');
-pruefe($meldung === 'MESSAGE:1 device(s) released, 1 room(s) added to the room list.', 'Meldung nennt den neuen Raum: ' . $meldung);
 pruefe((end($liste)['Room'] ?? '') === 'Wohnküche' && $raumNamen === ['Küche', 'Flur', 'Wohnküche'], 'Gerät im geänderten Raum, der Raum steht in der Raumliste: ' . json_encode($raumNamen, JSON_UNESCAPED_UNICODE));
 IPS_SetProperty($iid, 'Devices', $vorher);
 IPS_SetProperty($iid, 'Rooms', json_encode([['Name' => 'Küche', 'Aliases' => 'Kochen', 'Floor' => ''], ['Name' => 'Flur', 'Aliases' => '', 'Floor' => '']]));
 IPS_ApplyChanges($iid);
 oderNull(static fn () => $m->UIImportAlexa($alexa));
+$m->formUpdates = [];
 $meldung = (string)oderNull(static fn () => $m->UIApplyAlexa('[[0, "kochen"], [1, " "]]'));
+$imFormular = $listenImFormular();
+// Ein neu geöffnetes Formular zeigt die gespeicherten Listen; was nicht übernommen wurde, ist dann wieder Vorschlag.
+oderNull(static fn () => $m->GetConfigurationForm());
+$meldung2 = (string)oderNull(static fn () => $m->UIImportAlexa($alexa));
+pruefe(str_starts_with($meldung2, '2 device(s) proposed, 0 already released'), 'nach neuem Öffnen des Formulars zählt nur Gespeichertes: ' . $meldung2);
+$uebernehmen($imFormular);
 $liste = json_decode(IPS_GetProperty($iid, 'Devices'), true);
 $neue = array_slice($liste, -2);
-pruefe($meldung === 'MESSAGE:2 device(s) released.' && count(json_decode(IPS_GetProperty($iid, 'Rooms'), true)) === 2, 'ein Alias ist kein neuer Raum: ' . $meldung);
+pruefe($meldung === 'MESSAGE:2 device(s) added to the device list, save them with "Apply".' && !isset($imFormular['Rooms']) && count(json_decode(IPS_GetProperty($iid, 'Rooms'), true)) === 2, 'ein Alias ist kein neuer Raum: ' . $meldung);
 pruefe(array_column($neue, 'Room') === ['Küche', ''], 'der Alias wird zum Namen aus der Raumliste, ein geleerter Raum bleibt leer: ' . json_encode(array_column($neue, 'Room'), JSON_UNESCAPED_UNICODE));
 IPS_SetProperty($iid, 'Devices', $vorher);
 IPS_SetProperty($iid, 'Rooms', json_encode([['Name' => 'Küche', 'Aliases' => '', 'Floor' => ''], ['Name' => 'Flur', 'Aliases' => '', 'Floor' => '']]));
@@ -1785,9 +1846,11 @@ foreach ($m->formUpdates as [$feld, $parameter, $wert]) {
 }
 $vorschlagsRaeume = array_column(json_decode((string)($felder['AlexaProposals.values'] ?? '[]'), true), 'Room');
 pruefe($vorschlagsRaeume === ['Diele EG', 'Diele OG'], 'je Etage ein Raum im Fenster: ' . json_encode($vorschlagsRaeume, JSON_UNESCAPED_UNICODE));
+$m->formUpdates = [];
 $meldung = (string)oderNull(static fn () => $m->UIApplyAlexa('[[0, "Diele EG"], [1, "Diele OG"]]'));
+$uebernehmen($listenImFormular());
 $raumListe = json_decode(IPS_GetProperty($iid, 'Rooms'), true);
-pruefe($meldung === 'MESSAGE:2 device(s) released, 2 room(s) added to the room list.' && array_slice($raumListe, 2) === [['Name' => 'Diele EG', 'Aliases' => 'Diele', 'Floor' => 'EG'], ['Name' => 'Diele OG', 'Aliases' => 'Diele', 'Floor' => 'OG']], 'neue Räume mit Etage und gemeinsamem Alias: ' . json_encode($raumListe, JSON_UNESCAPED_UNICODE));
+pruefe($meldung === 'MESSAGE:2 device(s) added to the device list and 2 room(s) to the room list, save them with "Apply".' && array_slice($raumListe, 2) === [['Name' => 'Diele EG', 'Aliases' => 'Diele', 'Floor' => 'EG'], ['Name' => 'Diele OG', 'Aliases' => 'Diele', 'Floor' => 'OG']], 'neue Räume mit Etage und gemeinsamem Alias: ' . json_encode($raumListe, JSON_UNESCAPED_UNICODE));
 $r = $aufruf->invoke($m, 'get_state', ['room' => 'Diele'], null);
 pruefe(str_starts_with($r['text'], '2 device(s) found (room=Diele).'), 'der gemeinsame Alias trifft beide Räume: ' . $r['text']);
 $r = $aufruf->invoke($m, 'get_state', ['floor' => 'OG'], null);
