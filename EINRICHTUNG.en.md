@@ -51,6 +51,7 @@ Otherwise the assistant talks to the JSON-RPC interface of Symcon. That takes fo
    user = "license@example.com:YourRemoteAccessPassword"
    ```
 
+   Without a remote access password, leave out the line `user`; the instructions stay as they are.
    Because curl reads address and login from there, the password never appears in a command. The assistant
    shows its commands in the chat, and some clients keep them in their history. To try it, create a file
    `request.json` next to it:

@@ -52,6 +52,7 @@ Sonst spricht der Assistent mit der JSON-RPC-Schnittstelle von Symcon. Das brauc
    user = "lizenz@example.com:IhrFernzugriffKennwort"
    ```
 
+   Ohne Fernzugriff-Kennwort lassen Sie die Zeile `user` weg, der Auftrag bleibt trotzdem, wie er ist.
    Weil curl Adresse und Anmeldung von dort liest, steht das Kennwort nie in einem Befehl. Der Assistent zeigt
    seine Befehle im Chat an, und manche Clients speichern sie im Verlauf. Zur Probe legen Sie daneben eine Datei
    `anfrage.json` an:
