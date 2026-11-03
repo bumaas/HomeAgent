@@ -118,6 +118,8 @@ Backend. So laufen die Tests mit echten Mitschnitten.
 | `control_device` | Bedienung von der Karte (`_meta.ui.visibility: ["app"]`) | ohne „Nur abfragen“, aufrufbar auch ohne Apps |
 
 Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
+- **Zustandstexte** kürzt `line()` je Zeile auf `VALUE_TEXT_LENGTH` (200); trifft `get_state` genau ein Gerät, gilt
+  `FULL_TEXT_LENGTH` (2000), damit ein gezielt abgefragter Text ganz kommt. Test `check-langer-text.php`.
 - **Aktionen laufen in einem eigenen Skript** (`IPS_RunScriptTextEx`), nie im Thread der Anfrage (manche Aktoren
   blockieren `RequestAction` bis zum Ziel). Fehlschläge meldet das Skript per `IPS_RequestAction(<Instanz>, 'ActionFailed', …)`.
 - **Rückmeldung:** erst alle Aktionen auslösen, dann gemeinsam bis 2 s auf die Variablen warten. Rollläden gelten als

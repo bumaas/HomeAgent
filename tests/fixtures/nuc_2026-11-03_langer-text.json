@@ -1,0 +1,52 @@
+{
+    "quelle": "nuc 9.1 Rust, Mitschnitt per symcon_run.php (IPS_GetVariable, GetValueString, GetValueFormatted, HasAction, IPS_GetVariablePresentation)",
+    "zeit": "2026-11-03T17:20:40+01:00",
+    "variablen": {
+        "34365": {
+            "name": "Reinigungsaufzeichnungen (Text)",
+            "instanz": "Roborock",
+            "typ": 3,
+            "wert": "Samstag 31.10. 20:22 - 20:42, 19 Minuten, 10,0 m², abgeschlossen\nSonntag 25.10. 14:44 - 15:23, 38 Minuten, 25,2 m², abgeschlossen\nSonntag 25.10. 09:19 - 09:35, 15 Minuten, 10,0 m², abgeschlossen\nSamstag 24.10. 17:53 - 18:30, 36 Minuten, 25,7 m², abgeschlossen\nSamstag 24.10. 17:53 - 17:53, 7 Sekunden, 0,0 m², nicht abgeschlossen",
+            "formatiert": "Samstag 31.10. 20:22 - 20:42, 19 Minuten, 10,0 m², abgeschlossen\nSonntag 25.10. 14:44 - 15:23, 38 Minuten, 25,2 m², abgeschlossen\nSonntag 25.10. 09:19 - 09:35, 15 Minuten, 10,0 m², abgeschlossen\nSamstag 24.10. 17:53 - 18:30, 36 Minuten, 25,7 m², abgeschlossen\nSamstag 24.10. 17:53 - 17:53, 7 Sekunden, 0,0 m², nicht abgeschlossen",
+            "aktion": false,
+            "darstellung": {
+                "COLOR": -1,
+                "CONTENT_COLOR": -1,
+                "DISPLAY_TYPE": 0,
+                "ICON": "",
+                "MULTILINE": false,
+                "OPTIONS": "[]",
+                "PERCENTAGE": false,
+                "PREFIX": "",
+                "PRESENTATION": "{3319437D-7CDE-699D-750A-3C6A3841FA75}",
+                "PREVIEW_STYLE": 1,
+                "SHOW_PREVIEW": true,
+                "SUFFIX": "",
+                "USAGE_TYPE": 0
+            }
+        },
+        "43624": {
+            "name": "Letzte Änderungen",
+            "instanz": "Matter Diagnose",
+            "typ": 3,
+            "wert": "• Neuer Befund: 1 gekoppelte(s) Gerät(e) sind im Netz, aber Symcon findet sie nicht — Shelly Plug S Gen3 (Id 7)\n• Behoben: 1 gekoppelte(s) Gerät(e) melden sich nicht mehr an, sind aber im Netzwerk — Shelly Plug S Gen3 (Id 7)",
+            "formatiert": "• Neuer Befund: 1 gekoppelte(s) Gerät(e) sind im Netz, aber Symcon findet sie nicht — Shelly Plug S Gen3 (Id 7)\n• Behoben: 1 gekoppelte(s) Gerät(e) melden sich nicht mehr an, sind aber im Netzwerk — Shelly Plug S Gen3 (Id 7)",
+            "aktion": false,
+            "darstellung": {
+                "COLOR": -1,
+                "CONTENT_COLOR": -1,
+                "DISPLAY_TYPE": 0,
+                "ICON": "",
+                "MULTILINE": true,
+                "OPTIONS": "[]",
+                "PERCENTAGE": false,
+                "PREFIX": "",
+                "PRESENTATION": "{3319437D-7CDE-699D-750A-3C6A3841FA75}",
+                "PREVIEW_STYLE": 1,
+                "SHOW_PREVIEW": true,
+                "SUFFIX": "",
+                "USAGE_TYPE": 0
+            }
+        }
+    }
+}

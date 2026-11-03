@@ -229,6 +229,9 @@ Which variables a device needs depends on its type:
 There is no type of its own for smoke detectors. Enter them as other measured value, the assistant cannot switch
 a measured value anyway.
 
+Texts as measured value, a weather forecast for example, come back in full when the assistant asks for exactly this
+device. In a list of several devices a text ends with "…" after 200 characters.
+
 Some devices need more than the variable of their type:
 
 - **Light with brightness only:** If the smallest level is above 0 (with Matter for example 1 to 254), the light

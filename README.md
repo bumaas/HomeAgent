@@ -236,6 +236,9 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 Einen eigenen Typ für Rauchmelder gibt es nicht. Tragen Sie sie als sonstigen Messwert ein, schalten kann der
 Assistent einen Messwert ohnehin nicht.
 
+Texte als Messwert, etwa eine Wettervorhersage, gibt der Assistent ganz wieder, wenn er nach genau diesem Gerät fragt.
+In einer Liste mehrerer Geräte endet ein Text nach 200 Zeichen mit „…“.
+
 Bei einigen Geräten braucht es mehr als die Variable des Typs:
 
 - **Licht nur mit Helligkeit:** Liegt die kleinste Stufe über 0 (bei Matter etwa 1 bis 254), lässt sich das Licht

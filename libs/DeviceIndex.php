@@ -256,6 +256,12 @@ final class DeviceIndex
 
     /** Längster Zustandstext je Antwortzeile, damit ein von außen gefüllter Text die Antwort nicht aufbläht. */
     private const VALUE_TEXT_LENGTH = 200;
+
+    /**
+     * Längster Zustandstext, wenn die Abfrage genau ein Gerät trifft: Wer gezielt nach einem Text fragt (Wettervorhersage
+     * als Messwert, t/144611 #79), will ihn ganz hören.
+     */
+    private const FULL_TEXT_LENGTH = 2000;
     private const CONFIRM_STEP_MS = 50;
 
     /** So lange gilt das gemerkte Ziel einer Fahrt, wenn es nicht erreicht wird. */
@@ -591,7 +597,7 @@ final class DeviceIndex
                 $drive = $this->t('with drive');
                 $state['text'] = str_ends_with($state['text'], ')') ? substr($state['text'], 0, -1) . ', ' . $drive . ')' : $state['text'] . ' (' . $drive . ')';
             }
-            $lines[] = $this->line($entry, $state['text']);
+            $lines[] = $this->line($entry, $state['text'], count($matches) === 1 ? self::FULL_TEXT_LENGTH : self::VALUE_TEXT_LENGTH);
         }
 
         if ($activeOnly) {
@@ -4933,11 +4939,11 @@ final class DeviceIndex
         return sprintf($this->t($tilt ? '%s %% tilted' : '%s %% open'), self::formatNumber(round($percent)));
     }
 
-    private function line(array $entry, string $text): string
+    private function line(array $entry, string $text, int $maxLength = self::VALUE_TEXT_LENGTH): string
     {
         // Der Text kommt aus der Anlage (Anzeigetexte, Warnungen von Modulen) und kann von außen
         // gefüllt sein. Er darf das Format „eine Zeile je Gerät“ nicht zerbrechen.
-        return ($entry['Room'] !== '' ? $entry['Room'] : '-') . ' | ' . self::displayName($entry) . ' | ' . $entry['Type'] . ' | ' . str_replace('|', '/', self::singleLine($text, self::VALUE_TEXT_LENGTH));
+        return ($entry['Room'] !== '' ? $entry['Room'] : '-') . ' | ' . self::displayName($entry) . ' | ' . $entry['Type'] . ' | ' . str_replace('|', '/', self::singleLine($text, $maxLength));
     }
 
     /** Steuerzeichen werden zu Leerzeichen, mehrere Leerzeichen zu einem; zu lange Texte enden mit „…“. */
