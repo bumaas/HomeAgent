@@ -451,7 +451,6 @@
             "A power history of this part needs a power variable in the energy balance.": "Der Leistungsverlauf dieses Teils braucht eine Leistungsvariable in der Energiebilanz.",
             "A power history of a part takes only a period or from and to.": "Der Leistungsverlauf eines Teils nimmt nur einen Zeitraum, period oder from und to.",
             "%s: power of %d source(s) (%s), per %s: minimum / average / maximum.": "%s: Leistung von %d Quelle(n) (%s), je %s: Minimum / Mittel / Maximum.",
-            "(charge negative, instantaneous)": "(Laden negativ, Momentanwert)",
             "A scatter chart takes no part of the energy balance.": "Eine Punktwolke nimmt keinen Teil der Energiebilanz.",
             "\"%s\" is part of the energy balance, not a device: use part=%s without room, floor or name, as type only power.": "„%s“ ist ein Teil der Energiebilanz, kein Gerät: part=%s ohne Raum, Etage oder Name verwenden, als Typ nur power.",
             "electricity costs": "Stromkosten",

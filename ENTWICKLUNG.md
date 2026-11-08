@@ -502,7 +502,11 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   gehört aber zu beiden Teilen, sonst wäre `part=battery_charge` an der betreuten Anlage leer. Summenkurve, Heatmap, Kosten
   und Vergleich rechnen mit Zählern und werden abgewiesen. Die Grenze `HOUSE_POWER_DAYS` gilt hier nicht, sie schützt nur
   `housePowerRows`. Der erste Live-Aufruf am nuc zeigte, dass `kilowattHistory` einen Sensor ohne Suffix (#14525) als kW
-  las, während `powerFactor` und das Formular W sagen; seither gilt W auch im Verlauf.
+  las, während `powerFactor` und das Formular W sagen; seither gilt W auch im Verlauf. Build 272 zeigte einen Sensor mit
+  Vorzeichen in beiden Teilen ungetrennt; die Claude-App bemängelte am 08.11.2026 −2,5 kW im Entlade-Diagramm. Seither
+  zeigt jeder Teil nur seine Richtung, positiv (`directionHistory`). Das Mittel einer Stunde mit beiden Richtungen bleibt
+  der Saldo (an den Mitschnitten 6 bzw. 3 von 69 Stunden über 50 W). Über die getrennten Zähler ginge es genauer, das
+  kostet zusätzliche Abfragen und einen zweiten Rechenweg und hilft nur Quellen mit beiden Zählern.
 - **Uhrzeit in `from`/`to`** (`parseMoment`, Burkhard 12.10.2026: „nicht stundengenau“): JJJJ-MM-TT HH:MM, auch mit T
   oder Sekunden. Ganze Stunden aus den Stundenaggregaten (Stufe 0 auch für Zähler): `from` abgerundet, `to` aufgerundet
   und das Ende (13:00 bis 15:00 sind zwei Stunden), ein `to` ohne Uhrzeit zählt den ganzen Tag, ohne `to` bis jetzt.

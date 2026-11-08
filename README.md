@@ -801,4 +801,5 @@ Für Diagramme (**show_chart**) kommen dazu: `compare` (`previous` oder `year_be
 Punktwolke), `heatmap`, `cumulative` (Summenkurve), `costs` (in Euro) und `part` (`grid`, `feed_in`, `pv`,
 `battery_charge` oder `battery_discharge`). Zusammen mit `type=power` zeigt `part` die Leistung dieses Teils über den
 Zeitraum als Linie mit Minimum und Maximum, bei mehreren Anlagen eine je Anlage. Summenkurve, Heatmap, Kosten und
-Vergleich gehen dabei nicht.
+Vergleich gehen dabei nicht. Ein Sensor mit Vorzeichen wird nach Richtung getrennt; enthält eine Stunde beide Richtungen,
+ist ihr Mittel der Saldo, die Spitzen stimmen.

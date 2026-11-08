@@ -786,4 +786,5 @@ For charts (**show_chart**) there are also: `compare` (`previous` or `year_befor
 scatter chart), `heatmap`, `cumulative` (cumulative chart), `costs` (in euros) and `part` (`grid`, `feed_in`, `pv`,
 `battery_charge` or `battery_discharge`). Together with `type=power`, `part` shows the power of this part over the
 period as a line with minimum and maximum, one line per plant if there are several. Cumulative chart, heatmap, costs and
-comparison are not available for it.
+comparison are not available for it. A sensor with a sign is split by direction; if an hour contains both directions, its
+average is the net value, the peaks are exact.

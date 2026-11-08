@@ -1872,7 +1872,7 @@ final class DeviceIndex
             $title = sprintf($this->t('%s: power of %d source(s) (%s), per %s: minimum / average / maximum.'), $this->t(self::PART_TITLES[$part]), count($sensors), 'part=' . $part . ', ' . $filter, $this->t($per))
                 . ' ' . $this->t('Minimum and maximum are instantaneous values.');
             foreach ($sensors as [$key, $variable]) {
-                $series[] = $this->powerSeries($key, $variable, count($sensors) > 1, $level, $from, $to);
+                $series[] = $this->powerSeries($key, $variable, count($sensors) > 1, $level, $from, $to, self::PARTS[$part]);
             }
         } elseif ($house) {
             $title = sprintf($this->t('House power (%s), per %s: minimum / average / maximum.'), $filter, $this->t($per));
@@ -1918,29 +1918,49 @@ final class DeviceIndex
      * „kann ich nicht“, obwohl kein Mittel über der Momentanspitze liegen kann (Micha87 t/144611 #47, 18.10.2026).
      *
      * @param array{variable: int, name: string, signed: ?bool, inverted: bool} $variable
+     * @param null|string $only Teil der Bilanz, dessen Richtung gezeigt wird; null zeigt einen Sensor mit Vorzeichen ganz
      * @return array{0: array{Room: string, Name: string, Type: string}, 1: ?array}
      */
-    private function powerSeries(string $key, array $variable, bool $named, int $level, int $from, int $to): array
+    private function powerSeries(string $key, array $variable, bool $named, int $level, int $from, int $to, ?string $only = null): array
     {
         [$signed, $inverted] = $this->signedOf($key, $variable);
-        $note = match (true) {
-            !$signed            => $this->t('(instantaneous)'),
-            $key === 'discharge' => $this->t('(charge negative, instantaneous)'),
-            default             => $this->t('(export negative, instantaneous)'),
-        };
-        $label = $this->t(self::BALANCE_TERMS[$key][1]) . ' ' . $note . ($named && $variable['name'] !== '' ? ' ' . $variable['name'] : '');
+        $split = $signed && $only !== null;
+        $note = $this->t($signed && !$split ? '(export negative, instantaneous)' : '(instantaneous)');
+        $label = $this->t(self::BALANCE_TERMS[$only ?? $key][1]) . ' ' . $note . ($named && $variable['name'] !== '' ? ' ' . $variable['name'] : '');
         $history = $this->historyRows($variable['variable'], $level, $from, $to);
+        if ($history !== null && $split) {
+            $history = self::directionHistory(self::kilowattHistory($history, $inverted), $only === $key);
+            $inverted = false;
+        }
         $type = match ($key) {
             'solar'               => 'solar',
             'discharge', 'charge' => 'battery',
             default               => 'grid',
         };
-        return [['Room' => '', 'Name' => $label, 'Type' => $type], $history === null ? null : self::kilowattHistory($history, $inverted)];
+        return [['Room' => '', 'Name' => $label, 'Type' => $type], $history === null ? null : ($split ? $history : self::kilowattHistory($history, $inverted))];
     }
 
     /**
-     * Die Leistungssensoren eines Teils der Bilanz. Ein Sensor mit Vorzeichen steht nur unter Bezug bzw. Entladen, zeigt
-     * aber auch Einspeisung bzw. Laden und gehört deshalb zu beiden Teilen.
+     * Nur eine Richtung eines Sensors mit Vorzeichen, positiv gezählt (Claude-App 08.11.2026: im Entlade-Diagramm standen
+     * mittags −2,5 kW). Die Spitzen je Abschnitt bleiben exakt. Das Mittel ist bei einer Stunde mit beiden Richtungen der
+     * Saldo und zählt nur für die Richtung, in die er zeigt; getrennt liefert es das Archiv nicht (an echten Sensoren 3
+     * bis 6 von 69 Stunden). Ein auf 0 gekappter Wert hat keinen Zeitpunkt.
+     */
+    private static function directionHistory(array $history, bool $positive): array
+    {
+        $history['rows'] = array_map(static function (array $row) use ($positive): array {
+            [$low, $lowTime, $high, $highTime] = $positive
+                ? [$row['min'], $row['minTime'] ?? null, $row['max'], $row['maxTime'] ?? null]
+                : [-$row['max'], $row['maxTime'] ?? null, -$row['min'], $row['minTime'] ?? null];
+            return ['time' => $row['time'], 'min' => max(0.0, $low), 'avg' => max(0.0, $positive ? $row['avg'] : -$row['avg']), 'max' => max(0.0, $high)]
+                + array_filter(['minTime' => $low >= 0 ? $lowTime : null, 'maxTime' => $high > 0 ? $highTime : null], static fn (?int $time): bool => $time !== null);
+        }, $history['rows']);
+        return $history;
+    }
+
+    /**
+     * Die Leistungssensoren eines Teils der Bilanz. Ein Sensor mit Vorzeichen steht nur unter Bezug bzw. Entladen, misst
+     * aber auch Einspeisung bzw. Laden und gehört deshalb zu beiden Teilen; powerSeries trennt die Richtung.
      *
      * @return list<array{0: string, 1: array{variable: int, name: string, signed: ?bool, inverted: bool}}>
      */

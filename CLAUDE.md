@@ -243,7 +243,7 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   mit negativem Hausverbrauch fehlen und werden genannt, `inconsistentLine`, `INCONSISTENT_DAYS`), höchstens
   `HOUSE_POWER_DAYS` (400). Momentanwerte als solche gekennzeichnet. 15-Minuten-Mittel zurückgestellt (zu langsam).
   Test `check-leistungsverlauf.php`. Mit `part` in `show_chart` die Sensoren dieses Teils (`partPowerSensors`, ein Sensor
-  mit Vorzeichen gehört zu beiden Richtungen), nur mit Zeitraum. Test `check-teil-leistung.php`.
+  mit Vorzeichen nach Richtung getrennt, positiv, `directionHistory`), nur mit Zeitraum. Test `check-teil-leistung.php`.
 - **Zeitleiste** für Zustände (`hasTimeline`, `stateSeries`, `allRows` holt in Scheiben): gleiche Zustände zusammengefasst,
   Summen je Zustand, Einzelabschnitte bis `TIMELINE_SECTIONS`/`TIMELINE_DETAIL`. Gerät mit Zähler: Verbrauch und Zeiten in
   einer Zeile. In `show_chart` als Bänder (`chartBands`, höchstens `TIMELINE_CHART_MAX`), feste Reihenfolge der Zustände.
