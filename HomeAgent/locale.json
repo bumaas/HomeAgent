@@ -449,7 +449,7 @@
             "A part needs the energy balance with this meter.": "Ein Teil braucht die Energiebilanz mit diesem Zähler.",
             "A part of the energy balance is only available for the whole house, without room, floor, type or name.": "Ein Teil der Energiebilanz gilt nur fürs ganze Haus, ohne Raum, Etage, Typ oder Name.",
             "A scatter chart takes no part of the energy balance.": "Eine Punktwolke nimmt keinen Teil der Energiebilanz.",
-            "\"%s\" is part of the energy balance, not a device: use part=%s without name.": "„%s“ ist ein Teil der Energiebilanz, kein Gerät: part=%s ohne Name verwenden.",
+            "\"%s\" is part of the energy balance, not a device: use part=%s without room, floor, type or name.": "„%s“ ist ein Teil der Energiebilanz, kein Gerät: part=%s ohne Raum, Etage, Typ oder Name verwenden.",
             "electricity costs": "Stromkosten",
             "By the same time: %s %s.": "Bis zur selben Zeit: %s %s.",
             "By the same time: %s": "Bis zur selben Zeit: %s",

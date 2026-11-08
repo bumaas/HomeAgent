@@ -264,8 +264,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
     `check-heatmap.php`.
   - Summenkurve (`cumulative=true`, `cumulativeOf`, Hochrechnung nach dem Vorjahr bei 80 % Abdeckung, sonst linear).
     Test `check-summenkurve.php`.
-  - Teil der Bilanz (`part`, `PARTS`, eine Reihe je Quelle; `partError`, wenn `name` einen Teil meint). Test
-    `check-teil.php`.
+  - Teil der Bilanz (`part`, `PARTS`, eine Reihe je Quelle; `partError`, wenn `name` einen Teil meint: Die Absage nennt
+    alles, was wegfallen muss, und zählt als `invalid`, weil ein Alias nicht hilft). Test `check-teil.php`.
 - **`show_devices`** (`DeviceIndex::cards`, höchstens `CARDS_MAX`): Zeilen von `get_state` und je Gerät eine Karte
   (`cardOf`: `group`, `figure`, `status`, `active`, `controls`). Ziele von „−“/„+“ rechnet das Modul (`cardSetpoint`,
   Sonderwerte zählen vom nächsten Rand). `control_device` mit `cardKey` geht über `setState` mit `onlyKey`; zurück kommt

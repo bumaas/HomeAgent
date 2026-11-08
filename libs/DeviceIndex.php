@@ -5246,8 +5246,7 @@ final class DeviceIndex
                 }
                 $words = [$candidate, $this->t(self::BALANCE_TERMS[$key][1]), $this->t(self::PART_TITLES[$candidate])];
                 if (in_array(mb_strtolower($name), array_map('mb_strtolower', $words), true)) {
-                    $this->problem = 'unknown_name';
-                    return sprintf($this->t('"%s" is part of the energy balance, not a device: use part=%s without name.'), $name, $candidate);
+                    return sprintf($this->t('"%s" is part of the energy balance, not a device: use part=%s without room, floor, type or name.'), $name, $candidate);
                 }
             }
             return null;

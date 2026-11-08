@@ -133,4 +133,16 @@ foreach (['Einspeisung' => 'feed_in', 'Netzbezug' => 'grid', 'PV-Ertrag' => 'pv'
     pruefe($r['isError'] && str_contains($r['text'], 'part=' . $part), "name=$name verweist auf part=$part: " . $r['text']);
 }
 
+// Aufrufe der Claude-App vom 05.11.2026 am nuc (Liste „Was nicht geklappt hat“): Auf name=PV type=power kam „part=pv ohne
+// Name“, das Modell ließ type=power stehen und scheiterte gleich noch einmal. Die Absage nennt deshalb alles, was wegfallen
+// muss. Sie ist auch kein unbekannter Name: Der Hinweis „als Alias eintragen“ führte den Anwender in die Irre.
+$index = new DeviceIndex($verbrauch['geraete'], $anlage, null, '', $verbrauch['bilanz']);
+$r = $index->chart(['name' => 'PV', 'period' => 'today', 'type' => 'power']);
+pruefe($r['isError'] && str_contains($r['text'], 'part=pv') && str_contains($r['text'], 'Typ'), 'name=PV type=power: die Absage nennt auch den Typ: ' . $r['text']);
+pruefe($index->problem() === 'invalid', 'name=PV ist kein unbekannter Name, kein Alias-Hinweis: ' . json_encode($index->problem()));
+
+$index = new DeviceIndex($verbrauch['geraete'], $anlage, null, '', $verbrauch['bilanz']);
+$r = $index->chart(['part' => 'pv', 'period' => 'today']);
+pruefe(!$r['isError'], 'wer der Absage folgt, bekommt das Diagramm: ' . substr($r['text'], 0, 160));
+
 ende('Teil der Bilanz');
