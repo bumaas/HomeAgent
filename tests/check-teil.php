@@ -138,7 +138,7 @@ foreach (['Einspeisung' => 'feed_in', 'Netzbezug' => 'grid', 'PV-Ertrag' => 'pv'
 // muss. Sie ist auch kein unbekannter Name: Der Hinweis „als Alias eintragen“ führte den Anwender in die Irre.
 $index = new DeviceIndex($verbrauch['geraete'], $anlage, null, '', $verbrauch['bilanz']);
 $r = $index->chart(['name' => 'PV', 'period' => 'today', 'type' => 'power']);
-pruefe($r['isError'] && str_contains($r['text'], 'part=pv') && str_contains($r['text'], 'Typ'), 'name=PV type=power: die Absage nennt auch den Typ: ' . $r['text']);
+pruefe($r['isError'] && str_contains($r['text'], 'part=pv') && str_contains($r['text'], 'Typ nur power'), 'name=PV type=power: Die Absage sagt, welcher Typ bleiben darf: ' . $r['text']);
 pruefe($index->problem() === 'invalid', 'name=PV ist kein unbekannter Name, kein Alias-Hinweis: ' . json_encode($index->problem()));
 
 $index = new DeviceIndex($verbrauch['geraete'], $anlage, null, '', $verbrauch['bilanz']);

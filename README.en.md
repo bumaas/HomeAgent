@@ -784,4 +784,6 @@ Where the values come from and where the limits are:
 
 For charts (**show_chart**) there are also: `compare` (`previous` or `year_before`), `versus` (second device for the
 scatter chart), `heatmap`, `cumulative` (cumulative chart), `costs` (in euros) and `part` (`grid`, `feed_in`, `pv`,
-`battery_charge` or `battery_discharge`).
+`battery_charge` or `battery_discharge`). Together with `type=power`, `part` shows the power of this part over the
+period as a line with minimum and maximum, one line per plant if there are several. Cumulative chart, heatmap, costs and
+comparison are not available for it.

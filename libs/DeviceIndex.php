@@ -1862,24 +1862,27 @@ final class DeviceIndex
         $series = [];
         // Die Hausleistung hält jede Stunde aller Zähler der Bilanz: sechs Jahre mit fünf Zählern brauchten 86 MB, eine
         // SymBox hat 64 MB (Review 18.10.2026, H1). Geprüft vor jeder Archivabfrage.
-        if ($house && $this->balance !== [] && $to - $from > self::HOUSE_POWER_DAYS * 86400) {
+        $part = $this->chartPart;
+        if ($house && $part === '' && $this->balance !== [] && $to - $from > self::HOUSE_POWER_DAYS * 86400) {
             return $this->fail(sprintf($this->t('The house power covers at most %d days (%s). Give a shorter period.'), self::HOUSE_POWER_DAYS, $filter));
         }
-        if ($house) {
+        if ($house && $part !== '') {
+            // Nur die Sensoren dieses Teils (Claude-App 05.11.2026: PV-Leistung von heute), je Quelle eine Linie
+            $sensors = $this->partPowerSensors($part);
+            $title = sprintf($this->t('%s: power of %d source(s) (%s), per %s: minimum / average / maximum.'), $this->t(self::PART_TITLES[$part]), count($sensors), 'part=' . $part . ', ' . $filter, $this->t($per))
+                . ' ' . $this->t('Minimum and maximum are instantaneous values.');
+            foreach ($sensors as [$key, $variable]) {
+                $series[] = $this->powerSeries($key, $variable, count($sensors) > 1, $level, $from, $to);
+            }
+        } elseif ($house) {
             $title = sprintf($this->t('House power (%s), per %s: minimum / average / maximum.'), $filter, $this->t($per));
             if ($this->balance !== []) {
                 $series[] = [['Room' => '', 'Name' => $this->t('house power (hourly mean)'), 'Type' => 'house'], $this->housePowerRows($level, $from, $to)];
             }
-            foreach (['import' => 'grid import', 'export' => 'grid export'] as $key => $word) {
+            foreach (['import', 'export'] as $key) {
                 $variables = $this->powerVars[$key] ?? [];
                 foreach ($variables as $variable) {
-                    [$signed, $inverted] = $this->signedOf($key, $variable);
-                    // Minimum und Maximum einer Leistung sind Rohwerte (Max/Min der Aggregate), die Hausleistung ein
-                    // Stundenmittel. Ohne den Hinweis sagte ChatGPT auf „höchster 15-Minuten-Wert“ nur „kann ich nicht“,
-                    // obwohl kein Mittel über der Momentanspitze liegen kann (Micha87 t/144611 #47, 18.10.2026).
-                    $label = $this->t($word) . ' ' . $this->t($signed ? '(export negative, instantaneous)' : '(instantaneous)') . (count($variables) > 1 && $variable['name'] !== '' ? ' ' . $variable['name'] : '');
-                    $history = $this->historyRows($variable['variable'], $level, $from, $to);
-                    $series[] = [['Room' => '', 'Name' => $label, 'Type' => 'grid'], $history === null ? null : self::kilowattHistory($history, $inverted)];
+                    $series[] = $this->powerSeries($key, $variable, count($variables) > 1, $level, $from, $to);
                 }
             }
         } else {
@@ -1907,6 +1910,53 @@ final class DeviceIndex
             }
         }
         return ['text' => implode("\n", $lines), 'isError' => false];
+    }
+
+    /**
+     * Eine Linie aus einem Leistungssensor der Bilanz in kW. Minimum und Maximum einer Leistung sind Rohwerte (Max/Min der
+     * Aggregate), die Hausleistung ein Stundenmittel. Ohne den Hinweis sagte ChatGPT auf „höchster 15-Minuten-Wert“ nur
+     * „kann ich nicht“, obwohl kein Mittel über der Momentanspitze liegen kann (Micha87 t/144611 #47, 18.10.2026).
+     *
+     * @param array{variable: int, name: string, signed: ?bool, inverted: bool} $variable
+     * @return array{0: array{Room: string, Name: string, Type: string}, 1: ?array}
+     */
+    private function powerSeries(string $key, array $variable, bool $named, int $level, int $from, int $to): array
+    {
+        [$signed, $inverted] = $this->signedOf($key, $variable);
+        $note = match (true) {
+            !$signed            => $this->t('(instantaneous)'),
+            $key === 'discharge' => $this->t('(charge negative, instantaneous)'),
+            default             => $this->t('(export negative, instantaneous)'),
+        };
+        $label = $this->t(self::BALANCE_TERMS[$key][1]) . ' ' . $note . ($named && $variable['name'] !== '' ? ' ' . $variable['name'] : '');
+        $history = $this->historyRows($variable['variable'], $level, $from, $to);
+        $type = match ($key) {
+            'solar'               => 'solar',
+            'discharge', 'charge' => 'battery',
+            default               => 'grid',
+        };
+        return [['Room' => '', 'Name' => $label, 'Type' => $type], $history === null ? null : self::kilowattHistory($history, $inverted)];
+    }
+
+    /**
+     * Die Leistungssensoren eines Teils der Bilanz. Ein Sensor mit Vorzeichen steht nur unter Bezug bzw. Entladen, zeigt
+     * aber auch Einspeisung bzw. Laden und gehört deshalb zu beiden Teilen.
+     *
+     * @return list<array{0: string, 1: array{variable: int, name: string, signed: ?bool, inverted: bool}}>
+     */
+    private function partPowerSensors(string $part): array
+    {
+        $key = self::PARTS[$part];
+        $sensors = array_map(static fn (array $variable): array => [$key, $variable], $this->powerVars[$key] ?? []);
+        $from = array_search($key, self::SIGNED_POWER, true);
+        if ($from !== false) {
+            foreach ($this->powerVars[$from] ?? [] as $variable) {
+                if ($this->signedOf($from, $variable)[0]) {
+                    $sensors[] = [$from, $variable];
+                }
+            }
+        }
+        return $sensors;
     }
 
     /**
@@ -1976,8 +2026,8 @@ final class DeviceIndex
     /** Verlauf einer Netzleistung in kW (W und MW umgerechnet); umgekehrt gezählt mit gedrehtem Vorzeichen. */
     private static function kilowattHistory(array $history, bool $inverted): array
     {
-        // ohne Einheit gilt hier kW (die Leistung der Bilanz), sonst die Einheit
-        $watts = trim($history['unit']) === '' ? null : self::powerFactor($history['unit']);
+        // Ohne Einheit gilt W wie überall (powerFactor); ein Sensor ohne Suffix kam sonst mit 2482 „kW“ (nuc 08.11.2026)
+        $watts = self::powerFactor($history['unit']);
         $factor = $watts === null ? null : $watts / 1000;
         $sign = $inverted ? -1.0 : 1.0;
         $scale = ($factor ?? 1.0) * $sign;
@@ -5048,6 +5098,11 @@ final class DeviceIndex
         // Summenkurve (B73): dasselbe Verbrauchsdiagramm je Tag (bis zwei Tage je Stunde), aufaddiert; ohne Zeitraum das
         // laufende Jahr
         $cumulative = ($arguments['cumulative'] ?? false) === true;
+        // Der Leistungsverlauf eines Teils ist eine Linie je Sensor; Summen, Heatmap, Kosten und Vergleich rechnen mit Zählern
+        if (trim((string)($arguments['part'] ?? '')) !== '' && trim((string)($arguments['type'] ?? '')) === self::POWER_TYPE
+            && ($cumulative || ($arguments['heatmap'] ?? false) === true || ($arguments['costs'] ?? false) === true || trim((string)($arguments['compare'] ?? '')) !== '')) {
+            return $this->fail($this->t('A power history of a part takes only a period or from and to.'));
+        }
         unset($arguments['cumulative']);
         if (!$cumulative) {
             return $this->chartOf($arguments);
@@ -5246,7 +5301,7 @@ final class DeviceIndex
                 }
                 $words = [$candidate, $this->t(self::BALANCE_TERMS[$key][1]), $this->t(self::PART_TITLES[$candidate])];
                 if (in_array(mb_strtolower($name), array_map('mb_strtolower', $words), true)) {
-                    return sprintf($this->t('"%s" is part of the energy balance, not a device: use part=%s without room, floor, type or name.'), $name, $candidate);
+                    return sprintf($this->t('"%s" is part of the energy balance, not a device: use part=%s without room, floor or name, as type only power.'), $name, $candidate);
                 }
             }
             return null;
@@ -5254,12 +5309,17 @@ final class DeviceIndex
         if (!isset(self::PARTS[$part])) {
             return sprintf($this->t('Unknown part "%s". Allowed: %s.'), $part, implode(', ', array_keys(self::PARTS)));
         }
-        if (!isset($this->balance[self::PARTS[$part]])) {
+        // type=power nimmt die Leistungssensoren des Teils, sonst gilt der Zähler
+        $power = trim((string)($arguments['type'] ?? '')) === self::POWER_TYPE;
+        if ($power && $this->partPowerSensors($part) === []) {
+            return $this->t('A power history of this part needs a power variable in the energy balance.');
+        }
+        if (!$power && !isset($this->balance[self::PARTS[$part]])) {
             return $this->t('A part needs the energy balance with this meter.');
         }
-        foreach (['room', 'floor', 'type', 'name'] as $field) {
+        foreach ($power ? ['room', 'floor', 'name'] : ['room', 'floor', 'type', 'name'] as $field) {
             if (trim((string)($arguments[$field] ?? '')) !== '') {
-                return $this->t('A part of the energy balance is only available for the whole house, without room, floor, type or name.');
+                return $this->t('A part of the energy balance is only available for the whole house, without room, floor or name, as type only power.');
             }
         }
         if (trim((string)($arguments['versus'] ?? '')) !== '') {
@@ -5395,7 +5455,7 @@ final class DeviceIndex
         if ($span !== null && ($chart['kind'] ?? '') === 'consumption') {
             self::padTimes($chart, $span[1]);
         }
-        if ($part !== '') {
+        if ($part !== '' && ($chart['kind'] ?? '') !== 'history') {
             // Mit mehreren Quellen eine Reihe je Quelle (B82 Stufe c), die Zeile nennt die Summe aller
             $sum = array_sum(array_map(static fn (array $series): float => array_sum(array_map('floatval', $series['values'])), $chart['series'] ?? []));
             $result['text'] .= "\n" . $this->t(self::PART_TITLES[$part]) . ' ' . (($chart['unit'] ?? '') === '€' ? number_format($sum, 2, '.', '') . ' €.' : self::formatNumber($sum) . ' kWh.');

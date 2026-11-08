@@ -1306,6 +1306,7 @@ pruefe(str_contains($werkzeuge['get_state']['inputSchema']['properties']['type']
 pruefe(str_contains($werkzeuge['set_state']['inputSchema']['properties']['type']['description'] ?? '', $genannt), 'set_state: type schickt genannte Geräte zu name: ' . json_encode($werkzeuge['set_state']['inputSchema']['properties']['type']['description'] ?? null));
 // Teil der Bilanz (B74, 13.10.2026): part nennt nur die eingetragenen Zähler
 pruefe(($mitApps['show_chart']['inputSchema']['properties']['part']['enum'] ?? null) === ['grid'], 'show_chart bietet part nur mit den Teilen der Bilanz an: ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['part'] ?? null));
+pruefe(!str_contains($mitApps['show_chart']['inputSchema']['properties']['part']['description'] ?? 'type=power', 'type=power'), 'ohne Leistung in der Bilanz nennt part keinen Leistungsverlauf: ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['part'] ?? null));
 // Ringe für Autarkie und Eigenverbrauch (Anregung pitti, t/144633, 13.10.2026)
 pruefe(str_contains($mitApps['show_chart']['description'] ?? '', 'with self-sufficiency and self-consumed solar as rings'), 'show_chart nennt die Ringe: ' . ($mitApps['show_chart']['description'] ?? ''));
 pruefe(!in_array('now', $mitApps['show_chart']['inputSchema']['properties']['period']['enum'] ?? ['now'], true), 'ohne Leistungsbilanz kein now im Diagramm');
@@ -1373,6 +1374,11 @@ $setzeBilanz([$bilanzZeile('grid', 'Grid', 0, 0, $leistung)]);
 $mitApps = array_column(json_decode((string)json_encode(oderNull(static fn () => \Closure::bind(fn () => $this->tools(null, true), $m, HomeAgent::class)()) ?? []), true), null, 'name');
 pruefe(($mitApps['show_chart']['inputSchema']['properties']['period']['enum'][0] ?? null) === 'now', 'mit Leistungsbilanz: show_chart bietet now an: ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['period'] ?? null));
 pruefe(str_contains($mitApps['show_chart']['description'] ?? '', 'period=now without room, floor, type or name shows the current house power as rings.'), 'show_chart erklärt now: ' . ($mitApps['show_chart']['description'] ?? json_encode(array_keys($mitApps))));
+// Mit Zähler und Leistung nennt part auch den Leistungsverlauf (Claude-App 05.11.2026: PV-Leistung von heute)
+$setzeBilanz([$bilanzZeile('grid', 'Grid', $zaehler, 0, $leistung)]);
+$mitApps = array_column(json_decode((string)json_encode(oderNull(static fn () => \Closure::bind(fn () => $this->tools(null, true), $m, HomeAgent::class)()) ?? []), true), null, 'name');
+pruefe(str_contains($mitApps['show_chart']['inputSchema']['properties']['part']['description'] ?? '', 'With type=power its power over the period'), 'part nennt den Leistungsverlauf: ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['part'] ?? null));
+pruefe(str_contains($mitApps['show_chart']['inputSchema']['properties']['type']['description'] ?? '', 'with part the power of that part'), 'type verweist auf part: ' . json_encode($mitApps['show_chart']['inputSchema']['properties']['type'] ?? null));
 $setzeBilanz([$bilanzZeile('grid', 'Grid', 0, 0, $zaehler)]);
 pruefe(str_contains($m->RunSelfTest(), 'Note: energy balance: grid import power "Grid" ENERGY_COUNTER (#' . $zaehler . ') is in Wh, not a power value, so there is no house power'), 'Selbsttest: ein Zähler als Leistung: ' . $m->RunSelfTest());
 $setzeBilanz([$bilanzZeile('solar', 'Solar', 0, 0, 69994)]);

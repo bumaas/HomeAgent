@@ -496,6 +496,13 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   `HOUSE_POWER_DAYS` (400) Tage, geprüft vor den Archivabfragen: `housePowerRows` hält jede Stunde aller Zähler der
   Bilanz, sechs Jahre mit fünf Zählern brauchten 86 MB (Review 18.10.2026, H1). Ebenso zählt die Gerätegrenze
   `POWER_HISTORY_MAX` die Leistungen vor den Abfragen (M6).
+- **`part` mit `type=power`** (`partPowerSensors`, `powerSeries`): Anlass waren am 05.11.2026 zwei abgewiesene Aufrufe der
+  Claude-App für die PV-Leistung von heute (`name=PV type=power`, dann `part=pv type=power`). Die Zähler als Balken gab es
+  schon, die Sensoren kannte das Modul nur für `period=now`. Ein Sensor mit Vorzeichen steht nur unter Bezug bzw. Entladen,
+  gehört aber zu beiden Teilen, sonst wäre `part=battery_charge` an der betreuten Anlage leer. Summenkurve, Heatmap, Kosten
+  und Vergleich rechnen mit Zählern und werden abgewiesen. Die Grenze `HOUSE_POWER_DAYS` gilt hier nicht, sie schützt nur
+  `housePowerRows`. Der erste Live-Aufruf am nuc zeigte, dass `kilowattHistory` einen Sensor ohne Suffix (#14525) als kW
+  las, während `powerFactor` und das Formular W sagen; seither gilt W auch im Verlauf.
 - **Uhrzeit in `from`/`to`** (`parseMoment`, Burkhard 12.10.2026: „nicht stundengenau“): JJJJ-MM-TT HH:MM, auch mit T
   oder Sekunden. Ganze Stunden aus den Stundenaggregaten (Stufe 0 auch für Zähler): `from` abgerundet, `to` aufgerundet
   und das Ende (13:00 bis 15:00 sind zwei Stunden), ein `to` ohne Uhrzeit zählt den ganzen Tag, ohne `to` bis jetzt.

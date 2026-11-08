@@ -242,7 +242,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   `POWER_HISTORY_MAX`, Zähler vor den Abfragen). Fürs Haus Stundenmittel (`housePowerRows`, laufende Stunde und Stunden
   mit negativem Hausverbrauch fehlen und werden genannt, `inconsistentLine`, `INCONSISTENT_DAYS`), höchstens
   `HOUSE_POWER_DAYS` (400). Momentanwerte als solche gekennzeichnet. 15-Minuten-Mittel zurückgestellt (zu langsam).
-  Test `check-leistungsverlauf.php`.
+  Test `check-leistungsverlauf.php`. Mit `part` in `show_chart` die Sensoren dieses Teils (`partPowerSensors`, ein Sensor
+  mit Vorzeichen gehört zu beiden Richtungen), nur mit Zeitraum. Test `check-teil-leistung.php`.
 - **Zeitleiste** für Zustände (`hasTimeline`, `stateSeries`, `allRows` holt in Scheiben): gleiche Zustände zusammengefasst,
   Summen je Zustand, Einzelabschnitte bis `TIMELINE_SECTIONS`/`TIMELINE_DETAIL`. Gerät mit Zähler: Verbrauch und Zeiten in
   einer Zeile. In `show_chart` als Bänder (`chartBands`, höchstens `TIMELINE_CHART_MAX`), feste Reihenfolge der Zustände.

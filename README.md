@@ -799,4 +799,6 @@ Woher die Werte kommen und wo die Grenzen liegen:
 
 Für Diagramme (**show_chart**) kommen dazu: `compare` (`previous` oder `year_before`), `versus` (zweites Gerät für die
 Punktwolke), `heatmap`, `cumulative` (Summenkurve), `costs` (in Euro) und `part` (`grid`, `feed_in`, `pv`,
-`battery_charge` oder `battery_discharge`).
+`battery_charge` oder `battery_discharge`). Zusammen mit `type=power` zeigt `part` die Leistung dieses Teils über den
+Zeitraum als Linie mit Minimum und Maximum, bei mehreren Anlagen eine je Anlage. Summenkurve, Heatmap, Kosten und
+Vergleich gehen dabei nicht.
