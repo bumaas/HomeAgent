@@ -1220,16 +1220,18 @@ final class DeviceIndex
         // jeden Tag dieselben sind.
         $present = array_keys($sums);
         $labels = $travel !== null ? $travelLabels : ($words !== null ? [$this->t($words[0]), $this->t($words[1])] : array_column($options, 1));
-        // Die Seite färbt nach der Stelle in dieser Liste. Ein fahrendes Gerät nennt deshalb immer alle drei Zustände, sonst
-        // hätte „geschlossen“ je Gerät und Tag eine andere Farbe.
-        $states = array_values(array_unique(array_merge($travel !== null ? $labels : array_values(array_intersect($labels, $present)), $present)));
+        $states = array_values(array_unique(array_merge(array_values(array_intersect($labels, $present)), $present)));
         $index = array_flip($states);
+        // Im Band stehen nur die vorkommenden Zustände. Die Farbe einer Auswahl und eines fahrenden Geräts hängt an „color“,
+        // der Stelle unter allen Zuständen (Einträge der Variable, offen/teilweise/geschlossen): Sonst hätte „geschlossen“
+        // oder „Ladesperre“ je Gerät und Tag eine andere Farbe, je nachdem, was davor vorkam.
+        $position = array_flip(array_values(array_unique(array_merge($labels, $present))));
         $band = [
             'room'     => $entry['Room'],
             'name'     => $entry['Name'],
             'from'     => $from,
             'to'       => $end,
-            'states'   => array_map(fn (string $state): array => ['label' => $state, 'active' => $words === null ? null : $state === $this->t($words[0])], $states),
+            'states'   => array_map(fn (string $state): array => ['label' => $state, 'active' => $words === null ? null : $state === $this->t($words[0]), 'color' => $words === null ? $position[$state] : null], $states),
             'sections' => array_map(static fn (array $sec): array => [$index[$sec[0]], $sec[1], $sec[2]], $sections),
         ];
         // Bei Wörtern der aktive Zustand zuerst, sonst der längste; gleich lange in der Reihenfolge des Auftretens.

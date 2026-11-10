@@ -197,15 +197,15 @@ pruefe($r['isError'] && str_starts_with($r['text'], 'Fürs ganze Haus wird keine
 $r = frage(['room' => 'Flur', 'period' => 'yesterday'], $echt, $liste, null, 'chart');
 $band = $r['structuredContent']['bands'][0] ?? [];
 pruefe(!$r['isError'] && ($r['structuredContent']['kind'] ?? '') === 'timeline' && count($band['sections'] ?? []) === 9, 'Flurfenster als Band mit neun Abschnitten: ' . json_encode($band, JSON_UNESCAPED_UNICODE) . ' ' . $r['text']);
-// Immer alle drei Zustände, auch die nicht vorkommenden: Die Seite färbt nach der Stelle in der Liste, sonst hätte
-// „geschlossen“ je Gerät und Tag eine andere Farbe (Review 10.11.2026)
-pruefe(($band['states'] ?? []) === [['label' => 'tilted', 'active' => null], ['label' => 'partly tilted', 'active' => null], ['label' => 'closed', 'active' => null]], 'Kippfenster: alle drei Zustände in fester Reihenfolge: ' . json_encode($band['states'] ?? null, JSON_UNESCAPED_UNICODE));
-pruefe(($band['sections'][0][0] ?? null) === 2 && ($band['sections'][1][0] ?? null) === 0, 'Kippfenster: geschlossen an dritter, gekippt an erster Stelle: ' . json_encode(array_column($band['sections'] ?? [], 0)));
+// Im Band stehen nur die vorkommenden Zustände. Die Farbe hängt an „color“, der Stelle unter allen drei Zuständen, damit
+// „geschlossen“ je Gerät und Tag dieselbe Farbe hat (Review 10.11.2026)
+pruefe(($band['states'] ?? []) === [['label' => 'tilted', 'active' => null, 'color' => 0], ['label' => 'closed', 'active' => null, 'color' => 2]], 'Kippfenster: nur vorkommende Zustände, Farbe nach der festen Stelle: ' . json_encode($band['states'] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($band['sections'][0][0] ?? null) === 1 && ($band['sections'][1][0] ?? null) === 0, 'Kippfenster: Abschnitte verweisen auf die Liste des Bands: ' . json_encode(array_column($band['sections'] ?? [], 0)));
 $r = frage(['type' => 'blind', 'period' => 'yesterday'], $mit, $liste, null, 'chart');
-pruefe((($r['structuredContent']['bands'][0]['states'] ?? []) === [['label' => 'open', 'active' => null], ['label' => 'partly open', 'active' => null], ['label' => 'closed', 'active' => null]]), 'Rollladen: drei Zustände in fester Reihenfolge: ' . json_encode($r['structuredContent']['bands'][0]['states'] ?? null, JSON_UNESCAPED_UNICODE));
-$drei = [['label' => 'open', 'active' => null], ['label' => 'partly open', 'active' => null], ['label' => 'closed', 'active' => null]];
+pruefe((($r['structuredContent']['bands'][0]['states'] ?? []) === [['label' => 'open', 'active' => null, 'color' => 0], ['label' => 'partly open', 'active' => null, 'color' => 1], ['label' => 'closed', 'active' => null, 'color' => 2]]), 'Rollladen: drei Zustände mit ihrer Farbe: ' . json_encode($r['structuredContent']['bands'][0]['states'] ?? null, JSON_UNESCAPED_UNICODE));
 $zweites = $r['structuredContent']['bands'][1] ?? [];
-pruefe(($zweites['room'] ?? '') === 'Bad oben' && ($zweites['states'] ?? []) === $drei && array_column($zweites['sections'] ?? [], 0) === [0, 2], 'Rollladen ohne Zwischenstand: dieselben drei Zustände, geschlossen an derselben Stelle: ' . json_encode($zweites, JSON_UNESCAPED_UNICODE));
+pruefe(($zweites['room'] ?? '') === 'Bad oben' && ($zweites['states'] ?? []) === [['label' => 'open', 'active' => null, 'color' => 0], ['label' => 'closed', 'active' => null, 'color' => 2]] && array_column($zweites['sections'] ?? [], 0) === [0, 1], 'Rollladen ohne Zwischenstand: zwei Zustände in der Legende, geschlossen mit derselben Farbe: ' . json_encode($zweites, JSON_UNESCAPED_UNICODE));
+pruefe(str_contains((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/chart.html'), 'state.color'), 'die Seite färbt nach „color“');
 // Kein Wert im Zeitraum (Review 10.11.2026): echt, das Archiv des Flurfensters im Mitschnitt beginnt am 08.11. 23:21.
 // Im Text steht es, ins Diagramm kommt kein leeres Band (die Seite brach an „null“ ab)
 $r = frage(['room' => 'Flur', 'from' => '2026-11-07', 'to' => '2026-11-07'], $echt, $liste);

@@ -106,13 +106,15 @@ $daten = $r['structuredContent'] ?? [];
 $band = $daten['bands'][0] ?? [];
 pruefe(!$r['isError'] && ($daten['kind'] ?? '') === 'timeline' && count($daten['bands'] ?? []) === 1 && ($daten['series'] ?? []) === [], 'Batteriemodus als Zeitleiste: ' . json_encode(array_diff_key($daten, ['bands' => 0]), JSON_UNESCAPED_UNICODE));
 pruefe(($band['room'] ?? '') === 'Dachboden' && ($band['name'] ?? '') === 'Batteriemodus' && ($band['from'] ?? 0) === $gestern && ($band['to'] ?? 0) === $gestern + 86400, 'Band mit Raum, Name und Zeitraum: ' . json_encode(array_diff_key($band, ['sections' => 0]), JSON_UNESCAPED_UNICODE));
-pruefe(($band['states'] ?? []) === [['label' => 'Normal', 'active' => null], ['label' => 'Halten', 'active' => null], ['label' => 'Ladesperre', 'active' => null]], 'Zustände in der Reihenfolge der Einträge, damit die Farben jeden Tag gleich sind: ' . json_encode($band['states'] ?? [], JSON_UNESCAPED_UNICODE));
+// Echt: Die Variable kennt Normal, Halten, Laden, Ladesperre, Entladen; gestern kamen drei davon vor. „Ladesperre“ behält
+// die Farbe des vierten Eintrags, auch wenn „Laden“ fehlt (vorher rückte es auf und hatte je Tag eine andere Farbe)
+pruefe(($band['states'] ?? []) === [['label' => 'Normal', 'active' => null, 'color' => 0], ['label' => 'Halten', 'active' => null, 'color' => 1], ['label' => 'Ladesperre', 'active' => null, 'color' => 3]], 'vorkommende Zustände in der Reihenfolge der Einträge, Farbe nach der Stelle des Eintrags: ' . json_encode($band['states'] ?? [], JSON_UNESCAPED_UNICODE));
 pruefe(count($band['sections'] ?? []) === 8 && ($band['sections'][0] ?? []) === [1, $gestern, $gestern + 5 * 3600 + 45 * 60 + 1] && (end($band['sections']) ?: [])[2] === $gestern + 86400, 'acht Abschnitte, der erste „Halten“ bis 05:45:01, der letzte bis Mitternacht: ' . json_encode($band['sections'] ?? []));
 pruefe(($daten['range'] ?? null) === [$gestern, $gestern + 86400], 'Zeitachse über den ganzen Zeitraum: ' . json_encode($daten['range'] ?? null));
 pruefe(str_contains($r['text'], 'Timeline of 1 device(s)') && str_contains($r['text'], 'The chart is shown in the chat.'), 'Text fürs Modell: Zeitleiste und Hinweis: ' . $r['text']);
 // an/aus: der aktive Zustand zuerst und als aktiv markiert
 $r = frage(['name' => 'Haustür', 'period' => 'yesterday'], $de, 'chart');
-pruefe((($r['structuredContent']['bands'][0]['states'] ?? []) === [['label' => 'offen', 'active' => true], ['label' => 'geschlossen', 'active' => false]]) && count($r['structuredContent']['bands'][0]['sections'] ?? []) === 17, 'Tür: offen aktiv, 17 Abschnitte: ' . json_encode($r['structuredContent']['bands'][0] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe((($r['structuredContent']['bands'][0]['states'] ?? []) === [['label' => 'offen', 'active' => true, 'color' => null], ['label' => 'geschlossen', 'active' => false, 'color' => null]]) && count($r['structuredContent']['bands'][0]['sections'] ?? []) === 17, 'Tür: offen aktiv, 17 Abschnitte, Farbe aus aktiv: ' . json_encode($r['structuredContent']['bands'][0] ?? null, JSON_UNESCAPED_UNICODE));
 // alle Abschnitte gehen an die Seite, auch wenn der Text nur Summen nennt (Bewegungsmelder)
 $r = frage(['room' => 'Küche', 'name' => 'Bewegungsmelder', 'period' => 'yesterday'], null, 'chart');
 pruefe(count($r['structuredContent']['bands'][0]['sections'] ?? []) === 343, 'Bewegungsmelder: alle 343 Abschnitte im Band: ' . count($r['structuredContent']['bands'][0]['sections'] ?? []));

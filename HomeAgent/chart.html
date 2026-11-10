@@ -526,15 +526,16 @@
     container.appendChild(box);
   }
   // Zeitleiste (B69): je Gerät ein Band über derselben Zeitachse, die Abschnitte nach Zustand gefärbt. Bei an/aus,
-  // offen/zu ist der aktive Zustand kräftig und der andere blass, bei einer Auswahl hat jeder Eintrag seine Farbe in
-  // der Reihenfolge der Einträge. Grau dahinter heißt: kein Wert bekannt.
+  // offen/zu ist der aktive Zustand kräftig und der andere blass, bei einer Auswahl hat jeder Eintrag seine Farbe nach
+  // seiner Stelle unter allen Einträgen (state.color), auch wenn nur einige vorkommen. Grau dahinter heißt: kein Wert
+  // bekannt.
   function stateColor(band, i) {
     var state = band.states[i];
     if (state.active === true) { return COLORS[0]; }
     // Das Grau folgt dem Farbschema: fest gesetzt leuchtete „geschlossen“ im dunklen Modus heller als „offen“
     if (state.active === false) { return "var(--inactive)"; }
     // Eine Auswahl (Batteriemodus) ohne Rot und Grün, die tragen sonst eine Bedeutung („Halten“ sah nach Fehler aus)
-    return CHOICE_COLORS[i % CHOICE_COLORS.length];
+    return CHOICE_COLORS[(typeof state.color === "number" ? state.color : i) % CHOICE_COLORS.length];
   }
   function duration(seconds) {
     var m = Math.round(seconds / 60), h = Math.floor(m / 60);

@@ -574,8 +574,13 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   - Ohne Wert im Zeitraum lieferte `timelineOf` kein `band`; `chartBands` schrieb `null` ins Diagramm, die Seite brach
     ab. Betraf auch die Zustände seit B69. Solche Geräte bekommen kein Band, ohne jedes Band lehnt `show_chart` ab.
   - Das Band nannte nur vorkommende Zustände, die Seite färbt nach der Stelle in der Liste: „geschlossen“ hatte je
-    Rollladen und Tag eine andere Farbe. Fahrende Geräte nennen immer alle drei. Bei einer Auswahl (Batteriemodus) steht
-    weiter nur, was vorkommt (offene Frage, eine Variable mit vielen Einträgen bekäme eine lange Legende).
+    Rollladen und Tag eine andere Farbe. In build 276 nannten fahrende Geräte deshalb immer alle drei. Seit build 277
+    trägt jeder Zustand `color`, seine Stelle unter allen Zuständen (Einträge der Variable bzw. offen, teilweise,
+    geschlossen), und `chart.html` färbt danach; im Band und in der Legende steht wieder nur, was vorkommt. Das behebt
+    denselben Mangel bei einer Auswahl: Am Batteriemodus rückte „Ladesperre“ auf die Farbe von „Laden“, wenn „Laden“
+    fehlte. Der andere Weg, immer alle Einträge zu nennen, gäbe einer Variable mit vielen Einträgen eine lange Legende.
+    Eine ältere, gespeicherte Seite kennt `color` nicht und färbt wie vorher nach der Stelle im Band. Gerendert am nuc
+    hell und dunkel (Batteriemodus 09. und 10.11., Flurfenster 09.11.).
   - Mehr als `TIMELINE_CHART_MAX` Bänder lehnten das ganze Diagramm ab, auch die Linien eines Raums oder einer Etage.
     Mit Rollläden ist die Grenze schnell erreicht. Neben Linien fallen jetzt alle Bänder weg und der Text nennt es; die
     ersten zehn zu zeigen sähe vollständig aus, ohne es zu sein. Nachgestellt am Mitschnitt vom 13.10. mit elf

@@ -174,7 +174,9 @@ Feste Reihenfolge: Rollläden, Licht, Schalter und Steckdosen, Klima, Messwerte,
 - **Stapel (Verbrauch):** ein Balken je Stunde, Tag oder Monat, positive Teile übereinander, die Einspeisung darunter,
   aber erst ab 3 % des höchsten Balkens. Vergleich als Marke je Balken.
 - **Zeitleiste (Bänder):** je Gerät ein Streifen von 14 px, Abschnitte in der Farbe ihres Zustands, dahinter eine
-  blasse Fläche für die Zeit mit bekanntem Wert. Tooltip mit Zustand, von, bis und Dauer.
+  blasse Fläche für die Zeit mit bekanntem Wert. Tooltip mit Zustand, von, bis und Dauer. Die Legende nennt nur
+  vorkommende Zustände. Bei einer Auswahl und bei Rollläden hängt die Farbe an der Stelle des Zustands unter allen
+  (`color`), ein Zustand hat also an jedem Tag und in jedem Band dieselbe Farbe.
 - **Punktwolke:** je Abschnitt ein Punkt (blau, halbtransparent, Radius 3), beide Achsen als Zahlen mit runden Schritten,
   die Einheit der x-Achse unten rechts. Darüber die Klassenmittel als Linie in `--fg` mit kleinen Punkten und die
   Modellkurve gestrichelt in Gelb (`SCATTER_TREND` #d29922, Knickpunkt als eigene Stützstelle). Legende „y (Einheit)
