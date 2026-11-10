@@ -448,7 +448,7 @@ $formular = json_decode($m->GetConfigurationForm(), true);
 $benannt = array_column(array_filter(flach($formular['elements']), static fn (array $e): bool => isset($e['name'])), null, 'name');
 pruefe(isset($benannt['Accesses'], $benannt['Rooms']) && !isset($benannt['Token']) && !isset($benannt['AllowTokenInPath']) && !isset($benannt['EndpointWithToken']), 'Formular: Listen für Zugänge und Räume statt des einen Tokens: ' . implode(', ', array_keys($benannt)));
 $zugangsSpalten = array_column($benannt['Accesses']['columns'] ?? [], null, 'name');
-pruefe(array_keys($zugangsSpalten) === ['Name', 'ReadOnly', 'DefaultRoom', 'Connection', 'Tools', 'Token', 'InPath'], 'Spalten der Zugänge, mit Werkzeugliste: ' . json_encode(array_keys($zugangsSpalten)));
+pruefe(array_keys($zugangsSpalten) === ['Name', 'ReadOnly', 'Images', 'DefaultRoom', 'Connection', 'Tools', 'Token', 'InPath'], 'Spalten der Zugänge, mit Kamerabildern und Werkzeugliste: ' . json_encode(array_keys($zugangsSpalten)));
 pruefe(($zugangsSpalten['Tools']['save'] ?? null) === false, 'die Spalte Werkzeugliste ist nur Anzeige');
 pruefe(($zugangsSpalten['Token']['visible'] ?? true) === false && ($zugangsSpalten['Token']['save'] ?? false) === true && ($zugangsSpalten['InPath']['visible'] ?? true) === false && ($zugangsSpalten['InPath']['save'] ?? false) === true, 'Token und „Token in der Adresse“ sind unsichtbar, werden aber gespeichert');
 pruefe(($zugangsSpalten['Connection']['save'] ?? null) === false && ($zugangsSpalten['Name']['save'] ?? false) === true && ($zugangsSpalten['DefaultRoom']['save'] ?? false) === true, 'die Spalte Verbindung ist nur Anzeige, Name und Standardraum werden gespeichert');
@@ -637,6 +637,8 @@ foreach ([
     // Zähler mit „gemessen von“ (B82, 17.10.2026)
     'water_leak, temperature, humidity, air_quality, measurement, meter, camera.' => 'water_leak, temperature, humidity, air_quality, measurement, meter, camera.',
     // Kamera (B102, 10.11.2026)
+    'Name, Token, DefaultRoom, ReadOnly, InPath, Images.' => 'Name, Token, DefaultRoom, ReadOnly, InPath, Images.',
+    'Images lets an access fetch the still images of released cameras with show_camera, also with ReadOnly; the user sets it in the form, HAGT_AddAccess creates accesses without it. Without Images get_state still names the cameras.' => 'Mit Images darf ein Zugang die Standbilder freigegebener Kameras mit show_camera abrufen, auch mit ReadOnly; der Anwender setzt es im Formular, HAGT_AddAccess legt Zugänge ohne es an. Ohne Images nennt get_state die Kameras trotzdem.',
     'The type camera needs ImageMediaID, a media object of type image that holds a still image (for example the image of an Image Grabber); a stream does not count. The answers name when the image was taken, the module does not refresh it.' => 'Der Typ camera braucht ImageMediaID, ein Medienobjekt vom Typ Bild mit einem Standbild (etwa das Bild eines Image Grabber); ein Stream zählt nicht. Die Antworten nennen, von wann das Bild ist, das Modul frischt es nicht auf.',
     'The type meter (a sub-distribution, wallbox or flat meter) needs EnergyVariableID and never counts in a device total. MeteredBy is the EnergyVariableID of the meter above a device or meter (0 = none); the answers name per meter what is measured below it and the rest.' => 'Der Typ meter (Unterverteilung, Wallbox, Wohnungszähler) braucht EnergyVariableID und zählt nie in einer Gerätesumme. MeteredBy ist die EnergyVariableID des Zählers über einem Gerät oder Zähler (0 = keiner); die Antworten nennen je Zähler, was darunter gemessen ist, und den Rest.',
     // Raum als Auswahl der Raumliste (B75, Burkhard 13.10.2026)
@@ -3952,5 +3954,108 @@ pruefe(!isset($kWerkzeuge['set_state']), 'nur Kameras freigegeben: kein set_stat
 IPS_DeleteMedia($bild, true);
 $antwort = (string)oderNull(static fn () => $k->QueryState('Außen', '', '', false));
 pruefe(!str_contains($antwort, 'Einfahrt'), 'gelöschtes Bild: die Kamera ist ohne Übernehmen gesperrt: ' . $antwort);
+
+/* --- show_camera und der Haken „Kamerabilder“ (B102, Build 2) ------------------------------------ */
+// Entscheidung Burkhard 10.11.2026: Bilder nur für Zugänge mit dem Haken „Kamerabilder“ (Images), Standard aus;
+// get_state nennt die Kamera trotzdem. Ein Bild der Einfahrt ist heikler als ein Schaltzustand und geht an den
+// Anbieter des Assistenten. Das Bild hier ist das echte Cover des Sonos vom nuc (PNG 1 x 1, 68 Byte), klein genug,
+// um ohne GD durchzugehen; das Verkleinern prüft check-kamerabild.php.
+$z = neueInstanz();
+$zid = (int)(new ReflectionProperty(IPSModuleStrict::class, 'InstanceID'))->getValue($z);
+$zCover = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+$zBild = IPS_CreateMedia(MEDIATYPE_IMAGE);
+IPS_SetMediaContent($zBild, $zCover);
+[$zMit, $zOhne, $zLesen] = [str_repeat('e5', 32), str_repeat('f6', 32), str_repeat('a7', 32)];
+$zLicht = variable(VARIABLETYPE_BOOLEAN, false);
+$zGeraete = [
+    ['Room' => 'Außen', 'Name' => 'Einfahrt', 'Aliases' => '', 'Type' => 'camera', 'ImageMediaID' => $zBild],
+    ['Room' => 'Küche', 'Name' => 'Deckenlicht', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => $zLicht, 'Invert' => false],
+];
+IPS_SetProperty($zid, 'Devices', json_encode($zGeraete));
+IPS_SetProperty($zid, 'Accesses', json_encode([
+    ['Name' => 'Mit Bild', 'Token' => $zMit, 'DefaultRoom' => '', 'ReadOnly' => false, 'InPath' => false, 'Images' => true],
+    ['Name' => 'Ohne Bild', 'Token' => $zOhne, 'DefaultRoom' => '', 'ReadOnly' => false, 'InPath' => false],
+    ['Name' => 'Nur lesen', 'Token' => $zLesen, 'DefaultRoom' => '', 'ReadOnly' => true, 'InPath' => false, 'Images' => true],
+]));
+IPS_ApplyChanges($zid);
+pruefe(IPS_GetInstance($zid)['InstanceStatus'] === IS_ACTIVE, 'Kamerabilder: die Instanz ist aktiv');
+$zZugaenge = array_column((array)oderNull(static fn () => \Closure::bind(fn () => $this->accessList(), $z, HomeAgent::class)()), null, 'Name');
+pruefe(($zZugaenge['Mit Bild']['Images'] ?? null) === true && ($zZugaenge['Ohne Bild']['Images'] ?? null) === false, 'der Haken steht am Zugang, ohne Angabe ist er aus: ' . json_encode(array_column($zZugaenge, 'Images', 'Name')));
+$zWerkzeuge = static fn (?array $zugang, bool $apps = false): array => array_column((array)\Closure::bind(fn () => $this->tools($zugang, $apps), $z, HomeAgent::class)(), null, 'name');
+
+$mit = $zWerkzeuge($zZugaenge['Mit Bild'] ?? null);
+pruefe(array_keys($mit) === ['get_state', 'show_camera', 'set_state'], 'mit Haken gibt es show_camera: ' . json_encode(array_keys($mit)));
+$kamera = $mit['show_camera'] ?? [];
+pruefe(array_keys($kamera['inputSchema']['properties'] ?? []) === ['name', 'room'] && ($kamera['inputSchema']['additionalProperties'] ?? true) === false, 'show_camera nimmt Name und Raum: ' . json_encode($kamera['inputSchema'] ?? null));
+pruefe(($kamera['annotations'] ?? null) === ['readOnlyHint' => true, 'openWorldHint' => false], 'show_camera liest nur: ' . json_encode($kamera['annotations'] ?? null));
+pruefe(str_contains((string)($kamera['description'] ?? ''), 'Cameras: Einfahrt.') && str_contains((string)($kamera['description'] ?? ''), 'when it was taken') && str_contains((string)($kamera['description'] ?? ''), 'exactly one camera'),
+    'die Beschreibung nennt die Kameras, die Aufnahmezeit und die Regel für genau eine Kamera: ' . ($kamera['description'] ?? ''));
+pruefe(str_contains((string)($mit['get_state']['description'] ?? ''), 'for the image itself use show_camera'), 'get_state verweist fürs Bild auf show_camera: ' . ($mit['get_state']['description'] ?? ''));
+$ohne = $zWerkzeuge($zZugaenge['Ohne Bild'] ?? null);
+pruefe(array_keys($ohne) === ['get_state', 'set_state'], 'ohne Haken kein show_camera: ' . json_encode(array_keys($ohne)));
+pruefe(str_contains((string)($ohne['get_state']['description'] ?? ''), 'Camera images are not released for this access') && !str_contains((string)($ohne['get_state']['description'] ?? ''), 'show_camera'),
+    'get_state sagt dem Assistenten, dass Bilder für diesen Zugang nicht freigegeben sind: ' . ($ohne['get_state']['description'] ?? ''));
+pruefe(array_keys($zWerkzeuge($zZugaenge['Nur lesen'] ?? null)) === ['get_state', 'show_camera'], 'ein Nur-Lese-Zugang mit Haken sieht Bilder, ein Bild ist eine Abfrage: ' . json_encode(array_keys($zWerkzeuge($zZugaenge['Nur lesen'] ?? null))));
+pruefe(!isset($zWerkzeuge(null)['show_camera']), 'ohne Zugang (Skript) gibt es das Werkzeug nicht');
+$mitApps = $zWerkzeuge($zZugaenge['Mit Bild'] ?? null, true);
+pruefe(isset($mitApps['show_camera'], $mitApps['show_devices']), 'mit Apps bleibt show_camera neben den Karten: ' . json_encode(array_keys($mitApps)));
+
+// Aufruf
+$zRuf = static fn (?array $zugang, array $argumente): array => (array)\Closure::bind(fn () => $this->callTool('show_camera', $argumente, $zugang), $z, HomeAgent::class)();
+$r = $zRuf($zZugaenge['Mit Bild'] ?? null, ['name' => 'Einfahrt']);
+pruefe(($r['isError'] ?? true) === false && ($r['image'] ?? null) === ['data' => $zCover, 'mimeType' => 'image/png'], 'mit Haken kommt das Bild: ' . json_encode(array_diff_key($r, ['image' => 0]), JSON_UNESCAPED_UNICODE));
+pruefe(str_contains((string)($r['text'] ?? ''), 'Außen | Einfahrt | camera | image from ') && str_contains((string)($r['text'] ?? ''), "\nNow: "), 'der Text nennt Aufnahmezeit und die Zeit jetzt: ' . ($r['text'] ?? ''));
+$r = $zRuf($zZugaenge['Ohne Bild'] ?? null, ['name' => 'Einfahrt']);
+pruefe(($r['isError'] ?? false) === true && !isset($r['image']) && str_contains((string)($r['text'] ?? ''), 'Camera images are not released for this access'), 'ohne Haken auch per Aufruf kein Bild, mit Begründung: ' . json_encode($r, JSON_UNESCAPED_UNICODE));
+$r = $zRuf(null, ['name' => 'Einfahrt']);
+pruefe(($r['isError'] ?? false) === true && !isset($r['image']), 'ohne Zugang kein Bild: ' . json_encode($r, JSON_UNESCAPED_UNICODE));
+
+// Über den Hook: der Bildblock in der Antwort, im Protokoll nur der Text
+IPS_SetProperty($zid, 'LogEnabled', true);
+IPS_ApplyChanges($zid);
+$zHook = new ReflectionMethod(HomeAgent::class, 'ProcessHookData');
+$zAnfrage = static function (string $token, string $methode, array $params = []) use ($z, $zid, $zHook): array {
+    $_SERVER = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/hook/homeagent/' . $zid, 'REMOTE_ADDR' => '192.0.2.5', 'HTTP_AUTHORIZATION' => 'Bearer ' . $token];
+    HomeAgentHarness::$body = (string)json_encode(['jsonrpc' => '2.0', 'id' => 1, 'method' => $methode] + ($params === [] ? [] : ['params' => $params]));
+    $z->response = null;
+    ob_start();
+    $zHook->invoke($z);
+    ob_end_clean();
+    HomeAgentHarness::$body = '';
+    return (array)json_decode((string)($z->response['body'] ?? ''), true);
+};
+$antwort = $zAnfrage($zMit, 'tools/call', ['name' => 'show_camera', 'arguments' => ['name' => 'Einfahrt']]);
+$inhalt = $antwort['result']['content'] ?? [];
+pruefe(count($inhalt) === 2 && ($inhalt[0]['type'] ?? '') === 'text' && ($inhalt[1] ?? null) === ['type' => 'image', 'data' => $zCover, 'mimeType' => 'image/png'], 'Hook: Text und Bildblock: ' . json_encode($antwort, JSON_UNESCAPED_UNICODE));
+$antwort = $zAnfrage($zOhne, 'tools/call', ['name' => 'show_camera', 'arguments' => ['name' => 'Einfahrt']]);
+pruefe(!str_contains(json_encode($antwort), $zCover) && (isset($antwort['error']) || ($antwort['result']['isError'] ?? false) === true), 'Hook ohne Haken: kein Bild: ' . json_encode($antwort, JSON_UNESCAPED_UNICODE));
+$antwort = $zAnfrage($zOhne, 'tools/list');
+pruefe(array_column($antwort['result']['tools'] ?? [], 'name') === ['get_state', 'set_state'], 'Hook ohne Haken: die Werkzeugliste nennt show_camera nicht: ' . json_encode(array_column($antwort['result']['tools'] ?? [], 'name')));
+$zLog = '';
+foreach ((array)glob(IPS_GetLogDir() . DIRECTORY_SEPARATOR . 'homeagent_' . $zid . '*.log') as $datei) {
+    $zLog .= (string)file_get_contents((string)$datei);
+}
+pruefe(str_contains($zLog, ' | Mit Bild | show_camera | ') && str_contains($zLog, 'Einfahrt | camera | image from') && !str_contains($zLog, substr($zCover, 0, 40)), 'das Protokoll nennt den Aufruf und den Text, nie den Bildinhalt: ' . $zLog);
+
+// Formular: Spalte und Haken im Dialog
+$zForm = json_decode($z->GetConfigurationForm(), true);
+$zListe = array_column(flach($zForm['elements']), null, 'name')['Accesses'] ?? [];
+$zSpalte = array_column($zListe['columns'] ?? [], null, 'name')['Images'] ?? [];
+pruefe(($zSpalte['caption'] ?? '') === 'Camera images' && ($zSpalte['add'] ?? null) === false && ($zSpalte['edit']['type'] ?? '') === 'CheckBox' && ($zSpalte['save'] ?? false) === true, 'Spalte Kamerabilder, bei neuen Zugängen aus: ' . json_encode($zSpalte));
+$zDialog = array_column(flach($zListe['form'] ?? []), null, 'name')['Images'] ?? [];
+pruefe(($zDialog['type'] ?? '') === 'CheckBox' && str_contains((string)($zDialog['caption'] ?? ''), 'provider of the assistant') && str_contains((string)($zDialog['caption'] ?? ''), 'Home Assistant'),
+    'der Haken im Dialog sagt, wohin die Bilder gehen, und warnt bei Home Assistant: ' . json_encode($zDialog));
+pruefe(($de[(string)($zDialog['caption'] ?? '')] ?? '') !== '' && ($de['Camera images'] ?? '') === 'Kamerabilder', 'beides ist übersetzt');
+$export = json_decode((string)oderNull(static fn () => $z->ExportConfiguration()), true);
+pruefe(($export['Accesses'][0]['Images'] ?? null) === true && ($export['Accesses'][0]['Token'] ?? '') === '<token>', 'der Export nennt den Haken, das Token bleibt Platzhalter: ' . json_encode($export['Accesses'][0] ?? null));
+// HAGT_AddAccess legt Zugänge ohne Kamerabilder an: Ein Einrichtungsagent soll sich das Recht nicht selbst geben
+$signatur = array_map(static fn (ReflectionParameter $p): string => $p->getName(), (new ReflectionMethod(HomeAgent::class, 'AddAccess'))->getParameters());
+pruefe($signatur === ['Name', 'ReadOnly', 'InPath', 'DefaultRoom'], 'AddAccess behält seine Signatur: ' . json_encode($signatur));
+
+// Ohne freigegebene Kamera: weder Werkzeug noch ein Wort darüber
+IPS_SetProperty($zid, 'Devices', json_encode([$zGeraete[1]]));
+IPS_ApplyChanges($zid);
+$ohneKamera = $zWerkzeuge($zZugaenge['Mit Bild'] ?? null);
+pruefe(!isset($ohneKamera['show_camera']) && !str_contains((string)($ohneKamera['get_state']['description'] ?? ''), 'amera'), 'ohne Kamera kein show_camera und kein Satz dazu: ' . json_encode(array_keys($ohneKamera)));
 
 ende('Modul');

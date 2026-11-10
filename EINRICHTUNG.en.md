@@ -140,6 +140,7 @@ How to proceed:
    - Cameras as type camera if there is a media object of type image with a still image for them
      (IPS_GetMediaListByType(1), for example below an Image Grabber); that is ImageMediaID. Leave out
      streams (media type 3). Which cameras I want to release you name as an open question to me.
+     Whether an access may fetch camera images (Images) I decide myself in the form.
    - For radiator thermostats also the valve positions, several actuators of a room on the same
      thermostat (up to three).
    - For blinds also the moving state (MovingVariableID) where there is one. If with KNX the position

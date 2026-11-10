@@ -546,6 +546,14 @@ final class FakeBackend implements DeviceBackend
     /** Uhrzeit der Anlage: die des Mitschnitts, wenn der Test sie setzt. */
     public ?int $jetzt = null;
 
+    /** @var array<int, string> Inhalt der Bilder als Bytes, vom Test gesetzt */
+    public array $bilder = [];
+
+    public function imageData(int $mediaId): ?string
+    {
+        return $this->image($mediaId) === null ? null : ($this->bilder[$mediaId] ?? null);
+    }
+
     /** @var array<int|string, array<string, mixed>> Medienobjekte aus dem Mitschnitt: id => [typ, verfuegbar, groesse, aktualisiert] */
     public array $medien = [];
 

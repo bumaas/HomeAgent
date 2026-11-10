@@ -235,4 +235,19 @@ $a = mitSchema(static function () use (&$gelesen): string {
 });
 pruefe($a['status'] === 200 && $gelesen && $ausgefuehrt === 1, 'mit Anmeldung schon: ' . $a['body']);
 
+// Bildblock (B102): Liefert ein Werkzeug ein Bild, steht es als zweiter Block hinter dem Text. Der Text bleibt der
+// erste Block, Clients ohne Bildanzeige lesen ihn weiter.
+$bildWerkzeug = static fn (): array => [['name' => 'show_camera', 'inputSchema' => ['type' => 'object']]];
+$a = McpProtocol::handleHttp('POST', true, rpc('tools/call', ['name' => 'show_camera', 'arguments' => []]), $bildWerkzeug, static fn (): array => ['text' => 'Außen | Einfahrt | camera | image from 2026-11-10 10:44', 'isError' => false, 'image' => ['data' => 'QUJD', 'mimeType' => 'image/jpeg']], $info);
+$r = json_decode($a['body'], true);
+pruefe($a['status'] === 200 && ($r['result']['content'] ?? null) === [['type' => 'text', 'text' => 'Außen | Einfahrt | camera | image from 2026-11-10 10:44'], ['type' => 'image', 'data' => 'QUJD', 'mimeType' => 'image/jpeg']] && ($r['result']['isError'] ?? null) === false,
+    'ein Bild steht als Block hinter dem Text: ' . $a['body']);
+pruefe(!isset($r['result']['image']) && !isset($r['result']['structuredContent']), 'das Bild steht nur im Inhalt, nicht daneben: ' . json_encode(array_keys($r['result'] ?? [])));
+$a = McpProtocol::handleHttp('POST', true, rpc('tools/call', ['name' => 'show_camera', 'arguments' => []]), $bildWerkzeug, static fn (): array => ['text' => 'No camera is released.', 'isError' => true], $info);
+$r = json_decode($a['body'], true);
+pruefe(($r['result']['content'] ?? null) === [['type' => 'text', 'text' => 'No camera is released.']] && ($r['result']['isError'] ?? null) === true, 'ohne Bild bleibt es bei einem Textblock: ' . $a['body']);
+// Ein unvollständiges Bild (ohne Typ oder leer) wird nicht ausgeliefert
+$a = McpProtocol::handleHttp('POST', true, rpc('tools/call', ['name' => 'show_camera', 'arguments' => []]), $bildWerkzeug, static fn (): array => ['text' => 'x', 'isError' => false, 'image' => ['data' => '', 'mimeType' => 'image/jpeg']], $info);
+pruefe(count(json_decode($a['body'], true)['result']['content'] ?? []) === 1, 'ein leeres Bild ergibt keinen Bildblock: ' . $a['body']);
+
 ende('Protokoll');

@@ -355,6 +355,15 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   und 128 MB; GD ist überall da. Die Fähigkeit `image` ist die einzige ohne Variable. Sie steht trotzdem in `ROLES`, damit
   Dialog, Spaltentext, Referenzen und Kartenschlüssel ohne zweiten Weg auskommen; wer Fähigkeiten als Variablen liest
   (`validateLists`, `deviceLabels`, `registerReferences`), unterscheidet sie dort.
+  `show_camera` (build 279): Das echte 4K-Bild des nuc (2,0 MB) wird im eingebetteten PHP in 0,65 s zu 1280 x 720 und
+  318 KB (424 KB als Base64), Speicherspitze 43,8 MB bei geschätzten 43,2 MB (`memoryNeeded`: vier Byte je Pixel für
+  Bild und Ergebnis plus 8 MB Reserve). An einer Anlage mit 32 MB `memory_limit` käme deshalb die Absage. Ein Bild bis
+  1280 Pixel und 1 MB geht unverändert durch, BMP und andere Formate werden zu JPEG. Der Haken `Images` am Zugang ist
+  bewusst kein Parameter von `HAGT_AddAccess`: Ein Einrichtungsagent soll sich das Recht nicht selbst geben, und die
+  Signatur bleibt für vorhandene Skripte gleich. Build 2 und 3 des Plans sind ein Build geworden, weil der Arbeitsbaum
+  des Entwicklers live läuft und es `show_camera` nie ohne das Recht geben sollte. Der Test lädt GD selbst nach
+  (`-d extension=gd`), die CI lädt es über `extensions: gd`. Noch offen: an Home Assistant belegen, dass ein Bildblock
+  dort als Text beim Modell ankommt (bisher nur aus dem Quelltext gelesen).
 
 ## Energie
 

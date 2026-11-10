@@ -708,6 +708,17 @@ final class SymconDeviceBackend implements DeviceBackend
         return ['updated' => (int)$media['MediaUpdated'], 'size' => (int)$media['MediaSize'], 'available' => (bool)$media['MediaIsAvailable']];
     }
 
+    public function imageData(int $mediaId): ?string
+    {
+        if ($this->image($mediaId) === null) {
+            return null;
+        }
+        // IPS_GetMediaContent liefert den Inhalt Base64-kodiert; fehlt die Datei, warnt Symcon und liefert false.
+        $content = @IPS_GetMediaContent($mediaId);
+        $bytes = is_string($content) ? base64_decode($content, true) : false;
+        return is_string($bytes) && $bytes !== '' ? $bytes : null;
+    }
+
     public function unit(int $variableId): string
     {
         return $variableId > 0 && IPS_VariableExists($variableId) ? self::unitOf($variableId) : '';

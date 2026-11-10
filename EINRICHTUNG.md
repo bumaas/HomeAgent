@@ -142,6 +142,7 @@ So gehst du vor:
    - Kameras als Typ camera, wenn es zu ihnen ein Medienobjekt vom Typ Bild mit einem Standbild gibt
      (IPS_GetMediaListByType(1), etwa unter einem Image Grabber); das ist ImageMediaID. Streams
      (Medientyp 3) lässt du aus. Welche Kameras ich freigeben will, nennst du mir als offene Frage.
+     Ob ein Zugang Kamerabilder abrufen darf (Images), entscheide ich selbst im Formular.
    - Bei Heizkörperthermostaten auch die Ventilstellungen, mehrere Antriebe eines Raums am selben
      Thermostat (bis zu drei).
    - Bei Rollläden auch den Fahrstatus (MovingVariableID), wo es ihn gibt. Hat bei KNX die Instanz der

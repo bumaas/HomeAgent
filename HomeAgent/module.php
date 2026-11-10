@@ -2393,6 +2393,18 @@ class HomeAgent extends IPSModuleStrict
             'annotations' => ['readOnlyHint' => true, 'openWorldHint' => false],
         ]];
 
+        // Kameras (B102): get_state nennt nur die Aufnahmezeit. Das Bild liefert show_camera, und nur Zugängen mit dem
+        // Haken „Kamerabilder“ (Burkhard 10.11.2026: Standard aus). Ohne ihn sagt die Beschreibung es, damit der
+        // Assistent eine Absage richtig begründet, statt „es gibt keine Kamera“ zu sagen.
+        $cameras = array_values(array_unique(array_map(static fn (array $row): string => trim((string)($row['Name'] ?? '')),
+            array_filter($this->usableDevices(), static fn (array $row): bool => ($row['Type'] ?? '') === 'camera'))));
+        $images = ($access['Images'] ?? false) === true;
+        if ($cameras !== []) {
+            $tools[0]['description'] .= $images
+                ? ' A camera (type camera) only gives the time of its stored image here; for the image itself use show_camera.'
+                : ' A camera (type camera) only gives the time of its stored image. Camera images are not released for this access.';
+        }
+
         // Diagramm als MCP App, nur für Clients, die Apps anmelden, und nur mit einem Gerät, das einen Verlauf haben kann
         // (Leitbild: angeboten wird nur, was es gibt; andere Clients zahlen keine Tokens dafür).
         // Mit der Energiebilanz auch der Hausverbrauch als Stapeldiagramm (Burkhard 12.10.2026).
@@ -2467,6 +2479,29 @@ class HomeAgent extends IPSModuleStrict
                 ],
                 'annotations' => ['readOnlyHint' => true, 'openWorldHint' => false],
                 '_meta'       => ['ui' => ['resourceUri' => $this->resourceUri(self::DEVICES_URI)]],
+            ];
+        }
+
+        // Ein Bild ist eine Abfrage, auch ein Nur-Lese-Zugang mit dem Haken bekommt das Werkzeug.
+        if ($cameras !== [] && $images) {
+            $shownCameras = array_slice($cameras, 0, self::SCENES_IN_DESCRIPTION);
+            $moreCameras = count($cameras) - count($shownCameras);
+            $tools[] = [
+                'name'        => 'show_camera',
+                'title'       => 'Show camera image',
+                'description' => 'Returns the stored still image of one released camera so that you can look at it, together with the time it was taken. '
+                    . 'It is not a live view: the image may be old, so always tell the user when it was taken. '
+                    . 'The name must match exactly one camera, otherwise no image is fetched and the answer lists the candidates. '
+                    . 'Cameras: ' . implode(', ', $shownCameras) . ($moreCameras > 0 ? ' and ' . $moreCameras . ' more' : '') . '.',
+                'inputSchema' => [
+                    'type'                 => 'object',
+                    'properties'           => [
+                        'name' => ['type' => 'string', 'description' => 'Name or alias of the camera, a partial word is enough.'],
+                        'room' => ['type' => 'string', 'description' => 'Room of the camera, only needed if several cameras share a name.'],
+                    ],
+                    'additionalProperties' => false,
+                ],
+                'annotations' => ['readOnlyHint' => true, 'openWorldHint' => false],
             ];
         }
 
@@ -2696,7 +2731,10 @@ class HomeAgent extends IPSModuleStrict
         $started = hrtime(true);
         $readOnly = ($access['ReadOnly'] ?? false) === true;
         $defaultRoom = $this->defaultRoomOf($access);
+        // Kamerabilder nur für Zugänge mit dem Haken (B102); Skriptfunktionen haben keinen Zugang und kein Bild.
+        $images = ($access['Images'] ?? false) === true;
         $index = match (true) {
+            $name === 'show_camera'                => $images ? $this->deviceIndex($defaultRoom) : null,
             $name === 'get_state'                  => $this->deviceIndex($defaultRoom),
             $name === 'show_chart'                 => $this->deviceIndex($defaultRoom),
             $name === 'show_devices'               => $this->deviceIndex($defaultRoom),
@@ -2707,7 +2745,9 @@ class HomeAgent extends IPSModuleStrict
             default                                => null,
         };
         $outcome = match (true) {
+            $name === 'show_camera' && !$images    => ['text' => $this->Translate('Camera images are not released for this access.'), 'isError' => true],
             $index === null                        => ['text' => 'Unknown tool ' . $name, 'isError' => true],
+            $name === 'show_camera'                => $this->withNow($index->camera($arguments)),
             $name === 'get_state'                  => $this->withNow($index->getState($arguments)),
             $name === 'show_chart'                 => $index->chart($arguments),
             $name === 'show_devices'               => $index->cards($arguments, $readOnly),
@@ -2723,8 +2763,8 @@ class HomeAgent extends IPSModuleStrict
      * weil Clients Anleitung und Werkzeugliste lange zwischenspeichern (Backlog B14, wie HAs
      * GetDateTime). Die Skriptfunktionen bekommen die Zeile nicht.
      *
-     * @param array{text: string, isError: bool} $outcome
-     * @return array{text: string, isError: bool}
+     * @param array{text: string, isError: bool, image?: array{data: string, mimeType: string}} $outcome
+     * @return array{text: string, isError: bool, image?: array{data: string, mimeType: string}}
      */
     private function withNow(array $outcome): array
     {
@@ -3221,6 +3261,8 @@ class HomeAgent extends IPSModuleStrict
             'DefaultRoom' => trim((string)($row['DefaultRoom'] ?? '')),
             'ReadOnly'    => (bool)($row['ReadOnly'] ?? false),
             'InPath'      => (bool)($row['InPath'] ?? false),
+            // Kamerabilder (B102): nur mit diesem Haken liefert show_camera ein Bild
+            'Images'      => (bool)($row['Images'] ?? false),
         ], $this->listProperty('Accesses'));
     }
 

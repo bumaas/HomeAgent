@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/DeviceBackend.php';
 require_once __DIR__ . '/RoomIndex.php';
+require_once __DIR__ . '/CameraImage.php';
 
 /**
  * Freigabeliste des Home Agent: findet Geräte nach Raum, Typ und Name, beschreibt ihren
@@ -5155,6 +5156,65 @@ final class DeviceIndex
             return $this->t($tilt ? 'tilted' : 'open');
         }
         return sprintf($this->t($tilt ? '%s %% tilted' : '%s %% open'), self::formatNumber(round($percent)));
+    }
+
+    /**
+     * Werkzeug „show_camera“ (B102): das Standbild genau einer Kamera mit seiner Aufnahmezeit. Mehrere Treffer ergeben
+     * die Kandidaten zur Rückfrage und kein Bild, damit nie das falsche gezeigt wird. Das Bild kommt, wie es im
+     * Medienobjekt liegt, nur verkleinert (CameraImage); „image“ trägt es Base64-kodiert für den Bildblock der Antwort.
+     *
+     * @return array{text: string, isError: bool, image?: array{data: string, mimeType: string}}
+     */
+    public function camera(array $arguments): array
+    {
+        $room = trim((string)($arguments['room'] ?? ''));
+        $floor = trim((string)($arguments['floor'] ?? ''));
+        $name = trim((string)($arguments['name'] ?? ''));
+        $cameras = array_values(array_filter($this->entries, static fn (array $e): bool => $e['Type'] === 'camera'));
+        if ($cameras === []) {
+            $this->problem = 'no_match';
+            return $this->fail($this->t('No camera is released.'));
+        }
+        if ($floor !== '' && !$this->rooms->knowsFloor($floor)) {
+            return $this->fail($this->unknownFloor($floor));
+        }
+        $room = $this->effectiveRoom($room, $name, $floor);
+        $filter = $this->describeFilter($room, 'camera', $name, $floor);
+        $matches = $this->find($room, 'camera', $name, $floor);
+        $lines = fn (array $entries): string => implode("\n", array_map(fn (array $e): string => $this->line($e, $this->cameraText($e)), $entries));
+        if ($matches === []) {
+            $this->noMatch($room, $name);
+            return $this->fail(sprintf($this->t('No released camera matches %s. Cameras:'), $filter) . "\n" . $lines($cameras));
+        }
+        if (count($matches) > 1) {
+            $this->problem = 'ambiguous';
+            return $this->fail(sprintf($this->t('%d cameras match %s, no image was fetched. Ask which one is meant:'), count($matches), $filter) . "\n" . $lines($matches));
+        }
+        $entry = $matches[0];
+        $id = $entry['roles']['image'] ?? 0;
+        $info = $id > 0 ? $this->backend->image($id) : null;
+        $this->problem = 'failed'; // bleibt nur, wenn das Bild nicht kommt
+        if ($info === null) {
+            return $this->fail(sprintf($this->t('The image of camera "%s" is not available (image %d is missing).'), $entry['Name'], $id));
+        }
+        if (!$info['available'] || $info['size'] <= 0 || $info['updated'] <= 0) {
+            return $this->fail(sprintf($this->t('Camera "%s" has no image yet.'), $entry['Name']));
+        }
+        $bytes = $this->backend->imageData($id);
+        $prepared = $bytes === null ? ['error' => 'unreadable'] : CameraImage::prepare($bytes);
+        if (isset($prepared['error'])) {
+            return $this->fail(match ($prepared['error']) {
+                'too_large' => sprintf($this->t('The image of camera "%s" is too large to be prepared here (%d x %d); choose a smaller image at the camera or its grabber.'), $entry['Name'], $prepared['width'] ?? 0, $prepared['height'] ?? 0),
+                'format'    => sprintf($this->t('The image of camera "%s" has a format that cannot be delivered here.'), $entry['Name']),
+                default     => sprintf($this->t('The image of camera "%s" could not be read.'), $entry['Name']),
+            });
+        }
+        $this->problem = null;
+        return [
+            'text'    => sprintf($this->t('%d device(s) found (%s).'), 1, $filter) . "\n" . $this->line($entry, $this->cameraText($entry)),
+            'isError' => false,
+            'image'   => ['data' => base64_encode($prepared['data']), 'mimeType' => $prepared['mimeType']],
+        ];
     }
 
     /**

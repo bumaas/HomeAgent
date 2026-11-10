@@ -296,7 +296,13 @@ final class McpProtocol
                 }
                 $outcome = $callTool($name, $arguments, self::callerOf($message));
                 // structuredContent sieht nur die Seite eines Diagramms, das Modell liest den Text
-                return self::result($id, ['content' => [['type' => 'text', 'text' => $outcome['text']]], 'isError' => $outcome['isError']]
+                $content = [['type' => 'text', 'text' => $outcome['text']]];
+                // Standbild einer Kamera (B102) als Bildblock hinter dem Text, Base64 mit seinem MIME-Typ
+                $image = $outcome['image'] ?? null;
+                if (is_array($image) && is_string($image['data'] ?? null) && $image['data'] !== '' && is_string($image['mimeType'] ?? null) && $image['mimeType'] !== '') {
+                    $content[] = ['type' => 'image', 'data' => $image['data'], 'mimeType' => $image['mimeType']];
+                }
+                return self::result($id, ['content' => $content, 'isError' => $outcome['isError']]
                     + (isset($outcome['structuredContent']) ? ['structuredContent' => $outcome['structuredContent']] : []));
             default:
                 return self::error($id, -32601, 'Method not found: ' . $message['method']);

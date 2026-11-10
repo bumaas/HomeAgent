@@ -182,6 +182,9 @@ interface DeviceBackend
      */
     public function image(int $mediaId): ?array;
 
+    /** Inhalt des Standbilds als Bytes (nicht Base64); null = kein Bild oder nicht lesbar. */
+    public function imageData(int $mediaId): ?string;
+
     /** Einheit der Variable aus Profil-Suffix oder Darstellung (etwa W, kW); '' = keine. */
     public function unit(int $variableId): string;
 

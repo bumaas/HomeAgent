@@ -11,7 +11,7 @@ unambiguous answer. It only sees and switches the devices you release.
 > brightness, colour, colour temperature, position, setpoints, operating mode and fan speed, stops blinds, starts
 > scenes and operates media players. It knows consumption and power also behind meters and sub-meters, for the house
 > also the costs, for heat pumps heat and performance factor. Histories of measured values and power and timelines of states come as text
-> and, in the Claude app, as charts. Cameras are named with the time their still image was taken. The device list can be proposed from an Alexa instance.
+> and, in the Claude app, as charts. From cameras it fetches the stored still image and says when it was taken. The device list can be proposed from an Alexa instance.
 
 ## When do I need this?
 
@@ -104,6 +104,7 @@ an instance see the same release list. The list has these columns:
 |---|---|
 | Name | Free text, best after whoever comes through the access (see below). It appears in the protocol, under "What did not work" and in the debug of the instance. |
 | Query only | This access may ask but not switch anything. It only sees the query tool, and the assistant is told that the access can only read. |
+| Camera images | This access may fetch the still images of released cameras. Without the checkbox the assistant names cameras only with the time their image was taken. The images go to the provider of the assistant. Do not set it for Home Assistant, it does not show images. |
 | Default room | The room the assistant is in. "Turn on the light" without a room then means this room, and with equal device names the device there wins. For the whole house the assistant says `room=all`. If the room is neither in the room list nor the room of a device, it has no effect; the form names it under the accesses. |
 | Connection | How the assistant signs in: "token in the header", "address with token" or, with sign-in by OAuth, "signed in:" with the paired assistants. |
 | Tool list | Whether the assistant knows the current tool list: **current**, **outdated** or **not fetched yet**, with the time of the last fetch. The list changes with an update of the module and with your settings, for example a device of a new type, a new room or a new scene. If it says **outdated**, open a new chat in the Claude app; if that does not help, disconnect the connector and connect it again. |
@@ -245,7 +246,9 @@ Some devices need more than the variable of their type:
   title is shown, and the player is not counted among the active devices.
 - **Camera:** Enter a media object that holds a still image of the camera. The Image Grabber of Symcon creates one,
   so do the ONVIF Image Grabber and the HomeAssistant module (the preview of a camera). The assistant names the camera
-  with the time the image was taken, for example "image from 2026-11-10 10:44". The module never fetches a new image
+  with the time the image was taken, for example "image from 2026-11-10 10:44". The image itself it fetches only
+  through an access with the checkbox "Camera images" (see [Accesses](#accesses)), and only if the question matches
+  exactly one camera. It gets it at most 1280 pixels wide and can then say what is on it. The module never fetches a new image
   itself. How current it is you decide at its source: with an interval at the grabber, with an event of the camera or
   with an event of your own in Symcon that triggers the grabber, for example at the doorbell. If the assistant should
   renew the image on request, release a script that triggers the grabber (for the Image Grabber `IG_UpdateImage(<instance>);`) as a scene. Two images of the same camera, such as the
@@ -708,7 +711,11 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
 - Colour as text is not supported yet. The operating mode of a thermostat only works through a variable with an
   action; on Homematic wall thermostats `CONTROL_MODE` has none.
 - The module does not show the history of a valve position yet, only the current position.
-- The assistant does not see the image of a camera yet. It names the camera and says when its image was taken.
+- A camera gives its stored still image, no live view and no stream. Scaling an image down needs memory, about 45 MB
+  for 3840 x 2160 pixels. If the PHP of the system has less to spare (this can happen on small devices), the assistant
+  says so. Then set a smaller image at the camera or the grabber.
+- A camera image goes to the provider of the assistant and is processed there like any input. Release only cameras
+  for which you want that, and set the checkbox "Camera images" only for accesses that need images.
 - A battery-powered thermostat often takes a new setpoint only at its next radio contact. The central
   unit still confirms it right away, so "set" then means "handed over to the central unit".
 - For a blind that reports only on arrival and has no moving state, the module does not know after

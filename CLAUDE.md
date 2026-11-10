@@ -36,6 +36,7 @@ Sprachsteuerung von Home Assistant, ohne kleineren Umfang. Daraus folgen die Gru
 | `libs/RoomIndex.php` | Raumliste mit Aliasen und Etage; Raumerkennung für den Alexa-Vorschlag |
 | `libs/DeviceIndex.php` | Freigabeliste: Fähigkeiten (`ROLES`, `TYPE_ROLES`), Suche, Zustandstexte, Schalten und Stellen, Verbrauch, Leistung, Bilanz und Quellen, Zähler, Verlauf, Zeitleiste, alle Diagramme, Karten, Selbsttest-Prüfungen |
 | `libs/SceneIndex.php` | Szenenliste: Suche und Start |
+| `libs/CameraImage.php` | Standbild einer Kamera verkleinern (GD), mit Prüfung des freien Speichers |
 | `libs/PromptCatalog.php` | Vorlagen („Haus verlassen“, „Gute Nacht“, „Energiebericht“) |
 | `libs/AlexaImport.php` | Vorschlag der Freigabeliste und der Räume aus der Alexa-Instanz von Symcon |
 | `libs/DeviceBackend.php` | Schnittstelle zur Anlage; `SymconDeviceBackend.php` über Symcon-Funktionen, `tests/FakeBackend.php` spielt Mitschnitte ab |
@@ -115,6 +116,7 @@ Backend. So laufen die Tests mit echten Mitschnitten.
 | `run_scene` | freigegebenes Skript oder Ablaufplan starten (`IPS_RunScript`, Ablaufplan braucht eine Aktion); Szenennamen in der Beschreibung | mit Szenen |
 | `show_chart` | Diagramm als MCP App | Clients mit Apps, Clients von Anthropic und der Connector von claude.ai (`sharesToolList`) immer |
 | `show_devices` | Gerätekarten als MCP App | ebenso |
+| `show_camera` | Standbild genau einer Kamera als Bildblock, mit Aufnahmezeit | mit Kamera und Haken „Kamerabilder“ am Zugang, auch bei „Nur abfragen“ |
 | `control_device` | Bedienung von der Karte (`_meta.ui.visibility: ["app"]`) | ohne „Nur abfragen“, aufrufbar auch ohne Apps |
 
 Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
@@ -182,7 +184,10 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   Selbsttest nennt Ventilvariablen mit nur benannten Einträgen (HmIP `VALVE_STATE`). Noch nicht: Verlauf. Test `check-ventil.php`.
 - **Kamera** (`camera`, B102): Fähigkeit `image` = Medienobjekt vom Typ Bild (`ImageMediaID`, die einzige Fähigkeit ohne
   Variable, nur über `DeviceBackend::image()`). `get_state` nennt die Aufnahmezeit (`cameraText`), das Modul frischt nie auf
-  und fasst Streams nicht an (Zugangsdaten in der Adresse). Noch nicht: das Bild selbst. Test `check-kamera.php`.
+  und fasst Streams nicht an (Zugangsdaten in der Adresse). Test `check-kamera.php`.
+- **`show_camera`** (`DeviceIndex::camera`): nur für Zugänge mit `Images` (Haken „Kamerabilder“, Standard aus, nie über
+  `HAGT_AddAccess`), sonst sagt es die Beschreibung von `get_state`. Genau ein Treffer, sonst Kandidaten ohne Bild;
+  `CameraImage::prepare` verkleinert auf 1280 px oder sagt ab (`memoryNeeded`). Test `check-kamerabild.php` (braucht GD).
 - **Luftbe-/entfeuchter** (`humidifier`): `state`, `humidity`, `setpoint` (Feld `humidity`, `runSetpoint`), `mode` und
   `fan` als **Auswahl per Name** (`runOption` über `DeviceBackend::options()`). **Lüftung** (`fan`) ebenso, Pflicht
   Ein/Aus oder Lüfterstufe. Tests `check-entfeuchter.php`, `check-lueftung.php`.
@@ -323,7 +328,7 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Protokoll** (`LogEnabled`, aus; `LogLines` 5000): `writeLog()` unter Sperre nach `IPS_GetLogDir()/homeagent_<ID>.log`,
   Wechsel nach 24 h oder `LogLines` zur `.old.log`, Zustand im Buffer `LogState`; Anzeige und Download höchstens
   `LOG_TAIL_BYTES` (3 MB) je Datei. Client je Werkzeugaufruf (`callerOf`), auch vom Protokoll abgewiesene Aufrufe.
-  Zeilen ohne Anmeldung über `writeAnonymousLog` gedrosselt (Buffer `LogQuiet`). Tokens, Adressen und Kopplungscodes
+  Zeilen ohne Anmeldung über `writeAnonymousLog` gedrosselt (Buffer `LogQuiet`). Tokens, Adressen, Kopplungscodes und Bildinhalte
   stehen nie darin.
 - **Selbsttest und Zustand** im Fenster `ResultPopup` (`UIShowSelfTest`, `UIShowState`), Geräte als „Name (Raum)“
   (`entryLabel`), Zahlen mit `localNumber` (Dezimalzeichen aus dem Schlüssel „.“), Anzahlen mit `countText`, Schlusszeile

@@ -12,7 +12,7 @@ die Geräte, die Sie freigeben.
 > Helligkeit, Farbe, Farbtemperatur, Position, Sollwerte, Betriebsart und Lüfterstufe, hält Rollläden an, startet
 > Szenen und bedient Mediaplayer. Verbrauch und Leistung kennt er auch hinter Zählern und Unterzählern, fürs Haus
 > dazu die Kosten, bei Wärmepumpen Wärme und Arbeitszahl. Verläufe von Messwerten und Leistungen und Zeitleisten von Zuständen gibt
-> es als Text und in der Claude-App als Diagramm. Kameras nennt er mit der Aufnahmezeit ihres Standbilds. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen.
+> es als Text und in der Claude-App als Diagramm. Von Kameras holt er das gespeicherte Standbild und sagt, von wann es ist. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen.
 
 ## Wann brauche ich das?
 
@@ -108,6 +108,7 @@ Zugänge einer Instanz sehen dieselbe Freigabeliste. Die Liste hat diese Spalten
 |---|---|
 | Name | Frei wählbar, am besten nach dem, der über den Zugang kommt (siehe unten). Er erscheint im Protokoll, unter „Was nicht geklappt hat“ und im Debug der Instanz. |
 | Nur abfragen | Dieser Zugang darf fragen, aber nichts schalten. Er sieht nur das Werkzeug zum Abfragen, und der Assistent erfährt, dass der Zugang nur lesen darf. |
+| Kamerabilder | Dieser Zugang darf die Standbilder freigegebener Kameras abrufen. Ohne den Haken nennt der Assistent Kameras nur mit der Aufnahmezeit ihres Bildes. Die Bilder gehen an den Anbieter des Assistenten. Setzen Sie den Haken nicht bei Home Assistant, es zeigt keine Bilder. |
 | Standardraum | Der Raum, in dem der Assistent steht. „Mach das Licht an“ ohne Raum meint dann diesen Raum, und bei gleichen Gerätenamen gewinnt das Gerät dort. Für das ganze Haus sagt der Assistent `room=all`. Steht der Raum weder in der Raumliste noch bei einem Gerät, wirkt er nicht; das Formular nennt ihn unter den Zugängen. |
 | Verbindung | Wie sich der Assistent anmeldet: „Token im Header“, „Adresse mit Token“ oder bei der Anmeldung per OAuth „angemeldet:“ mit den gekoppelten Assistenten. |
 | Werkzeugliste | Ob der Assistent die aktuelle Werkzeugliste kennt: **aktuell**, **veraltet** oder **noch nicht geholt**, mit der Uhrzeit des letzten Abholens. Die Liste ändert sich mit einem Update des Moduls und mit Ihren Einstellungen, etwa einem Gerät mit neuem Typ, einem neuen Raum oder einer neuen Szene. Steht dort **veraltet**, öffnen Sie in der Claude-App einen neuen Chat; hilft das nicht, trennen Sie den Connector und verbinden ihn neu. |
@@ -252,7 +253,9 @@ Bei einigen Geräten braucht es mehr als die Variable des Typs:
   steht dort nur der Titel, und der Player zählt bei den aktiven Geräten nicht mit.
 - **Kamera:** Tragen Sie ein Medienobjekt ein, in dem ein Standbild der Kamera liegt. So eines legt der Image Grabber
   von Symcon an, ebenso der ONVIF Image Grabber und das HomeAssistant-Modul (die Vorschau einer Kamera). Der Assistent
-  nennt die Kamera mit der Aufnahmezeit, etwa „Bild von 2026-11-10 10:44“. Das Modul holt selbst kein neues Bild. Wie
+  nennt die Kamera mit der Aufnahmezeit, etwa „Bild von 2026-11-10 10:44“. Das Bild selbst holt er nur über einen
+  Zugang mit dem Haken „Kamerabilder“ (siehe [Zugänge](#zugänge)), und nur, wenn die Frage genau eine Kamera trifft. Er
+  bekommt es höchstens 1280 Pixel breit und kann dann sagen, was darauf zu sehen ist. Das Modul holt selbst kein neues Bild. Wie
   aktuell es ist, bestimmen Sie an der Quelle: mit einem Intervall am Grabber, mit einem Ereignis der Kamera oder mit
   einem eigenen Ereignis in Symcon, das den Grabber auslöst, etwa an der Klingel. Soll der Assistent das Bild auf
   Zuruf erneuern, geben Sie ein Skript, das den Grabber auslöst (beim Image Grabber `IG_UpdateImage(<Instanz>);`), als Szene frei. Zwei Bilder derselben Kamera, etwa das
@@ -724,7 +727,11 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
 - Farbe als Text geht noch nicht. Die Betriebsart eines Thermostats geht nur über eine Variable mit Aktion;
   bei Homematic-Wandthermostaten hat `CONTROL_MODE` keine.
 - Den Verlauf einer Ventilstellung zeigt das Modul noch nicht, nur die Stellung von jetzt.
-- Das Bild einer Kamera sieht der Assistent noch nicht. Er nennt die Kamera und sagt, von wann ihr Bild ist.
+- Von einer Kamera gibt es das gespeicherte Standbild, kein Livebild und keinen Stream. Zum Verkleinern braucht ein Bild
+  Arbeitsspeicher, bei 3840 x 2160 Pixeln rund 45 MB. Hat das PHP der Anlage weniger frei (auf kleinen Geräten kann
+  das so sein), sagt der Assistent das. Stellen Sie dann an der Kamera oder am Grabber ein kleineres Bild ein.
+- Ein Kamerabild geht an den Anbieter des Assistenten und wird dort wie jede Eingabe verarbeitet. Geben Sie nur Kameras
+  frei, bei denen Sie das wollen, und setzen Sie den Haken „Kamerabilder“ nur bei Zugängen, die Bilder brauchen.
 - Ein batteriebetriebenes Thermostat übernimmt einen neuen Sollwert oft erst beim nächsten Funkkontakt.
   Die Zentrale meldet ihn trotzdem sofort zurück, „gestellt“ heißt dann „an die Zentrale übergeben“.
 - Bei einem Rollladen, der sich erst am Ziel meldet und keinen Fahrstatus hat, weiß das Modul nach
