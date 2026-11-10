@@ -532,7 +532,15 @@ final class DeviceIndex
                 || ($this->powerBalance !== [] && $range === null && $period === self::NOW));
         if ($matches === [] && !$houseOnly) {
             $this->noMatch($room, $name);
-            return $this->fail(sprintf($this->t('No released device matches %s.'), $filter) . ' ' . $this->knownRoomsAndTypes());
+            $text = sprintf($this->t('No released device matches %s.'), $filter) . ' ' . $this->knownRoomsAndTypes();
+            // Mit gültigem Filter ist „kein Treffer“ eine Auskunft („Gibt es eine Kamera?“, Claude-App 10.11.2026: richtige
+            // Antwort, aber „Fehlgeschlagen“ in der App). Ein unbekannter Raum bleibt ein Fehler, dort hilft dem Modell ein
+            // zweiter Versuch mit der Raumliste; ein Diagramm ohne Gerät gibt es nicht.
+            if ($this->problem === 'unknown_room' || $this->chart !== null) {
+                return $this->fail($text);
+            }
+            $this->nothingMatched = true;
+            return ['text' => $text, 'isError' => false];
         }
         // Die Bilanz gilt nur fürs ganze Haus; nach Raum, Etage, Typ oder Name zählen die Geräte.
         $wholeHouse = $room === '' && $floor === '' && $type === '' && $name === '';
@@ -5126,6 +5134,9 @@ final class DeviceIndex
     }
 
     /** @return array{text: string, isError: bool} */
+    /** Die letzte Abfrage traf bei gültigem Filter kein Gerät (Auskunft ohne Fehlerkennung). */
+    private bool $nothingMatched = false;
+
     private function fail(string $text): array
     {
         $this->problem ??= 'invalid';
@@ -6451,6 +6462,10 @@ final class DeviceIndex
         $result = $this->getState($arguments);
         if ($result['isError']) {
             return $result;
+        }
+        // Kein Treffer bei gültigem Filter: die Auskunft von get_state, ohne Karten und ohne den Satz über Karten
+        if ($this->nothingMatched) {
+            return $result + ['structuredContent' => ['kind' => 'cards', 'readOnly' => $readOnly, 'cards' => [], 'more' => 0, 'labels' => []]];
         }
         $name = trim((string)($arguments['name'] ?? ''));
         $floor = trim((string)($arguments['floor'] ?? ''));

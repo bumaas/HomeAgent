@@ -41,7 +41,8 @@ foreach (['-', '.', "\u{00A0}"] as $leer) {
     $r = $idx->getState(['room' => $leer]);
     pruefe($r['isError'] && str_starts_with($r['text'], 'No released device matches'), 'room=' . json_encode($leer) . ' liefert nicht das ganze Haus: ' . strtok($r['text'], "\n"));
     $r = $idx->getState(['room' => 'Küche', 'name' => $leer]);
-    pruefe($r['isError'], 'name=' . json_encode($leer) . ' liefert nicht den ganzen Raum: ' . strtok($r['text'], "\n"));
+    // Seit 10.11.2026 ohne Fehlerkennung (Name ohne Treffer ist eine Auskunft); entscheidend bleibt: kein Gerät in der Antwort
+    pruefe(str_starts_with($r['text'], 'No released device matches') && !str_contains($r['text'], ' | '), 'name=' . json_encode($leer) . ' liefert nicht den ganzen Raum: ' . strtok($r['text'], "\n"));
 }
 
 // Invertierter Kontakt: Matter BooleanState false = „Geöffnet“

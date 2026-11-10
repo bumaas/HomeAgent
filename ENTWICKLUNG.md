@@ -173,6 +173,15 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
 - **Namenssuche** in Stufen: genauer Name oder Alias, dann die Anfrage als Teil des Namens, dann der
   Name in der Anfrage, aber nur an einem Wortanfang („Esstischlampe“ trifft „Esstisch“,
   „Außentemperatur“ trifft „Temperatur“ nicht). Nur die beste Stufe zählt.
+- **Kein Treffer ist eine Auskunft** (Claude-App 10.11.2026: „Gibt es eine Kamera?“ ergab die richtige Antwort „Nein“, die
+  App zeigte darüber „Fehlgeschlagen“ mit Warndreieck, weil `get_state` die Zeile „Kein freigegebenes Gerät passt zu …“
+  mit `isError` lieferte). Mittelweg (Burkhard 10.11.2026): Ist der Filter in sich gültig (`unknown_name`, `no_match`),
+  kommt dieselbe Zeile ohne Fehlerkennung; bei unbekanntem Raum (`unknown_room`) und unbekannter Etage bleibt sie ein
+  Fehler, weil das Fehlersignal dort den zweiten Versuch mit der Raumliste anstößt. Dass schwächere Modelle ohne das Signal
+  nicht nachbessern, ist eine Annahme, gemessen ist es nicht. `set_state`, `control_device` und `run_scene` bleiben Fehler
+  (es wurde nichts geschaltet), `show_chart` auch (kein Diagramm). `show_devices` liefert die Auskunft mit leerer
+  Kartenliste und ohne den Satz über gezeigte Karten. Die Liste „Was nicht geklappt hat“ führt den Aufruf weiter, sie hängt
+  an `problem()`, nicht an `isError`. Test `check-kein-treffer.php`.
 - **Räume als Vokabular:** Die Beschreibung von `room` nennt die Räume der Geräte und der Raumliste
   („Known rooms: …“), sonst kürzt ein Modell „Bad oben“ zu `room=Bad`.
 - **Nur-Lese-Zugang:** `instructions` und die Beschreibung von `get_state` sagen dem Assistenten, dass

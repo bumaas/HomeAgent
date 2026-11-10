@@ -77,7 +77,7 @@ $r = rufe($idx, 'get', ['type' => 'temperature', 'room' => 'Wintergarten']);
 pruefe($zeile($r, 0) === '1 device(s) found (room=Wintergarten, type=temperature).', 'im Wintergarten nur das Thermostat, die Luftfeuchte nicht: ' . $r['text']);
 
 $r = rufe(index($ohneIst, $werte), 'get', ['type' => 'temperature']);
-pruefe($r['isError'], 'ein Thermostat ohne Ist-Temperatur ist kein Temperaturmesser: ' . $r['text']);
+pruefe(!$r['isError'] && str_starts_with($r['text'], 'No released device matches type=temperature.'), 'ein Thermostat ohne Ist-Temperatur ist kein Temperaturmesser: ' . $r['text']);
 
 $r = rufe($idx, 'get', ['type' => 'thermostat', 'active_only' => true]);
 pruefe($zeile($r, 0) === '2 device(s) found (type=thermostat). None of them knows on/off, so all are listed with their state.' && count(explode("\n", $r['text'])) === 3, 'Thermostate kennen kein an und aus, also alle mit Zustand: ' . $r['text']);

@@ -33,11 +33,12 @@ $kopf = static fn (array $r): string => explode("\n", $r['text'])[0];
 /* --- der Fall vom nuc: kein Gerät heißt so -------------------------------------------------------- */
 
 $r = frage($ohneGarten, ['name' => 'Außentemperatur']);
-pruefe($r['isError'] && str_starts_with($r['text'], 'No released device matches name=Außentemperatur.'), 'Außentemperatur trifft kein Gerät „Temperatur“: ' . $r['text']);
+// Seit 10.11.2026 ist ein Name ohne Treffer eine Auskunft, kein Fehler (check-kein-treffer.php)
+pruefe(!$r['isError'] && str_starts_with($r['text'], 'No released device matches name=Außentemperatur.'), 'Außentemperatur trifft kein Gerät „Temperatur“: ' . $r['text']);
 $r = frage($ohneGarten, ['name' => 'Aussentemperatur']);
-pruefe($r['isError'] && str_starts_with($r['text'], 'No released device matches name=Aussentemperatur.'), 'ebenso ohne ß: ' . $kopf($r));
+pruefe(!$r['isError'] && str_starts_with($r['text'], 'No released device matches name=Aussentemperatur.'), 'ebenso ohne ß: ' . $kopf($r));
 $r = frage($ohneGarten, ['name' => 'Raumtemperatur']);
-pruefe($r['isError'], 'Raumtemperatur trifft kein Gerät „Temperatur“: ' . $kopf($r));
+pruefe(!$r['isError'] && str_starts_with($r['text'], 'No released device matches name=Raumtemperatur.'), 'Raumtemperatur trifft kein Gerät „Temperatur“: ' . $kopf($r));
 
 /* --- mit einem Gerät, das so heißt, bleibt es beim genauen Treffer ---------------------------------- */
 

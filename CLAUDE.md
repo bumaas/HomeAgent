@@ -130,6 +130,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   Kandidatenliste. Widersprüche werden abgewiesen, Geräte, die den Befehl nicht verstehen, ausgelassen und gezählt.
   `open`/`close` mit `percent` stellt den Öffnungsgrad (`$direction`, nur Geräte mit diesem Befehl); `close` mit 100 und
   `open` mit 0 bleiben Widersprüche. Test `check-switch.php`.
+- **Kein Treffer** ist bei `get_state` und `show_devices` eine Auskunft ohne `isError` (`nothingMatched`), der Text bleibt.
+  Ein Fehler bleibt es bei unbekanntem Raum oder unbekannter Etage (zweiter Versuch mit der Raumliste), bei `set_state`,
+  `control_device` und `show_chart`. Test `check-kein-treffer.php`.
 - **Namenssuche** in Stufen, nur die beste zählt: genauer Name oder Alias, Anfrage als Teil des Namens, Name in der
   Anfrage nur an einem Wortanfang. Genannte Geräte gehören in `name`, nicht in `type` (steht in der Beschreibung).
 - **Vokabular:** Die Beschreibung von `room` nennt die bekannten Räume, die von `mode`/`fan_speed` die Einträge der
