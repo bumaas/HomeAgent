@@ -337,6 +337,17 @@ final class FakeBackend implements DeviceBackend
         return ['start' => $start, 'changes' => $changes] + ($since === null ? [] : ['since' => $since]);
     }
 
+    public function earlier(int $variableId, int $before, int $limit): ?array
+    {
+        $v = $this->variables[$variableId] ?? null;
+        if ($v === null || ($v['geloggt'] ?? false) !== true || !isset($v['rohwerte'])) {
+            return null;
+        }
+        $rows = array_values(array_filter($v['rohwerte'], static fn (array $r): bool => $r[0] < $before));
+        usort($rows, static fn (array $x, array $y): int => $y[0] <=> $x[0]);
+        return array_map(static fn (array $r): array => [(int)$r[0], $r[1]], array_slice($rows, 0, $limit));
+    }
+
     public function history(int $variableId, int $level, int $from, int $to): ?array
     {
         $this->historyRequests[] = [$variableId, $level];

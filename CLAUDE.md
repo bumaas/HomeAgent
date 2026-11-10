@@ -249,11 +249,12 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   mit Vorzeichen nach Richtung getrennt, positiv, `directionHistory`), nur mit Zeitraum. Test `check-teil-leistung.php`.
 - **Zeitleiste** für Zustände (`hasTimeline`, `stateSeries`, `allRows` holt in Scheiben): gleiche Zustände zusammengefasst,
   Summen je Zustand, Einzelabschnitte bis `TIMELINE_SECTIONS`/`TIMELINE_DETAIL`. Gerät mit Zähler: Verbrauch und Zeiten in
-  einer Zeile. In `show_chart` als Bänder (`chartBands`, höchstens `TIMELINE_CHART_MAX`), feste Reihenfolge der Zustände.
-  Test `check-zeitleiste.php`.
+  einer Zeile. In `show_chart` als Bänder (`chartBands`, höchstens `TIMELINE_CHART_MAX`, neben Linien fallen zu viele weg
+  und der Text nennt es), feste Reihenfolge der Zustände. Test `check-zeitleiste.php`.
 - **Zeitleiste fahrender Geräte** (`travelTimed`: Rollladen, Fenster nur mit Antrieb): aus der Position offen, teilweise
-  offen, geschlossen (Grenzen wie `levelText`), alle Abschnitte einzeln; bis jetzt nennt die Zeile „seit“ (`since` aus
-  `stateSeries`). Ohne Archiv eigene Absage, nie „misst Energie“. Test `check-fahrzeitleiste.php`.
+  offen, geschlossen (`travelClass`), alle Abschnitte einzeln, das Band immer mit allen drei Zuständen; bis jetzt nennt
+  die Zeile „seit“, den Beginn des Zustands (`earlier`, `SINCE_ROWS`). Ohne Archiv und bei Lamellen oder unbekanntem
+  Bereich (`unreadableTravel`) je eigene Absage, nie „misst Energie“. Test `check-fahrzeitleiste.php`.
 - **`show_chart`** (`DeviceIndex::chart`): nur mit Gerät mit Verlauf oder mit Bilanz. Werte in `structuredContent`, das
   Modell bekommt nur Kopfzeile und Kennzahlen. `resourceUri` `ui://homeagent/chart/<Prüfsumme der Seite>` (claude.ai
   speichert Seiten lange), `readResource` liefert auch zu alten Prüfsummen die heutige Seite. Jede Art liefert `range`

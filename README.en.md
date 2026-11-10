@@ -505,7 +505,8 @@ archive is left out and counted. There is no timeline for the whole house.
 
 Blinds and windows with a drive get their timeline from the position: open, partly open and closed, tilted for a
 tilting window. For "When were the blinds closed?" each blind then reads for example "closed 9 h 45 min, closed since
-09.11. 17:48". If the position is not logged, the answer says so.
+09.11. 17:48". If the position is not logged, the answer says so. Slats have no timeline, their position has no open
+or closed.
 
 ### For scripts
 
@@ -784,7 +785,8 @@ Where the values come from and where the limits are:
   for a room or name.
 - Power over a period: up to 20 devices at a time, for the house at most 400 days.
 - Timeline: the times of each section with up to twelve sections. With more than five devices, more than twelve
-  sections or more than two days only the totals with their count are given.
+  sections or more than two days only the totals with their count are given. A chart shows up to ten timelines; with
+  more next to measured values it draws only the measured values and the answer says so.
 
 For charts (**show_chart**) there are also: `compare` (`previous` or `year_before`), `versus` (second device for the
 scatter chart), `heatmap`, `cumulative` (cumulative chart), `costs` (in euros) and `part` (`grid`, `feed_in`, `pv`,

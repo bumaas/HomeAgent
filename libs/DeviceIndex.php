@@ -227,6 +227,9 @@ final class DeviceIndex
     /** Zeitleiste (B69): so viele Abschnitte stehen einzeln da, sonst nur die Summen mit Anzahl. */
     private const TIMELINE_SECTIONS = 12;
 
+    /** „seit“ eines fahrenden Geräts: So viele Rohwerte vor dem Zeitraum liest das Modul, um den Beginn des Zustands zu finden. */
+    private const SINCE_ROWS = 500;
+
     /** Abschnitte nur, wenn höchstens so viele Geräte eine Zeitleiste haben und der Zeitraum höchstens zwei Tage ist (Tokens). */
     private const TIMELINE_DETAIL = 5;
 
@@ -1036,6 +1039,19 @@ final class DeviceIndex
         return ($type === 'blind' || $type === 'window') && isset($roles['level']) && !isset($roles['state']);
     }
 
+    /**
+     * Fahrendes Gerät, dessen Position kein „offen“ und „geschlossen“ kennt: Lamellen (sie drehen zwischen außen und
+     * innen) oder ein unbekannter Bereich. Es hat keine Zeitleiste, auch mit Archiv nicht.
+     */
+    private function unreadableTravel(array $entry): bool
+    {
+        if (!self::travelTimed($entry['Type'], $entry['roles'])) {
+            return false;
+        }
+        $range = $this->backend->range($entry['roles']['level']);
+        return self::travelOf($entry, $range) === null || ($range['source'] ?? '') === 'rotation';
+    }
+
     private function isTimed(array $entry): bool
     {
         return self::hasTimeline($entry)
@@ -1076,7 +1092,10 @@ final class DeviceIndex
             return;
         }
         foreach ($timed as $item) {
-            $this->chart['bands'][] = $item['band'];
+            // Ohne Wert im Zeitraum gibt es kein Band; ein leerer Eintrag ließe die Seite abbrechen
+            if (isset($item['band'])) {
+                $this->chart['bands'][] = $item['band'];
+            }
         }
     }
 
@@ -1119,7 +1138,7 @@ final class DeviceIndex
             $variable = $entry['roles']['level'];
             $range = $this->backend->range($variable);
             $travel = self::travelOf($entry, $range);
-            if ($travel === null || $travel['open'] === $travel['closed'] || ($range['source'] ?? '') === 'rotation') {
+            if ($travel === null || ($range['source'] ?? '') === 'rotation') {
                 return null;
             }
             $tilt = $entry['Type'] === 'window' && $entry['Tilt'];
@@ -1141,8 +1160,7 @@ final class DeviceIndex
                 if (!is_int($value) && !is_float($value)) {
                     return (string)$value;
                 }
-                $percent = ($value - $travel['closed']) / ($travel['open'] - $travel['closed']) * 100.0;
-                return $travelLabels[$percent > 99.5 ? 0 : ($percent < 0.5 ? 2 : 1)];
+                return $travelLabels[self::travelClass(self::travelPercent($travel, $value))];
             }
             if ($words !== null) {
                 $active = self::activeValue($entry, $value);
@@ -1167,9 +1185,18 @@ final class DeviceIndex
         $known = $series['start'] !== null;
         $value = $series['start'];
         $begin = $from;
+        // Seit wann der Zustand am Beginn des Zeitraums gilt: der Wert davor, außer ein Wechsel fällt auf die Sekunde des
+        // Beginns (dann gälte der Zeitpunkt des Werts davor für einen anderen Zustand). $sinceBefore: Der Zustand galt
+        // schon vor dem Zeitraum, sein Beginn steht in den Rohwerten davor.
+        $since = $series['since'] ?? null;
+        $sinceBefore = $since !== null;
         foreach ($series['changes'] as [$time, $next]) {
             if ($known && $time > $begin) {
                 $add($label($value), $begin, $time);
+            }
+            if ($travel !== null && $time <= $from && (!$known || $label($next) !== $label($value))) {
+                $since = $time;
+                $sinceBefore = false;
             }
             $value = $next;
             $known = true;
@@ -1193,7 +1220,9 @@ final class DeviceIndex
         // jeden Tag dieselben sind.
         $present = array_keys($sums);
         $labels = $travel !== null ? $travelLabels : ($words !== null ? [$this->t($words[0]), $this->t($words[1])] : array_column($options, 1));
-        $states = array_values(array_unique(array_merge(array_values(array_intersect($labels, $present)), $present)));
+        // Die Seite färbt nach der Stelle in dieser Liste. Ein fahrendes Gerät nennt deshalb immer alle drei Zustände, sonst
+        // hätte „geschlossen“ je Gerät und Tag eine andere Farbe.
+        $states = array_values(array_unique(array_merge($travel !== null ? $labels : array_values(array_intersect($labels, $present)), $present)));
         $index = array_flip($states);
         $band = [
             'room'     => $entry['Room'],
@@ -1215,9 +1244,28 @@ final class DeviceIndex
         // die Rollläden geschlossen“ für viele Geräte, oder am Morgen danach ohne Änderung im Zeitraum).
         if ($travel !== null && $untilNow) {
             [$state, $b] = $sections[count($sections) - 1];
-            $at = $b > $from ? $b : ($series['since'] ?? null);
+            $at = $b > $from ? $b : $since;
+            if ($b <= $from && $sinceBefore) {
+                // Der Wert davor kann eine Änderung im selben Zustand sein (0 auf 0,002, beides geschlossen): zurück bis
+                // zum ersten Satz dieses Zustands. Endet das Archiv vorher, gilt der älteste Satz; reichen SINCE_ROWS
+                // Sätze nicht, bleibt das „seit“ weg, statt einen zu späten Zeitpunkt zu nennen.
+                $rows = $this->backend->earlier($variable, (int)$since, self::SINCE_ROWS) ?? [];
+                $found = count($rows) < self::SINCE_ROWS;
+                foreach ($rows as [$time, $earlier]) {
+                    if ($label($earlier) !== $state) {
+                        $found = true;
+                        break;
+                    }
+                    $at = $time;
+                }
+                if (!$found) {
+                    $at = null;
+                }
+            }
             if ($at !== null) {
-                $brief .= ', ' . $state . ' ' . sprintf($this->t('since %s'), date(date('Y-m-d', $at) === date('Y-m-d', $now) ? 'H:i' : 'd.m. H:i', $at));
+                // Der Beginn kann beliebig weit zurückliegen: aus einem anderen Jahr mit Jahr
+                $sinceFormat = date('Y-m-d', $at) === date('Y-m-d', $now) ? 'H:i' : (date('Y', $at) === date('Y', $now) ? 'd.m. H:i' : 'd.m.Y H:i');
+                $brief .= ', ' . $state . ' ' . sprintf($this->t('since %s'), date($sinceFormat, $at));
             }
         }
         if (!$show) {
@@ -1262,21 +1310,31 @@ final class DeviceIndex
         // Zustände (an/aus, offen/zu, Auswahl wie der Batteriemodus) bekommen eine Zeitleiste statt Minimum, Mittel und
         // Maximum: „05:00 1 / 1.8 / 2“ sagte niemandem etwas (B69, 13.10.2026).
         // Ein Zustand ohne Archiv wird wie bisher ausgelassen und gezählt.
-        $candidates = array_values(array_filter($matches, fn (array $e): bool => $this->isTimed($e)));
+        // Lamellen und Positionen ohne bekannten Bereich haben keine Zeitleiste; sie als „nicht archiviert“ zu melden,
+        // schickte den Anwender zum Logging, das schon läuft.
+        $unreadable = count(array_filter($matches, fn (array $e): bool => $this->unreadableTravel($e)));
+        $candidates = array_values(array_filter($matches, fn (array $e): bool => $this->isTimed($e) && !$this->unreadableTravel($e)));
         $timed = $this->archivedTimelines($candidates, $from, $to);
         $measured = array_values(array_filter($matches, fn (array $e): bool => self::isMeasured($e) && !$this->isTimed($e)));
         // Ausgelassen: Geräte ohne Messwert und, eigens gezählt, Zustände und Positionen ohne Archiv.
         $unarchived = count($candidates) - count($timed);
-        $skipped = count($matches) - count($measured) - count($candidates);
+        $skipped = count($matches) - count($measured) - count($candidates) - $unreadable;
         $leftOut = fn (): array => array_merge(
             $skipped > 0 ? [sprintf($this->t('%d device(s) without measured value were left out.'), $skipped)] : [],
-            $unarchived > 0 ? [sprintf($this->t('%d device(s) without archived history were left out.'), $unarchived)] : []
+            $unarchived > 0 ? [sprintf($this->t('%d device(s) without archived history were left out.'), $unarchived)] : [],
+            $unreadable > 0 ? [sprintf($this->t('%d device(s) whose position has no open or closed state (slats or unknown range) were left out.'), $unreadable)] : []
         );
+        if ($measured === [] && $candidates === [] && $unreadable > 0) {
+            return $this->fail(sprintf($this->t('The position of the matching devices has no open or closed state (slats or unknown range), so there is no timeline (%s). Only the current state is known.'), $filter));
+        }
         if ($measured === [] && $candidates !== []) {
             if ($timed === []) {
                 // Nur fahrende Geräte: Von Energie zu reden wäre bei „wann wurden die Rollläden geschlossen“ falsch, das
                 // Modell riet daraus den Grund (Claude-App 10.11.2026).
                 if (array_all($candidates, static fn (array $e): bool => self::travelTimed($e['Type'], $e['roles']))) {
+                    if ($unreadable > 0) {
+                        return $this->fail(sprintf($this->t('%d of the matching devices have no archived position, %d have a position without open or closed state (slats or unknown range), so there is no timeline (%s). Only the current state is known.'), count($candidates), $unreadable, $filter));
+                    }
                     return $this->fail(sprintf($this->t('The position of the matching devices is not archived in Symcon, so there is no history (%s). Only the current state is known.'), $filter));
                 }
                 return $this->fail(sprintf($this->t('None of the matching devices measures energy or has an archived state (%s).'), $filter));
@@ -1324,6 +1382,11 @@ final class DeviceIndex
         $heatOnly = array_values(array_filter($matches, static fn (array $entry): bool => self::hasHeat($entry) && !isset($entry['roles']['energy'])));
         $balance = $wholeHouse ? $this->balance : [];
         if ($metered === [] && $heatOnly === [] && $balance === [] && $meters === []) {
+            // Fürs ganze Haus gibt es keinen Verlauf. Haben Geräte einen, nennt die Absage den Weg dorthin, sonst riet das
+            // Modell den Grund („wahrscheinlich nicht archiviert“).
+            if ($wholeHouse && array_any($matches, fn (array $e): bool => self::isMeasured($e) || $this->isTimed($e))) {
+                return $this->fail(sprintf($this->t('No energy is measured for the whole house (%s). For a history or a timeline give a room, a type or a name.'), $filter));
+            }
             return $this->fail(sprintf($this->t('None of the matching devices measures energy (%s).'), $filter));
         }
         [$level, $from, $to] = $bounds;
@@ -4216,6 +4279,21 @@ final class DeviceIndex
         return self::travel(['open' => $range['max'], 'closed' => $range['min'], 'min' => $range['min'], 'max' => $range['max']], false);
     }
 
+    /** Öffnungsgrad in Prozent aus dem Rohwert und den Enden aus travel(); ohne Begrenzung auf 0 bis 100. */
+    private static function travelPercent(array $travel, int|float $value): float
+    {
+        return ($value - $travel['closed']) / ($travel['open'] - $travel['closed']) * 100.0;
+    }
+
+    /**
+     * Klasse eines Öffnungsgrads: 0 offen, 1 teilweise offen, 2 geschlossen. Zustandstext, „aktiv“ und Zeitleiste nehmen
+     * dieselben Grenzen, sonst hieße derselbe Stand hier „1 % offen“ und dort „geschlossen“.
+     */
+    private static function travelClass(float $percent): int
+    {
+        return $percent > 99.5 ? 0 : ($percent < 0.5 ? 2 : 1);
+    }
+
     /** Öffnungsgrad 0 bis 100 eines fahrenden Geräts; null, wenn der Bereich unbekannt ist. */
     private function openPercent(array $entry, mixed $value): ?float
     {
@@ -4224,7 +4302,7 @@ final class DeviceIndex
             return null;
         }
         $travel = self::travelOf($entry, $this->backend->range($variable));
-        return $travel === null ? null : ($value - $travel['closed']) / ($travel['open'] - $travel['closed']) * 100.0;
+        return $travel === null ? null : self::travelPercent($travel, $value);
     }
 
     /**
@@ -4960,7 +5038,7 @@ final class DeviceIndex
         // Fenster nur mit Antrieb: offen, sobald es nicht ganz geschlossen ist.
         if ($entry['Type'] === 'window' && !isset($entry['roles']['state']) && isset($entry['roles']['level'])) {
             $open = $this->openPercent($entry, $main['value']);
-            return ['text' => $this->blindText($entry, $main), 'active' => $open === null ? null : $open >= 0.5];
+            return ['text' => $this->blindText($entry, $main), 'active' => $open === null ? null : self::travelClass($open) !== 2];
         }
         if ($words !== null && is_bool($main['value'])) {
             $active = $main['value'] !== $entry['Invert'];
@@ -5050,16 +5128,17 @@ final class DeviceIndex
             return $formatted;
         }
         // Öffnungsgrad: dieselbe Zahl, die ein Befehl mit percent nennt.
-        $percent = ($value - $travel['closed']) / ($travel['open'] - $travel['closed']) * 100.0;
+        $percent = self::travelPercent($travel, $value);
         if (($range['source'] ?? '') === 'rotation') {
             // Lamellen drehen zwischen außen und innen, „offen“ und „geschlossen“ passen dort nicht.
             return self::formatNumber(round($percent)) . ' %';
         }
         $tilt = $entry['Type'] === 'window' && $entry['Tilt'];
-        if ($percent < 0.5) {
+        $class = self::travelClass($percent);
+        if ($class === 2) {
             return $this->t('closed');
         }
-        if ($percent > 99.5) {
+        if ($class === 0) {
             return $this->t($tilt ? 'tilted' : 'open');
         }
         return sprintf($this->t($tilt ? '%s %% tilted' : '%s %% open'), self::formatNumber(round($percent)));
@@ -5514,10 +5593,20 @@ final class DeviceIndex
         if (($chart['kind'] ?? '') === 'history' && count($chart['series'] ?? []) > self::HISTORY_MAX) {
             return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s). Give a room or a name, at most %d at a time.'), count($chart['series']), 'room=' . implode(', ', $rooms), self::HISTORY_MAX));
         }
+        $droppedBands = 0;
         if (count($chart['bands'] ?? []) > self::TIMELINE_CHART_MAX) {
-            return $this->fail(sprintf($this->t('Too many devices (%d) for a timeline chart. Give a room or a name, at most %d at a time.'), count($chart['bands']), self::TIMELINE_CHART_MAX));
+            if (($chart['series'] ?? []) === []) {
+                return $this->fail(sprintf($this->t('Too many devices (%d) for a timeline chart. Give a room or a name, at most %d at a time.'), count($chart['bands']), self::TIMELINE_CHART_MAX));
+            }
+            // Neben Linien (Temperaturen einer Etage) fallen nur die Bänder weg: Seit Rollläden eine Zeitleiste haben, wäre
+            // sonst das ganze Diagramm einer Etage abgelehnt.
+            $droppedBands = count($chart['bands']);
+            unset($chart['bands']);
         }
         $result = ['text' => implode("\n", array_merge($texts, array_map(static fn (array $failure): string => (string)strtok($failure['text'], "\n"), $failures))), 'isError' => false];
+        if ($droppedBands > 0) {
+            $result['text'] .= "\n" . sprintf($this->t('%d timeline(s) are not in the chart, at most %d fit. Give a type or a name for them.'), $droppedBands, self::TIMELINE_CHART_MAX);
+        }
         if (($chart['series'] ?? []) === [] && ($chart['bands'] ?? []) === []) {
             $this->problem = 'no_match';
             return $this->fail(sprintf($this->t('None of the matching devices has a history for a chart (%s).'), (string)($chart['filter'] ?? '')));

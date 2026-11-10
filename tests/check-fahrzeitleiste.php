@@ -109,14 +109,122 @@ pruefe(str_starts_with($r['text'], 'Timeline of 7 device(s) (') && count($zeilen
 pruefe($hat($r, 'Küche | Rollladen | blind | closed 8 h (1 times), open 1 h 45 min (1 times), open since 08:00'), 'viele Geräte: Summen und seit wann der jetzige Zustand gilt: ' . $r['text']);
 pruefe($hat($r, 'Bad oben | Rollladen | blind | closed 9 h 45 min, closed since 09.11. 17:48'), 'viele Geräte, ohne Änderung heute: ' . $r['text']);
 
+// Wechsel auf die Sekunde des Zeitraumbeginns (Review 10.11.2026, Rohwerte angenommen): „seit“ ist dieser Wechsel,
+// nicht der Zeitpunkt des Werts davor, als der Rollladen noch offen war
+$grenze = $echt;
+$grenze[59648]['geloggt'] = true;
+$grenze[59648]['rohwerte'] = [[$davor, 1], [strtotime('2026-11-10 00:00:00'), 0]];
+$grenze[59648]['wert'] = 0;
+$r = frage(['type' => 'blind', 'period' => 'today'], $grenze, $liste);
+pruefe($hat($r, 'Gast | Rollladen | blind | closed 9 h 45 min, closed since 00:00'), 'Wechsel genau am Beginn des Zeitraums: seit diesem Wechsel: ' . $r['text']);
+// Gegenprobe: derselbe Zustand am Beginn (0,002 zählt wie 0 als geschlossen) lässt das „seit“ beim Wert davor
+$grenze[59648]['rohwerte'] = [[$davor, 0], [strtotime('2026-11-10 00:00:00'), 0.002]];
+$grenze[59648]['wert'] = 0.002;
+$r = frage(['type' => 'blind', 'period' => 'today'], $grenze, $liste);
+pruefe($hat($r, 'Gast | Rollladen | blind | closed 9 h 45 min, closed since 08.11. 23:21'), 'gleicher Zustand am Beginn: seit dem Wert davor: ' . $r['text']);
+// „seit“ ist der Beginn des Zustands, nicht der letzte Rohwert davor (Review 10.11.2026, Rohwerte angenommen): 17:48 zu,
+// um 22:00 schreibt der Aktor 0,002, das ist weiter geschlossen
+$nachlauf = $echt;
+$nachlauf[59648]['geloggt'] = true;
+$nachlauf[59648]['rohwerte'] = [[$davor, 1], [$zu1748, 0], [strtotime('2026-11-09 22:00:00'), 0.002]];
+$nachlauf[59648]['wert'] = 0.002;
+$r = frage(['type' => 'blind', 'period' => 'today'], $nachlauf, $liste);
+pruefe($hat($r, 'Gast | Rollladen | blind | closed 9 h 45 min, closed since 09.11. 17:48'), 'Änderung im selben Zustand vor dem Zeitraum: seit dem Schließen: ' . $r['text']);
+$nachlauf[59648]['rohwerte'] = [[$davor, 1], [$halb1715, 0.4], [$zu1748, 0.6]];
+$nachlauf[59648]['wert'] = 0.6;
+$r = frage(['type' => 'blind', 'period' => 'today'], $nachlauf, $liste);
+pruefe($hat($r, 'Gast | Rollladen | blind | partly open 9 h 45 min, partly open since 09.11. 17:15'), 'teilweise offen mit zwei Ständen: seit dem ersten: ' . $r['text']);
+// Reicht das Archiv nicht bis zum Beginn des Zustands zurück, ist der älteste Satz die Auskunft
+$nachlauf[59648]['rohwerte'] = [[$davor, 0], [$zu1748, 0.002]];
+$nachlauf[59648]['wert'] = 0.002;
+$r = frage(['type' => 'blind', 'period' => 'today'], $nachlauf, $liste);
+pruefe($hat($r, 'Gast | Rollladen | blind | closed 9 h 45 min, closed since 08.11. 23:21'), 'Archiv beginnt im Zustand: seit dem ältesten Satz: ' . $r['text']);
+// Mehr Sätze im selben Zustand, als das Modul zurückliest: kein „seit“ statt eines zu späten
+$zappel = [];
+for ($i = 600; $i >= 1; $i--) {
+    $zappel[] = [$zu1748 - $i * 60, $i % 2 === 0 ? 0 : 0.002];
+}
+$nachlauf[59648]['rohwerte'] = $zappel;
+$nachlauf[59648]['wert'] = 0.002;
+$r = frage(['type' => 'blind', 'period' => 'today'], $nachlauf, $liste);
+pruefe($hat($r, 'Gast | Rollladen | blind | closed 9 h 45 min'), 'Beginn des Zustands nicht gefunden: kein „seit“: ' . $r['text']);
+// „seit“ aus einem anderen Jahr nennt das Jahr (Review 10.11.2026, Zeitpunkt angenommen): Der Wert davor kann beliebig
+// alt sein, „seit 03.11.“ läse sich am 10.11.2026 wie eine Woche
+$alt = $echt;
+$alt[20009]['rohwerte'] = [[strtotime('2025-11-03 14:00:00'), 0]];
+$r = frage(['room' => 'Flur', 'period' => 'today'], $alt, $liste);
+pruefe($hat($r, 'Flur | Fenster | window | closed 9 h 45 min, closed since 03.11.2025 14:00'), '„seit“ aus dem Vorjahr mit Jahr: ' . $r['text']);
+
+/* --- Position ohne „offen“ und „geschlossen“: nie als fehlendes Archiv gemeldet (Review 10.11.2026) --- */
+
+// ANGENOMMEN: Lamellen (Darstellung Rollladen mit Rotation) am echten Rollladen Gast, Position archiviert. Die Herkunft
+// „rotation“ ist wie in check-switch.php gesetzt, an keiner Anlage ist eine Lamellenposition archiviert.
+$lamellen = $mit;
+$lamellen[59648]['bereich']['herkunft'] = 'rotation';
+$r = frage(['room' => 'Gast', 'period' => 'yesterday'], $lamellen, $liste);
+pruefe($r['isError'] && str_starts_with($r['text'], 'The position of the matching devices has no open or closed state (slats or unknown range), so there is no timeline (') && str_ends_with($r['text'], 'Only the current state is known.'), 'Lamellen mit Archiv: eigene Absage: ' . $r['text']);
+pruefe(!str_contains($r['text'], 'archived') && !str_contains($r['text'], 'energy'), 'kein Wort von fehlendem Archiv: ' . $r['text']);
+$r = frage(['room' => 'Gast', 'period' => 'yesterday'], $lamellen, $liste, $de);
+pruefe($r['isError'] && str_starts_with($r['text'], 'Die Position der passenden Geräte kennt kein Offen oder Geschlossen (Lamellen oder unbekannter Bereich), deshalb gibt es keine Zeitleiste ('), 'Absage auf Deutsch: ' . $r['text']);
+// Gemischt: der Rollladen im Bad oben bekommt seine Zeitleiste, die Lamellen eine eigene Schlusszeile
+$r = frage(['type' => 'blind', 'period' => 'yesterday'], $lamellen, $liste);
+pruefe(!$r['isError'] && str_starts_with($r['text'], 'Timeline of 1 device(s) (') && $hat($r, '1 device(s) whose position has no open or closed state (slats or unknown range) were left out.'), 'gemischt: Lamellen ausgelassen und eigens gezählt: ' . $r['text']);
+pruefe(!str_contains($r['text'], 'without archived history'), 'gemischt: nicht als „ohne Archiv“ gezählt: ' . $r['text']);
+// Nur Lamellen und ein Rollladen ohne Archiv: die Absage nennt beide Gründe mit Anzahl
+$beides = $lamellen;
+$beides[47677] = $echt[47677];
+$r = frage(['type' => 'blind', 'period' => 'yesterday'], $beides, $liste);
+pruefe($r['isError'] && str_starts_with($r['text'], '1 of the matching devices have no archived position, 1 have a position without open or closed state (slats or unknown range), so there is no timeline (type=blind, period=yesterday). Only the current state is known.'), 'Lamellen und fehlendes Archiv: beide Gründe: ' . $r['text']);
+$r = frage(['type' => 'blind', 'period' => 'yesterday'], $beides, $liste, $de);
+pruefe($r['isError'] && str_starts_with($r['text'], '1 der passenden Geräte haben keine archivierte Position, bei 1 kennt die Position kein Offen oder Geschlossen (Lamellen oder unbekannter Bereich), deshalb gibt es keine Zeitleiste ('), 'beide Gründe auf Deutsch: ' . $r['text']);
+// ANGENOMMEN: das echte Flurfenster (Rohwerte echt) ohne bekannten Bereich
+$ohneBereich = $echt;
+unset($ohneBereich[20009]['bereich']);
+$r = frage(['room' => 'Flur', 'period' => 'yesterday'], $ohneBereich, $liste);
+pruefe($r['isError'] && str_starts_with($r['text'], 'The position of the matching devices has no open or closed state (slats or unknown range), so there is no timeline ('), 'Fenster mit Antrieb ohne Bereich: eigene Absage: ' . $r['text']);
+
+/* --- Ohne Filter: die Absage nennt den Ausweg (Review 10.11.2026) -------------------------------- */
+
+// Echt: Der Mitschnitt hat keine Bilanz und keinen Zähler. Fürs ganze Haus gibt es keinen Verlauf; statt „misst Energie“
+// sagt die Absage, womit die Zeitleiste kommt (Rohwerte der Rollläden angenommen wie oben).
+$r = frage(['period' => 'yesterday'], $mit, $liste);
+pruefe($r['isError'] && $r['text'] === 'No energy is measured for the whole house (all devices, period=yesterday). For a history or a timeline give a room, a type or a name.', 'ohne Filter: Ausweg genannt: ' . $r['text']);
+$r = frage(['period' => 'yesterday'], $mit, $liste, $de);
+pruefe($r['isError'] && str_starts_with($r['text'], 'Fürs ganze Haus wird keine Energie gemessen (') && str_ends_with($r['text'], 'Für einen Verlauf oder eine Zeitleiste einen Raum, Typ oder Namen angeben.'), 'ohne Filter auf Deutsch: ' . $r['text']);
+
 /* --- Band in show_chart und Schema --------------------------------------------------------------- */
 
 $r = frage(['room' => 'Flur', 'period' => 'yesterday'], $echt, $liste, null, 'chart');
 $band = $r['structuredContent']['bands'][0] ?? [];
 pruefe(!$r['isError'] && ($r['structuredContent']['kind'] ?? '') === 'timeline' && count($band['sections'] ?? []) === 9, 'Flurfenster als Band mit neun Abschnitten: ' . json_encode($band, JSON_UNESCAPED_UNICODE) . ' ' . $r['text']);
-pruefe(($band['states'] ?? []) === [['label' => 'tilted', 'active' => null], ['label' => 'closed', 'active' => null]], 'Zustände in fester Reihenfolge (offen, teilweise, zu): ' . json_encode($band['states'] ?? null, JSON_UNESCAPED_UNICODE));
+// Immer alle drei Zustände, auch die nicht vorkommenden: Die Seite färbt nach der Stelle in der Liste, sonst hätte
+// „geschlossen“ je Gerät und Tag eine andere Farbe (Review 10.11.2026)
+pruefe(($band['states'] ?? []) === [['label' => 'tilted', 'active' => null], ['label' => 'partly tilted', 'active' => null], ['label' => 'closed', 'active' => null]], 'Kippfenster: alle drei Zustände in fester Reihenfolge: ' . json_encode($band['states'] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($band['sections'][0][0] ?? null) === 2 && ($band['sections'][1][0] ?? null) === 0, 'Kippfenster: geschlossen an dritter, gekippt an erster Stelle: ' . json_encode(array_column($band['sections'] ?? [], 0)));
 $r = frage(['type' => 'blind', 'period' => 'yesterday'], $mit, $liste, null, 'chart');
 pruefe((($r['structuredContent']['bands'][0]['states'] ?? []) === [['label' => 'open', 'active' => null], ['label' => 'partly open', 'active' => null], ['label' => 'closed', 'active' => null]]), 'Rollladen: drei Zustände in fester Reihenfolge: ' . json_encode($r['structuredContent']['bands'][0]['states'] ?? null, JSON_UNESCAPED_UNICODE));
+$drei = [['label' => 'open', 'active' => null], ['label' => 'partly open', 'active' => null], ['label' => 'closed', 'active' => null]];
+$zweites = $r['structuredContent']['bands'][1] ?? [];
+pruefe(($zweites['room'] ?? '') === 'Bad oben' && ($zweites['states'] ?? []) === $drei && array_column($zweites['sections'] ?? [], 0) === [0, 2], 'Rollladen ohne Zwischenstand: dieselben drei Zustände, geschlossen an derselben Stelle: ' . json_encode($zweites, JSON_UNESCAPED_UNICODE));
+// Kein Wert im Zeitraum (Review 10.11.2026): echt, das Archiv des Flurfensters im Mitschnitt beginnt am 08.11. 23:21.
+// Im Text steht es, ins Diagramm kommt kein leeres Band (die Seite brach an „null“ ab)
+$r = frage(['room' => 'Flur', 'from' => '2026-11-07', 'to' => '2026-11-07'], $echt, $liste);
+pruefe(!$r['isError'] && $hat($r, 'Flur | Fenster | window | no values in this period'), 'kein Wert im Zeitraum: steht in der Zeile: ' . $r['text']);
+$warnungen = [];
+set_error_handler(static function (int $nr, string $text) use (&$warnungen): bool {
+    $warnungen[] = $text;
+    return true;
+});
+$r = frage(['room' => 'Flur', 'from' => '2026-11-07', 'to' => '2026-11-07'], $echt, $liste, null, 'chart');
+pruefe($r['isError'] && str_starts_with($r['text'], 'None of the matching devices has a history for a chart (') && !isset($r['structuredContent']), 'kein Wert im Zeitraum: Absage statt leerem Diagramm: ' . json_encode($r['structuredContent']['bands'] ?? null) . ' ' . $r['text']);
+// ANGENOMMEN: Position des Rollladens Gast erst seit heute archiviert; gestern zeigt das Diagramm nur das Bad oben
+$neu = $mit;
+$neu[59648]['rohwerte'] = [[strtotime('2026-11-10 08:00:00'), 1]];
+$r = frage(['type' => 'blind', 'period' => 'yesterday'], $neu, $liste, null, 'chart');
+$baender = $r['structuredContent']['bands'] ?? null;
+pruefe(!$r['isError'] && is_array($baender) && count($baender) === 1 && ($baender[0]['room'] ?? '') === 'Bad oben', 'ein Gerät ohne Wert im Zeitraum: nur das andere Band: ' . json_encode($baender, JSON_UNESCAPED_UNICODE));
+restore_error_handler();
+pruefe($warnungen === [], 'keine PHP-Warnung im Diagrammweg: ' . implode(' | ', $warnungen));
 // Die Werkzeugliste nennt die Zeitleiste auch, wenn nur Rollläden freigegeben sind
 pruefe(DeviceIndex::hasTimeline($liste[1]) && DeviceIndex::hasTimeline($liste[0]), 'hasTimeline für Rollladen und Fenster mit Antrieb');
 

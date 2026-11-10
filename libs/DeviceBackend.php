@@ -165,6 +165,14 @@ interface DeviceBackend
      */
     public function stateSeries(int $variableId, int $from, int $to): ?array;
 
+    /**
+     * Rohwerte des Archivs vor $before, der neueste zuerst, höchstens $limit: Zeitpunkt und Wert. Damit findet die
+     * Zeitleiste den Beginn eines Zustands, der schon vor dem Zeitraum galt. null = nicht archiviert.
+     *
+     * @return null|list<array{0: int, 1: mixed}>
+     */
+    public function earlier(int $variableId, int $before, int $limit): ?array;
+
     /** Einheit der Variable aus Profil-Suffix oder Darstellung (etwa W, kW); '' = keine. */
     public function unit(int $variableId): string;
 

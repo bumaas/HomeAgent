@@ -123,6 +123,30 @@ pruefe(($r['structuredContent']['kind'] ?? '') === 'history' && count($r['struct
 $r = frage(['room' => 'Bad', 'name' => 'Deckenlicht', 'period' => 'yesterday'], null, 'chart');
 pruefe($r['isError'], 'ohne Archiv kein Diagramm: ' . $r['text']);
 
+/* --- Mehr Bänder, als ins Diagramm passen: die Linien kommen trotzdem (Review 10.11.2026) ---------- */
+
+// ANGENOMMEN: elf Rollläden mit archivierter Position im echten Raum Dachboden (Bereich wie der echte Rollladen Gast,
+// Zeitpunkte gesetzt). Echt sind der Ladezustand (Linie) und der Batteriemodus (Band). Vor der Zeitleiste fahrender
+// Geräte kam hier das Diagramm; mit zwölf Bändern lehnte show_chart alles ab, auch die Linie.
+$echteListe = $liste;
+$echteWerte = $werte;
+for ($i = 1; $i <= 11; $i++) {
+    $liste[] = ['Room' => 'Dachboden', 'Name' => 'Rollladen ' . $i, 'Aliases' => '', 'Type' => 'blind', 'Invert' => false, 'LevelVariableID' => 69990 + $i];
+    $werte[69990 + $i] = ['name' => 'Rollladen ' . $i . ': LEVEL', 'wert' => 0, 'formatiert' => 'Geschlossen', 'aktion' => true, 'geloggt' => true,
+        'bereich'  => ['min' => 0, 'max' => 1, 'offen' => 1, 'geschlossen' => 0, 'herkunft' => 'presentation', 'profil' => ''],
+        'rohwerte' => [[strtotime('2026-10-11 20:00:00'), 0], [strtotime('2026-10-12 07:00:00'), 1], [strtotime('2026-10-12 18:00:00'), 0]]];
+}
+$r = frage(['room' => 'Dachboden', 'period' => 'yesterday'], null, 'chart');
+pruefe(!$r['isError'] && ($r['structuredContent']['kind'] ?? '') === 'history' && count($r['structuredContent']['series'] ?? []) === 1, 'zwölf Bänder neben einer Linie: die Linie kommt: ' . $r['text']);
+pruefe(($r['structuredContent']['bands'] ?? []) === [] && str_contains($r['text'], '12 timeline(s) are not in the chart, at most 10 fit. Give a type or a name for them.'), 'die Bänder bleiben weg und der Text sagt es: ' . count($r['structuredContent']['bands'] ?? []) . ' ' . $r['text']);
+$r = frage(['room' => 'Dachboden', 'period' => 'yesterday'], $de, 'chart');
+pruefe(str_contains($r['text'], '12 Zeitleiste(n) stehen nicht im Diagramm, höchstens 10 passen hinein. Für sie einen Typ oder Namen angeben.'), 'auf Deutsch: ' . $r['text']);
+// Nur Bänder und zu viele: Absage wie bisher
+$r = frage(['room' => 'Dachboden', 'type' => 'blind', 'period' => 'yesterday'], null, 'chart');
+pruefe($r['isError'] && str_contains($r['text'], 'Too many devices (11) for a timeline chart'), 'elf Rollläden allein: Absage wie bisher: ' . $r['text']);
+$liste = $echteListe;
+$werte = $echteWerte;
+
 /* --- Karten: Messwerte bilden eine eigene Gruppe (Layoutvergleich 13.10.2026) -------------------- */
 
 $anlage = new FakeBackend($werte);

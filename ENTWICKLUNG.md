@@ -560,6 +560,32 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   zwölf Rollladenpositionen archiviert, nur die Position eines Fensters mit Antrieb; dessen Rohwerte vom 09.11. sind der
   Mitschnitt, die Rohwerte der Rollläden im Test sind angenommen (Zeitpunkte vom Fenster, Werte im echten Bereich).
   Test `check-fahrzeitleiste.php`.
+  **Review vom 10.11.2026 (build 276)**, acht Funde an build 274:
+  - „seit“ nannte den Zeitpunkt des letzten Rohwerts vor dem Zeitraum. Fiel ein Wechsel auf die Sekunde des Beginns,
+    gehörte dieser Zeitpunkt zu einem anderen Zustand („closed since 08.11. 23:21“, da war der Rollladen offen). Schrieb
+    der Aktor vor dem Zeitraum noch einen Wert im selben Zustand (0 auf 0,002), kam dessen Zeit statt der des Schließens.
+    Jetzt liest `timelineOf` über `DeviceBackend::earlier()` die Rohwerte davor und geht bis zum ersten Satz des Zustands
+    zurück. Endet das Archiv vorher, gilt der älteste Satz. Mehr als `SINCE_ROWS` (500, gesetzt, nicht gemessen) Sätze
+    im selben Zustand: kein „seit“, statt eines zu späten. Aus einem anderen Jahr steht das Jahr dabei.
+  - Lamellen und ein unbekannter Bereich liefen als „nicht archiviert“, die Absage schickte den Anwender zum Logging, das
+    schon lief. `unreadableTravel()` nimmt sie vorab heraus: eigene Absage, bei gemischten Treffern eine eigene
+    Schlusszeile, zusammen mit Geräten ohne Archiv eine Absage mit beiden Anzahlen (Burkhard: „die absage soll beide
+    gründe nennen“).
+  - Ohne Wert im Zeitraum lieferte `timelineOf` kein `band`; `chartBands` schrieb `null` ins Diagramm, die Seite brach
+    ab. Betraf auch die Zustände seit B69. Solche Geräte bekommen kein Band, ohne jedes Band lehnt `show_chart` ab.
+  - Das Band nannte nur vorkommende Zustände, die Seite färbt nach der Stelle in der Liste: „geschlossen“ hatte je
+    Rollladen und Tag eine andere Farbe. Fahrende Geräte nennen immer alle drei. Bei einer Auswahl (Batteriemodus) steht
+    weiter nur, was vorkommt (offene Frage, eine Variable mit vielen Einträgen bekäme eine lange Legende).
+  - Mehr als `TIMELINE_CHART_MAX` Bänder lehnten das ganze Diagramm ab, auch die Linien eines Raums oder einer Etage.
+    Mit Rollläden ist die Grenze schnell erreicht. Neben Linien fallen jetzt alle Bänder weg und der Text nennt es; die
+    ersten zehn zu zeigen sähe vollständig aus, ohne es zu sein. Nachgestellt am Mitschnitt vom 13.10. mit elf
+    angenommenen Rollläden im Dachboden, an keiner Anlage messbar.
+  - Fürs ganze Haus ohne Bilanz und Zähler blieb „misst Energie“. Die Absage nennt jetzt den Ausweg (Raum, Typ oder Name),
+    wenn Geräte einen Verlauf oder eine Zeitleiste haben. Einen Verlauf fürs Haus gibt es weiter nicht.
+  - Öffnungsgrad und Grenzen standen an vier Stellen, jetzt in `travelPercent()` und `travelClass()`. Nicht umgebaut:
+    die `$travel`-Abfragen in `timelineOf`.
+  Die Rohwerte aller neuen Fälle sind angenommen und im Test so gekennzeichnet, echt ist der Fall ohne Wert im Zeitraum
+  (Flurfenster, Abfrage vor Beginn des Archivs).
 - **Diagramm als MCP App** (`show_chart`, Backlog B63): nur für Clients, die `io.modelcontextprotocol/ui` mit
   `text/html;profile=mcp-app` anmelden (nach 2026-07-28 in jeder Anfrage, `McpProtocol::showsApps`; gemessen: Claude-App ja,
   Claude Code und HA nein) und nur mit einem Gerät mit Verlauf. Clients von Anthropic (`clientInfo.name` „Anthropic/…“)

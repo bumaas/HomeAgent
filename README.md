@@ -515,7 +515,8 @@ aus 12 h 18 min“). Ein Zustand ohne Archiv wird ausgelassen und gezählt. Für
 
 Rollläden und Fenster mit Antrieb bekommen ihre Zeitleiste aus der Position: offen, teilweise offen und geschlossen,
 beim Kippfenster gekippt. Auf „Wann wurden die Rollläden geschlossen?“ steht dann je Rollladen etwa „geschlossen
-9 h 45 min, geschlossen seit 09.11. 17:48“. Ist die Position nicht geloggt, sagt die Antwort das.
+9 h 45 min, geschlossen seit 09.11. 17:48“. Ist die Position nicht geloggt, sagt die Antwort das. Lamellen haben
+keine Zeitleiste, ihre Position kennt kein Offen oder Geschlossen.
 
 ### Für Skripte
 
@@ -799,7 +800,8 @@ Woher die Werte kommen und wo die Grenzen liegen:
   Antwort um einen Raum oder Namen.
 - Leistung über einen Zeitraum: bis zu 20 Geräte auf einmal, fürs Haus höchstens 400 Tage.
 - Zeitleiste: die Zeitpunkte jedes Abschnitts bei bis zu zwölf Abschnitten. Bei mehr als fünf Geräten, mehr als zwölf
-  Abschnitten oder mehr als zwei Tagen stehen nur die Summen mit der Anzahl da.
+  Abschnitten oder mehr als zwei Tagen stehen nur die Summen mit der Anzahl da. Ein Diagramm zeigt bis zu zehn
+  Zeitleisten; sind es neben Messwerten mehr, zeichnet es nur die Messwerte und die Antwort nennt das.
 
 Für Diagramme (**show_chart**) kommen dazu: `compare` (`previous` oder `year_before`), `versus` (zweites Gerät für die
 Punktwolke), `heatmap`, `cumulative` (Summenkurve), `costs` (in Euro) und `part` (`grid`, `feed_in`, `pv`,

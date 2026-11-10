@@ -675,6 +675,21 @@ final class SymconDeviceBackend implements DeviceBackend
         ] + ($before === [] ? [] : ['since' => (int)$before[0]['TimeStamp']]);
     }
 
+    public function earlier(int $variableId, int $before, int $limit): ?array
+    {
+        $archives = IPS_GetInstanceListByModuleID(self::ARCHIVE_CONTROL);
+        if ($archives === [] || $variableId <= 0 || !IPS_VariableExists($variableId)) {
+            return null;
+        }
+        try {
+            // Laut Doku AC_GetLoggedValues: Startzeit 0 = von Anfang an, neueste zuerst, Limit = höchstens so viele Datensätze
+            $rows = AC_GetLoggedValues($archives[0], $variableId, 0, $before - 1, $limit);
+        } catch (Throwable) {
+            return null;
+        }
+        return array_map(static fn (array $r): array => [(int)$r['TimeStamp'], $r['Value']], $rows);
+    }
+
     public function timestamp(): int
     {
         return time();
