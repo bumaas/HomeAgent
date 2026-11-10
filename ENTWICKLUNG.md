@@ -368,6 +368,10 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   beschreiben, und die Antwort braucht 18,5 s statt 4,6 s. Ohne Haken sagt es richtig, dass Bilder für den Zugang nicht
   freigegeben sind. Der Client von HA meldet sich als „mcp 0.1.0“, dem Namen des Python-SDK; am Namen lässt er sich
   deshalb nicht erkennen, und ein Ausblenden von `show_camera` je Client wurde verworfen. Es bleibt beim Hinweis am Haken.
+  Satz in der Antwort (build 282): Ein Tester legte am 10.11.2026 acht Kameras an, sein Zugang hatte den Haken nicht.
+  Sein Assistent rief `show_devices` auf, bekam die Karte mit der Aufnahmezeit und meldete, die Schnittstelle schicke
+  nur die Zeitangabe; den Grund kannte er nicht, denn er stand nur in der Beschreibung von `get_state`. Seitdem hängt
+  das Modul den Satz mit dem Namen des Hakens an jede Antwort von `get_state` und `show_devices`, die eine Kamera nennt.
   Ansicht in der App (build 280): In der Claude-App rief das Modell am 10.11.2026 `show_camera` auf und beschrieb das
   Bild richtig, der Anwender sah davon nur eine winzige Vorschau neben der Werkzeugzeile („Ich sehe das Bild nicht“);
   erst danach teilte Claude es als Datei. Das Bild in der Gerätekarte wurde verworfen: Das Modell sähe es dort nicht,

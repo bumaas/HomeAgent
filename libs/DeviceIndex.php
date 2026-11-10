@@ -324,6 +324,9 @@ final class DeviceIndex
     /** Art des Problems der letzten Anfrage, null = alles erreicht (problem()). */
     private ?string $problem = null;
 
+    /** Ob die letzte Anfrage eine Kamera mit ihrem Zustand genannt hat (namedCamera()). */
+    private bool $cameraNamed = false;
+
     /** Während chart(): hier sammelt history() die Daten fürs Diagramm statt der Tabellenzeilen. */
     private ?array $chart = null;
 
@@ -4971,6 +4974,7 @@ final class DeviceIndex
     private function stateOf(array $entry): array
     {
         if ($entry['Type'] === 'camera') {
+            $this->cameraNamed = true;
             return ['text' => $this->cameraText($entry), 'active' => null];
         }
         // Ein Gerät nur mit Leistung (Wärmepumpe ohne Schaltzustand): die Leistung ist der Zustand. Ein Klimagerät ohne
@@ -5423,6 +5427,15 @@ final class DeviceIndex
     public function problem(): ?string
     {
         return $this->problem;
+    }
+
+    /**
+     * Ob die letzte Anfrage eine Kamera mit ihrem Zustand genannt hat. Das Modul hängt dann für einen Zugang ohne
+     * Kamerabilder den Grund an die Antwort, damit der Assistent ihn dem Anwender nennen kann.
+     */
+    public function namedCamera(): bool
+    {
+        return $this->cameraNamed;
     }
 
     /**

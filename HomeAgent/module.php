@@ -2781,14 +2781,31 @@ class HomeAgent extends IPSModuleStrict
             $index === null                        => ['text' => 'Unknown tool ' . $name, 'isError' => true],
             $name === 'show_camera'                => $this->withNow($index->camera($arguments)),
             $name === 'camera_image'               => $index->cameraPart($arguments),
-            $name === 'get_state'                  => $this->withNow($index->getState($arguments)),
+            $name === 'get_state'                  => $this->withNow($this->withImageNote($index->getState($arguments), $index, $access)),
             $name === 'show_chart'                 => $index->chart($arguments),
-            $name === 'show_devices'               => $index->cards($arguments, $readOnly),
+            $name === 'show_devices'               => $this->withImageNote($index->cards($arguments, $readOnly), $index, $access),
             $name === 'control_device'             => $index->controlDevice($arguments),
             $name === 'set_state'                  => $index->setState($arguments),
             default                                => $index->runScene($arguments),
         };
         return $this->logged($name, $arguments, $outcome, $access, $index === null ? 'invalid' : $index->problem(), $started, $client);
+    }
+
+    /**
+     * Nennt eine Antwort eine Kamera und hat der Zugang den Haken „Kamerabilder“ nicht, sagt es die Antwort selbst.
+     * Die Beschreibung von get_state allein reicht nicht: Clients halten Werkzeuglisten lange fest, und ein Assistent
+     * meldete seinem Anwender nur, die Schnittstelle schicke kein Bild. Skriptfunktionen haben keinen Zugang.
+     *
+     * @param array<string, mixed>      $outcome
+     * @param null|array<string, mixed> $access
+     * @return array<string, mixed>
+     */
+    private function withImageNote(array $outcome, DeviceIndex $index, ?array $access): array
+    {
+        if ($access !== null && ($access['Images'] ?? false) !== true && $index->namedCamera()) {
+            $outcome['text'] .= "\n" . $this->Translate('Camera images are not released for this access (checkbox "Camera images" at the access).');
+        }
+        return $outcome;
     }
 
     /**

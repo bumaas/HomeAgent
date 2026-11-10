@@ -4010,6 +4010,30 @@ pruefe(($r['isError'] ?? false) === true && !isset($r['image']) && str_contains(
 $r = $zRuf(null, ['name' => 'Einfahrt']);
 pruefe(($r['isError'] ?? false) === true && !isset($r['image']), 'ohne Zugang kein Bild: ' . json_encode($r, JSON_UNESCAPED_UNICODE));
 
+// Ohne Haken sagt es auch die Antwort, sobald eine Kamera darin steht (build 282). Anlass: Tester 10.11.2026, acht
+// Kameras, Zugang ohne Haken; der Assistent rief show_devices, bekam nur die Aufnahmezeit und meldete „die
+// Schnittstelle schickt nur die Zeitangabe“. Die Beschreibung von get_state allein reicht nicht, Clients halten
+// Werkzeuglisten lange fest, und show_devices sagte es nirgends.
+$zFrage = static fn (?array $zugang, string $werkzeug, array $argumente): array => (array)\Closure::bind(fn () => $this->callTool($werkzeug, $argumente, $zugang), $z, HomeAgent::class)();
+$zSatz = 'Camera images are not released for this access (checkbox "Camera images" at the access).';
+$r = $zFrage($zZugaenge['Ohne Bild'] ?? null, 'get_state', ['type' => 'camera']);
+$zText = (string)($r['text'] ?? '');
+pruefe(($r['isError'] ?? true) === false && str_contains($zText, 'Einfahrt | camera | image from ') && str_contains($zText, "\n" . $zSatz . "\nNow: "),
+    'get_state ohne Haken: die Antwort nennt die Kamera und sagt, dass Bilder nicht freigegeben sind, vor der Zeit jetzt: ' . $zText);
+$r = $zFrage($zZugaenge['Ohne Bild'] ?? null, 'get_state', ['room' => 'Küche']);
+pruefe(str_contains((string)($r['text'] ?? ''), 'Deckenlicht') && !str_contains((string)($r['text'] ?? ''), 'Camera images'), 'get_state ohne Kamera unter den Treffern: kein Satz zu Bildern: ' . ($r['text'] ?? ''));
+$r = $zFrage($zZugaenge['Mit Bild'] ?? null, 'get_state', ['type' => 'camera']);
+pruefe(str_contains((string)($r['text'] ?? ''), 'Einfahrt') && !str_contains((string)($r['text'] ?? ''), 'not released'), 'get_state mit Haken: kein Satz: ' . ($r['text'] ?? ''));
+$r = $zFrage(null, 'get_state', ['type' => 'camera']);
+pruefe(str_contains((string)($r['text'] ?? ''), 'Einfahrt') && !str_contains((string)($r['text'] ?? ''), 'not released'), 'get_state ohne Zugang (Skript): kein Satz: ' . ($r['text'] ?? ''));
+$r = $zFrage($zZugaenge['Ohne Bild'] ?? null, 'show_devices', ['name' => 'Einfahrt']);
+pruefe(($r['isError'] ?? true) === false && str_ends_with((string)($r['text'] ?? ''), "\n" . $zSatz) && isset($r['structuredContent']),
+    'show_devices ohne Haken: der Text endet mit dem Satz, die Karte bleibt: ' . ($r['text'] ?? ''));
+$r = $zFrage($zZugaenge['Ohne Bild'] ?? null, 'show_devices', ['room' => 'Küche']);
+pruefe(!str_contains((string)($r['text'] ?? ''), 'Camera images'), 'show_devices ohne Kamera: kein Satz: ' . ($r['text'] ?? ''));
+$r = $zFrage($zZugaenge['Mit Bild'] ?? null, 'show_devices', ['name' => 'Einfahrt']);
+pruefe(!str_contains((string)($r['text'] ?? ''), 'not released'), 'show_devices mit Haken: kein Satz: ' . ($r['text'] ?? ''));
+
 // Über den Hook: der Bildblock in der Antwort, im Protokoll nur der Text
 IPS_SetProperty($zid, 'LogEnabled', true);
 IPS_ApplyChanges($zid);

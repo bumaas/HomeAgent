@@ -260,6 +260,7 @@
             "Camera images": "Kamerabilder",
             "Camera images (the assistant may fetch the still images of released cameras; they go to the provider of the assistant. Not for Home Assistant, it cannot show images.)": "Kamerabilder (der Assistent darf die Standbilder freigegebener Kameras abrufen; sie gehen an den Anbieter des Assistenten. Nicht für Home Assistant, es kann keine Bilder zeigen.)",
             "Camera images are not released for this access.": "Kamerabilder sind für diesen Zugang nicht freigegeben.",
+            "Camera images are not released for this access (checkbox \"Camera images\" at the access).": "Kamerabilder sind für diesen Zugang nicht freigegeben (Haken „Kamerabilder“ am Zugang).",
             "No camera is released.": "Es ist keine Kamera freigegeben.",
             "No released camera has the key %s.": "Keine freigegebene Kamera hat den Schlüssel %s.",
             "The image of camera \"%s\" has no part at %d.": "Das Bild der Kamera „%s“ hat kein Stück bei %d.",
