@@ -1,0 +1,143 @@
+{
+    "_quelle": "nuc 10.11.2026 09:45, nur gelesen. Flurfenster mit Antrieb (Homematic-Rollladenaktor am Kettenantrieb, Haken Kippfenster): Rohwerte der Position (AC_GetLoggedValues) vom 09.11.2026 samt letztem Wert davor (08.11. 23:21), viermal gekippt. Rollladen Gast (Homematic, 1 = offen) und Rollladen Bad oben (Velux KLF200, 0 = offen, 51200 = zu): Position nicht archiviert, wie bei allen zwölf Rollläden der Anlage; Wert, Bereich und Fahrstatus sind echt. Bereich aus SymconDeviceBackend::range().",
+    "zeitzone": "Europe/Berlin",
+    "jetzt": 1794300314,
+    "von": 1794178800,
+    "bis": 1794265199,
+    "variablen": {
+        "20009": {
+            "name": "Flur.Verschluss.Fenster:1: LEVEL",
+            "wert": 0,
+            "formatiert": "0.0 %",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 1,
+                "offen": 1,
+                "geschlossen": 0,
+                "herkunft": "reversed",
+                "profil": "Intensity.1.Reversed"
+            },
+            "geloggt": true,
+            "rohwerte": [
+                [
+                    1794176505,
+                    0
+                ],
+                [
+                    1794209986,
+                    1
+                ],
+                [
+                    1794211785,
+                    0
+                ],
+                [
+                    1794234104,
+                    1
+                ],
+                [
+                    1794236265,
+                    0
+                ],
+                [
+                    1794240945,
+                    1
+                ],
+                [
+                    1794242925,
+                    0
+                ],
+                [
+                    1794247605,
+                    1
+                ],
+                [
+                    1794249585,
+                    0
+                ]
+            ]
+        },
+        "20675": {
+            "name": "Flur.Verschluss.Fenster:1: WORKING",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": false,
+            "geloggt": false
+        },
+        "59648": {
+            "name": "Gast.Verschluss.Rollladen:1: LEVEL",
+            "wert": 1,
+            "formatiert": "Geöffnet",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 1,
+                "offen": 1,
+                "geschlossen": 0,
+                "herkunft": "presentation",
+                "profil": ""
+            },
+            "geloggt": false
+        },
+        "51390": {
+            "name": "Gast.Verschluss.Rollladen:1: WORKING",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": false,
+            "geloggt": false
+        },
+        "47677": {
+            "name": "Bad: Position",
+            "wert": 13,
+            "formatiert": "0 % geschlossen",
+            "aktion": true,
+            "bereich": {
+                "min": 0,
+                "max": 51200,
+                "offen": 0,
+                "geschlossen": 51200,
+                "herkunft": "presentation",
+                "profil": ""
+            },
+            "geloggt": false
+        },
+        "44396": {
+            "name": "Bad: Laufstatus",
+            "wert": false,
+            "formatiert": "gestoppt",
+            "aktion": false,
+            "geloggt": false
+        }
+    },
+    "geraete": [
+        {
+            "Room": "Flur",
+            "Name": "Fenster",
+            "Aliases": "Flurfenster",
+            "Type": "window",
+            "Invert": false,
+            "Tilt": true,
+            "LevelVariableID": 20009,
+            "MovingVariableID": 20675
+        },
+        {
+            "Room": "Gast",
+            "Name": "Rollladen",
+            "Aliases": "",
+            "Type": "blind",
+            "Invert": false,
+            "LevelVariableID": 59648,
+            "MovingVariableID": 51390
+        },
+        {
+            "Room": "Bad oben",
+            "Name": "Rollladen",
+            "Aliases": "",
+            "Type": "blind",
+            "Invert": false,
+            "LevelVariableID": 47677,
+            "MovingVariableID": 44396
+        }
+    ]
+}

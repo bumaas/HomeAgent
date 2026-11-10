@@ -672,7 +672,7 @@ final class SymconDeviceBackend implements DeviceBackend
         return [
             'start'   => $before === [] ? null : $before[0]['Value'],
             'changes' => array_map(static fn (array $r): array => [(int)$r['TimeStamp'], $r['Value']], $rows),
-        ];
+        ] + ($before === [] ? [] : ['since' => (int)$before[0]['TimeStamp']]);
     }
 
     public function timestamp(): int

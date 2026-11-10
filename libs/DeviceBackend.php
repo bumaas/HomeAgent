@@ -159,9 +159,9 @@ interface DeviceBackend
     /**
      * Zustandswechsel aus den Rohwerten des Archivs (Zeitleiste, B69): der letzte Wert vor $from (null = keiner) und
      * die Änderungen von $from bis $to, aufsteigend. $to = 0 heißt bis jetzt. Das Archiv speichert nur Änderungen.
-     * null = nicht archiviert oder als Zähler aggregiert.
+     * „since“ ist der Zeitpunkt des Werts vor $from, wenn es ihn gibt. null = nicht archiviert oder als Zähler aggregiert.
      *
-     * @return null|array{start: mixed, changes: list<array{0: int, 1: mixed}>}
+     * @return null|array{start: mixed, changes: list<array{0: int, 1: mixed}>, since?: int}
      */
     public function stateSeries(int $variableId, int $from, int $to): ?array;
 

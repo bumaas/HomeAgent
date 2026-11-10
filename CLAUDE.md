@@ -248,6 +248,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   Summen je Zustand, Einzelabschnitte bis `TIMELINE_SECTIONS`/`TIMELINE_DETAIL`. Gerät mit Zähler: Verbrauch und Zeiten in
   einer Zeile. In `show_chart` als Bänder (`chartBands`, höchstens `TIMELINE_CHART_MAX`), feste Reihenfolge der Zustände.
   Test `check-zeitleiste.php`.
+- **Zeitleiste fahrender Geräte** (`travelTimed`: Rollladen, Fenster nur mit Antrieb): aus der Position offen, teilweise
+  offen, geschlossen (Grenzen wie `levelText`), alle Abschnitte einzeln; bis jetzt nennt die Zeile „seit“ (`since` aus
+  `stateSeries`). Ohne Archiv eigene Absage, nie „misst Energie“. Test `check-fahrzeitleiste.php`.
 - **`show_chart`** (`DeviceIndex::chart`): nur mit Gerät mit Verlauf oder mit Bilanz. Werte in `structuredContent`, das
   Modell bekommt nur Kopfzeile und Kennzahlen. `resourceUri` `ui://homeagent/chart/<Prüfsumme der Seite>` (claude.ai
   speichert Seiten lange), `readResource` liefert auch zu alten Prüfsummen die heutige Seite. Jede Art liefert `range`

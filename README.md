@@ -350,7 +350,7 @@ und der Selbsttest nennt die Variable mit ihrer ID.
 | die Wärme ohne Wärmezähler nennt | die Wärmeleistung geloggt sein |
 | die Leistung über einen Zeitraum nennt | die Leistung geloggt sein |
 | einen Verlauf von Messwerten zeigt | der Messwert geloggt sein |
-| eine Zeitleiste zeigt | der Zustand geloggt sein |
+| eine Zeitleiste zeigt | der Zustand geloggt sein, bei Rollläden und Fenstern mit Antrieb die Position |
 
 Ein Energiezähler zählt in mWh, Wh, kWh oder MWh, ohne Einheit gilt kWh. Ein Zähler in einer anderen Einheit, etwa ein
 Wasser- oder Gaszähler, gilt nicht als Energiezähler: Seine Zeile sagt „kein Energiezähler (Einheit m³)“, und er zählt
@@ -512,6 +512,10 @@ dieselben Zeiträume eine **Zeitleiste**: wie lange jeder Zustand galt und, bei 
 lautet dann etwa „Flur | Haustür | door | offen 12 min, geschlossen 15 h 36 min“ und darunter „offen 08:32,
 09:17-09:18, …“. Hat ein Gerät auch einen Zähler, stehen Verbrauch und Zeiten in einer Zeile („0.2 kWh, an 3 h 31 min,
 aus 12 h 18 min“). Ein Zustand ohne Archiv wird ausgelassen und gezählt. Fürs ganze Haus gibt es keine Zeitleiste.
+
+Rollläden und Fenster mit Antrieb bekommen ihre Zeitleiste aus der Position: offen, teilweise offen und geschlossen,
+beim Kippfenster gekippt. Auf „Wann wurden die Rollläden geschlossen?“ steht dann je Rollladen etwa „geschlossen
+9 h 45 min, geschlossen seit 09.11. 17:48“. Ist die Position nicht geloggt, sagt die Antwort das.
 
 ### Für Skripte
 

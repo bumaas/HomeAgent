@@ -115,7 +115,8 @@ pruefe(!$r['isError'] && str_contains($zeile($r, 0), 'per month') && ($anlage->h
 
 $r = frage(['room' => 'Gast', 'period' => 'last_week']);
 pruefe(!$r['isError'] && str_starts_with($zeile($r, 0), 'History of 2 measured value(s) (room=Gast, period=last_week)') && (explode("\n", $r['text'])[$zeileMit($r, 'Gast | Luftfeuchte | humidity | ')] ?? '') === 'Gast | Luftfeuchte | humidity | ' . $spanne($r, $zeileMit($r, 'Gast | Luftfeuchte | humidity | '), '%'), 'ohne Typ: Temperatur und Feuchte: ' . $zeile($r, 0));
-pruefe($zeile($r, -1) === '1 device(s) without measured value were left out.', 'das Fenster wird ausgelassen und gezählt: ' . $zeile($r, -1));
+// Seit 10.11.2026 nennt die Zeile den Grund: Der Zustand des Fensters ist nicht archiviert
+pruefe($zeile($r, -1) === '1 device(s) without archived history were left out.', 'das Fenster wird ausgelassen und gezählt: ' . $zeile($r, -1));
 $r = frage(['name' => 'Heizkörper', 'period' => 'today']);
 pruefe(!$r['isError'] && $zeile($r, 1) === 'Wintergarten | Heizkörper | temperature | no history archived', 'nicht archiviert: ' . $r['text']);
 $r = frage(['type' => 'temperature', 'period' => 'last_week']);
@@ -131,7 +132,7 @@ $r = frage(['room' => 'Gast', 'type' => 'temperature', 'from' => '2026-09-10', '
 pruefe(!$r['isError'] && str_starts_with($zeile($r, 0), 'History of 1 measured value(s)') && $anzahl($r) === 32 && $zeile($r, 1) === 'Gast | Temperatur | temperature | ' . $spanne($r, 1, '°C'), 'Raumfühler und Ist-Temperatur des Thermostats sind eine Variable: nur einmal: ' . $zeile($r, 0) . ' / ' . $anzahl($r));
 pruefe($anlage->historyRequests === [[41351, 1]], 'das Archiv wird nur einmal gefragt: ' . json_encode($anlage->historyRequests));
 $r = frage(['room' => 'Gast', 'period' => 'last_week']);
-pruefe(str_starts_with($zeile($r, 0), 'History of 2 measured value(s)') && $zeile($r, -1) === '1 device(s) without measured value were left out.', 'ohne Typ: die Dublette zählt weder als Messwert noch als ausgelassen: ' . $zeile($r, 0) . ' / ' . $zeile($r, -1));
+pruefe(str_starts_with($zeile($r, 0), 'History of 2 measured value(s)') && $zeile($r, -1) === '1 device(s) without archived history were left out.', 'ohne Typ: die Dublette zählt weder als Messwert noch als ausgelassen: ' . $zeile($r, 0) . ' / ' . $zeile($r, -1));
 $r = frage(['room' => 'Gast', 'name' => 'Heizung', 'period' => 'last_week']);
 pruefe(!$r['isError'] && $zeile($r, 1) === 'Gast | Heizung | thermostat | ' . $spanne($r, 1, '°C'), 'nach Namen gefragt kommt das Thermostat selbst: ' . $zeile($r, 1));
 $liste = $listeVorher;

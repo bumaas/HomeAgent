@@ -341,7 +341,7 @@ archived", and the self-test names the variable with its ID.
 | give the heat without a heat meter | log the heat output |
 | give the power over a period | log the power |
 | show a history of measured values | log the measured value |
-| show a timeline | log the state |
+| show a timeline | log the state, for blinds and windows with a drive the position |
 
 An energy meter counts in mWh, Wh, kWh or MWh, without a unit kWh is assumed. A counter in another unit, such as a
 water or gas meter, is not an energy meter: its line says "not an energy meter (unit m³)" and it is not added. Power in
@@ -502,6 +502,10 @@ periods return a **timeline**: how long each state lasted and, with few sections
 example "Flur | Haustür | door | open 12 min, closed 15 h 36 min" followed by "open 08:32, 09:17-09:18, …". If a device
 also has a meter, consumption and times share one line ("0.2 kWh, on 3 h 31 min, off 12 h 18 min"). A state without
 archive is left out and counted. There is no timeline for the whole house.
+
+Blinds and windows with a drive get their timeline from the position: open, partly open and closed, tilted for a
+tilting window. For "When were the blinds closed?" each blind then reads for example "closed 9 h 45 min, closed since
+09.11. 17:48". If the position is not logged, the answer says so.
 
 ### For scripts
 

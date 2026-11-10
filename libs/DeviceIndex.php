@@ -1013,7 +1013,19 @@ final class DeviceIndex
     public static function hasTimeline(array $row): bool
     {
         $roles = is_array($row['roles'] ?? null) ? $row['roles'] : self::rolesOf($row);
-        return isset($roles['state']) && (self::TYPES[(string)($row['Type'] ?? '')] ?? null) !== null;
+        $type = (string)($row['Type'] ?? '');
+        return (isset($roles['state']) && (self::TYPES[$type] ?? null) !== null) || self::travelTimed($type, $roles);
+    }
+
+    /**
+     * Fahrendes Gerät ohne eigenen Zustand (Rollladen, Fenster nur mit Antrieb): Seine Zeitleiste kommt aus der Position
+     * (offen, teilweise offen, geschlossen). Ein Fenster mit Kontakt behält die Zeitleiste des Kontakts.
+     *
+     * @param array<string, mixed> $roles
+     */
+    private static function travelTimed(string $type, array $roles): bool
+    {
+        return ($type === 'blind' || $type === 'window') && isset($roles['level']) && !isset($roles['state']);
     }
 
     private function isTimed(array $entry): bool
@@ -1091,7 +1103,22 @@ final class DeviceIndex
      */
     private function timelineOf(array $entry, int $from, int $to): ?array
     {
-        $variable = $entry['roles']['state'];
+        // Fahrendes Gerät: die Position wird zu offen, teilweise offen und geschlossen, mit denselben Grenzen wie der
+        // Zustandstext (levelText). Lamellen und ein unbekannter Bereich haben kein „offen“, also keine Zeitleiste.
+        $travel = null;
+        $travelLabels = [];
+        if (self::travelTimed($entry['Type'], $entry['roles'])) {
+            $variable = $entry['roles']['level'];
+            $range = $this->backend->range($variable);
+            $travel = self::travelOf($entry, $range);
+            if ($travel === null || $travel['open'] === $travel['closed'] || ($range['source'] ?? '') === 'rotation') {
+                return null;
+            }
+            $tilt = $entry['Type'] === 'window' && $entry['Tilt'];
+            $travelLabels = [$this->t($tilt ? 'tilted' : 'open'), $this->t($tilt ? 'partly tilted' : 'partly open'), $this->t('closed')];
+        } else {
+            $variable = $entry['roles']['state'];
+        }
         $series = $this->backend->stateSeries($variable, $from, $to);
         if ($series === null) {
             return null;
@@ -1099,9 +1126,16 @@ final class DeviceIndex
         $now = $this->backend->timestamp();
         $untilNow = $to === 0 || $to >= $now;
         $end = $untilNow ? $now : $to + 1;
-        $words = self::TYPES[$entry['Type']] ?? null;
-        $options = $words === null ? ($this->backend->options($variable) ?? []) : [];
-        $label = function (mixed $value) use ($words, $options, $entry): string {
+        $words = $travel !== null ? null : (self::TYPES[$entry['Type']] ?? null);
+        $options = $words === null && $travel === null ? ($this->backend->options($variable) ?? []) : [];
+        $label = function (mixed $value) use ($words, $options, $entry, $travel, $travelLabels): string {
+            if ($travel !== null) {
+                if (!is_int($value) && !is_float($value)) {
+                    return (string)$value;
+                }
+                $percent = ($value - $travel['closed']) / ($travel['open'] - $travel['closed']) * 100.0;
+                return $travelLabels[$percent > 99.5 ? 0 : ($percent < 0.5 ? 2 : 1)];
+            }
             if ($words !== null) {
                 $active = self::activeValue($entry, $value);
                 return $active === null ? (string)$value : $this->t($active ? $words[0] : $words[1]);
@@ -1150,7 +1184,7 @@ final class DeviceIndex
         // Fürs Band: bei Wörtern der aktive Zustand zuerst, bei einer Auswahl die Reihenfolge der Einträge, damit die Farben
         // jeden Tag dieselben sind.
         $present = array_keys($sums);
-        $labels = $words !== null ? [$this->t($words[0]), $this->t($words[1])] : array_column($options, 1);
+        $labels = $travel !== null ? $travelLabels : ($words !== null ? [$this->t($words[0]), $this->t($words[1])] : array_column($options, 1));
         $states = array_values(array_unique(array_merge(array_values(array_intersect($labels, $present)), $present)));
         $index = array_flip($states);
         $band = [
@@ -1169,6 +1203,15 @@ final class DeviceIndex
         $summarize = fn (bool $withCount): string => implode(', ', array_map(fn (string $state): string => $state . ' ' . self::duration($sums[$state])
             . ($withCount ? ' (' . sprintf($this->t('%d times'), $counts[$state]) . ')' : ''), $order));
         $brief = $summarize(count($sections) > 1 && $listed !== []);
+        // Fahrendes Gerät bis jetzt: seit wann der jetzige Zustand gilt, auch wenn keine Abschnitte dastehen („Wann wurden
+        // die Rollläden geschlossen“ für viele Geräte, oder am Morgen danach ohne Änderung im Zeitraum).
+        if ($travel !== null && $untilNow) {
+            [$state, $b] = $sections[count($sections) - 1];
+            $at = $b > $from ? $b : ($series['since'] ?? null);
+            if ($at !== null) {
+                $brief .= ', ' . $state . ' ' . sprintf($this->t('since %s'), date(date('Y-m-d', $at) === date('Y-m-d', $now) ? 'H:i' : 'd.m. H:i', $at));
+            }
+        }
         if (!$show) {
             return ['summary' => $brief, 'sections' => null, 'brief' => $brief, 'band' => $band];
         }
@@ -1214,9 +1257,20 @@ final class DeviceIndex
         $candidates = array_values(array_filter($matches, fn (array $e): bool => $this->isTimed($e)));
         $timed = $this->archivedTimelines($candidates, $from, $to);
         $measured = array_values(array_filter($matches, fn (array $e): bool => self::isMeasured($e) && !$this->isTimed($e)));
-        $skipped = count($matches) - count($measured) - count($timed);
+        // Ausgelassen: Geräte ohne Messwert und, eigens gezählt, Zustände und Positionen ohne Archiv.
+        $unarchived = count($candidates) - count($timed);
+        $skipped = count($matches) - count($measured) - count($candidates);
+        $leftOut = fn (): array => array_merge(
+            $skipped > 0 ? [sprintf($this->t('%d device(s) without measured value were left out.'), $skipped)] : [],
+            $unarchived > 0 ? [sprintf($this->t('%d device(s) without archived history were left out.'), $unarchived)] : []
+        );
         if ($measured === [] && $candidates !== []) {
             if ($timed === []) {
+                // Nur fahrende Geräte: Von Energie zu reden wäre bei „wann wurden die Rollläden geschlossen“ falsch, das
+                // Modell riet daraus den Grund (Claude-App 10.11.2026).
+                if (array_all($candidates, static fn (array $e): bool => self::travelTimed($e['Type'], $e['roles']))) {
+                    return $this->fail(sprintf($this->t('The position of the matching devices is not archived in Symcon, so there is no history (%s). Only the current state is known.'), $filter));
+                }
                 return $this->fail(sprintf($this->t('None of the matching devices measures energy or has an archived state (%s).'), $filter));
             }
             $lines = $this->timelineLines($timed, $filter);
@@ -1224,10 +1278,7 @@ final class DeviceIndex
                 $this->chart += ['kind' => 'timeline', 'title' => $lines[0], 'filter' => $filter];
                 $this->chartBands($timed);
             }
-            if ($skipped > 0) {
-                $lines[] = sprintf($this->t('%d device(s) without measured value were left out.'), $skipped);
-            }
-            return ['text' => implode("\n", $lines), 'isError' => false];
+            return ['text' => implode("\n", array_merge($lines, $leftOut())), 'isError' => false];
         }
         // Liest ein Thermostat den Raumfühler als Ist-Temperatur, wäre derselbe Verlauf zweimal da (nuc,
         // Gästezimmer): Jede Variable kommt nur einmal, unter dem ersten Gerät der Liste.
@@ -1252,10 +1303,7 @@ final class DeviceIndex
             $lines = array_merge($lines, $this->timelineLines($timed, $filter));
             $this->chartBands($timed);
         }
-        if ($skipped > 0) {
-            $lines[] = sprintf($this->t('%d device(s) without measured value were left out.'), $skipped);
-        }
-        return ['text' => implode("\n", $lines), 'isError' => false];
+        return ['text' => implode("\n", array_merge($lines, $leftOut())), 'isError' => false];
     }
 
     private function consumption(array $matches, array $bounds, string $filter, bool $wholeHouse = false, int $chartLevel = 1): array

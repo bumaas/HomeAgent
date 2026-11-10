@@ -534,6 +534,23 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   (`wall`/`unwall`, nur UTC-Methoden auf diesen Daten); vorher in der Zone des Browsers, unterwegs stand eine Heatmap-Zeile
   auf dem Vortag (Review 14.10.2026). Geprüft mit einem Chrome-Prüfstand, der per CDP die Zone auf America/New_York stellt
   (nicht im Repo): vorher 4 von 6 Prüfungen rot, danach 6 grün.
+- **Zeitleiste fahrender Geräte** (Claude-App 10.11.2026: „Wann wurden die Rollläden geschlossen“ ergab zwei
+  fehlgeschlagene Aufrufe und die Antwort „wahrscheinlich nicht archiviert“). Rollläden haben nur die Rolle `level`, keinen
+  Zustand; `type=blind` mit Zeitraum lief deshalb in die Verbrauchsabfrage und endete mit „Keines der passenden Geräte
+  misst Energie“. Jetzt zählt `hasTimeline` auch fahrende Geräte ohne eigenen Zustand (`travelTimed`: `blind`, `window` mit
+  `level` und ohne `state`; ein Fenster mit Kontakt behält die Zeitleiste des Kontakts). `timelineOf` rechnet die Position
+  mit `travelOf` in den Öffnungsgrad und daraus drei Zustände mit den Grenzen von `levelText` (unter 0,5 % geschlossen, über
+  99,5 % offen, beim Kippfenster gekippt, sonst teilweise). Den Öffnungsgrad selbst nennt die Zeitleiste nicht: Aktoren mit
+  Zwischenständen während der Fahrt ergäben je Stand einen Abschnitt. Alle Abschnitte stehen einzeln da wie bei einer
+  Auswahl, weil die Frage meist dem Schließen gilt. Reicht der Zeitraum bis jetzt und stehen keine Abschnitte da (ein
+  einziger Abschnitt, viele Geräte), nennt die Zeile, seit wann der jetzige Zustand gilt; dafür liefert `stateSeries` den
+  Zeitpunkt des Werts vor dem Zeitraum (`since`). Nur bei fahrenden Geräten, bei den übrigen Zuständen bleibt die Zeile, wie
+  sie war. Lamellen (`rotation`) und ein unbekannter Bereich bekommen keine Zeitleiste. Ohne Archiv: eigene Absage („Die
+  Position … ist in Symcon nicht archiviert“); ausgelassene Geräte zählt die Schlusszeile getrennt nach „ohne Messwert“ und
+  „ohne archivierten Verlauf“ (vorher hieß ein Fenster ohne Archiv „ohne Messwert“). Am nuc war am 10.11.2026 keine der
+  zwölf Rollladenpositionen archiviert, nur die Position eines Fensters mit Antrieb; dessen Rohwerte vom 09.11. sind der
+  Mitschnitt, die Rohwerte der Rollläden im Test sind angenommen (Zeitpunkte vom Fenster, Werte im echten Bereich).
+  Test `check-fahrzeitleiste.php`.
 - **Diagramm als MCP App** (`show_chart`, Backlog B63): nur für Clients, die `io.modelcontextprotocol/ui` mit
   `text/html;profile=mcp-app` anmelden (nach 2026-07-28 in jeder Anfrage, `McpProtocol::showsApps`; gemessen: Claude-App ja,
   Claude Code und HA nein) und nur mit einem Gerät mit Verlauf. Clients von Anthropic (`clientInfo.name` „Anthropic/…“)

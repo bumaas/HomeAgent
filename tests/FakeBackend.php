@@ -324,15 +324,17 @@ final class FakeBackend implements DeviceBackend
             return null;
         }
         $start = null;
+        $since = null;
         $changes = [];
         foreach ($v['rohwerte'] as [$time, $value]) {
             if ($time < $from) {
                 $start = $value;
+                $since = (int)$time;
             } elseif ($to === 0 || $time <= $to) {
                 $changes[] = [(int)$time, $value];
             }
         }
-        return ['start' => $start, 'changes' => $changes];
+        return ['start' => $start, 'changes' => $changes] + ($since === null ? [] : ['since' => $since]);
     }
 
     public function history(int $variableId, int $level, int $from, int $to): ?array
