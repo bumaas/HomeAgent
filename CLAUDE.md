@@ -180,6 +180,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Ventile** (B101): `valve`, `valve2`, `valve3` am `thermostat`, im Dialog nebeneinander (`ValveRow`); es zählt das offenste
   in Prozent des Bereichs (`valveOf`). Aktiv nur mit Ventil über 0 und nie auf einem Sonder-Sollwert (`heatingActive`); der
   Selbsttest nennt Ventilvariablen mit nur benannten Einträgen (HmIP `VALVE_STATE`). Noch nicht: Verlauf. Test `check-ventil.php`.
+- **Kamera** (`camera`, B102): Fähigkeit `image` = Medienobjekt vom Typ Bild (`ImageMediaID`, die einzige Fähigkeit ohne
+  Variable, nur über `DeviceBackend::image()`). `get_state` nennt die Aufnahmezeit (`cameraText`), das Modul frischt nie auf
+  und fasst Streams nicht an (Zugangsdaten in der Adresse). Noch nicht: das Bild selbst. Test `check-kamera.php`.
 - **Luftbe-/entfeuchter** (`humidifier`): `state`, `humidity`, `setpoint` (Feld `humidity`, `runSetpoint`), `mode` und
   `fan` als **Auswahl per Name** (`runOption` über `DeviceBackend::options()`). **Lüftung** (`fan`) ebenso, Pflicht
   Ein/Aus oder Lüfterstufe. Tests `check-entfeuchter.php`, `check-lueftung.php`.

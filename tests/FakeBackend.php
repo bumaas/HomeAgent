@@ -546,6 +546,19 @@ final class FakeBackend implements DeviceBackend
     /** Uhrzeit der Anlage: die des Mitschnitts, wenn der Test sie setzt. */
     public ?int $jetzt = null;
 
+    /** @var array<int|string, array<string, mixed>> Medienobjekte aus dem Mitschnitt: id => [typ, verfuegbar, groesse, aktualisiert] */
+    public array $medien = [];
+
+    /** Wie SymconDeviceBackend: nur ein Medienobjekt vom Typ Bild (1) ist ein Standbild. */
+    public function image(int $mediaId): ?array
+    {
+        $m = $this->medien[$mediaId] ?? null;
+        if ($m === null || (int)$m['typ'] !== 1) {
+            return null;
+        }
+        return ['updated' => (int)$m['aktualisiert'], 'size' => (int)$m['groesse'], 'available' => (bool)$m['verfuegbar']];
+    }
+
     public function timestamp(): int
     {
         return $this->jetzt ?? time();

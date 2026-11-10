@@ -173,6 +173,15 @@ interface DeviceBackend
      */
     public function earlier(int $variableId, int $before, int $limit): ?array;
 
+    /**
+     * Standbild einer Kamera (B102): ein Medienobjekt vom Typ Bild. „updated“ ist der Zeitpunkt der letzten
+     * Aktualisierung als Unix-Zeitstempel (0 = nie), „size“ die Größe in Byte, „available“, ob die Datei da ist.
+     * null = das Objekt fehlt oder ist kein Bild (ein Stream etwa).
+     *
+     * @return null|array{updated: int, size: int, available: bool}
+     */
+    public function image(int $mediaId): ?array;
+
     /** Einheit der Variable aus Profil-Suffix oder Darstellung (etwa W, kW); '' = keine. */
     public function unit(int $variableId): string;
 

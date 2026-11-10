@@ -137,6 +137,9 @@ How to proceed:
      temperature and humidity. For everything that should switch, only variables with an action
      (HasAction(<VariableID>) returns true); measurements without an action are fine.
    - Detectors for querying: water detectors as water_leak, smoke detectors as measurement.
+   - Cameras as type camera if there is a media object of type image with a still image for them
+     (IPS_GetMediaListByType(1), for example below an Image Grabber); that is ImageMediaID. Leave out
+     streams (media type 3). Which cameras I want to release you name as an open question to me.
    - For radiator thermostats also the valve positions, several actuators of a room on the same
      thermostat (up to three).
    - For blinds also the moving state (MovingVariableID) where there is one. If with KNX the position

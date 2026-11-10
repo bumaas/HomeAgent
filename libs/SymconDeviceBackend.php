@@ -695,6 +695,19 @@ final class SymconDeviceBackend implements DeviceBackend
         return time();
     }
 
+    public function image(int $mediaId): ?array
+    {
+        if ($mediaId <= 0 || !IPS_MediaExists($mediaId)) {
+            return null;
+        }
+        $media = IPS_GetMedia($mediaId);
+        // Ein Stream (MEDIATYPE_STREAM) trägt die Zugangsdaten der Kamera in seiner Adresse und ist kein Standbild.
+        if ($media['MediaType'] !== MEDIATYPE_IMAGE) {
+            return null;
+        }
+        return ['updated' => (int)$media['MediaUpdated'], 'size' => (int)$media['MediaSize'], 'available' => (bool)$media['MediaIsAvailable']];
+    }
+
     public function unit(int $variableId): string
     {
         return $variableId > 0 && IPS_VariableExists($variableId) ? self::unitOf($variableId) : '';

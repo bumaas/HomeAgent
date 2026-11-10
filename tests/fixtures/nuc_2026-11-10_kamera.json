@@ -1,0 +1,24 @@
+{
+    "_quelle": "nuc 10.11.2026 12:07, nur gelesen (IPS_GetMedia, Maße aus getimagesizefromstring über IPS_GetMediaContent). Echt: #34336 Bild am ONVIF Image Grabber der Hikvision (3840 x 2160, JPEG), #29094 Vorschau derselben Kamera aus dem HomeAssistant-Modul, #15920 ihr Stream (Medientyp 3, kein Bild), #27512 das Cover des Sonos im Wohnzimmer (Bild von 1 x 1, 68 Byte, seit 04.11. nicht aktualisiert) und der Riegelkontakt der Haustür #11941. Die Bilder selbst liegen nicht im Repo. Angenommen: #69991 als leeres Medienobjekt (nicht verfügbar, Größe 0, nie aktualisiert), so wie IPS_CreateMedia es anlegt, und #69990 als gelöschtes Objekt; dass das Sonos-Cover als Kamera freigegeben ist, dient nur als echtes Beispiel für ein altes Bild.",
+    "zeitzone": "Europe/Berlin",
+    "jetzt": 1794308865,
+    "medien": {
+        "34336": {"name": "Image", "eltern": "ONVIF Image Grabber", "typ": 1, "verfuegbar": true, "groesse": 2018747, "aktualisiert": 1794303897, "breite": 3840, "hoehe": 2160, "mime": "image/jpeg"},
+        "29094": {"name": "ms (Vorschau)", "eltern": "HIKVISION DS-2CD2686G2-IZS", "typ": 1, "verfuegbar": true, "groesse": 2000048, "aktualisiert": 1794308771, "breite": 3840, "hoehe": 2160, "mime": "image/jpeg"},
+        "15920": {"name": "Stream (UHD)", "eltern": "VideoSourceConfig (VideoEncoder_1)", "typ": 3, "verfuegbar": true, "groesse": 0, "aktualisiert": 0},
+        "27512": {"name": "Cover", "eltern": "Wohnzimmer", "typ": 1, "verfuegbar": true, "groesse": 68, "aktualisiert": 1793779768, "breite": 1, "hoehe": 1, "mime": "image/png"},
+        "69991": {"name": "leer", "eltern": "", "typ": 1, "verfuegbar": false, "groesse": 0, "aktualisiert": 0}
+    },
+    "variablen": {
+        "11941": {"name": "STATE", "wert": true, "formatiert": "entriegelt"}
+    },
+    "geraete": [
+        {"Room": "Außen", "Name": "Einfahrt", "Aliases": "Hof", "Type": "camera", "ImageMediaID": 34336},
+        {"Room": "Außen", "Name": "Einfahrt letzte Bewegung", "Aliases": "", "Type": "camera", "ImageMediaID": 29094},
+        {"Room": "Wohnzimmer", "Name": "Wohnzimmerkamera", "Aliases": "", "Type": "camera", "ImageMediaID": 27512},
+        {"Room": "Flur", "Name": "Haustürschloss", "Aliases": "", "Type": "door", "StateVariableID": 11941},
+        {"Room": "Keller", "Name": "Leere Kamera", "Aliases": "", "Type": "camera", "ImageMediaID": 69991},
+        {"Room": "Keller", "Name": "Gelöschte Kamera", "Aliases": "", "Type": "camera", "ImageMediaID": 69990},
+        {"Room": "Keller", "Name": "Streamkamera", "Aliases": "", "Type": "camera", "ImageMediaID": 15920}
+    ]
+}

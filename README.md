@@ -12,7 +12,7 @@ die Geräte, die Sie freigeben.
 > Helligkeit, Farbe, Farbtemperatur, Position, Sollwerte, Betriebsart und Lüfterstufe, hält Rollläden an, startet
 > Szenen und bedient Mediaplayer. Verbrauch und Leistung kennt er auch hinter Zählern und Unterzählern, fürs Haus
 > dazu die Kosten, bei Wärmepumpen Wärme und Arbeitszahl. Verläufe von Messwerten und Leistungen und Zeitleisten von Zuständen gibt
-> es als Text und in der Claude-App als Diagramm. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen.
+> es als Text und in der Claude-App als Diagramm. Kameras nennt er mit der Aufnahmezeit ihres Standbilds. Die Geräteliste lässt sich aus einer Alexa-Instanz vorschlagen.
 
 ## Wann brauche ich das?
 
@@ -194,7 +194,7 @@ Name, Alias, Typ und den Namen der Variablen.
 |---|---|
 | Raum | Ein Raum aus der Raumliste oder „-“. In Anfragen sind Groß- und Kleinschreibung und Umlaute egal („Küche“ = „kueche“). |
 | Name, Aliase | Der Name und weitere Bezeichnungen, durch Komma getrennt. Ein Teilwort genügt beim Suchen. Wird ein Gerät über einen Alias gefunden, steht er in der Antwort in Klammern hinter dem Namen. |
-| Typ | Licht, Schalter, Steckdose, Gerät, Rollladen, Thermostat, Mediaplayer, Luftbe-/entfeuchter, Lüftung/Ventilator, Fenster, Tür, Anwesenheit, Wasserleck, Temperatur, Luftfeuchte, Luftqualität, sonstiger Messwert oder Zähler. |
+| Typ | Licht, Schalter, Steckdose, Gerät, Rollladen, Thermostat, Mediaplayer, Luftbe-/entfeuchter, Lüftung/Ventilator, Fenster, Tür, Anwesenheit, Wasserleck, Temperatur, Luftfeuchte, Luftqualität, sonstiger Messwert, Zähler oder Kamera. |
 | Zustand oder Messwert | Die Variable für an/aus, offen/zu oder erkannt, bei Messwerten der Wert selbst. Beim Thermostat die Ist-Temperatur. |
 | Sollwert | Die Variable mit der Solltemperatur. Sie braucht eine Aktion. Bereich und Schrittweite liest das Modul aus der Darstellung oder dem Profil, ohne Schrittweite gilt der Abstand der Einträge (etwa 15,0, 15,5, 16,0). Ein Wert am Rand mit eigenem Text zählt nicht zum Bereich, ob der Text aus einem Eintrag des Profils oder aus einem Intervall der Darstellung mit festem Wert kommt, etwa „On“ bei 30,5. Der Selbsttest zeigt den Bereich je Thermostat. |
 | Ventilstellung, 2, 3 | Wahlweise bis zu drei Ventile der Heizkörper, im Dialog nebeneinander. Gezählt wird in Prozent des Bereichs der Variable. Bei Homematic IP steht die Stellung in `LEVEL`, nicht in `VALVE_STATE` (das ist der Status der Ventiladaption); ein Stellantrieb HM-CC-VD ist ein eigenes Gerät neben dem HM-CC-TC. |
@@ -213,6 +213,7 @@ Name, Alias, Typ und den Namen der Variablen.
 | Gemessen von | Bei allem mit Leistung oder Zähler, wahlweise: der Zähler, hinter dem das Gerät oder der Zähler hängt, etwa die Unterverteilung OG. Zur Auswahl stehen die Zähler der gespeicherten Liste, ein neuer also erst nach dem Übernehmen. |
 | Umgekehrt | Haken setzen, wenn `true` „zu“ oder „aus“ bedeutet. Viele Fensterkontakte melden `true` für geschlossen. Bei Fenster, Tür und Meldern mit einer Zahl gilt sonst alles über 0 als offen bzw. erkannt, mit dem Haken nur die 0; so passt etwa der Türstatus von Matter (0 Geöffnet, 1 Geschlossen). Weitere Einträge wie „Angelehnt“ nennt die Antwort in Klammern. Bei Rollläden erkennt das Modul selbst, welcher Wert „offen“ bedeutet: aus der Darstellung „Rollladen“, aus dem Profil (ein Profilname mit „.Reversed“ zählt umgekehrt), beim HomeAssistant-Modul wie in Home Assistant 100 als offen. Der Selbsttest zeigt es je Rollladen, etwa „Rollladen Küche Rollladen: offen bei 1, geschlossen bei 0“. Stimmt das nicht, dreht der Haken, hier „Richtung umkehren“, es um. |
 | Kippfenster | Nur beim Fenster mit Antrieb: Haken setzen, wenn der Antrieb das Fenster nur kippt. Die Antwort sagt dann „gekippt“ und „50 % gekippt“ statt „offen“ und „50 % offen“. |
+| Bild | Bei der Kamera: ein Medienobjekt mit einem Standbild, etwa das Bild eines Image Grabber. Ein Stream geht nicht. |
 | Nur abfragen | Der Assistent darf den Zustand ansagen, das Gerät aber nicht schalten oder stellen. Gedacht für Geräte wie das Garagentor oder die Heizung im Kinderzimmer. |
 
 Welche Variablen ein Gerät braucht, hängt vom Typ ab:
@@ -232,6 +233,7 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 | Anwesenheit, Wasserleck | Melder |
 | Temperatur, Luftfeuchte, Luftqualität, sonstiger Messwert | Messwert |
 | Zähler | Zähler, wahlweise Leistung |
+| Kamera | Bild |
 
 Einen eigenen Typ für Rauchmelder gibt es nicht. Tragen Sie sie als sonstigen Messwert ein, schalten kann der
 Assistent einen Messwert ohnehin nicht.
@@ -248,6 +250,13 @@ Bei einigen Geräten braucht es mehr als die Variable des Typs:
 - **Mediaplayer des HomeAssistant-Moduls:** Dort ist die Wiedergabe nur eine Befehlsvariable. Tragen Sie als Ein/Aus
   den Statustext ein (`playing`, `paused`, `idle`, `off` …), dann kennt das Modul den Zustand trotzdem. Ohne beides
   steht dort nur der Titel, und der Player zählt bei den aktiven Geräten nicht mit.
+- **Kamera:** Tragen Sie ein Medienobjekt ein, in dem ein Standbild der Kamera liegt. So eines legt der Image Grabber
+  von Symcon an, ebenso der ONVIF Image Grabber und das HomeAssistant-Modul (die Vorschau einer Kamera). Der Assistent
+  nennt die Kamera mit der Aufnahmezeit, etwa „Bild von 2026-11-10 10:44“. Das Modul holt selbst kein neues Bild. Wie
+  aktuell es ist, bestimmen Sie an der Quelle: mit einem Intervall am Grabber, mit einem Ereignis der Kamera oder mit
+  einem eigenen Ereignis in Symcon, das den Grabber auslöst, etwa an der Klingel. Soll der Assistent das Bild auf
+  Zuruf erneuern, geben Sie ein Skript, das den Grabber auslöst (beim Image Grabber `IG_UpdateImage(<Instanz>);`), als Szene frei. Zwei Bilder derselben Kamera, etwa das
+  laufende und das der letzten Bewegung, tragen Sie als zwei Geräte ein.
 
 Fehlt einer Zeile die Variable ihres Typs, oder wird eine eingetragene Variable gelöscht, ist nur dieses
 Gerät gesperrt. Die Zeile wird rot, Formular und Log nennen sie, alle anderen Geräte bleiben erreichbar.
@@ -715,6 +724,7 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
 - Farbe als Text geht noch nicht. Die Betriebsart eines Thermostats geht nur über eine Variable mit Aktion;
   bei Homematic-Wandthermostaten hat `CONTROL_MODE` keine.
 - Den Verlauf einer Ventilstellung zeigt das Modul noch nicht, nur die Stellung von jetzt.
+- Das Bild einer Kamera sieht der Assistent noch nicht. Er nennt die Kamera und sagt, von wann ihr Bild ist.
 - Ein batteriebetriebenes Thermostat übernimmt einen neuen Sollwert oft erst beim nächsten Funkkontakt.
   Die Zentrale meldet ihn trotzdem sofort zurück, „gestellt“ heißt dann „an die Zentrale übergeben“.
 - Bei einem Rollladen, der sich erst am Ziel meldet und keinen Fahrstatus hat, weiß das Modul nach

@@ -139,6 +139,9 @@ So gehst du vor:
      Luftfeuchte. Für alles, was schalten soll, nur Variablen mit Aktion (HasAction(<VariablenID>)
      liefert true); Messwerte ohne Aktion sind in Ordnung.
    - Melder zum Abfragen: Wassermelder als water_leak, Rauchmelder als measurement.
+   - Kameras als Typ camera, wenn es zu ihnen ein Medienobjekt vom Typ Bild mit einem Standbild gibt
+     (IPS_GetMediaListByType(1), etwa unter einem Image Grabber); das ist ImageMediaID. Streams
+     (Medientyp 3) lässt du aus. Welche Kameras ich freigeben will, nennst du mir als offene Frage.
    - Bei Heizkörperthermostaten auch die Ventilstellungen, mehrere Antriebe eines Raums am selben
      Thermostat (bis zu drei).
    - Bei Rollläden auch den Fahrstatus (MovingVariableID), wo es ihn gibt. Hat bei KNX die Instanz der

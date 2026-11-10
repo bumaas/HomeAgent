@@ -11,7 +11,7 @@ unambiguous answer. It only sees and switches the devices you release.
 > brightness, colour, colour temperature, position, setpoints, operating mode and fan speed, stops blinds, starts
 > scenes and operates media players. It knows consumption and power also behind meters and sub-meters, for the house
 > also the costs, for heat pumps heat and performance factor. Histories of measured values and power and timelines of states come as text
-> and, in the Claude app, as charts. The device list can be proposed from an Alexa instance.
+> and, in the Claude app, as charts. Cameras are named with the time their still image was taken. The device list can be proposed from an Alexa instance.
 
 ## When do I need this?
 
@@ -187,7 +187,7 @@ name, alias, type and the names of the variables.
 |---|---|
 | Room | A room from the room list or "-". In requests case and umlauts do not matter ("Küche" = "kueche"). |
 | Name, aliases | The name and further names, separated by commas. A partial word is enough when searching. If a device is found through an alias, the answer shows it in brackets after the name. |
-| Type | Light, switch, socket, appliance, blind, thermostat, media player, humidifier, ventilation/fan, window, door, presence, water leak, temperature, humidity, air quality, other measured value or meter. |
+| Type | Light, switch, socket, appliance, blind, thermostat, media player, humidifier, ventilation/fan, window, door, presence, water leak, temperature, humidity, air quality, other measured value, meter or camera. |
 | State or measured value | The variable for on/off, open/closed or detected, for measured values the value itself. For a thermostat the current temperature. |
 | Setpoint | The variable with the target temperature. It needs an action. The module reads range and step size from the presentation or the profile; without a step size the spacing of the entries counts (for example 15.0, 15.5, 16.0). A value at the edge with a text of its own is not part of the range, whether the text comes from a profile association or from a presentation interval with a fixed value, for example "On" at 30.5. The self-test shows the range for each thermostat. |
 | Valve position, 2, 3 | Optional: up to three valves of the radiators, side by side in the dialog. They count in percent of the range of the variable. On Homematic IP the position is in `LEVEL`, not in `VALVE_STATE` (that is the status of the valve adaption); an HM-CC-VD actuator is a device of its own next to the HM-CC-TC. |
@@ -206,6 +206,7 @@ name, alias, type and the names of the variables.
 | Measured by | For everything with power or an energy meter, optional: the meter the device or meter hangs on, for example the sub-distribution of the upper floor. The choice lists the meters of the saved list, so a new one appears after Apply. |
 | Inverted | Tick this if `true` means "closed" or "off". Many window contacts report `true` for closed. For windows, doors and sensors with a number, anything above 0 otherwise counts as open or detected, with the tick only 0; this fits the Matter door state, for example (0 open, 1 closed). Further entries such as "ajar" appear in brackets in the answer. For blinds the module finds out by itself which value means "open": from the "blind" presentation, from the profile (a profile name containing ".Reversed" counts the other way round), for the HomeAssistant module 100 as open, like Home Assistant. The self-test shows it for every blind, for example "Blind Küche Rollladen: open at 1, closed at 0". If that is wrong, the tick, here "Reverse direction", turns it round. |
 | Tilt window | Only for a window with a drive: tick this if the drive only tilts the window. The answer then says "tilted" and "50 % tilted" instead of "open" and "50 % open". |
+| Image | For a camera: a media object holding a still image, for example the image of an Image Grabber. A stream does not work. |
 | Query only | The assistant may announce the state but not switch or set the device. Meant for devices like the garage door or the heating in the children's room. |
 
 Which variables a device needs depends on its type:
@@ -225,6 +226,7 @@ Which variables a device needs depends on its type:
 | Presence, water leak | Detector |
 | Temperature, humidity, air quality, other measured value | Measured value |
 | Meter | Energy meter, optionally power |
+| Camera | Image |
 
 There is no type of its own for smoke detectors. Enter them as other measured value, the assistant cannot switch
 a measured value anyway.
@@ -241,6 +243,13 @@ Some devices need more than the variable of their type:
 - **Media players of the HomeAssistant module:** There playback is only a command variable. Enter its status text
   (`playing`, `paused`, `idle`, `off` …) as on/off, and the module knows the state anyway. Without either only the
   title is shown, and the player is not counted among the active devices.
+- **Camera:** Enter a media object that holds a still image of the camera. The Image Grabber of Symcon creates one,
+  so do the ONVIF Image Grabber and the HomeAssistant module (the preview of a camera). The assistant names the camera
+  with the time the image was taken, for example "image from 2026-11-10 10:44". The module never fetches a new image
+  itself. How current it is you decide at its source: with an interval at the grabber, with an event of the camera or
+  with an event of your own in Symcon that triggers the grabber, for example at the doorbell. If the assistant should
+  renew the image on request, release a script that triggers the grabber (for the Image Grabber `IG_UpdateImage(<instance>);`) as a scene. Two images of the same camera, such as the
+  current one and the one of the last motion, are entered as two devices.
 
 If a row lacks the variable of its type, or an entered variable is deleted, only this device is
 disabled. The row turns red, form and log name it, all other devices stay reachable. Symcon also
@@ -699,6 +708,7 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
 - Colour as text is not supported yet. The operating mode of a thermostat only works through a variable with an
   action; on Homematic wall thermostats `CONTROL_MODE` has none.
 - The module does not show the history of a valve position yet, only the current position.
+- The assistant does not see the image of a camera yet. It names the camera and says when its image was taken.
 - A battery-powered thermostat often takes a new setpoint only at its next radio contact. The central
   unit still confirms it right away, so "set" then means "handed over to the central unit".
 - For a blind that reports only on arrival and has no moving state, the module does not know after

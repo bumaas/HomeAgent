@@ -335,6 +335,27 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   der Selbsttest nennt Ventilvariablen, deren Einträge nur Namen tragen. HmIP-`LEVEL` ist am nuc nicht archiviert, der
   Verlauf ist deshalb zurückgestellt.
 
+- **Kamera** (B102, Anlass Claude-App 10.11.2026: „Gibt es eine Kamera?“, Antwort „kennt keinen Gerätetyp für Kameras“).
+  Eine Kamera ist ein Gerät mit einem Standbild, einem Medienobjekt vom Typ Bild (`MEDIATYPE_IMAGE`); den Inhalt liefert
+  `IPS_GetMediaContent`, das Alter `MediaUpdated` aus `IPS_GetMedia`. Für Streams (`MEDIATYPE_STREAM`) nennt die Doku keine
+  Standbildfunktion, und ihre Adresse trägt die Zugangsdaten der Kamera, deshalb zählt ein Stream als Fehler der Zeile.
+  Entscheidungen Burkhard 10.11.2026: (1) Das Modul frischt nichts auf („es könnte ja zum beispiel das letzte erfasste
+  bewegungsbild der kamera gewünscht sein“); wie aktuell das Bild ist, bestimmt die Quelle, die Zeile nennt die
+  Aufnahmezeit. Ein Auffrischen wäre zudem ein Aufruf an einer fremden Instanz je Grabber-Modul (`IG_UpdateImage`,
+  `ONVIF_UpdateImage`). (2) Das Bild kommt über ein eigenes Werkzeug `show_camera`, nicht in `get_state`: Die Frage „Gibt
+  es eine Kamera?“ soll kein Bild mit einigen hundert KB auslösen. (3) Bilder nur für Zugänge mit dem Haken
+  „Kamerabilder“, Standard aus; `get_state` nennt die Kamera trotzdem. Der erste Build bringt nur Typ, Dialogfeld,
+  Selbsttest und die Textzeile.
+  Home Assistant zum Vergleich (core `dev`, 10.11.2026): Im Gespräch sieht dort kein Modell ein Kamerabild, es gibt weder
+  Intent noch Werkzeug, eine freigegebene Kamera steht nur mit dem Zustand `idle` im Prompt; ein Bild bekommt ein Modell
+  nur über `ai_task.generate_data` aus einer Automation, in voller Größe. Die Entität `image` trägt als Zustand den
+  Zeitstempel der letzten Änderung, daher hier die Aufnahmezeit als Zustand. Der MCP-Client von HA reicht einen Bildblock
+  als JSON-Text ans Modell (`mcp/coordinator.py`), ein Kamerabild käme dort als Base64-Text an.
+  Gemessen: Das Bild einer 4K-Kamera hat 2 MB und entpackt rund 33 MB, das `memory_limit` der Anlagen liegt zwischen 32
+  und 128 MB; GD ist überall da. Die Fähigkeit `image` ist die einzige ohne Variable. Sie steht trotzdem in `ROLES`, damit
+  Dialog, Spaltentext, Referenzen und Kartenschlüssel ohne zweiten Weg auskommen; wer Fähigkeiten als Variablen liest
+  (`validateLists`, `deviceLabels`, `registerReferences`), unterscheidet sie dort.
+
 ## Energie
 
 - **Dieselbe Leistung oder derselbe Zähler an zwei Geräten** (Messsteckdose und Gerät dahinter) zählt in

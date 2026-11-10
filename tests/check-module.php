@@ -635,7 +635,9 @@ foreach ([
     'A new access gets a token of 64 hex characters, in the form and with HAGT_AddAccess; a token set by script needs at least 24 characters.' => 'Ein neuer Zugang bekommt ein Token aus 64 Hex-Zeichen, im Formular und mit HAGT_AddAccess; ein per Skript gesetztes Token braucht mindestens 24 Zeichen.',
     'Room names are the words the user speaks (Küche, Bad oben), without technical additions.'                                                      => 'Raumnamen sind die Wörter, die der Anwender spricht (Küche, Bad oben), ohne technische Zusätze.',
     // Zähler mit „gemessen von“ (B82, 17.10.2026)
-    'water_leak, temperature, humidity, air_quality, measurement, meter.' => 'water_leak, temperature, humidity, air_quality, measurement, meter.',
+    'water_leak, temperature, humidity, air_quality, measurement, meter, camera.' => 'water_leak, temperature, humidity, air_quality, measurement, meter, camera.',
+    // Kamera (B102, 10.11.2026)
+    'The type camera needs ImageMediaID, a media object of type image that holds a still image (for example the image of an Image Grabber); a stream does not count. The answers name when the image was taken, the module does not refresh it.' => 'Der Typ camera braucht ImageMediaID, ein Medienobjekt vom Typ Bild mit einem Standbild (etwa das Bild eines Image Grabber); ein Stream zählt nicht. Die Antworten nennen, von wann das Bild ist, das Modul frischt es nicht auf.',
     'The type meter (a sub-distribution, wallbox or flat meter) needs EnergyVariableID and never counts in a device total. MeteredBy is the EnergyVariableID of the meter above a device or meter (0 = none); the answers name per meter what is measured below it and the rest.' => 'Der Typ meter (Unterverteilung, Wallbox, Wohnungszähler) braucht EnergyVariableID und zählt nie in einer Gerätesumme. MeteredBy ist die EnergyVariableID des Zählers über einem Gerät oder Zähler (0 = keiner); die Antworten nennen je Zähler, was darunter gemessen ist, und den Rest.',
     // Raum als Auswahl der Raumliste (B75, Burkhard 13.10.2026)
     'The Room of a device is a room of the room list or empty; the form names rooms that are missing there.' => 'Der Raum eines Geräts ist ein Raum der Raumliste oder leer; das Formular nennt Räume, die dort fehlen.',
@@ -644,7 +646,7 @@ foreach ([
     'HAGT_UISourceForm(int $InstanceID, string $Type, int $PowerOut) names the fields of each type; 0 is enough for PowerOut.' => 'Die Felder je Art nennt HAGT_UISourceForm(int $InstanceID, string $Type, int $PowerOut); für PowerOut genügt 0.',
     'The name of each field is its key in the rows of Devices (for example PowerVariableID, EnergyVariableID, MeteredBy). air_quality is for CO2, VOC, particulate matter and air quality indices, measurement for every other value such as brightness or pressure.' => 'Der Name jedes Felds ist sein Schlüssel in den Zeilen von Devices (etwa PowerVariableID, EnergyVariableID, MeteredBy). air_quality ist für CO2, VOC, Feinstaub und Luftqualitätsindizes, measurement für alle anderen Werte wie Helligkeit oder Luftdruck.',
     // Prompttest am nuc 22.10.2026: Pflichtfelder je Typ, fehlende Schlüssel, Aliase, Einheiten, Melder mit Zahl
-    'Each type needs at least one of these fields: light StateVariableID or LevelVariableID, blind LevelVariableID, window StateVariableID or LevelVariableID, thermostat SetpointVariableID, appliance StateVariableID or PowerVariableID, media StateVariableID, PlaybackVariableID or VolumeVariableID, humidifier StateVariableID or SetpointVariableID, fan StateVariableID or FanVariableID, meter EnergyVariableID, all other types StateVariableID; an ID of 0 or 1 means not set. A missing key counts as 0; the columns ending in Label are filled by the form, a script may leave them out.' => 'Jeder Typ braucht mindestens eines dieser Felder: light StateVariableID oder LevelVariableID, blind LevelVariableID, window StateVariableID oder LevelVariableID, thermostat SetpointVariableID, appliance StateVariableID oder PowerVariableID, media StateVariableID, PlaybackVariableID oder VolumeVariableID, humidifier StateVariableID oder SetpointVariableID, fan StateVariableID oder FanVariableID, meter EnergyVariableID, alle anderen Typen StateVariableID; eine ID von 0 oder 1 bedeutet nicht gesetzt. Ein fehlender Schlüssel zählt als 0; die Spalten, die auf Label enden, füllt das Formular, ein Skript kann sie weglassen.',
+    'Each type needs at least one of these fields: light StateVariableID or LevelVariableID, blind LevelVariableID, window StateVariableID or LevelVariableID, thermostat SetpointVariableID, appliance StateVariableID or PowerVariableID, media StateVariableID, PlaybackVariableID or VolumeVariableID, humidifier StateVariableID or SetpointVariableID, fan StateVariableID or FanVariableID, meter EnergyVariableID, camera ImageMediaID, all other types StateVariableID; an ID of 0 or 1 means not set. A missing key counts as 0; the columns ending in Label are filled by the form, a script may leave them out.' => 'Jeder Typ braucht mindestens eines dieser Felder: light StateVariableID oder LevelVariableID, blind LevelVariableID, window StateVariableID oder LevelVariableID, thermostat SetpointVariableID, appliance StateVariableID oder PowerVariableID, media StateVariableID, PlaybackVariableID oder VolumeVariableID, humidifier StateVariableID oder SetpointVariableID, fan StateVariableID oder FanVariableID, meter EnergyVariableID, camera ImageMediaID, alle anderen Typen StateVariableID; eine ID von 0 oder 1 bedeutet nicht gesetzt. Ein fehlender Schlüssel zählt als 0; die Spalten, die auf Label enden, füllt das Formular, ein Skript kann sie weglassen.',
     'Room names are the words the user speaks (Küche, Bad oben), without technical additions. Each room name may appear only once; an alias may belong to several rooms, room= then means all of them.' => 'Raumnamen sind die Wörter, die der Anwender spricht (Küche, Bad oben), ohne technische Zusätze. Jeder Raumname darf nur einmal vorkommen; ein Alias darf zu mehreren Räumen gehören, room= meint dann alle.',
     'Power, also a heat output, counts in mW, W, kW or MW (without a unit W); energy meters and heat meters count in mWh, Wh, kWh or MWh (without a unit kWh) and are archived as counters. Any other unit does not count.' => 'Leistung, auch eine Wärmeleistung, zählt in mW, W, kW oder MW (ohne Einheit W); Energie- und Wärmezähler zählen in mWh, Wh, kWh oder MWh (ohne Einheit kWh) und sind als Zähler archiviert. Eine andere Einheit zählt nicht.',
     'For every blind HAGT_RunSelfTest shows which value counts as open; if open and closed are swapped, set Invert. window, door, presence and water_leak count as active (open, detected) when the value is true or above 0, with Invert only when it is false or 0; a window contact with 0 closed, 1 tilted and 2 open thus counts as open from 1.' => 'Für jeden Rollladen zeigt HAGT_RunSelfTest, welcher Wert als offen gilt; sind offen und geschlossen vertauscht, Invert setzen. window, door, presence und water_leak gelten als aktiv (offen, erkannt), wenn der Wert true oder über 0 ist, mit Invert nur bei false oder 0; ein Fensterkontakt mit 0 zu, 1 gekippt und 2 offen gilt also ab 1 als offen.',
@@ -793,7 +795,7 @@ foreach (DeviceIndex::TYPES as $typ => $woerter) {
     }
     // Die drei Ventile stehen nebeneinander in einer Zeile (B101, Burkhard 25.10.2026)
     $felder[$typ] = array_column(flach($dialog), null, 'name');
-    if (array_keys($felder[$typ]) !== ['Room', 'Name', 'Aliases', 'Type', 'StateVariableID', 'StateLabel', 'HumidityVariableID', 'HumidityLabel', 'SetpointVariableID', 'SetpointLabel', 'ModeVariableID', 'ModeLabel', 'FanVariableID', 'FanLabel', 'ValveRow', 'ValveVariableID', 'Valve2VariableID', 'Valve3VariableID', 'ValveLabel', 'Valve2Label', 'Valve3Label', 'ColorTempVariableID', 'ColorTempLabel', 'ColorVariableID', 'ColorLabel', 'PlaybackVariableID', 'PlaybackLabel', 'VolumeVariableID', 'VolumeLabel', 'MuteVariableID', 'MuteLabel', 'TitleVariableID', 'TitleLabel', 'ArtistVariableID', 'ArtistLabel', 'LevelVariableID', 'LevelLabel', 'MovingVariableID', 'MovingLabel', 'StopVariableID', 'StopLabel', 'PowerVariableID', 'PowerLabel', 'EnergyVariableID', 'EnergyLabel', 'HeatVariableID', 'HeatLabel', 'HeatPowerVariableID', 'HeatPowerLabel', 'HeatIsYield', 'MeteredBy', 'Invert', 'Tilt', 'ReadOnly']) {
+    if (array_keys($felder[$typ]) !== ['Room', 'Name', 'Aliases', 'Type', 'StateVariableID', 'StateLabel', 'ImageMediaID', 'ImageLabel', 'HumidityVariableID', 'HumidityLabel', 'SetpointVariableID', 'SetpointLabel', 'ModeVariableID', 'ModeLabel', 'FanVariableID', 'FanLabel', 'ValveRow', 'ValveVariableID', 'Valve2VariableID', 'Valve3VariableID', 'ValveLabel', 'Valve2Label', 'Valve3Label', 'ColorTempVariableID', 'ColorTempLabel', 'ColorVariableID', 'ColorLabel', 'PlaybackVariableID', 'PlaybackLabel', 'VolumeVariableID', 'VolumeLabel', 'MuteVariableID', 'MuteLabel', 'TitleVariableID', 'TitleLabel', 'ArtistVariableID', 'ArtistLabel', 'LevelVariableID', 'LevelLabel', 'MovingVariableID', 'MovingLabel', 'StopVariableID', 'StopLabel', 'PowerVariableID', 'PowerLabel', 'EnergyVariableID', 'EnergyLabel', 'HeatVariableID', 'HeatLabel', 'HeatPowerVariableID', 'HeatPowerLabel', 'HeatIsYield', 'MeteredBy', 'Invert', 'Tilt', 'ReadOnly']) {
         $dialogFehler[] = $typ . ': Felder ' . implode(', ', array_keys($felder[$typ]));
         continue;
     }
@@ -830,7 +832,7 @@ pruefe(($felder['window']['StateVariableID']['caption'] ?? '') === 'Contact' && 
 pruefe(($felder['temperature']['StateVariableID']['caption'] ?? '') === 'Measured value', 'Messwert');
 pruefe(($felder['socket']['Invert']['caption'] ?? '') === 'Inverted (the variable reports "on" when the device is off)', 'Steckdose: Umkehr');
 pruefe(array_column($felder['light']['Type']['options'] ?? [], 'value') === array_keys(DeviceIndex::TYPES), 'die Typauswahl nennt alle Typen');
-pruefe(($felder['light']['Type']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID, $HeatVariableID, $HeatPowerVariableID, $ValveVariableID, $Valve2VariableID, $Valve3VariableID);', 'ein Typwechsel im Dialog ruft das Modul');
+pruefe(($felder['light']['Type']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID, $HeatVariableID, $HeatPowerVariableID, $ValveVariableID, $Valve2VariableID, $Valve3VariableID, $ImageMediaID);', 'ein Typwechsel im Dialog ruft das Modul');
 pruefe(($felder['blind']['MovingVariableID']['visible'] ?? false) === true && ($felder['blind']['MovingVariableID']['caption'] ?? '') === 'Moving state' && ($felder['blind']['MovingVariableID']['type'] ?? '') === 'SelectVariable', 'Rollladen: wahlweise ein Fahrstatus');
 pruefe(($felder['light']['MovingVariableID']['visible'] ?? true) === false, 'beim Licht gibt es keinen Fahrstatus');
 // Farbtemperatur (build 57): wahlweise beim Licht, nicht beim Schalter.
@@ -839,7 +841,7 @@ pruefe(($felder['light']['ColorVariableID']['visible'] ?? false) === true && ($f
 // Mediaplayer (build 60): Ein/Aus, Wiedergabe, Lautstärke, Stumm, Titel und Interpret.
 pruefe(array_map(static fn (string $f): string => ($felder['media'][$f]['visible'] ?? false) ? ($felder['media'][$f]['caption'] ?? '') : '', ['StateVariableID', 'PlaybackVariableID', 'VolumeVariableID', 'MuteVariableID', 'TitleVariableID', 'ArtistVariableID']) === ['On/off', 'Playback', 'Volume', 'Mute', 'Title', 'Artist'], 'Mediaplayer: sechs Felder mit eigenen Beschriftungen: ' . json_encode(array_map(static fn (array $f): string => ($f['visible'] ?? false) ? ($f['caption'] ?? '') : '-', $felder['media'] ?? []), JSON_UNESCAPED_UNICODE));
 pruefe(($felder['light']['PlaybackVariableID']['visible'] ?? true) === false && ($felder['media']['LevelVariableID']['visible'] ?? true) === false && ($felder['media']['ReadOnly']['visible'] ?? false) === true, 'Wiedergabe nur beim Mediaplayer, dort keine Helligkeit, aber „Nur abfragen“ (steuerbar seit build 61)');
-pruefe(($felder['media']['PlaybackVariableID']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID, $HeatVariableID, $HeatPowerVariableID, $ValveVariableID, $Valve2VariableID, $Valve3VariableID);', 'die Wahl der Wiedergabe zieht den Spaltentext nach');
+pruefe(($felder['media']['PlaybackVariableID']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID, $HeatVariableID, $HeatPowerVariableID, $ValveVariableID, $Valve2VariableID, $Valve3VariableID, $ImageMediaID);', 'die Wahl der Wiedergabe zieht den Spaltentext nach');
 // Luftentfeuchter (build 65): Ein/Aus, Ist-Feuchte, Zielfeuchte.
 pruefe(array_map(static fn (string $f): string => ($felder['humidifier'][$f]['visible'] ?? false) ? ($felder['humidifier'][$f]['caption'] ?? '') : '', ['StateVariableID', 'HumidityVariableID', 'SetpointVariableID', 'ModeVariableID', 'FanVariableID']) === ['On/off', 'Current humidity', 'Target humidity', 'Mode', 'Fan speed'], 'Luftentfeuchter: fünf Felder mit eigenen Beschriftungen: ' . json_encode(array_map(static fn (array $f): string => ($f['visible'] ?? false) ? ($f['caption'] ?? '') : '-', $felder['humidifier'] ?? []), JSON_UNESCAPED_UNICODE));
 pruefe(($felder['thermostat']['HumidityVariableID']['visible'] ?? true) === false && ($felder['humidifier']['ReadOnly']['visible'] ?? false) === true, 'Ist-Feuchte nur beim Luftentfeuchter, der ist steuerbar');
@@ -871,7 +873,7 @@ pruefe(($felder['window']['Tilt']['visible'] ?? false) === true && ($felder['win
 // Umweltertrag (nuc 26.10.2026): nur bei Typen mit Wärme
 pruefe(($felder['appliance']['HeatIsYield']['visible'] ?? false) === true && ($felder['appliance']['HeatIsYield']['caption'] ?? '') === 'Heat is the environmental yield (electricity is added)'
     && ($felder['light']['HeatIsYield']['visible'] ?? true) === false && ($felder['meter']['HeatIsYield']['visible'] ?? true) === false, 'Haken „Wärme ist Umweltertrag“ nur beim Gerät mit Wärme');
-pruefe(($felder['blind']['MovingVariableID']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID, $HeatVariableID, $HeatPowerVariableID, $ValveVariableID, $Valve2VariableID, $Valve3VariableID);', 'die Wahl des Fahrstatus zieht den Spaltentext nach');
+pruefe(($felder['blind']['MovingVariableID']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID, $HeatVariableID, $HeatPowerVariableID, $ValveVariableID, $Valve2VariableID, $Valve3VariableID, $ImageMediaID);', 'die Wahl des Fahrstatus zieht den Spaltentext nach');
 pruefe(($felder['light']['StateVariableID']['type'] ?? '') === 'SelectVariable' && ($felder['light']['LevelVariableID']['type'] ?? '') === 'SelectVariable', 'Fähigkeiten sind Variablenauswahlen');
 $fremd = json_decode((string)oderNull(static fn () => $m->UIDeviceForm('herd')), true);
 pruefe(is_array($fremd) && array_column(flach($fremd), null, 'name') === ($felder['light'] ?? []), 'unbekannter Typ: Dialog wie für ein Licht');
@@ -991,14 +993,14 @@ foreach (flach($formular['elements']) as $e) {
 }
 pruefe($andere === [], 'die anderen Listen bleiben ohne Schnellfilter: ' . json_encode($andere));
 $werte = $geraete['values'] ?? [];
-pruefe(($werte[0] ?? null) === ['StateLabel' => 'Status', 'LevelLabel' => '-', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'ColorTempLabel' => '-', 'ColorLabel' => '-', 'PlaybackLabel' => '-', 'VolumeLabel' => '-', 'MuteLabel' => '-', 'TitleLabel' => '-', 'ArtistLabel' => '-', 'HumidityLabel' => '-', 'ModeLabel' => '-', 'FanLabel' => '-', 'HeatLabel' => '-', 'HeatPowerLabel' => '-', 'ValveLabel' => '-', 'Valve2Label' => '-', 'Valve3Label' => '-', 'rowColor' => ''], 'Licht ohne Helligkeit: Name der Variable und „-“: ' . json_encode($werte[0] ?? null, JSON_UNESCAPED_UNICODE));
-pruefe(($werte[1] ?? null) === ['StateLabel' => '-', 'LevelLabel' => '#69998 ?', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'ColorTempLabel' => '-', 'ColorLabel' => '-', 'PlaybackLabel' => '-', 'VolumeLabel' => '-', 'MuteLabel' => '-', 'TitleLabel' => '-', 'ArtistLabel' => '-', 'HumidityLabel' => '-', 'ModeLabel' => '-', 'FanLabel' => '-', 'HeatLabel' => '-', 'HeatPowerLabel' => '-', 'ValveLabel' => '-', 'Valve2Label' => '-', 'Valve3Label' => '-', 'rowColor' => '#FFC0C0'], 'Rollladen: der Zustand zählt nicht zum Typ, eine gelöschte Variable ist kenntlich und die Zeile rot: ' . json_encode($werte[1] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($werte[0] ?? null) === ['StateLabel' => 'Status', 'LevelLabel' => '-', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'ColorTempLabel' => '-', 'ColorLabel' => '-', 'PlaybackLabel' => '-', 'VolumeLabel' => '-', 'MuteLabel' => '-', 'TitleLabel' => '-', 'ArtistLabel' => '-', 'HumidityLabel' => '-', 'ModeLabel' => '-', 'FanLabel' => '-', 'HeatLabel' => '-', 'HeatPowerLabel' => '-', 'ValveLabel' => '-', 'Valve2Label' => '-', 'Valve3Label' => '-', 'ImageLabel' => '-', 'rowColor' => ''], 'Licht ohne Helligkeit: Name der Variable und „-“: ' . json_encode($werte[0] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($werte[1] ?? null) === ['StateLabel' => '-', 'LevelLabel' => '#69998 ?', 'MovingLabel' => '-', 'StopLabel' => '-', 'PowerLabel' => '-', 'EnergyLabel' => '-', 'SetpointLabel' => '-', 'ColorTempLabel' => '-', 'ColorLabel' => '-', 'PlaybackLabel' => '-', 'VolumeLabel' => '-', 'MuteLabel' => '-', 'TitleLabel' => '-', 'ArtistLabel' => '-', 'HumidityLabel' => '-', 'ModeLabel' => '-', 'FanLabel' => '-', 'HeatLabel' => '-', 'HeatPowerLabel' => '-', 'ValveLabel' => '-', 'Valve2Label' => '-', 'Valve3Label' => '-', 'ImageLabel' => '-', 'rowColor' => '#FFC0C0'], 'Rollladen: der Zustand zählt nicht zum Typ, eine gelöschte Variable ist kenntlich und die Zeile rot: ' . json_encode($werte[1] ?? null, JSON_UNESCAPED_UNICODE));
 
 $m->formUpdates = [];
 oderNull(static fn () => $m->UIDeviceChanged('light', $schalter, 0));
 pruefe(in_array(['StateLabel', 'value', 'Status'], $m->formUpdates, true) && in_array(['LevelLabel', 'value', '-'], $m->formUpdates, true), 'eine andere Variable im Dialog zieht den Spaltentext nach: ' . json_encode($m->formUpdates, JSON_UNESCAPED_UNICODE));
 $dialog = array_column(json_decode($m->UIDeviceForm('light'), true), null, 'name');
-pruefe(($dialog['StateLabel']['visible'] ?? true) === false && ($dialog['StateVariableID']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID, $HeatVariableID, $HeatPowerVariableID, $ValveVariableID, $Valve2VariableID, $Valve3VariableID);', 'der Dialog trägt die Spaltentexte unsichtbar mit und meldet jede Variablenwahl');
+pruefe(($dialog['StateLabel']['visible'] ?? true) === false && ($dialog['StateVariableID']['onChange'] ?? '') === 'HAGT_UIDeviceChanged($id, $Type, $StateVariableID, $LevelVariableID, $MovingVariableID, $PowerVariableID, $EnergyVariableID, $StopVariableID, $SetpointVariableID, $ColorTempVariableID, $ColorVariableID, $PlaybackVariableID, $VolumeVariableID, $MuteVariableID, $TitleVariableID, $ArtistVariableID, $HumidityVariableID, $ModeVariableID, $FanVariableID, $HeatVariableID, $HeatPowerVariableID, $ValveVariableID, $Valve2VariableID, $Valve3VariableID, $ImageMediaID);', 'der Dialog trägt die Spaltentexte unsichtbar mit und meldet jede Variablenwahl');
 $laeuft = variable(VARIABLETYPE_BOOLEAN, false);
 IPS_SetName($laeuft, 'WORKING');
 $m->formUpdates = [];
@@ -3862,5 +3864,93 @@ $pHook->invoke($p);
 ob_end_clean();
 HomeAgentHarness::$body = '';
 pruefe(str_contains((string)($p->response['body'] ?? ''), '"leave_home"'), 'prompts/list über den Hook: ' . ($p->response['body'] ?? ''));
+
+/* --- Kamera (B102, Build 1): Standbild als Medienobjekt ------------------------------------------ */
+// Anlass: Claude-App 10.11.2026, „Gibt es eine Kamera?“. Eine Kamera ist ein Gerät mit einem Medienobjekt vom Typ Bild
+// (am nuc das Bild des ONVIF Image Grabber); get_state nennt, von wann das Bild ist. Ein Stream trägt die Zugangsdaten
+// der Kamera in seiner Adresse und zählt nicht. Die Medienobjekte hier legt der Kernel-Stub an, ihre Werte sind
+// angenommen; die echten Metadaten prüft check-kamera.php am Mitschnitt.
+$k = neueInstanz();
+$kid = (int)(new ReflectionProperty(IPSModuleStrict::class, 'InstanceID'))->getValue($k);
+$bild = IPS_CreateMedia(MEDIATYPE_IMAGE);
+IPS_SetName($bild, 'Image');
+IPS_SetMediaContent($bild, base64_encode('kein echtes Bild, nur Inhalt'));
+$strom = IPS_CreateMedia(MEDIATYPE_STREAM);
+$leer = IPS_CreateMedia(MEDIATYPE_IMAGE);
+$fort = IPS_CreateMedia(MEDIATYPE_IMAGE);
+$alt = IPS_CreateMedia(MEDIATYPE_IMAGE);
+IPS_SetMediaContent($alt, base64_encode('altes Bild'));
+// Aufnahmezeiten setzen: der Stub kennt dafür keine Funktion
+$medien = new ReflectionProperty(\IPS\MediaManager::class, 'medias');
+$stand = $medien->getValue();
+$stand[$bild]['MediaUpdated'] = time() - 600;
+$stand[$alt]['MediaUpdated'] = time() - 3 * 86400;
+$medien->setValue(null, $stand);
+$kameraZeile = static fn (string $name, int $medium, string $raum = 'Außen'): array => ['Room' => $raum, 'Name' => $name, 'Aliases' => '', 'Type' => 'camera', 'ImageMediaID' => $medium];
+IPS_SetProperty($kid, 'Accesses', json_encode([['Name' => 'Claude-App', 'Token' => str_repeat('d4', 32), 'DefaultRoom' => '', 'ReadOnly' => false, 'InPath' => false]]));
+IPS_SetProperty($kid, 'Devices', json_encode([
+    $kameraZeile('Einfahrt', $bild),
+    $kameraZeile('Ohne Bild', 0),
+    $kameraZeile('Gelöscht', $fort),
+    $kameraZeile('Stream', $strom),
+    $kameraZeile('Leer', $leer, 'Keller'),
+    $kameraZeile('Alt', $alt, 'Keller'),
+]));
+IPS_DeleteMedia($fort, true);
+IPS_ApplyChanges($kid);
+pruefe(IPS_GetInstance($kid)['InstanceStatus'] === IS_ACTIVE, 'Kamera: die Instanz ist aktiv: ' . IPS_GetInstance($kid)['InstanceStatus']);
+$log = implode("\n", array_column($k->logs(), 'Message'));
+pruefe(str_contains($log, 'Device "Ohne Bild" (Außen): no image selected'), 'Kamera ohne Medienobjekt: Fehler der Zeile: ' . $log);
+pruefe(str_contains($log, 'Device "Gelöscht" (Außen): the image does not exist'), 'Kamera mit gelöschtem Medienobjekt: Fehler der Zeile: ' . $log);
+pruefe(str_contains($log, 'Device "Stream" (Außen): the selected media object is not an image (a stream does not count)'), 'ein Stream ist kein Bild: Fehler der Zeile: ' . $log);
+pruefe(!str_contains($log, 'Device "Einfahrt"') && !str_contains($log, 'Device "Leer"') && !str_contains($log, 'no variable selected'), 'gültige Kameras und ein leeres Bild sind kein Fehler der Zeile, von Variablen ist keine Rede: ' . $log);
+$antwort = (string)oderNull(static fn () => $k->QueryState('', 'camera', '', false));
+pruefe(str_starts_with($antwort, '3 device(s) found (type=camera).') && str_contains($antwort, 'Außen | Einfahrt | camera | image from ' . date('Y-m-d H:i', time() - 600)), 'die Kamera steht mit Aufnahmezeit in der Abfrage: ' . $antwort);
+pruefe(str_contains($antwort, 'Keller | Leer | camera | no image available') && !str_contains($antwort, 'Stream') && !str_contains($antwort, 'Gelöscht') && !str_contains($antwort, 'Ohne Bild'), 'ein leeres Bild sagt es, fehlerhafte Zeilen sind gesperrt: ' . $antwort);
+pruefe(in_array($bild, $k->GetReferenceList(), true) && in_array($alt, $k->GetReferenceList(), true) && in_array($strom, $k->GetReferenceList(), true), 'jedes vorhandene Medienobjekt der Liste ist als Referenz angemeldet, wie bei Variablen auch das einer fehlerhaften Zeile: ' . json_encode($k->GetReferenceList()));
+
+// Selbsttest: altes und fehlendes Bild nennen, ein frisches nicht
+$test = (string)oderNull(static fn () => $k->RunSelfTest());
+pruefe(str_contains($test, 'Note: Alt (Keller): the image is from ' . date('Y-m-d H:i', time() - 3 * 86400) . ', older than a day; the module does not refresh it, its source does (interval or event)'), 'Selbsttest nennt ein altes Bild mit Datum: ' . $test);
+pruefe(str_contains($test, 'Note: Leer (Keller): the media object holds no image yet'), 'Selbsttest nennt ein leeres Medienobjekt: ' . $test);
+pruefe(!str_contains($test, 'Note: Einfahrt (Außen)'), 'ein frisches Bild bleibt still: ' . $test);
+pruefe(!str_contains($test, 'has no action on its state variable') && !str_contains($test, 'energy meter'), 'keine Hinweise zu Aktion oder Zähler bei Kameras: ' . $test);
+
+// Formular: Typ in der Auswahl, Dialogfeld für das Medienobjekt, Spaltentext
+$kForm = json_decode($k->GetConfigurationForm(), true);
+$kListe = array_column(flach($kForm['elements']), null, 'name')['Devices'] ?? [];
+$kSpalten = array_column($kListe['columns'] ?? [], null, 'name');
+pruefe(in_array(['caption' => 'Camera', 'value' => 'camera'], $kSpalten['Type']['edit']['options'] ?? [], true), 'der Typ Kamera steht in der Auswahl: ' . json_encode(array_column($kSpalten['Type']['edit']['options'] ?? [], 'value')));
+pruefe(($kSpalten['ImageMediaID']['edit']['type'] ?? '') === 'SelectMedia' && ($kSpalten['ImageMediaID']['visible'] ?? true) === false && ($kSpalten['ImageMediaID']['add'] ?? null) === 1
+    && ($kSpalten['ImageLabel']['add'] ?? null) === '-' && ($kSpalten['ImageLabel']['visible'] ?? true) === false, 'Spalten für Bild und Bildtext wie bei den Variablen: ' . json_encode([$kSpalten['ImageMediaID'] ?? null, $kSpalten['ImageLabel'] ?? null]));
+$kWerte = $kListe['values'] ?? [];
+pruefe(($kWerte[0]['ImageLabel'] ?? null) === 'Image' && ($kWerte[0]['StateLabel'] ?? null) === 'Image' && ($kWerte[0]['rowColor'] ?? null) === '', 'die Liste zeigt den Namen des Bildes, auch in der sichtbaren Spalte: ' . json_encode($kWerte[0] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($kWerte[2]['ImageLabel'] ?? null) === '#' . $fort . ' ?' && ($kWerte[2]['rowColor'] ?? '') !== '', 'ein gelöschtes Bild ist kenntlich, die Zeile rot: ' . json_encode($kWerte[2] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(($kWerte[1]['ImageLabel'] ?? null) === '-' && ($kWerte[1]['StateLabel'] ?? null) === '-', 'ohne Bild steht „-“: ' . json_encode($kWerte[1] ?? null, JSON_UNESCAPED_UNICODE));
+$kDialog = array_column(flach(json_decode((string)oderNull(static fn () => $k->UIDeviceForm('camera')), true) ?? []), null, 'name');
+pruefe(($kDialog['ImageMediaID']['type'] ?? '') === 'SelectMedia' && ($kDialog['ImageMediaID']['visible'] ?? false) === true && ($kDialog['ImageMediaID']['caption'] ?? '') === 'Image (media object with a still image)'
+    && str_ends_with((string)($kDialog['ImageMediaID']['onChange'] ?? ''), '$Valve3VariableID, $ImageMediaID);'), 'Dialog der Kamera: Auswahl eines Medienobjekts: ' . json_encode($kDialog['ImageMediaID'] ?? null));
+$sichtbar = array_keys(array_filter($kDialog, static fn (array $e): bool => ($e['visible'] ?? true) === true));
+pruefe($sichtbar === ['Room', 'Name', 'Aliases', 'Type', 'ImageMediaID'], 'sonst zeigt der Dialog einer Kamera nur Raum, Name, Aliase und Typ: ' . json_encode($sichtbar));
+$andereDialoge = array_map(static fn (string $typ): array => array_column(flach(json_decode($k->UIDeviceForm($typ), true)), null, 'name'), ['light', 'meter', 'door']);
+pruefe(!array_any($andereDialoge, static fn (array $d): bool => ($d['ImageMediaID']['visible'] ?? true) !== false), 'andere Typen zeigen das Bildfeld nicht');
+$k->formUpdates = [];
+oderNull(static fn () => $k->UIDeviceChanged('camera', 0, 0, ImageMediaID: $bild));
+pruefe(in_array(['ImageLabel', 'value', 'Image'], $k->formUpdates, true) && in_array(['StateLabel', 'value', 'Image'], $k->formUpdates, true) && in_array(['ImageMediaID', 'visible', true], $k->formUpdates, true)
+    && in_array(['StateVariableID', 'visible', false], $k->formUpdates, true), 'die Wahl eines Bildes zieht den Spaltentext nach: ' . json_encode($k->formUpdates, JSON_UNESCAPED_UNICODE));
+$k->formUpdates = [];
+oderNull(static fn () => $k->UIDeviceChanged('light', $kueche, 0, ImageMediaID: $bild));
+pruefe(in_array(['ImageLabel', 'value', '-'], $k->formUpdates, true) && in_array(['StateLabel', 'value', IPS_GetName($kueche)], $k->formUpdates, true) && in_array(['ImageMediaID', 'visible', false], $k->formUpdates, true),
+    'beim Licht zählt ein altes Bild der Zeile nicht: ' . json_encode($k->formUpdates, JSON_UNESCAPED_UNICODE));
+
+// Werkzeugliste: get_state kennt den Typ, set_state bietet für Kameras nichts an
+$kWerkzeuge = array_column(\Closure::bind(fn () => $this->tools(null, false), $k, HomeAgent::class)(), null, 'name');
+pruefe(in_array('camera', $kWerkzeuge['get_state']['inputSchema']['properties']['type']['enum'] ?? [], true), 'get_state nennt camera als Typ');
+pruefe(!isset($kWerkzeuge['set_state']), 'nur Kameras freigegeben: kein set_state: ' . json_encode(array_keys($kWerkzeuge)));
+
+// Wird das Bild gelöscht, ist die Kamera sofort gesperrt
+IPS_DeleteMedia($bild, true);
+$antwort = (string)oderNull(static fn () => $k->QueryState('Außen', '', '', false));
+pruefe(!str_contains($antwort, 'Einfahrt'), 'gelöschtes Bild: die Kamera ist ohne Übernehmen gesperrt: ' . $antwort);
 
 ende('Modul');

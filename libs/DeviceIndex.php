@@ -33,6 +33,7 @@ final class DeviceIndex
         'air_quality' => null,
         'measurement' => null,
         'meter'       => null,
+        'camera'      => null,
     ];
 
     /** Nur diese Typen lassen sich schalten oder stellen; alle anderen sind Melder und Messwerte. */
@@ -46,7 +47,9 @@ final class DeviceIndex
      * das Backend einen Weg über das Modul des Geräts), „setpoint“ der Sollwert eines Thermostats
      * (beim Thermostat ist „state“ die Ist-Temperatur), „heat“ ein Wärmezähler und „heatpower“ die Wärmeleistung einer
      * Wärmepumpe (B83; beide zählen nie in einer Stromsumme), „valve“ bis „valve3“ die Ventilstellungen der Heizkörper
-     * eines Thermostats (B101, es zählt die offenste). Eine neue Fähigkeit kostet einen Eintrag hier,
+     * eines Thermostats (B101, es zählt die offenste), „image“ das Standbild einer Kamera (B102). Das ist die einzige
+     * Fähigkeit, die keine Variable ist, sondern ein Medienobjekt vom Typ Bild; gelesen wird sie nur über
+     * DeviceBackend::image(). Eine neue Fähigkeit kostet einen Eintrag hier,
      * einen in TYPE_ROLES und ein Feld im Bearbeitungsdialog des Moduls.
      */
     public const ROLES = [
@@ -72,6 +75,7 @@ final class DeviceIndex
         'valve'     => 'ValveVariableID',
         'valve2'    => 'Valve2VariableID',
         'valve3'    => 'Valve3VariableID',
+        'image'     => 'ImageMediaID',
     ];
 
     /**
@@ -151,6 +155,9 @@ final class DeviceIndex
         // Zähler (B82): Unterverteilung, Wallbox, Wohnungszähler. Zählt nie in einer Gerätesumme; was er misst, hängt über
         // „gemessen von“ (MeteredBy) an ihm. Nur Verbrauch, eine Erzeugung gehört in die Energiebilanz.
         'meter'       => ['roles' => ['energy', 'power'], 'required' => ['energy']],
+        // Kamera (B102): ein Standbild als Medienobjekt. Das Modul frischt es nicht auf (Burkhard 10.11.2026: es könnte
+        // das letzte Bewegungsbild gewünscht sein), es nennt die Aufnahmezeit.
+        'camera'      => ['roles' => ['image'], 'required' => ['image']],
     ];
 
     /**
@@ -337,6 +344,7 @@ final class DeviceIndex
         'thermostat' => 'climate', 'humidifier' => 'climate', 'fan' => 'climate', 'temperature' => 'climate',
         'humidity' => 'climate', 'air_quality' => 'climate', 'measurement' => 'measure', 'window' => 'opening',
         'door' => 'opening', 'presence' => 'sensor', 'water_leak' => 'sensor', 'media' => 'media', 'meter' => 'measure',
+        'camera' => 'sensor',
     ];
     private const CARD_GROUP_LABELS = [
         'cover' => 'Blinds', 'light' => 'Lights', 'power' => 'Switches and sockets', 'climate' => 'Climate',
@@ -4961,6 +4969,9 @@ final class DeviceIndex
      */
     private function stateOf(array $entry): array
     {
+        if ($entry['Type'] === 'camera') {
+            return ['text' => $this->cameraText($entry), 'active' => null];
+        }
         // Ein Gerät nur mit Leistung (Wärmepumpe ohne Schaltzustand): die Leistung ist der Zustand. Ein Klimagerät ohne
         // Ist-Temperatur hat noch den Sollwert (B85), ein Luftentfeuchter die Zielfeuchte.
         if (isset($entry['roles']['power']) && array_diff(array_keys($entry['roles']), ['power', 'energy']) === []) {
@@ -5144,6 +5155,24 @@ final class DeviceIndex
             return $this->t($tilt ? 'tilted' : 'open');
         }
         return sprintf($this->t($tilt ? '%s %% tilted' : '%s %% open'), self::formatNumber(round($percent)));
+    }
+
+    /**
+     * Zustand einer Kamera (B102): von wann ihr Standbild ist. Das Bild liegt als Medienobjekt in Symcon, wie alt es
+     * sein darf, bestimmt der Anwender an der Quelle (Intervall, Ereignis); das Modul holt kein neues. Ohne Bild sagt
+     * die Zeile das, statt eine Zeit zu nennen.
+     */
+    private function cameraText(array $entry): string
+    {
+        $id = $entry['roles']['image'] ?? 0;
+        $image = $id > 0 ? $this->backend->image($id) : null;
+        if ($image === null) {
+            return sprintf($this->t('not available (image %d is missing)'), $id);
+        }
+        if (!$image['available'] || $image['size'] <= 0 || $image['updated'] <= 0) {
+            return $this->t('no image available');
+        }
+        return sprintf($this->t('image from %s'), date('Y-m-d H:i', $image['updated']));
     }
 
     private function line(array $entry, string $text, int $maxLength = self::VALUE_TEXT_LENGTH): string

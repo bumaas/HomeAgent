@@ -57,7 +57,7 @@ function zeile(array $zeilen, int $variable): ?array
     return null;
 }
 
-$kurz = static fn (?array $z): ?array => $z === null ? null : array_filter($z, static fn ($v, $k): bool => !str_ends_with($k, 'VariableID') || $v > 1, ARRAY_FILTER_USE_BOTH);
+$kurz = static fn (?array $z): ?array => $z === null ? null : array_filter($z, static fn ($v, $k): bool => !in_array($k, DeviceIndex::ROLES, true) || $v > 1, ARRAY_FILTER_USE_BOTH);
 
 /* --- Gegen die echte Liste von #15877: nur, was noch fehlt ------------------------------------- */
 

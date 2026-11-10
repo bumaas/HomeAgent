@@ -434,6 +434,19 @@ class HomeAgent extends IPSModuleStrict
                 }
             }
         }
+        // Kameras (B102): Das Modul frischt kein Bild auf (Burkhard 10.11.2026), ein altes oder fehlendes fällt hier auf.
+        foreach ($list as $entry) {
+            $imageId = DeviceIndex::rolesOf($entry)['image'] ?? 0;
+            $image = $imageId > 0 ? $backend->image($imageId) : null;
+            if ($image === null) {
+                continue;
+            }
+            if (!$image['available'] || $image['size'] <= 0 || $image['updated'] <= 0) {
+                $lines[] = sprintf($this->Translate('Note: %s: the media object holds no image yet'), $this->entryLabel($entry));
+            } elseif ($backend->timestamp() - $image['updated'] > 86400) {
+                $lines[] = sprintf($this->Translate('Note: %s: the image is from %s, older than a day; the module does not refresh it, its source does (interval or event)'), $this->entryLabel($entry), date('Y-m-d H:i', $image['updated']));
+            }
+        }
         // Verbrauch über Zeiträume gibt es nur aus einem Zähler, den das Archiv als Zähler aggregiert. Die Hinweise
         // nennen die Variable mit ID, Zähler an Aktor und Messgerät heißen oft gleich.
         $named = static fn (int $id): string => IPS_GetName($id) . ' (#' . $id . ')';
@@ -1312,7 +1325,7 @@ class HomeAgent extends IPSModuleStrict
      * ein anderer Gerätetyp oder eine andere Variable gewählt wird. Die Felder folgen dem Typ, und
      * die Texte für die Spalten der Liste folgen den gewählten Variablen.
      */
-    public function UIDeviceChanged(string $Type, int $StateVariableID, int $LevelVariableID, int $MovingVariableID = 0, int $PowerVariableID = 0, int $EnergyVariableID = 0, int $StopVariableID = 0, int $SetpointVariableID = 0, int $ColorTempVariableID = 0, int $ColorVariableID = 0, int $PlaybackVariableID = 0, int $VolumeVariableID = 0, int $MuteVariableID = 0, int $TitleVariableID = 0, int $ArtistVariableID = 0, int $HumidityVariableID = 0, int $ModeVariableID = 0, int $FanVariableID = 0, int $HeatVariableID = 0, int $HeatPowerVariableID = 0, int $ValveVariableID = 0, int $Valve2VariableID = 0, int $Valve3VariableID = 0): void
+    public function UIDeviceChanged(string $Type, int $StateVariableID, int $LevelVariableID, int $MovingVariableID = 0, int $PowerVariableID = 0, int $EnergyVariableID = 0, int $StopVariableID = 0, int $SetpointVariableID = 0, int $ColorTempVariableID = 0, int $ColorVariableID = 0, int $PlaybackVariableID = 0, int $VolumeVariableID = 0, int $MuteVariableID = 0, int $TitleVariableID = 0, int $ArtistVariableID = 0, int $HumidityVariableID = 0, int $ModeVariableID = 0, int $FanVariableID = 0, int $HeatVariableID = 0, int $HeatPowerVariableID = 0, int $ValveVariableID = 0, int $Valve2VariableID = 0, int $Valve3VariableID = 0, int $ImageMediaID = 0): void
     {
         $type = array_key_exists($Type, DeviceIndex::TYPES) ? $Type : array_key_first(DeviceIndex::TYPES);
         foreach ($this->deviceDialogFields($type) as $name => $field) {
@@ -1329,7 +1342,7 @@ class HomeAgent extends IPSModuleStrict
         foreach ($this->deviceLabels(['Type' => $type, 'StateVariableID' => $StateVariableID, 'LevelVariableID' => $LevelVariableID, 'MovingVariableID' => $MovingVariableID, 'PowerVariableID' => $PowerVariableID, 'EnergyVariableID' => $EnergyVariableID, 'StopVariableID' => $StopVariableID, 'SetpointVariableID' => $SetpointVariableID, 'ColorTempVariableID' => $ColorTempVariableID, 'ColorVariableID' => $ColorVariableID,
             'PlaybackVariableID' => $PlaybackVariableID, 'VolumeVariableID' => $VolumeVariableID, 'MuteVariableID' => $MuteVariableID, 'TitleVariableID' => $TitleVariableID, 'ArtistVariableID' => $ArtistVariableID, 'HumidityVariableID' => $HumidityVariableID, 'ModeVariableID' => $ModeVariableID, 'FanVariableID' => $FanVariableID,
             'HeatVariableID' => $HeatVariableID, 'HeatPowerVariableID' => $HeatPowerVariableID, 'ValveVariableID' => $ValveVariableID, 'Valve2VariableID' => $Valve2VariableID,
-            'Valve3VariableID' => $Valve3VariableID]) as $name => $label) {
+            'Valve3VariableID' => $Valve3VariableID, 'ImageMediaID' => $ImageMediaID]) as $name => $label) {
             $this->UpdateFormField($name, 'value', $label);
         }
     }
@@ -3119,11 +3132,17 @@ class HomeAgent extends IPSModuleStrict
                 $variables[] = (int)($source[$field] ?? 0);
             }
         }
+        // Das Standbild einer Kamera (B102) ist ein Medienobjekt
+        $media = [];
         foreach ($this->deviceList() as $entry) {
-            $variables = array_merge($variables, array_values(DeviceIndex::rolesOf($entry)));
+            $roles = DeviceIndex::rolesOf($entry);
+            $media[] = $roles['image'] ?? 0;
+            unset($roles['image']);
+            $variables = array_merge($variables, array_values($roles));
         }
         $scripts = array_map(static fn (array $entry): int => (int)($entry['ScriptID'] ?? 0), $this->sceneList());
         $ids = array_merge(
+            array_filter(array_unique($media), static fn (int $id): bool => $id > 1 && IPS_MediaExists($id)),
             array_filter(array_unique($variables), static fn (int $id): bool => IPS_VariableExists($id)),
             array_filter(array_unique($scripts), static fn (int $id): bool => IPS_ScriptExists($id))
         );
@@ -3508,9 +3527,19 @@ class HomeAgent extends IPSModuleStrict
             $roles = DeviceIndex::rolesOf($entry);
             $required = DeviceIndex::TYPE_ROLES[$type]['required'];
             if (array_intersect($required, array_keys($roles)) === []) {
-                $add('Devices', $index, $row, sprintf($this->Translate('no variable selected for %s'), implode(' / ', array_map($caption, $required))));
+                $add('Devices', $index, $row, $type === 'camera' ? $this->Translate('no image selected') : sprintf($this->Translate('no variable selected for %s'), implode(' / ', array_map($caption, $required))));
             }
             foreach ($roles as $role => $variableId) {
+                // Das Standbild einer Kamera (B102) ist ein Medienobjekt vom Typ Bild. Ein Stream trägt die Zugangsdaten
+                // der Kamera in seiner Adresse und ist kein Standbild.
+                if ($role === 'image') {
+                    if (!IPS_MediaExists($variableId)) {
+                        $add('Devices', $index, $row, $this->Translate('the image does not exist'));
+                    } elseif (IPS_GetMedia($variableId)['MediaType'] !== MEDIATYPE_IMAGE) {
+                        $add('Devices', $index, $row, $this->Translate('the selected media object is not an image (a stream does not count)'));
+                    }
+                    continue;
+                }
                 if (!IPS_VariableExists($variableId)) {
                     $add('Devices', $index, $row, sprintf($this->Translate('variable for %s does not exist'), $caption($role)));
                 }
@@ -3591,7 +3620,8 @@ class HomeAgent extends IPSModuleStrict
             'colortemp' => $this->Translate('Colour temperature'), 'color' => $this->Translate('Colour'), 'playback' => $this->Translate('Playback'),
             'volume' => $this->Translate('Volume'), 'mute' => $this->Translate('Mute'), 'title' => $this->Translate('Title'), 'artist' => $this->Translate('Artist'), 'humidity' => $this->Translate('Humidity'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed'),
             'heat' => $this->Translate('Heat meter (archived as counter)'), 'heatpower' => $this->Translate('Heat output'),
-            'valve' => $this->Translate('Valve position'), 'valve2' => $this->Translate('Valve position 2'), 'valve3' => $this->Translate('Valve position 3')];
+            'valve' => $this->Translate('Valve position'), 'valve2' => $this->Translate('Valve position 2'), 'valve3' => $this->Translate('Valve position 3'),
+            'image' => $this->Translate('Image (media object with a still image)')];
     }
 
     /**
@@ -3607,13 +3637,18 @@ class HomeAgent extends IPSModuleStrict
         foreach (DeviceIndex::ROLES as $role => $key) {
             $variableId = $roles[$role] ?? 0;
             $label = '-';
-            if ($variableId > 0 && IPS_VariableExists($variableId)) {
+            // Das Standbild einer Kamera ist ein Medienobjekt (ImageMediaID), alles andere eine Variable
+            if ($variableId > 0 && ($role === 'image' ? IPS_MediaExists($variableId) : IPS_VariableExists($variableId))) {
                 $parent = IPS_GetParent($variableId);
                 $label = IPS_GetName($variableId) . ($parent > 0 ? ' (' . IPS_GetLocation($parent) . ')' : '');
             } elseif ($variableId > 0) {
                 $label = '#' . $variableId . ' ?';
             }
-            $labels[str_replace('VariableID', 'Label', $key)] = $label;
+            $labels[(string)preg_replace('/(Variable|Media)ID$/', 'Label', $key)] = $label;
+        }
+        // Sichtbar sind in der Liste nur Zustand und Stufe; bei einer Kamera steht dort ihr Bild.
+        if ((string)($row['Type'] ?? '') === 'camera') {
+            $labels['StateLabel'] = $labels['ImageLabel'];
         }
         return $labels;
     }
