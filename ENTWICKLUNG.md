@@ -362,8 +362,12 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   bewusst kein Parameter von `HAGT_AddAccess`: Ein Einrichtungsagent soll sich das Recht nicht selbst geben, und die
   Signatur bleibt für vorhandene Skripte gleich. Build 2 und 3 des Plans sind ein Build geworden, weil der Arbeitsbaum
   des Entwicklers live läuft und es `show_camera` nie ohne das Recht geben sollte. Der Test lädt GD selbst nach
-  (`-d extension=gd`), die CI lädt es über `extensions: gd`. Noch offen: an Home Assistant belegen, dass ein Bildblock
-  dort als Text beim Modell ankommt (bisher nur aus dem Quelltext gelesen).
+  (`-d extension=gd`), die CI lädt es über `extensions: gd`. An Home Assistant belegt (2026.9.4, Assist-Pipeline mit
+  Claude Haiku, 10.11.2026, Haken nur für den Versuch gesetzt): HA ruft `show_camera` auf und legt das Ergebnis samt
+  Bildblock als Daten ins Gespräch, 424.574 Zeichen; das Modell nennt die Aufnahmezeit, kann den Inhalt aber nicht
+  beschreiben, und die Antwort braucht 18,5 s statt 4,6 s. Ohne Haken sagt es richtig, dass Bilder für den Zugang nicht
+  freigegeben sind. Der Client von HA meldet sich als „mcp 0.1.0“, dem Namen des Python-SDK; am Namen lässt er sich
+  deshalb nicht erkennen, und ein Ausblenden von `show_camera` je Client wurde verworfen. Es bleibt beim Hinweis am Haken.
   Ansicht in der App (build 280): In der Claude-App rief das Modell am 10.11.2026 `show_camera` auf und beschrieb das
   Bild richtig, der Anwender sah davon nur eine winzige Vorschau neben der Werkzeugzeile („Ich sehe das Bild nicht“);
   erst danach teilte Claude es als Datei. Das Bild in der Gerätekarte wurde verworfen: Das Modell sähe es dort nicht,
