@@ -125,7 +125,7 @@ pruefe(!$r['isError'] && $r['text'] === "1 device(s) found (type=camera, name=Ho
 $bild = isset($r['image']['data']) ? base64_decode($r['image']['data'], true) : false;
 $masse = is_string($bild) ? getimagesizefromstring($bild) : false;
 pruefe(($r['image']['mimeType'] ?? '') === 'image/jpeg' && $masse !== false && $masse[0] === 1280 && $masse[1] === 720, 'das Bild kommt als Base64, verkleinert auf 1280 x 720: ' . json_encode($masse === false ? array_keys($r) : [$masse[0], $masse[1]]));
-pruefe(array_keys($r) === ['text', 'isError', 'image'] && $index->problem() === null, 'Ergebnis mit text, isError, image; kein Problem gemerkt: ' . json_encode([array_keys($r), $index->problem()]));
+pruefe(array_keys($r) === ['text', 'isError', 'image', 'structuredContent'] && $index->problem() === null, 'Ergebnis mit text, isError, image und den Angaben für die Ansicht; kein Problem gemerkt: ' . json_encode([array_keys($r), $index->problem()]));
 
 // Mehrere Treffer: kein Bild, die Kandidaten zur Rückfrage
 $r = zeige(['room' => 'Außen']);
@@ -173,6 +173,72 @@ $anlage->bilder = [27512 => 'kaputt'];
 $r = $index->camera(['name' => 'Wohnzimmerkamera']);
 pruefe($r['isError'] && $r['text'] === 'The image of camera "Wohnzimmerkamera" could not be read.', 'Inhalt ist kein Bild: ' . $r['text']);
 
+/* --- Ansicht in der App: Angaben für die Seite und das Bild in Stücken --------------------------- */
+// claude.ai begrenzt ein Werkzeugergebnis auf rund 150.000 Zeichen (Doku der Connectors, gelesen 10.11.2026); größere
+// Ergebnisse erreichen die Seite nicht. Das Bild für das Modell hat als Base64 über 400.000 Zeichen. Die Seite holt ihr
+// Bild deshalb selbst, über das Werkzeug camera_image, das nur sie sieht, in Stücken von höchstens 100.000 Zeichen und
+// 960 Pixel breit. show_camera gibt ihr dazu nur, welche Kamera gemeint ist.
+
+$r = zeige(['name' => 'Hof']);
+pruefe(($r['structuredContent'] ?? null) === ['kind' => 'camera', 'images' => [['device' => '34336', 'room' => 'Außen', 'name' => 'Einfahrt', 'taken' => 1794303897]], 'timeZone' => 'Europe/Berlin',
+    'labels' => ['taken' => 'Image from %s', 'loading' => 'Loading the image …', 'missing' => 'The image cannot be shown here.']],
+    'show_camera nennt der Seite Kamera, Aufnahmezeit, Zeitzone und Texte, ohne das Bild zu wiederholen: ' . json_encode($r['structuredContent'] ?? null, JSON_UNESCAPED_UNICODE));
+pruefe(strlen((string)json_encode($r['structuredContent'] ?? null)) < 1000, 'die Angaben für die Seite bleiben klein');
+$r = zeige(['room' => 'Außen']);
+pruefe(!isset($r['structuredContent']), 'ohne Bild auch keine Angaben für die Ansicht');
+
+pruefe(DeviceIndex::CAMERA_PART === 100000 && DeviceIndex::CAMERA_VIEW_WIDTH === 960, 'Stücke von 100.000 Zeichen, Ansicht 960 Pixel breit');
+function stueck(array $argumente): array
+{
+    global $index;
+    zeige(['name' => 'nichts']); // frischer Index und frische Anlage
+    try {
+        return $index->cameraPart($argumente);
+    } catch (Throwable $e) {
+        return ['text' => 'FEHLT: ' . $e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')', 'isError' => true];
+    }
+}
+$erstes = stueck(['device' => '34336']);
+$teil = $erstes['structuredContent'] ?? [];
+pruefe(!$erstes['isError'] && ($teil['kind'] ?? '') === 'camera_part' && ($teil['device'] ?? '') === '34336' && ($teil['name'] ?? '') === 'Einfahrt' && ($teil['room'] ?? '') === 'Außen' && ($teil['taken'] ?? 0) === 1794303897
+    && ($teil['mimeType'] ?? '') === 'image/jpeg' && ($teil['offset'] ?? -1) === 0 && ($teil['timeZone'] ?? '') === 'Europe/Berlin' && isset($teil['labels']['taken']),
+    'erstes Stück mit allen Angaben zur Kamera: ' . json_encode(array_diff_key($teil, ['data' => 0]), JSON_UNESCAPED_UNICODE));
+pruefe(($teil['total'] ?? 0) > 100000 && strlen((string)($teil['data'] ?? '')) === 100000, 'das 4K-Bild braucht mehrere Stücke, das erste ist voll: ' . json_encode([$teil['total'] ?? null, strlen((string)($teil['data'] ?? ''))]));
+pruefe(strlen((string)json_encode($erstes)) < 150000, 'ein Stück bleibt samt Hülle unter 150.000 Zeichen: ' . strlen((string)json_encode($erstes)));
+pruefe(!isset($erstes['image']) && preg_match('/^Image of camera "Einfahrt": part 1 of \d+\.$/', $erstes['text']) === 1, 'kein Bildblock, nur eine kurze Zeile: ' . $erstes['text']);
+$base64 = (string)($teil['data'] ?? '');
+$total = (int)($teil['total'] ?? 0);
+for ($offset = 100000; $offset < $total && $offset < 2000000; $offset += 100000) {
+    $weiter = stueck(['device' => '34336', 'offset' => $offset]);
+    $base64 .= (string)($weiter['structuredContent']['data'] ?? '');
+    if (($weiter['structuredContent']['offset'] ?? -1) !== $offset || ($weiter['structuredContent']['total'] ?? -1) !== $total) {
+        $base64 = '';
+        break;
+    }
+}
+$zusammen = base64_decode($base64, true);
+$masse = is_string($zusammen) && $zusammen !== '' ? getimagesizefromstring($zusammen) : false;
+pruefe(strlen($base64) === $total && $masse !== false && $masse[0] === 960 && $masse[1] === 540 && $masse['mime'] === 'image/jpeg', 'die Stücke ergeben zusammen ein JPEG von 960 x 540: ' . json_encode($masse === false ? [strlen($base64), $total] : [$masse[0], $masse[1]]));
+// Die Seite kennt die Kamera notfalls nur aus den Argumenten des Aufrufs (ein Host, der ihr das Ergebnis nicht gibt)
+$r = stueck(['name' => 'Hof']);
+pruefe(!$r['isError'] && ($r['structuredContent']['device'] ?? '') === '34336' && ($r['structuredContent']['offset'] ?? -1) === 0, 'auch über Name oder Raum wie bei show_camera: ' . $r['text']);
+$r = stueck(['room' => 'Außen']);
+pruefe($r['isError'] && !isset($r['structuredContent']) && str_starts_with($r['text'], '2 cameras match'), 'mehrere Treffer: Absage wie bei show_camera: ' . $r['text']);
+// Fehler
+$r = stueck(['device' => '11941']);
+pruefe($r['isError'] && !isset($r['structuredContent']) && $r['text'] === 'No released camera has the key 11941.', 'ein Schlüssel, der keine Kamera ist: ' . $r['text']);
+$r = stueck(['device' => '34336', 'offset' => 99999999]);
+pruefe($r['isError'] && !isset($r['structuredContent']), 'ein Stück hinter dem Ende gibt es nicht: ' . $r['text']);
+$r = stueck(['device' => '69991']);
+pruefe($r['isError'] && $r['text'] === 'Camera "Leere Kamera" has no image yet.', 'leeres Medienobjekt: ' . $r['text']);
+// Das kleine echte PNG kommt in einem Stück, unverändert
+$r = stueck(['device' => '27512']);
+pruefe(!$r['isError'] && base64_decode((string)($r['structuredContent']['data'] ?? ''), true) === $cover && ($r['structuredContent']['total'] ?? 0) === strlen(base64_encode($cover)) && ($r['structuredContent']['mimeType'] ?? '') === 'image/png',
+    'kleines PNG in einem Stück: ' . json_encode(array_diff_key($r['structuredContent'] ?? [], ['data' => 0])));
+// Verkleinern auf eine andere Breite
+$r = CameraImage::prepare($gross, null, null, 960);
+pruefe(($r['width'] ?? 0) === 960 && ($r['height'] ?? 0) === 540, 'prepare nimmt die Zielbreite als Angabe: ' . json_encode(array_diff_key($r, ['data' => 0])));
+
 // Zu wenig Speicher zum Entpacken: Absage mit den Maßen statt eines abgebrochenen Threads
 $limit = (string)ini_get('memory_limit');
 ini_set('memory_limit', '40M');
@@ -185,6 +251,9 @@ pruefe($r['isError'] && !isset($r['image']) && $r['text'] === 'The image of came
 $de =json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/locale.json'), true, 512, JSON_THROW_ON_ERROR)['translations']['de'];
 foreach ([['name' => 'Hof'], ['room' => 'Außen'], ['name' => 'Garage'], ['name' => 'Leere Kamera'], ['name' => 'Gelöschte Kamera']] as $argumente) {
     $r = zeige($argumente, $de);
+    $index->cameraPart(['device' => '34336']);
+    $index->cameraPart(['device' => '1']);
+    $index->cameraPart(['device' => '34336', 'offset' => 99999999]);
     pruefe($anlage->missing === [], 'übersetzt ' . json_encode($argumente, JSON_UNESCAPED_UNICODE) . ': ' . json_encode($anlage->missing, JSON_UNESCAPED_UNICODE));
 }
 $r = zeige(['room' => 'Außen'], $de);

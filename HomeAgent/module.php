@@ -87,6 +87,12 @@ class HomeAgent extends IPSModuleStrict
 
     /** Seite der Gerätekarten für show_devices und control_device (MCP Apps, Burkhard 12.10.2026). */
     private const DEVICES_URI = 'ui://homeagent/devices';
+
+    /** Seite des Kamerabilds für show_camera und camera_image (MCP Apps, B102). */
+    private const CAMERA_URI = 'ui://homeagent/camera';
+
+    /** Die Seiten der MCP Apps und ihre Dateien. */
+    private const APP_PAGES = [self::CHART_URI => 'chart.html', self::DEVICES_URI => 'devices.html', self::CAMERA_URI => 'camera.html'];
     private const LOG_MIN_LINES = 10;
     private const LOG_LINE_MAX = 2000;
     private const LOG_SHOW_LINES = 200;
@@ -1434,7 +1440,7 @@ class HomeAgent extends IPSModuleStrict
      */
     private function resourceUri(string $base): string
     {
-        $file = [self::CHART_URI => 'chart.html', self::DEVICES_URI => 'devices.html'][$base];
+        $file = self::APP_PAGES[$base];
         $hash = hash_file('sha256', __DIR__ . '/' . $file);
         return $hash === false ? $base : $base . '/' . substr($hash, 0, 8);
     }
@@ -1446,7 +1452,7 @@ class HomeAgent extends IPSModuleStrict
     private function readResource(string $uri): ?string
     {
         $base = preg_replace('#/[0-9a-f]{8}$#', '', $uri);
-        $file = [self::CHART_URI => 'chart.html', self::DEVICES_URI => 'devices.html'][$base] ?? null;
+        $file = self::APP_PAGES[$base] ?? null;
         if ($file === null) {
             return null;
         }
@@ -2465,7 +2471,8 @@ class HomeAgent extends IPSModuleStrict
                 'title'       => 'Show devices',
                 'description' => 'Shows the matching devices as cards in the chat' . ($readOnly ? '' : ', with switches, sliders and buttons the user can operate directly') . '. '
                     . 'Use it whenever the user asks to be shown devices ("show me the lights in the living room", "show me the blinds") or wants to operate them by hand; for a question with a plain answer ("is any light on?") use get_state. '
-                    . 'The answer gives the same lines as get_state.',
+                    . 'The answer gives the same lines as get_state.'
+                    . ($cameras !== [] && $images ? ' To show a camera use show_camera, its card only gives the time of the image.' : ''),
                 'inputSchema' => [
                     'type'                 => 'object',
                     'properties'           => [
@@ -2492,7 +2499,10 @@ class HomeAgent extends IPSModuleStrict
                 'description' => 'Returns the stored still image of one released camera so that you can look at it, together with the time it was taken. '
                     . 'It is not a live view: the image may be old, so always tell the user when it was taken. '
                     . 'The name must match exactly one camera, otherwise no image is fetched and the answer lists the candidates. '
-                    . 'Cameras: ' . implode(', ', $shownCameras) . ($moreCameras > 0 ? ' and ' . $moreCameras . ' more' : '') . '.',
+                    . 'Cameras: ' . implode(', ', $shownCameras) . ($moreCameras > 0 ? ' and ' . $moreCameras . ' more' : '') . '.'
+                    // Claude-App 10.11.2026: Der Bildblock geht nur ans Modell, der Anwender sah eine winzige Vorschau („Ich
+                    // sehe das Bild nicht“). Mit Apps zeigt die Seite das Bild, sonst soll das Modell es beschreiben.
+                    . ($apps ? ' The user sees the image in the chat as well.' : ' Only you see the image, the user does not: describe what it shows.'),
                 'inputSchema' => [
                     'type'                 => 'object',
                     'properties'           => [
@@ -2502,7 +2512,28 @@ class HomeAgent extends IPSModuleStrict
                     'additionalProperties' => false,
                 ],
                 'annotations' => ['readOnlyHint' => true, 'openWorldHint' => false],
-            ];
+            ] + ($apps ? ['_meta' => ['ui' => ['resourceUri' => $this->resourceUri(self::CAMERA_URI)]]] : []);
+            // Die Seite holt ihr Bild selbst, in Stücken: Ein Ergebnis über rund 150.000 Zeichen erreicht sie bei
+            // claude.ai nicht. Nur sie sieht das Werkzeug (visibility „app“).
+            if ($apps) {
+                $tools[] = [
+                    'name'        => 'camera_image',
+                    'title'       => 'Camera image for the view',
+                    'description' => 'Loads the image of one camera in parts for its view in show_camera.',
+                    'inputSchema' => [
+                        'type'                 => 'object',
+                        'properties'           => [
+                            'device' => ['type' => 'string', 'description' => 'Key of the camera from show_camera.'],
+                            'name'   => ['type' => 'string'],
+                            'room'   => ['type' => 'string'],
+                            'offset' => ['type' => 'integer', 'minimum' => 0],
+                        ],
+                        'additionalProperties' => false,
+                    ],
+                    'annotations' => ['readOnlyHint' => true, 'openWorldHint' => false],
+                    '_meta'       => ['ui' => ['resourceUri' => $this->resourceUri(self::CAMERA_URI), 'visibility' => ['app']]],
+                ];
+            }
         }
 
         // Ein Nur-Lese-Zugang bekommt allein die Abfrage; alles Schreibende kennt er nicht.
@@ -2735,6 +2766,7 @@ class HomeAgent extends IPSModuleStrict
         $images = ($access['Images'] ?? false) === true;
         $index = match (true) {
             $name === 'show_camera'                => $images ? $this->deviceIndex($defaultRoom) : null,
+            $name === 'camera_image'               => $images ? $this->deviceIndex($defaultRoom) : null,
             $name === 'get_state'                  => $this->deviceIndex($defaultRoom),
             $name === 'show_chart'                 => $this->deviceIndex($defaultRoom),
             $name === 'show_devices'               => $this->deviceIndex($defaultRoom),
@@ -2745,9 +2777,10 @@ class HomeAgent extends IPSModuleStrict
             default                                => null,
         };
         $outcome = match (true) {
-            $name === 'show_camera' && !$images    => ['text' => $this->Translate('Camera images are not released for this access.'), 'isError' => true],
+            in_array($name, ['show_camera', 'camera_image'], true) && !$images => ['text' => $this->Translate('Camera images are not released for this access.'), 'isError' => true],
             $index === null                        => ['text' => 'Unknown tool ' . $name, 'isError' => true],
             $name === 'show_camera'                => $this->withNow($index->camera($arguments)),
+            $name === 'camera_image'               => $index->cameraPart($arguments),
             $name === 'get_state'                  => $this->withNow($index->getState($arguments)),
             $name === 'show_chart'                 => $index->chart($arguments),
             $name === 'show_devices'               => $index->cards($arguments, $readOnly),

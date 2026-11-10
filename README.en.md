@@ -248,7 +248,8 @@ Some devices need more than the variable of their type:
   so do the ONVIF Image Grabber and the HomeAssistant module (the preview of a camera). The assistant names the camera
   with the time the image was taken, for example "image from 2026-11-10 10:44". The image itself it fetches only
   through an access with the checkbox "Camera images" (see [Accesses](#accesses)), and only if the question matches
-  exactly one camera. It gets it at most 1280 pixels wide and can then say what is on it. The module never fetches a new image
+  exactly one camera. It gets it at most 1280 pixels wide and can then say what is on it. In the Claude app the image
+  also appears in the chat, with name and the time it was taken. Other assistants only describe it. The module never fetches a new image
   itself. How current it is you decide at its source: with an interval at the grabber, with an event of the camera or
   with an event of your own in Symcon that triggers the grabber, for example at the doorbell. If the assistant should
   renew the image on request, release a script that triggers the grabber (for the Image Grabber `IG_UpdateImage(<instance>);`) as a scene. Two images of the same camera, such as the

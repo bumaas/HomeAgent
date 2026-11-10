@@ -1,7 +1,8 @@
 # Gestaltung der MCP Apps (Regelwerk)
 
-Dieses Regelwerk gilt für die beiden Seiten, die Home Agent in Clients mit MCP Apps zeigt, die Gerätekarten
-(`HomeAgent/devices.html`, Werkzeug `show_devices`) und die Diagramme (`HomeAgent/chart.html`, Werkzeug `show_chart`).
+Dieses Regelwerk gilt für die Seiten, die Home Agent in Clients mit MCP Apps zeigt: die Gerätekarten
+(`HomeAgent/devices.html`, Werkzeug `show_devices`), die Diagramme (`HomeAgent/chart.html`, Werkzeug `show_chart`) und
+das Kamerabild (`HomeAgent/camera.html`, Werkzeug `show_camera`).
 Es ist die Referenz für jede Änderung an ihrem Aussehen. Wer davon abweicht, ändert erst diese Datei, dann die Seite.
 
 Die Gestaltung folgt den Entwürfen von pitti aus dem Symcon-Forum (Karten, Ringe) und den Layoutvergleichen vom
@@ -201,6 +202,20 @@ Feste Reihenfolge: Rollläden, Licht, Schalter und Steckdosen, Klima, Messwerte,
   („2025: 79 %“, Farbe `--muted`, Zeitraum wie in der Titelzeile, Tooltip „Vergleich …“); in der Mitte ist dafür kein
   Platz, unten rechts liegt der innerste Bogen (Hardcopy 15.10.2026).
 
+## Kamerabild
+
+- **Aufbau** von oben: Titel „Raum · Name“ (13 px, 600, ohne Raum nur der Name), das Bild, darunter in `--muted`
+  (12 px) die Aufnahmezeit, etwa „Bild von Dienstag, 10. November um 12:33“.
+- **Das Bild** füllt die Breite, höchstens 720 px, im eigenen Seitenverhältnis, mit dünnem Rahmen (`--border`) und
+  Radius 10 px wie eine Karte. Es wird nie beschnitten oder verzerrt.
+- **Solange das Bild lädt oder fehlt** steht an seiner Stelle eine Fläche in `--card` im Verhältnis 16 zu 9 mit einem
+  kurzen Text in `--muted` („Das Bild wird geladen …“, bei einer Absage deren erste Zeile). So springt die Höhe beim
+  Eintreffen des Bildes kaum.
+- **Keine Bedienelemente und keine Farbe:** Das Bild ist der Inhalt. Mehrere Bilder stehen untereinander, jedes mit
+  Titel und Aufnahmezeit.
+- **Die Aufnahmezeit** schreibt die Seite in der Sprache des Clients und der Zeitzone der Anlage, mit Wochentag, weil
+  ein Bild Tage alt sein kann. Das Wort davor kommt aus dem Modul.
+
 ## Texte
 
 - Beschriftungen kommen übersetzt aus dem Modul (`labels` in `structuredContent`, `locale.json`). Die Seite selbst hat
@@ -211,7 +226,7 @@ Feste Reihenfolge: Rollläden, Licht, Schalter und Steckdosen, Klima, Messwerte,
 ## Prüfen vor dem Commit
 
 1. Die betroffenen Karten bzw. Diagramme mit echten Daten rendern, hell und dunkel (Werkzeuge in `dev/`, nicht im
-   Repo: `showcase.php` für die Übersicht aller Arten, `devices_render.php` und `chart_render2.php` einzeln).
+   Repo: `showcase.php` für die Übersicht aller Arten, `devices_render.php`, `chart_render2.php` und `camera_render.php` einzeln).
 2. Mit diesem Regelwerk vergleichen: Farben, Formen, Ränder, Legenden, Achsen.
 3. Was Daten betrifft (Gruppe, aktiv, Beschriftung, Zeitraum), bekommt einen Test mit Rot/Grün-Nachweis; reine
    Gestaltung wird an den Bildern geprüft und im Commit so benannt.

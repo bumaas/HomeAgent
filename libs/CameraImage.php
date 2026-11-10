@@ -29,10 +29,11 @@ final class CameraImage
     /**
      * @param null|bool $gd null = selbst feststellen; false erzwingt den Weg ohne GD (Test)
      * @param null|int $freeMemory freier Speicher in Byte; null = aus memory_limit und dem Verbrauch (Test)
+     * @param int $maxWidth Zielbreite; die Ansicht in der App nimmt ein kleineres Bild als das Modell
      * @return array{data: string, mimeType: string, width: int, height: int, scaled: bool}|array{error: string, width?: int, height?: int}
      *     error: unreadable (kein Bild), too_large (lässt sich hier nicht verkleinern), format (Format ohne GD nicht lieferbar)
      */
-    public static function prepare(string $bytes, ?bool $gd = null, ?int $freeMemory = null): array
+    public static function prepare(string $bytes, ?bool $gd = null, ?int $freeMemory = null, int $maxWidth = self::MAX_WIDTH): array
     {
         $size = $bytes === '' ? false : @getimagesizefromstring($bytes);
         if ($size === false || $size[0] < 1 || $size[1] < 1) {
@@ -41,20 +42,20 @@ final class CameraImage
         [$width, $height] = $size;
         $mime = (string)$size['mime'];
         $deliverable = in_array($mime, self::PASS_THROUGH, true);
-        if ($deliverable && $width <= self::MAX_WIDTH && strlen($bytes) <= self::MAX_BYTES) {
+        if ($deliverable && $width <= $maxWidth && strlen($bytes) <= self::MAX_BYTES) {
             return ['data' => $bytes, 'mimeType' => $mime, 'width' => $width, 'height' => $height, 'scaled' => false];
         }
         $gd ??= function_exists('imagecreatefromstring') && function_exists('imagescale') && function_exists('imagejpeg');
         $freeMemory ??= self::freeMemory();
-        if (!$gd || self::memoryNeeded($width, $height) > $freeMemory) {
+        if (!$gd || self::memoryNeeded($width, $height, $maxWidth) > $freeMemory) {
             return ['error' => $deliverable || $gd ? 'too_large' : 'format', 'width' => $width, 'height' => $height];
         }
         $image = @imagecreatefromstring($bytes);
         if ($image === false) {
             return ['error' => 'unreadable'];
         }
-        if ($width > self::MAX_WIDTH) {
-            $scaled = imagescale($image, self::MAX_WIDTH, -1, IMG_BILINEAR_FIXED);
+        if ($width > $maxWidth) {
+            $scaled = imagescale($image, $maxWidth, -1, IMG_BILINEAR_FIXED);
             if ($scaled === false) {
                 return ['error' => 'unreadable'];
             }
@@ -70,9 +71,9 @@ final class CameraImage
     }
 
     /** Speicher zum Entpacken und Verkleinern: vier Byte je Pixel für das Bild und für das Ergebnis, dazu die Reserve. */
-    public static function memoryNeeded(int $width, int $height): int
+    public static function memoryNeeded(int $width, int $height, int $maxWidth = self::MAX_WIDTH): int
     {
-        $targetWidth = min($width, self::MAX_WIDTH);
+        $targetWidth = min($width, $maxWidth);
         $targetHeight = (int)ceil($height * $targetWidth / max(1, $width));
         return $width * $height * 4 + $targetWidth * $targetHeight * 4 + self::MEMORY_RESERVE;
     }

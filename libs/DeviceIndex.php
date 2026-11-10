@@ -5167,16 +5167,91 @@ final class DeviceIndex
      */
     public function camera(array $arguments): array
     {
+        $found = $this->resolveCamera($arguments);
+        if (isset($found['outcome'])) {
+            return $found['outcome'];
+        }
+        $entry = $found['entry'];
+        $picture = $this->cameraPicture($entry, CameraImage::MAX_WIDTH);
+        if (isset($picture['outcome'])) {
+            return $picture['outcome'];
+        }
+        return [
+            'text'    => sprintf($this->t('%d device(s) found (%s).'), 1, $found['filter']) . "\n" . $this->line($entry, $this->cameraText($entry)),
+            'isError' => false,
+            'image'   => ['data' => base64_encode($picture['prepared']['data']), 'mimeType' => $picture['prepared']['mimeType']],
+            // Für die Ansicht in der App: welche Kamera, nicht das Bild. Sie holt es über cameraPart() (camera_image).
+            'structuredContent' => ['kind' => 'camera', 'images' => [$this->cameraMeta($entry, $picture['taken'])]] + $this->cameraViewTexts(),
+        ];
+    }
+
+    /** Breite des Bildes für die Ansicht in der App und Länge eines Stücks in Base64-Zeichen. */
+    public const CAMERA_VIEW_WIDTH = 960;
+    public const CAMERA_PART = 100000;
+
+    /**
+     * Werkzeug „camera_image“, nur für die Seite der Ansicht (B102): ein Stück des Bildes einer Kamera als Base64. Ein
+     * Werkzeugergebnis über rund 150.000 Zeichen erreicht die Seite bei claude.ai nicht, das Bild für das Modell hat über
+     * 400.000; die Seite holt ihr Bild deshalb selbst, CAMERA_VIEW_WIDTH breit und in Stücken von CAMERA_PART Zeichen.
+     * „device“ ist der Schlüssel aus show_camera; ohne ihn gelten Name und Raum wie dort (für einen Host, der der
+     * Seite nur die Argumente des Aufrufs gibt). Ändert sich das Bild zwischen zwei Stücken, sieht die Seite das an
+     * „taken“ und „total“ und beginnt neu.
+     *
+     * @return array{text: string, isError: bool, structuredContent?: array<string, mixed>}
+     */
+    public function cameraPart(array $arguments): array
+    {
+        $key = trim((string)($arguments['device'] ?? ''));
+        $offset = max(0, (int)($arguments['offset'] ?? 0));
+        if ($key !== '') {
+            $entry = array_find($this->entries, static fn (array $e): bool => $e['Type'] === 'camera' && self::cardKey($e) === $key);
+            if ($entry === null) {
+                $this->problem = 'no_match';
+                return $this->fail(sprintf($this->t('No released camera has the key %s.'), self::singleLine($key, 40)));
+            }
+        } else {
+            $found = $this->resolveCamera($arguments);
+            if (isset($found['outcome'])) {
+                return $found['outcome'];
+            }
+            $entry = $found['entry'];
+        }
+        $picture = $this->cameraPicture($entry, self::CAMERA_VIEW_WIDTH);
+        if (isset($picture['outcome'])) {
+            return $picture['outcome'];
+        }
+        $data = base64_encode($picture['prepared']['data']);
+        $total = strlen($data);
+        if ($offset >= $total) {
+            $this->problem = 'invalid';
+            return $this->fail(sprintf($this->t('The image of camera "%s" has no part at %d.'), $entry['Name'], $offset));
+        }
+        return [
+            'text'    => sprintf($this->t('Image of camera "%s": part %d of %d.'), $entry['Name'], intdiv($offset, self::CAMERA_PART) + 1, (int)ceil($total / self::CAMERA_PART)),
+            'isError' => false,
+            'structuredContent' => ['kind' => 'camera_part'] + $this->cameraMeta($entry, $picture['taken']) + $this->cameraViewTexts()
+                + ['mimeType' => $picture['prepared']['mimeType'], 'total' => $total, 'offset' => $offset, 'data' => substr($data, $offset, self::CAMERA_PART)],
+        ];
+    }
+
+    /**
+     * Die eine Kamera, die Name, Raum und Etage meinen, oder die Absage: keine Kamera, kein Treffer (mit der Liste der
+     * Kameras) oder mehrere (mit den Kandidaten zur Rückfrage).
+     *
+     * @return array{entry: array<string, mixed>, filter: string}|array{outcome: array{text: string, isError: bool}}
+     */
+    private function resolveCamera(array $arguments): array
+    {
         $room = trim((string)($arguments['room'] ?? ''));
         $floor = trim((string)($arguments['floor'] ?? ''));
         $name = trim((string)($arguments['name'] ?? ''));
         $cameras = array_values(array_filter($this->entries, static fn (array $e): bool => $e['Type'] === 'camera'));
         if ($cameras === []) {
             $this->problem = 'no_match';
-            return $this->fail($this->t('No camera is released.'));
+            return ['outcome' => $this->fail($this->t('No camera is released.'))];
         }
         if ($floor !== '' && !$this->rooms->knowsFloor($floor)) {
-            return $this->fail($this->unknownFloor($floor));
+            return ['outcome' => $this->fail($this->unknownFloor($floor))];
         }
         $room = $this->effectiveRoom($room, $name, $floor);
         $filter = $this->describeFilter($room, 'camera', $name, $floor);
@@ -5184,37 +5259,63 @@ final class DeviceIndex
         $lines = fn (array $entries): string => implode("\n", array_map(fn (array $e): string => $this->line($e, $this->cameraText($e)), $entries));
         if ($matches === []) {
             $this->noMatch($room, $name);
-            return $this->fail(sprintf($this->t('No released camera matches %s. Cameras:'), $filter) . "\n" . $lines($cameras));
+            return ['outcome' => $this->fail(sprintf($this->t('No released camera matches %s. Cameras:'), $filter) . "\n" . $lines($cameras))];
         }
         if (count($matches) > 1) {
             $this->problem = 'ambiguous';
-            return $this->fail(sprintf($this->t('%d cameras match %s, no image was fetched. Ask which one is meant:'), count($matches), $filter) . "\n" . $lines($matches));
+            return ['outcome' => $this->fail(sprintf($this->t('%d cameras match %s, no image was fetched. Ask which one is meant:'), count($matches), $filter) . "\n" . $lines($matches))];
         }
-        $entry = $matches[0];
+        return ['entry' => $matches[0], 'filter' => $filter];
+    }
+
+    /**
+     * Das Bild einer Kamera, höchstens $maxWidth breit, oder die Absage (kein Bild, nicht lesbar, zu groß).
+     *
+     * @return array{prepared: array{data: string, mimeType: string, width: int, height: int, scaled: bool}, taken: int}|array{outcome: array{text: string, isError: bool}}
+     */
+    private function cameraPicture(array $entry, int $maxWidth): array
+    {
         $id = $entry['roles']['image'] ?? 0;
         $info = $id > 0 ? $this->backend->image($id) : null;
         $this->problem = 'failed'; // bleibt nur, wenn das Bild nicht kommt
         if ($info === null) {
-            return $this->fail(sprintf($this->t('The image of camera "%s" is not available (image %d is missing).'), $entry['Name'], $id));
+            return ['outcome' => $this->fail(sprintf($this->t('The image of camera "%s" is not available (image %d is missing).'), $entry['Name'], $id))];
         }
         if (!$info['available'] || $info['size'] <= 0 || $info['updated'] <= 0) {
-            return $this->fail(sprintf($this->t('Camera "%s" has no image yet.'), $entry['Name']));
+            return ['outcome' => $this->fail(sprintf($this->t('Camera "%s" has no image yet.'), $entry['Name']))];
         }
         $bytes = $this->backend->imageData($id);
-        $prepared = $bytes === null ? ['error' => 'unreadable'] : CameraImage::prepare($bytes);
+        $prepared = $bytes === null ? ['error' => 'unreadable'] : CameraImage::prepare($bytes, null, null, $maxWidth);
         if (isset($prepared['error'])) {
-            return $this->fail(match ($prepared['error']) {
+            return ['outcome' => $this->fail(match ($prepared['error']) {
                 'too_large' => sprintf($this->t('The image of camera "%s" is too large to be prepared here (%d x %d); choose a smaller image at the camera or its grabber.'), $entry['Name'], $prepared['width'] ?? 0, $prepared['height'] ?? 0),
                 'format'    => sprintf($this->t('The image of camera "%s" has a format that cannot be delivered here.'), $entry['Name']),
                 default     => sprintf($this->t('The image of camera "%s" could not be read.'), $entry['Name']),
-            });
+            })];
         }
         $this->problem = null;
-        return [
-            'text'    => sprintf($this->t('%d device(s) found (%s).'), 1, $filter) . "\n" . $this->line($entry, $this->cameraText($entry)),
-            'isError' => false,
-            'image'   => ['data' => base64_encode($prepared['data']), 'mimeType' => $prepared['mimeType']],
-        ];
+        return ['prepared' => $prepared, 'taken' => $info['updated']];
+    }
+
+    /**
+     * Kamera für die Ansicht: Schlüssel, Raum, Name und Aufnahmezeit als Unix-Zeit (die Seite schreibt sie in der
+     * Sprache des Clients).
+     *
+     * @return array{device: string, room: string, name: string, taken: int}
+     */
+    private function cameraMeta(array $entry, int $taken): array
+    {
+        return ['device' => self::cardKey($entry), 'room' => $entry['Room'], 'name' => $entry['Name'], 'taken' => $taken];
+    }
+
+    /** @return array{timeZone: string, labels: array<string, string>} Zeitzone der Anlage und die Texte der Ansicht */
+    private function cameraViewTexts(): array
+    {
+        return ['timeZone' => date_default_timezone_get(), 'labels' => [
+            'taken'   => $this->t('Image from %s'),
+            'loading' => $this->t('Loading the image …'),
+            'missing' => $this->t('The image cannot be shown here.'),
+        ]];
     }
 
     /**

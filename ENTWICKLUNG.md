@@ -364,6 +364,28 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   des Entwicklers live läuft und es `show_camera` nie ohne das Recht geben sollte. Der Test lädt GD selbst nach
   (`-d extension=gd`), die CI lädt es über `extensions: gd`. Noch offen: an Home Assistant belegen, dass ein Bildblock
   dort als Text beim Modell ankommt (bisher nur aus dem Quelltext gelesen).
+  Ansicht in der App (build 280): In der Claude-App rief das Modell am 10.11.2026 `show_camera` auf und beschrieb das
+  Bild richtig, der Anwender sah davon nur eine winzige Vorschau neben der Werkzeugzeile („Ich sehe das Bild nicht“);
+  erst danach teilte Claude es als Datei. Das Bild in der Gerätekarte wurde verworfen: Das Modell sähe es dort nicht,
+  jede Raumübersicht würde groß, und eine Kamera braucht später mehr als eine Karte (neu laden, mehrere Bilder,
+  Ereignisse). Stattdessen trägt `show_camera` mit Apps eine eigene Seite. Aus der Spezifikation der MCP Apps (Entwurf
+  und 2026-01-26) und der Doku der Connectors von Claude, gelesen 10.11.2026: Die Seite bekommt das ganze
+  Werkzeugergebnis samt `content`; die Standard-CSP erlaubt `img-src 'self' data:`, eine Deklaration braucht ein
+  eingebettetes Bild nicht; claude.ai schreibt ein Ergebnis über rund 150.000 Zeichen in die Sandbox, die Seite bekommt
+  dann nur einen Verweis und füllt sich nie. Das Bild für das Modell hat als Base64 über 400.000 Zeichen. Die Seite holt
+  ihr Bild deshalb selbst über ein Werkzeug, das nur sie sieht, in Stücken von 100.000 Zeichen und 960 Pixel breit (am
+  nuc drei Stücke, zusammen 1,4 bis 2,5 s, weil jedes Stück neu verkleinert; ein Zwischenspeicher im Buffer wurde wegen
+  der Grenze von 512 KB zurückgestellt). Drei Wege, alle mit dem echten Bild gerendert (`dev/camera_render.php`): das
+  Ergebnis kommt mit Bildblock an (die Seite nimmt ihn), es kommt nur `structuredContent` an (sie lädt über den
+  Schlüssel), es kommen nur die Argumente an (sie lädt nach vier Sekunden mit Name und Raum, `camera_image` sucht dann
+  wie `show_camera`). Ändert sich das Bild zwischen zwei Stücken, beginnt die Seite neu. Die Seite zeichnet eine Liste
+  von Bildern, auch wenn es heute genau eines ist. Ein Verweis auf eine MCP-Resource statt des Bildblocks wäre der
+  sauberere Weg, die Clients unterstützen ihn aber noch uneinheitlich. Ob claude.ai die Seite bei einem Ergebnis mit
+  Bildblock überhaupt füllt, zeigte erst der Versuch in der App (10.11.2026): Die Seite erscheint mit Bild. Laut Protokoll
+  kam das Ergebnis über vier Sekunden nach dem Aufruf bei ihr an, ohne Bildblock, und löste ein zweites Laden neben dem
+  aus den Argumenten aus (sechs Aufrufe statt drei). Seitdem beginnt die Seite gleich mit den Argumenten, ein laufendes
+  Laden wird nicht wiederholt, und die Stücke nach dem ersten kommen gleichzeitig. Scheitert das Laden aus den
+  Argumenten (keine oder mehrere Kameras), bleibt die Ansicht leer, die Absage steht im Text der Antwort.
 
 ## Energie
 

@@ -4058,4 +4058,85 @@ IPS_ApplyChanges($zid);
 $ohneKamera = $zWerkzeuge($zZugaenge['Mit Bild'] ?? null);
 pruefe(!isset($ohneKamera['show_camera']) && !str_contains((string)($ohneKamera['get_state']['description'] ?? ''), 'amera'), 'ohne Kamera kein show_camera und kein Satz dazu: ' . json_encode(array_keys($ohneKamera)));
 
+/* --- Ansicht des Kamerabilds in der App (B102, Build 3) ------------------------------------------ */
+// Claude-App 10.11.2026: show_camera lieferte das Bild, Claude beschrieb es, der Anwender sah davon nur eine winzige
+// Vorschau („Ich sehe das Bild nicht“). Mit Apps trägt show_camera deshalb eine Seite, die das Bild im Chat zeigt.
+// Die Seite holt es über camera_image (nur für sie sichtbar) in Stücken: Ein Ergebnis über rund 150.000 Zeichen
+// erreicht sie bei claude.ai nicht (Doku der Connectors, gelesen 10.11.2026).
+IPS_SetProperty($zid, 'Devices', json_encode($zGeraete));
+IPS_ApplyChanges($zid);
+$kameraUri = 'ui://homeagent/camera/' . substr((string)hash_file('sha256', dirname(__DIR__) . '/HomeAgent/camera.html'), 0, 8);
+$mitApps = $zWerkzeuge($zZugaenge['Mit Bild'] ?? null, true);
+pruefe(($mitApps['show_camera']['_meta'] ?? null) === ['ui' => ['resourceUri' => $kameraUri]], 'mit Apps trägt show_camera die Seite des Kamerabilds, mit Prüfsumme: ' . json_encode($mitApps['show_camera']['_meta'] ?? null));
+pruefe(str_contains((string)($mitApps['show_camera']['description'] ?? ''), 'The user sees the image in the chat as well'), 'mit Apps weiß das Modell, dass der Anwender das Bild sieht: ' . ($mitApps['show_camera']['description'] ?? ''));
+$ohneApps = $zWerkzeuge($zZugaenge['Mit Bild'] ?? null, false);
+pruefe(!isset($ohneApps['show_camera']['_meta']) && str_contains((string)($ohneApps['show_camera']['description'] ?? ''), 'Only you see the image, the user does not: describe what it shows'),
+    'ohne Apps keine Seite, und das Modell soll das Bild beschreiben: ' . ($ohneApps['show_camera']['description'] ?? ''));
+$teil = $mitApps['camera_image'] ?? [];
+pruefe(($teil['_meta'] ?? null) === ['ui' => ['resourceUri' => $kameraUri, 'visibility' => ['app']]], 'camera_image sieht nur die Seite: ' . json_encode($teil['_meta'] ?? null));
+pruefe(array_keys($teil['inputSchema']['properties'] ?? []) === ['device', 'name', 'room', 'offset'] && ($teil['inputSchema']['properties']['offset']['type'] ?? '') === 'integer' && ($teil['annotations']['readOnlyHint'] ?? false) === true,
+    'camera_image nimmt Schlüssel oder Name und Raum, dazu die Stelle: ' . json_encode($teil['inputSchema'] ?? null));
+pruefe(!isset($ohneApps['camera_image']) && !isset($zWerkzeuge($zZugaenge['Ohne Bild'] ?? null, true)['camera_image']), 'ohne Apps oder ohne Haken steht camera_image nicht in der Liste');
+pruefe(isset($zWerkzeuge($zZugaenge['Nur lesen'] ?? null, true)['camera_image']), 'ein Nur-Lese-Zugang mit Haken bekommt es wie show_camera');
+pruefe(str_contains((string)($mitApps['show_devices']['description'] ?? ''), 'To show a camera use show_camera') && !str_contains((string)($zWerkzeuge($zZugaenge['Ohne Bild'] ?? null, true)['show_devices']['description'] ?? ''), 'show_camera'),
+    'show_devices verweist für Kameras auf show_camera, nur mit Haken: ' . ($mitApps['show_devices']['description'] ?? ''));
+
+// Die Seite selbst
+$kameraSeite = oderNull(static fn () => \Closure::bind(fn () => $this->readResource($kameraUri), $z, HomeAgent::class)());
+pruefe(is_string($kameraSeite) && $kameraSeite === file_get_contents(dirname(__DIR__) . '/HomeAgent/camera.html'), 'die Seite kommt unter ihrer Adresse mit Prüfsumme');
+pruefe(oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/camera/00000000'), $z, HomeAgent::class)()) === $kameraSeite
+    && oderNull(static fn () => \Closure::bind(fn () => $this->readResource('ui://homeagent/camera'), $z, HomeAgent::class)()) === $kameraSeite, 'auch unter einer alten Prüfsumme und ohne: die heutige Seite');
+pruefe(is_string($kameraSeite) && !preg_match($nachladen, $kameraSeite) && strlen($kameraSeite) < 100000, 'die Seite lädt nichts nach und bettet keine Bibliothek ein: ' . strlen((string)$kameraSeite) . ' Bytes');
+pruefe(is_string($kameraSeite) && str_contains($kameraSeite, 'name: "camera_image"') && str_contains($kameraSeite, '"ui/notifications/tool-result"') && str_contains($kameraSeite, '"ui/notifications/tool-input"')
+    && str_contains($kameraSeite, '"data:" + first.mimeType + ";base64,"') && str_contains($kameraSeite, 'p.total !== first.total || p.taken !== first.taken'),
+    'die Seite holt das Bild über camera_image, kennt Ergebnis und Argumente und beginnt bei geändertem Bild neu');
+// Claude-App 10.11.2026: Argumente und Ergebnis lösten je ein Laden aus, sechs Aufrufe statt drei. Ein laufendes oder
+// fertiges Laden wird nicht neu begonnen; die Stücke nach dem ersten kommen gleichzeitig (das Verhalten selbst prüft
+// dev/camera_render.php in Chrome)
+pruefe(is_string($kameraSeite) && str_contains($kameraSeite, '(views[0].loading || views[0].src)') && str_contains($kameraSeite, 'if (!view.src && !view.loading) { load(') && str_contains($kameraSeite, 'Promise.all(offsets.map('),
+    'ein laufendes Laden wird nicht wiederholt, die übrigen Stücke kommen gleichzeitig');
+pruefe(is_string($kameraSeite) && str_contains($kameraSeite, 'var TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];') && !str_contains($kameraSeite, 'innerHTML'), 'nur Bildformate als data:-Adresse, kein innerHTML');
+
+// Aufruf von camera_image: das Bild in Stücken. Das Bild ist ein PNG von 1 x 1 mit einem angehängten Textblock von
+// 200 KB (angenommen, damit ohne GD mehrere Stücke entstehen; der Kopf ist der des echten Covers).
+$crc = static fn (string $typ, string $daten): string => pack('N', strlen($daten)) . $typ . $daten . pack('N', crc32($typ . $daten));
+$roh = (string)base64_decode($zCover);
+$lang = substr($roh, 0, -12) . $crc('tEXt', 'Comment' . "\0" . str_repeat('Home Agent ', 18200)) . substr($roh, -12);
+pruefe(getimagesizefromstring($lang) !== false && strlen($lang) > 200000, 'Ausgangslage: gültiges PNG über 200 KB: ' . strlen($lang));
+IPS_SetMediaContent($zBild, base64_encode($lang));
+$zTeil = static fn (?array $zugang, array $argumente): array => (array)\Closure::bind(fn () => $this->callTool('camera_image', $argumente, $zugang), $z, HomeAgent::class)();
+$r = $zTeil($zZugaenge['Mit Bild'] ?? null, ['device' => (string)$zBild]);
+$erwartet = base64_encode($lang);
+pruefe(($r['isError'] ?? true) === false && !isset($r['image']) && ($r['structuredContent']['total'] ?? 0) === strlen($erwartet) && strlen((string)($r['structuredContent']['data'] ?? '')) === 100000 && ($r['structuredContent']['name'] ?? '') === 'Einfahrt',
+    'erstes Stück von 100.000 Zeichen mit Gesamtlänge: ' . json_encode(array_diff_key($r['structuredContent'] ?? [], ['data' => 0]), JSON_UNESCAPED_UNICODE));
+pruefe(!str_contains((string)($r['text'] ?? ''), 'Now: '), 'ein Stück trägt keine Zeile mit der Zeit jetzt: ' . ($r['text'] ?? ''));
+$alle = (string)($r['structuredContent']['data'] ?? '');
+for ($stelle = 100000; $stelle < strlen($erwartet); $stelle += 100000) {
+    $alle .= (string)($zTeil($zZugaenge['Mit Bild'] ?? null, ['device' => (string)$zBild, 'offset' => $stelle])['structuredContent']['data'] ?? '');
+}
+pruefe($alle === $erwartet, 'die Stücke ergeben das Bild: ' . strlen($alle) . ' von ' . strlen($erwartet));
+$r = $zTeil($zZugaenge['Mit Bild'] ?? null, ['name' => 'Einfahrt']);
+pruefe(($r['isError'] ?? true) === false && ($r['structuredContent']['device'] ?? '') === (string)$zBild, 'auch über den Namen');
+$r = $zTeil($zZugaenge['Ohne Bild'] ?? null, ['device' => (string)$zBild]);
+pruefe(($r['isError'] ?? false) === true && !isset($r['structuredContent']) && str_contains((string)($r['text'] ?? ''), 'Camera images are not released for this access'), 'ohne Haken kein Stück: ' . json_encode($r, JSON_UNESCAPED_UNICODE));
+$r = $zTeil(null, ['device' => (string)$zBild]);
+pruefe(($r['isError'] ?? false) === true && !isset($r['structuredContent']), 'ohne Zugang kein Stück');
+// Über den Hook, wie die Seite ruft: auch wenn der Client beim Aufruf keine Apps anmeldet
+$antwort = $zAnfrage($zMit, 'tools/call', ['name' => 'camera_image', 'arguments' => ['device' => (string)$zBild, 'offset' => 100000]]);
+pruefe(($antwort['result']['structuredContent']['offset'] ?? -1) === 100000 && ($antwort['result']['structuredContent']['data'] ?? '') === substr($erwartet, 100000, 100000) && count($antwort['result']['content'] ?? []) === 1,
+    'Hook: zweites Stück in structuredContent, im Inhalt nur die kurze Zeile: ' . json_encode(array_diff_key($antwort['result']['structuredContent'] ?? [], ['data' => 0]), JSON_UNESCAPED_UNICODE));
+pruefe(strlen((string)json_encode($antwort)) < 150000, 'die Antwort bleibt unter 150.000 Zeichen: ' . strlen((string)json_encode($antwort)));
+$antwort = $zAnfrage($zMit, 'tools/call', ['name' => 'show_camera', 'arguments' => ['name' => 'Einfahrt']]);
+pruefe(($antwort['result']['structuredContent']['kind'] ?? '') === 'camera' && ($antwort['result']['structuredContent']['images'][0]['device'] ?? '') === (string)$zBild && ($antwort['result']['content'][1]['type'] ?? '') === 'image',
+    'Hook: show_camera gibt dem Modell das Bild und der Seite die Kamera: ' . json_encode($antwort['result']['structuredContent'] ?? null, JSON_UNESCAPED_UNICODE));
+$zLog = '';
+foreach ((array)glob(IPS_GetLogDir() . DIRECTORY_SEPARATOR . 'homeagent_' . $zid . '*.log') as $datei) {
+    $zLog .= (string)file_get_contents((string)$datei);
+}
+pruefe(str_contains($zLog, ' | Mit Bild | camera_image | ') && str_contains($zLog, 'Image of camera "Einfahrt": part 2 of 3.') && !str_contains($zLog, substr($erwartet, 100000, 60)), 'das Protokoll nennt das Stück, nie seinen Inhalt: ' . substr($zLog, -400));
+
+// Die Kamerakarte in show_devices hat ein eigenes Symbol
+$kartenSeite = (string)file_get_contents(dirname(__DIR__) . '/HomeAgent/devices.html');
+pruefe(preg_match('/\n    camera: "M[^"]+",?\n/', $kartenSeite) === 1, 'die Kartenseite kennt ein Symbol für die Kamera');
+
 ende('Modul');

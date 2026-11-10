@@ -41,7 +41,7 @@ Sprachsteuerung von Home Assistant, ohne kleineren Umfang. Daraus folgen die Gru
 | `libs/AlexaImport.php` | Vorschlag der Freigabeliste und der Räume aus der Alexa-Instanz von Symcon |
 | `libs/DeviceBackend.php` | Schnittstelle zur Anlage; `SymconDeviceBackend.php` über Symcon-Funktionen, `tests/FakeBackend.php` spielt Mitschnitte ab |
 | `HomeAgent/module.php` | Hook per `RegisterHook`, Status, Werkzeugliste, Formular, Protokoll, OAuth-Speicher |
-| `HomeAgent/chart.html`, `devices.html` | MCP-App-Seiten für Diagramme und Gerätekarten, ohne Bibliotheken |
+| `HomeAgent/chart.html`, `devices.html`, `camera.html` | MCP-App-Seiten für Diagramme, Gerätekarten und das Kamerabild, ohne Bibliotheken |
 | `tests/check-*.php`, `tests/fixtures/` | Tests je Thema mit Mitschnitten echter Anlagen; `tests/stubs` ist der Kernel-Stub (Submodul) |
 
 Alle Bibliotheken unter `libs/` kommen ohne Symcon aus; Werte, Aktionen und Übersetzungen liefert das
@@ -116,7 +116,8 @@ Backend. So laufen die Tests mit echten Mitschnitten.
 | `run_scene` | freigegebenes Skript oder Ablaufplan starten (`IPS_RunScript`, Ablaufplan braucht eine Aktion); Szenennamen in der Beschreibung | mit Szenen |
 | `show_chart` | Diagramm als MCP App | Clients mit Apps, Clients von Anthropic und der Connector von claude.ai (`sharesToolList`) immer |
 | `show_devices` | Gerätekarten als MCP App | ebenso |
-| `show_camera` | Standbild genau einer Kamera als Bildblock, mit Aufnahmezeit | mit Kamera und Haken „Kamerabilder“ am Zugang, auch bei „Nur abfragen“ |
+| `show_camera` | Standbild genau einer Kamera als Bildblock, mit Aufnahmezeit; mit Apps als Ansicht im Chat | mit Kamera und Haken „Kamerabilder“ am Zugang, auch bei „Nur abfragen“ |
+| `camera_image` | Bild für die Ansicht in Stücken (`_meta.ui.visibility: ["app"]`) | wie `show_camera`, nur mit Apps |
 | `control_device` | Bedienung von der Karte (`_meta.ui.visibility: ["app"]`) | ohne „Nur abfragen“, aufrufbar auch ohne Apps |
 
 Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
@@ -188,6 +189,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **`show_camera`** (`DeviceIndex::camera`): nur für Zugänge mit `Images` (Haken „Kamerabilder“, Standard aus, nie über
   `HAGT_AddAccess`), sonst sagt es die Beschreibung von `get_state`. Genau ein Treffer, sonst Kandidaten ohne Bild;
   `CameraImage::prepare` verkleinert auf 1280 px oder sagt ab (`memoryNeeded`). Test `check-kamerabild.php` (braucht GD).
+- **Ansicht des Kamerabilds** (`camera.html`): Die Seite holt ihr Bild selbst über `camera_image` (`cameraPart`, 960 px,
+  Stücke von `CAMERA_PART` Zeichen), weil ein Ergebnis über rund 150.000 Zeichen sie bei claude.ai nicht erreicht;
+  `show_camera` gibt ihr in `structuredContent` nur die Kamera. Kein Werkzeugergebnis an eine Seite über diese Grenze.
 - **Luftbe-/entfeuchter** (`humidifier`): `state`, `humidity`, `setpoint` (Feld `humidity`, `runSetpoint`), `mode` und
   `fan` als **Auswahl per Name** (`runOption` über `DeviceBackend::options()`). **Lüftung** (`fan`) ebenso, Pflicht
   Ein/Aus oder Lüfterstufe. Tests `check-entfeuchter.php`, `check-lueftung.php`.

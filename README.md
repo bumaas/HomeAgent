@@ -255,7 +255,8 @@ Bei einigen Geräten braucht es mehr als die Variable des Typs:
   von Symcon an, ebenso der ONVIF Image Grabber und das HomeAssistant-Modul (die Vorschau einer Kamera). Der Assistent
   nennt die Kamera mit der Aufnahmezeit, etwa „Bild von 2026-11-10 10:44“. Das Bild selbst holt er nur über einen
   Zugang mit dem Haken „Kamerabilder“ (siehe [Zugänge](#zugänge)), und nur, wenn die Frage genau eine Kamera trifft. Er
-  bekommt es höchstens 1280 Pixel breit und kann dann sagen, was darauf zu sehen ist. Das Modul holt selbst kein neues Bild. Wie
+  bekommt es höchstens 1280 Pixel breit und kann dann sagen, was darauf zu sehen ist. In der Claude-App erscheint das
+  Bild dabei auch im Chat, mit Name und Aufnahmezeit. Andere Assistenten beschreiben es nur. Das Modul holt selbst kein neues Bild. Wie
   aktuell es ist, bestimmen Sie an der Quelle: mit einem Intervall am Grabber, mit einem Ereignis der Kamera oder mit
   einem eigenen Ereignis in Symcon, das den Grabber auslöst, etwa an der Klingel. Soll der Assistent das Bild auf
   Zuruf erneuern, geben Sie ein Skript, das den Grabber auslöst (beim Image Grabber `IG_UpdateImage(<Instanz>);`), als Szene frei. Zwei Bilder derselben Kamera, etwa das
