@@ -150,15 +150,20 @@ How to proceed:
      rows for heating and hot water only if both heat and electricity are measured separately,
      otherwise one. If the heat only counts the environmental yield (Vaillant over ebusd:
      "Energieertrag", "Ertragsleistung"), set HeatIsYield to true.
-   - Measurements of the heating system where the controller provides them (eBUS, ModBus, cloud), in
-     the room of the heating and with the names people say: flow, return, flow setpoint and tank
-     temperature as temperature, heating curve, heating limit, operating mode or status, system
-     pressure, modulation and compressor starts as measurement. A hot water tank with actual and
-     target temperature as thermostat. If a value exists more than once, take the archived variable
-     and name the others. Leave out: variables that have not been updated for days
+   - Measurements of the heating system where the controller provides them (eBUS, ModBus, cloud),
+     with the names people say: flow, return and flow setpoint as temperature, heating curve,
+     heating limit, system pressure, modulation and compressor starts as measurement, plus for each
+     heating circuit and for hot water the operating mode and one status of the heat generator (the
+     variable with texts, not the one with numbers). A hot water tank with actual and target
+     temperature as thermostat with ReadOnly, even if it is already in the instance without
+     ReadOnly; without a target temperature as temperature. The room is that of the heat generator
+     if it is already in the instance, otherwise ask me once for all of them. If a value exists
+     more than once, take the archived variable; if several are archived, choose one and name the
+     others in the table. Leave out: variables that have not been updated for days
      (VariableUpdated), time programs, operating hours, service parameters and everything only the
      installer sets. The outdoor temperature of the controller only if there is no other outdoor
-     sensor.
+     sensor. Separate sensors on flow and return that do not come from the controller (for example
+     on the heating branches) you name as an open question for me to choose from.
    - Intermediate meters such as sub-distributions as type meter with MeteredBy, an electricity price
      as PriceVariableID, the energy balance as the list Sources: one row per grid connection, solar
      plant and battery with meter and power. The meter at the grid connection belongs only in Sources,

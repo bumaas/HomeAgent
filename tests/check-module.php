@@ -706,6 +706,16 @@ foreach (['EINRICHTUNG.md', 'EINRICHTUNG.en.md'] as $datei) {
             'mehr als etwa zwölf Messwerte einer Heizungsanlage', 'Messwerte der Heizung als eigenen Block']
         : ['Measurements of the heating system', 'hot water tank with actual and target temperature as thermostat',
             'more than about twelve measurements of a heating system', 'measurements of the heating as a separate block']));
+    // Probelauf am nuc 12.11.2026 (frischer Agent, nur der Auftrag): Speicher war doppelt geregelt, „die archivierte“
+    // entschied nie (alle archiviert), ReadOnly des Speichers, Betriebsart oder Status, Raum und eigene Fühler blieben offen
+    array_push($muster, ...($datei === 'EINRICHTUNG.md'
+        ? ['ohne Solltemperatur als temperature', 'wähl eine und nenne die anderen in der Tabelle', 'als thermostat mit ReadOnly',
+            'je Heizkreis und fürs Warmwasser die Betriebsart', 'Raum ist der des Wärmeerzeugers', 'Eigene Fühler an Vor- und Rücklauf']
+        : ['without a target temperature as temperature', 'choose one and name the others in the table', 'as thermostat with ReadOnly',
+            'for each heating circuit and for hot water the operating mode', 'The room is that of the heat generator',
+            'Separate sensors on flow and return']));
+    $doppelt = $datei === 'EINRICHTUNG.md' ? 'und Speichertemperatur als temperature' : 'and tank temperature as temperature';
+    pruefe(!str_contains((string)preg_replace('/\s+/', ' ', $auftrag), $doppelt), $datei . ' regelt den Speicher nicht mehr doppelt');
     foreach ($muster as $muss) {
         pruefe(str_contains(preg_replace('/\s+/', ' ', $auftrag), $muss), $datei . ' nennt ' . $muss);
     }

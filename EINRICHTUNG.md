@@ -152,15 +152,20 @@ So gehst du vor:
      Wärmeleistung; zwei Zeilen für Heizen und Warmwasser nur, wenn Wärme und Strom beide getrennt
      gemessen werden, sonst eine. Zählt die Wärme nur den Umweltertrag (Vaillant über ebusd:
      „Energieertrag“, „Ertragsleistung“), HeatIsYield auf true.
-   - Messwerte der Heizungsanlage, wo der Regler sie liefert (eBUS, ModBus, Cloud), im Raum der
-     Heizung und mit den Namen, die man spricht: Vorlauf, Rücklauf, Vorlauf-Soll und
-     Speichertemperatur als temperature, Heizkurve, Heizgrenze, Betriebsart oder Status,
-     Anlagendruck, Modulation und Kompressorstarts als measurement. Einen Warmwasserspeicher mit
-     Ist- und Solltemperatur als thermostat. Gibt es einen Wert mehrfach, nimm die archivierte
-     Variable und nenne die anderen. Auslassen: Variablen, die seit Tagen nicht aktualisiert
-     wurden (VariableUpdated), Zeitprogramme, Betriebsstunden, Serviceparameter und alles, was
-     nur der Fachbetrieb einstellt. Die Außentemperatur des Reglers nur, wenn es keinen anderen
-     Außenfühler gibt.
+   - Messwerte der Heizungsanlage, wo der Regler sie liefert (eBUS, ModBus, Cloud), mit den Namen,
+     die man spricht: Vorlauf, Rücklauf und Vorlauf-Soll als temperature, Heizkurve, Heizgrenze,
+     Anlagendruck, Modulation und Kompressorstarts als measurement, dazu je Heizkreis und fürs
+     Warmwasser die Betriebsart und einen Status des Wärmeerzeugers (die Variable mit Texten,
+     nicht die mit Zahlen). Einen Warmwasserspeicher mit Ist- und Solltemperatur als thermostat
+     mit ReadOnly, auch wenn er schon ohne ReadOnly in der Instanz steht; ohne Solltemperatur als
+     temperature. Der Raum ist der des Wärmeerzeugers, wenn der schon in der Instanz steht, sonst
+     fragst du mich einmal für alle. Gibt es einen Wert mehrfach, nimm die archivierte Variable;
+     sind mehrere archiviert, wähl eine und nenne die anderen in der Tabelle. Auslassen:
+     Variablen, die seit Tagen nicht aktualisiert wurden (VariableUpdated), Zeitprogramme,
+     Betriebsstunden, Serviceparameter und alles, was nur der Fachbetrieb einstellt. Die
+     Außentemperatur des Reglers nur, wenn es keinen anderen Außenfühler gibt. Eigene Fühler an
+     Vor- und Rücklauf, die nicht vom Regler kommen (etwa an den Heizsträngen), nennst du mir als
+     offene Frage zur Auswahl.
    - Zwischenzähler wie Unterverteilungen als Typ meter mit MeteredBy, einen Strompreis als
      PriceVariableID, die Energiebilanz als Liste Sources: je Netzanschluss, PV-Anlage und Batterie
      eine Zeile mit Zähler und Leistung. Der Zähler am Netzanschluss gehört nur in Sources, nicht
