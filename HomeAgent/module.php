@@ -2924,7 +2924,13 @@ class HomeAgent extends IPSModuleStrict
         $this->UpdateFormField('PanelTrouble', 'caption', $this->troubleCaption());
     }
 
-    /** Pfad einer Protokolldatei: die aktuelle oder die vorige. */
+    /**
+     * Pfad einer Protokolldatei: die aktuelle oder die vorige.
+     *
+     * Store-Richtlinie 1 (Zugriff auf lokale Dateien): bewusste Ausnahme. Das Modul schreibt, liest und löscht nur diese
+     * beiden Dateien im Logverzeichnis von Symcon, homeagent_<InstanzID>.log und .old.log, und nur, wenn der Anwender
+     * „Protokoll führen“ einschaltet. Der Pfad ist fest und hängt von keiner Eingabe ab.
+     */
     private function logFile(bool $old = false): string
     {
         return rtrim(IPS_GetLogDir(), '/\\') . DIRECTORY_SEPARATOR . 'homeagent_' . $this->InstanceID . ($old ? '.old.log' : '.log');

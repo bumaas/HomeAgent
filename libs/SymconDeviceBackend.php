@@ -41,6 +41,10 @@ final class SymconDeviceBackend implements DeviceBackend
      * der Instanz, nuc 09.10.2026): Modul-GUID => Name und Aufruf mit der Instanz der Position.
      * Signaturen: bool HM_WriteValueBoolean(int $InstanzID, string $Parameter, bool $Wert) laut
      * Befehlsreferenz, bool KLF200_ShutterMoveStop(int $InstanzeID) laut README des Moduls.
+     *
+     * Store-Richtlinie 5 (nur eigene oder zugewiesene Objekte): bewusste Ausnahme. Aufgerufen wird nur die Instanz,
+     * unter der die zugewiesene Positionsvariable liegt, nur auf den Befehl „Stopp“ und nur, wenn keine Stoppvariable
+     * eingetragen ist.
      */
     private const STOP_MODULES = [
         '{EE4A81C6-5C90-4DB7-AD2F-F6BBD521412E}' => ['HomeMatic', 'HM_WriteValueBoolean(%d, \'STOP\', true)'],
