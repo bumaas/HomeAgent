@@ -1371,6 +1371,12 @@ final class DeviceIndex
             return $seen[$id] = true;
         }));
         if (count($measured) > self::HISTORY_MAX) {
+            // „Gib einen Raum oder einen Namen an, höchstens 5 auf einmal“ las ein Modell als fünf Räume in room; die
+            // Kommaliste gibt es aber nur bei show_chart (B105, Claude-App 08.11.2026). Für get_state nennt die Absage
+            // deshalb den Weg, den es gibt; im Diagramm bleibt der alte Satz.
+            if ($this->chart === null) {
+                return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s), at most %d per call. room takes a single room, not a list. Make one call per room or give one device in name.'), count($measured), $filter, self::HISTORY_MAX));
+            }
             return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s). Give a room or a name, at most %d at a time.'), count($measured), $filter, self::HISTORY_MAX));
         }
         [$per, $format] = self::HISTORY_LEVELS[$level];

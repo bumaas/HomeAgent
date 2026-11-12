@@ -120,7 +120,18 @@ pruefe($zeile($r, -1) === '1 device(s) without archived history were left out.',
 $r = frage(['name' => 'Heizkörper', 'period' => 'today']);
 pruefe(!$r['isError'] && $zeile($r, 1) === 'Wintergarten | Heizkörper | temperature | no history archived', 'nicht archiviert: ' . $r['text']);
 $r = frage(['type' => 'temperature', 'period' => 'last_week']);
-pruefe($r['isError'] && $r['text'] === 'Too many measured values (6) for a history (type=temperature, period=last_week). Give a room or a name, at most 5 at a time.', 'mehr als fünf Messwerte: Absage: ' . $r['text']);
+// B105 (Claude-App 08.11.2026): „Gib einen Raum oder einen Namen an, höchstens 5 auf einmal“ las ein Modell als fünf
+// Räume in room und schickte eine Kommaliste, die als unbekannter Raum abgewiesen wurde. Die Absage nennt nur Wege,
+// die es bei get_state gibt: ein Raum je Aufruf oder ein Gerät in name.
+pruefe($r['isError'] && $r['text'] === 'Too many measured values (6) for a history (type=temperature, period=last_week), at most 5 per call. room takes a single room, not a list. Make one call per room or give one device in name.', 'mehr als fünf Messwerte: Absage nennt die Grenze je Aufruf und einen Raum je Aufruf: ' . $r['text']);
+$r = frage(['type' => 'temperature', 'period' => 'last_week'], $de);
+pruefe($r['isError'] && $r['text'] === 'Zu viele Messwerte (6) für einen Verlauf (type=temperature, period=last_week), höchstens 5 je Aufruf. In room steht ein einzelner Raum, keine Liste. Frag je Raum einmal oder nenne ein Gerät in name.', 'deutsch: ' . $r['text']);
+// Der Stand, auf den sich die Absage stützt: get_state nimmt in room keine Kommaliste (anders als show_chart)
+$r = frage(['room' => 'Gast, Wintergarten', 'type' => 'temperature', 'period' => 'last_week']);
+pruefe($r['isError'] && str_starts_with($r['text'], 'No released device matches room=Gast, Wintergarten'), 'get_state kennt keine Raumliste mit Komma: ' . $r['text']);
+// Der genannte Weg führt zum Ziel: je Raum ein Aufruf
+$r = frage(['room' => 'Wintergarten', 'type' => 'temperature', 'period' => 'last_week']);
+pruefe(!$r['isError'] && str_starts_with($zeile($r, 0), 'History of 2 measured value(s) (room=Wintergarten, type=temperature, period=last_week)'), 'ein Raum je Aufruf liefert den Verlauf: ' . $zeile($r, 0));
 $r = frage(['period' => 'last_week']);
 pruefe(!str_starts_with($r['text'], 'History'), 'fürs ganze Haus bleibt es beim Verbrauch: ' . $zeile($r, 0));
 

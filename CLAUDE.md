@@ -136,6 +136,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Kein Treffer** ist bei `get_state` und `show_devices` eine Auskunft ohne `isError` (`nothingMatched`), der Text bleibt.
   Ein Fehler bleibt es bei unbekanntem Raum oder unbekannter Etage (zweiter Versuch mit der Raumliste), bei `set_state`,
   `control_device` und `show_chart`. Test `check-kein-treffer.php`.
+- **Absagen nennen nur Wege des aufgerufenen Werkzeugs**, mit Parameternamen: `room` nimmt bei `get_state` einen Raum,
+  die Kommaliste gibt es nur bei `show_chart` (deshalb zwei Texte für „zu viele Messwerte“). Test `check-verlauf.php`.
 - **Namenssuche** in Stufen, nur die beste zählt: genauer Name oder Alias, Anfrage als Teil des Namens, Name in der
   Anfrage nur an einem Wortanfang. Genannte Geräte gehören in `name`, nicht in `type` (steht in der Beschreibung).
 - **Vokabular:** Die Beschreibung von `room` nennt die bekannten Räume, die von `mode`/`fan_speed` die Einträge der

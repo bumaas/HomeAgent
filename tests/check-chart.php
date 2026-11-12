@@ -79,6 +79,10 @@ pruefe($r['isError'] && !isset($r['structuredContent']), 'kein Raum bekannt: Feh
 $r = diagramm(['room' => 'Gast, Wintergarten, Keller, Wohnzimmer, Garten', 'period' => 'last_week']);
 pruefe($r['isError'] && str_contains($r['text'], 'at most 5'), 'mehr als fünf Messwerte über alle Räume: Absage: ' . $r['text']);
 
+// B105: show_chart nimmt Räume mit Komma, seine Absage darf deshalb nicht den Satz von get_state tragen
+$r = diagramm(['type' => 'temperature', 'period' => 'last_week']);
+pruefe($r['isError'] && str_contains($r['text'], 'at most 5') && !str_contains($r['text'], 'not a list'), 'zu viele Messwerte ohne Raum: Absage ohne „keine Liste“: ' . $r['text']);
+
 /* --- get_state bleibt, wie es ist --------------------------------------------------------------- */
 
 $anlage = new FakeBackend($mitschnitt['variablen']);
