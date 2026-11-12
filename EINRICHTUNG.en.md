@@ -99,7 +99,9 @@ best sent from a file:
   curl.exe -s -K CREDENTIALS_FILE -H "Content-Type: application/json" -d @request.json
 (on Linux and macOS curl instead of curl.exe). Every Symcon function works this way, including those of
 the module (HAGT_…). Names and parameters of all Symcon functions are in the index
-https://www.symcon.de/en/llms/function-index.md. Fetch it with curl and search it instead of guessing names.
+https://www.symcon.de/en/llms/function-index.md, those of the built-in modules (such as AC_… for the
+archive) in https://www.symcon.de/en/llms/function-index-modules.md. Fetch them with curl and search them
+instead of guessing names.
 An answer with "error" is an error, even if curl reports nothing.
 
 The module: IPS_GetInstanceListByModuleID("{89E40AE0-BB2A-40B8-A16F-C9C5FFBFC09F}") returns its
@@ -109,6 +111,11 @@ HAGT_ExportConfiguration(<InstanceID>); every other function shows the tokens of
 text. You save with IPS_SetProperty(<InstanceID>, "<property>", <value>), a list as JSON text, followed
 by IPS_ApplyChanges(<InstanceID>). Never write the property Accesses yourself; an access is created by
 HAGT_AddAccess(<InstanceID>, "<name>", <ReadOnly>, <InPath>, "<default room>").
+
+Archive: Whether a variable is archived is known to the archive instance, the first one from
+IPS_GetInstanceListByModuleID("{43192F0B-135B-4CE7-A0A7-1475603F3060}").
+AC_GetAggregationVariables(<ArchiveID>, false) returns all archived variables at once, for each variable
+VariableID, AggregationActive and AggregationType (0 standard, 1 counter).
 
 How to proceed:
 0. Check whether there are instances of the module already and list them with name, location, status

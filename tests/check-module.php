@@ -714,6 +714,11 @@ foreach (['EINRICHTUNG.md', 'EINRICHTUNG.en.md'] as $datei) {
         : ['without a target temperature as temperature', 'choose one and name the others in the table', 'as thermostat with ReadOnly',
             'for each heating circuit and for hot water the operating mode', 'The room is that of the heat generator',
             'Separate sensors on flow and return']));
+    // Probelauf 12.11.2026: Wie man „archiviert“ feststellt, stand nirgends (Index der Modulfunktionen, Modul-ID des
+    // Archivs, Aggregationstyp laut Doku AC_GetAggregationType); über JSON-RPC kam das Formular englisch
+    array_push($muster, 'function-index-modules.md', '{43192F0B-135B-4CE7-A0A7-1475603F3060}', 'Hint for scripts and AI assistants', ...($datei === 'EINRICHTUNG.md'
+        ? ['AC_GetAggregationVariables(<ArchivID>, false)', 'AggregationType (0 Standard, 1 Zähler)']
+        : ['AC_GetAggregationVariables(<ArchiveID>, false)', 'AggregationType (0 standard, 1 counter)']));
     $doppelt = $datei === 'EINRICHTUNG.md' ? 'und Speichertemperatur als temperature' : 'and tank temperature as temperature';
     pruefe(!str_contains((string)preg_replace('/\s+/', ' ', $auftrag), $doppelt), $datei . ' regelt den Speicher nicht mehr doppelt');
     foreach ($muster as $muss) {

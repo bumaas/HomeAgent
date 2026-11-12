@@ -100,8 +100,9 @@ Zeig ihren Inhalt nie an und schreib ihn in keine andere Datei. Jeder Aufruf ist
 am besten aus einer Datei:
   curl.exe -s -K ZUGANGSDATEI -H "Content-Type: application/json" -d @anfrage.json
 (unter Linux und macOS curl statt curl.exe). Jede Symcon-Funktion geht so, auch die des Moduls (HAGT_…).
-Namen und Parameter aller Symcon-Funktionen stehen im Index https://www.symcon.de/de/llms/function-index.md.
-Hol ihn mit curl und such darin, statt Namen zu raten. Eine Antwort mit „error“ ist ein Fehler, auch wenn
+Namen und Parameter aller Symcon-Funktionen stehen im Index https://www.symcon.de/de/llms/function-index.md,
+die der eingebauten Module (etwa AC_… fürs Archiv) in https://www.symcon.de/de/llms/function-index-modules.md.
+Hol sie mit curl und such darin, statt Namen zu raten. Eine Antwort mit „error“ ist ein Fehler, auch wenn
 curl nichts meldet.
 
 Das Modul: Seine Instanzen liefert IPS_GetInstanceListByModuleID("{89E40AE0-BB2A-40B8-A16F-C9C5FFBFC09F}"),
@@ -112,6 +113,11 @@ IPS_SetProperty(<InstanzID>, "<Property>", <Wert>), eine Liste als JSON-Text, un
 IPS_ApplyChanges(<InstanzID>). Die Property Accesses schreibst du nie selbst, einen Zugang legt
 HAGT_AddAccess(<InstanzID>, "<Name>", <ReadOnly>, <InPath>, "<Standardraum>") an.
 
+Archiv: Ob eine Variable archiviert ist, weiß die Archivinstanz, die erste aus
+IPS_GetInstanceListByModuleID("{43192F0B-135B-4CE7-A0A7-1475603F3060}").
+AC_GetAggregationVariables(<ArchivID>, false) liefert alle archivierten Variablen auf einmal, je Variable
+VariableID, AggregationActive und AggregationType (0 Standard, 1 Zähler).
+
 So gehst du vor:
 0. Sieh nach, ob es schon Instanzen des Moduls gibt, und nenne sie mir mit Name, Ort, Status und
    Anzahl der Geräte. Frag mich dann, ob du eine davon verwenden oder eine neue anlegen sollst. Bei
@@ -120,7 +126,8 @@ So gehst du vor:
    im selben Zug, welche Assistenten ich mit Home Agent verbinden will (meist einer, etwa die
    Claude-App) und ob es mehrere Standorte mit eigener Energiebilanz oder eigenem Strompreis gibt; jeder
    braucht eine eigene Instanz. Leg nichts an, bevor ich geantwortet habe.
-1. Lies im Konfigurationsformular der Instanz den Text „Hinweis für Skripte und KI-Assistenten“. Dort
+1. Lies im Konfigurationsformular der Instanz den Text „Hinweis für Skripte und KI-Assistenten“ (über
+   die Schnittstelle kommt das Formular auch englisch, dann „Hint for scripts and AI assistants“). Dort
    stehen alle Properties, die Gerätetypen und die Felder je Typ. Halte dich daran und rate keine
    Feldnamen.
 2. Räume: Schlag eine Raumliste vor, mit den Namen, die wir im Alltag sprechen (z. B. Küche, Bad oben,
