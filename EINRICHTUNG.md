@@ -152,6 +152,15 @@ So gehst du vor:
      Wärmeleistung; zwei Zeilen für Heizen und Warmwasser nur, wenn Wärme und Strom beide getrennt
      gemessen werden, sonst eine. Zählt die Wärme nur den Umweltertrag (Vaillant über ebusd:
      „Energieertrag“, „Ertragsleistung“), HeatIsYield auf true.
+   - Messwerte der Heizungsanlage, wo der Regler sie liefert (eBUS, ModBus, Cloud), im Raum der
+     Heizung und mit den Namen, die man spricht: Vorlauf, Rücklauf, Vorlauf-Soll und
+     Speichertemperatur als temperature, Heizkurve, Heizgrenze, Betriebsart oder Status,
+     Anlagendruck, Modulation und Kompressorstarts als measurement. Einen Warmwasserspeicher mit
+     Ist- und Solltemperatur als thermostat. Gibt es einen Wert mehrfach, nimm die archivierte
+     Variable und nenne die anderen. Auslassen: Variablen, die seit Tagen nicht aktualisiert
+     wurden (VariableUpdated), Zeitprogramme, Betriebsstunden, Serviceparameter und alles, was
+     nur der Fachbetrieb einstellt. Die Außentemperatur des Reglers nur, wenn es keinen anderen
+     Außenfühler gibt.
    - Zwischenzähler wie Unterverteilungen als Typ meter mit MeteredBy, einen Strompreis als
      PriceVariableID, die Energiebilanz als Liste Sources: je Netzanschluss, PV-Anlage und Batterie
      eine Zeile mit Zähler und Leistung. Der Zähler am Netzanschluss gehört nur in Sources, nicht
@@ -170,12 +179,13 @@ So gehst du vor:
    Energiezähler, der nicht als Zähler archiviert ist, eine Leistung oder ein Zähler mit einer Einheit,
    die der Hinweistext nicht nennt oder die mehrere Kanäle misst, Zähler von Batterie und PV mit
    unklarer Richtung oder Abgrenzung, die getrennte Wärme einer Wärmepumpe mit nur einer Zeile, ein
-   Stellantrieb, bei dem unklar ist, zu welchem Thermostat er gehört.
+   Stellantrieb, bei dem unklar ist, zu welchem Thermostat er gehört, mehr als etwa zwölf Messwerte
+   einer Heizungsanlage (dann nennst du mir die übrigen zur Auswahl).
    Bei Geräten, die schon in der Instanz stehen, bleiben ReadOnly, Invert und die Namen, wie sie sind;
    Typ oder Variablen änderst du nur, wenn ich in der Tabelle zustimme.
 4. Zeig mir alle Vorschläge als Tabellen: Räume (Name, Etage, Aliase), Geräte (Raum, Name, Typ,
-   Variablen), Quellen (Art, Name, Zähler, Leistung) und den Strompreis. Kennzeichne, was schon in der
-   Instanz steht und was neu ist oder sich ändert. Bei mehr als etwa 50 Geräten zeigst du im Chat nur
+   Variablen), Quellen (Art, Name, Zähler, Leistung) und den Strompreis, die Messwerte der Heizung als
+   eigenen Block. Kennzeichne, was schon in der Instanz steht und was neu ist oder sich ändert. Bei mehr als etwa 50 Geräten zeigst du im Chat nur
    Neues und Änderungen und schreibst die ganzen Tabellen in eine Datei im aktuellen Arbeitsordner.
    Dann wartest du auf mein OK. Es gilt für die Tabellen, die offenen Fragen bleiben draußen; was ich
    davon später beantworte, trägst du in einem zweiten Durchgang nach, wieder mit Sicherung.

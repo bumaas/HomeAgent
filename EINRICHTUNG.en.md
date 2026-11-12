@@ -150,6 +150,15 @@ How to proceed:
      rows for heating and hot water only if both heat and electricity are measured separately,
      otherwise one. If the heat only counts the environmental yield (Vaillant over ebusd:
      "Energieertrag", "Ertragsleistung"), set HeatIsYield to true.
+   - Measurements of the heating system where the controller provides them (eBUS, ModBus, cloud), in
+     the room of the heating and with the names people say: flow, return, flow setpoint and tank
+     temperature as temperature, heating curve, heating limit, operating mode or status, system
+     pressure, modulation and compressor starts as measurement. A hot water tank with actual and
+     target temperature as thermostat. If a value exists more than once, take the archived variable
+     and name the others. Leave out: variables that have not been updated for days
+     (VariableUpdated), time programs, operating hours, service parameters and everything only the
+     installer sets. The outdoor temperature of the controller only if there is no other outdoor
+     sensor.
    - Intermediate meters such as sub-distributions as type meter with MeteredBy, an electricity price
      as PriceVariableID, the energy balance as the list Sources: one row per grid connection, solar
      plant and battery with meter and power. The meter at the grid connection belongs only in Sources,
@@ -167,12 +176,13 @@ How to proceed:
    smart lamp, two connections that may be the same device, an energy meter that is not archived as a
    counter, a power or meter with a unit the hint does not name or that measures several channels,
    battery and solar meters with an unclear direction or boundary, the separate heat of a heat pump
-   with only one row, a valve actuator where it is unclear which thermostat it belongs to.
+   with only one row, a valve actuator where it is unclear which thermostat it belongs to, more than
+   about twelve measurements of a heating system (then name the remaining ones for me to choose from).
    For devices that are already in the instance, ReadOnly, Invert and the names stay as they are; you
    change type or variables only if I agree in the table.
 4. Show me all proposals as tables: rooms (name, floor, aliases), devices (room, name, type,
-   variables), sources (type, name, meter, power) and the electricity price. Mark what is already in
-   the instance and what is new or changes. With more than about 50 devices show only what is new or
+   variables), sources (type, name, meter, power) and the electricity price, the measurements of the
+   heating as a separate block. Mark what is already in the instance and what is new or changes. With more than about 50 devices show only what is new or
    changed in the chat and write the whole tables to a file in the current working folder. Then wait
    for my OK. It applies to the tables, the open questions stay out; what I answer later you add in a
    second pass, again with a backup.

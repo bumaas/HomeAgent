@@ -699,6 +699,13 @@ foreach (['EINRICHTUNG.md', 'EINRICHTUNG.en.md'] as $datei) {
     // Prompttest 25.10.2026 (doctee, zwei Standorte): Hauptzähler nur in Sources, je Standort mit eigener Bilanz eine Instanz
     $muster[] = $datei === 'EINRICHTUNG.md' ? 'Der Zähler am Netzanschluss gehört nur in Sources' : 'The meter at the grid connection belongs only in Sources';
     $muster[] = $datei === 'EINRICHTUNG.md' ? 'mehrere Standorte mit eigener Energiebilanz' : 'several sites with their own energy balance';
+    // Burkhard 12.11.2026: Der Auftrag schlägt auch die Messwerte der Heizungsanlage vor (Vorlauf, Rücklauf, Heizkurve …),
+    // mit Deckel, weil ein Regler am eBUS leicht 80 Variablen hat
+    array_push($muster, ...($datei === 'EINRICHTUNG.md'
+        ? ['Messwerte der Heizungsanlage', 'Warmwasserspeicher mit Ist- und Solltemperatur als thermostat',
+            'mehr als etwa zwölf Messwerte einer Heizungsanlage', 'Messwerte der Heizung als eigenen Block']
+        : ['Measurements of the heating system', 'hot water tank with actual and target temperature as thermostat',
+            'more than about twelve measurements of a heating system', 'measurements of the heating as a separate block']));
     foreach ($muster as $muss) {
         pruefe(str_contains(preg_replace('/\s+/', ' ', $auftrag), $muss), $datei . ' nennt ' . $muss);
     }
