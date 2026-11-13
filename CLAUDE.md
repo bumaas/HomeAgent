@@ -125,6 +125,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   `FULL_TEXT_LENGTH` (2000), damit ein gezielt abgefragter Text ganz kommt. Test `check-langer-text.php`.
 - **Aktionen laufen in einem eigenen Skript** (`IPS_RunScriptTextEx`), nie im Thread der Anfrage (manche Aktoren
   blockieren `RequestAction` bis zum Ziel). Fehlschläge meldet das Skript per `IPS_RequestAction(<Instanz>, 'ActionFailed', …)`.
+  Von der Exception eines fremden Moduls bekommt der Assistent nur die Meldung (`DeviceIndex::errorText`), Datei, Zeile
+  und Stacktrace stehen im Log der Instanz. Test `check-fehlertext.php`.
 - **Rückmeldung:** erst alle Aktionen auslösen, dann gemeinsam bis 2 s auf die Variablen warten. Rollläden gelten als
   „fährt“, sobald Position, Fahrstatus oder ein Lebenszeichen es zeigen; das Ziel merkt sich der Buffer `Travels`.
   Die Zeile nennt Ziel und „noch nicht am Ziel“ selbst, weil HA die `instructions` nicht ans Modell gibt.

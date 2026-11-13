@@ -5573,6 +5573,25 @@ final class DeviceIndex
         return mb_strlen($text) > $maxLength ? rtrim(mb_substr($text, 0, $maxLength - 1)) . '…' : $text;
     }
 
+    /**
+     * Fehlertext einer fehlgeschlagenen Aktion für den Assistenten: Von einer Exception eines fremden Moduls („Fatal
+     * error: Uncaught Exception: … in <Datei>:<Zeile>“ mit Stacktrace) bleibt die Meldung. Pfade und Quelltextstellen der
+     * Anlage gehören ins Log, nicht in die Antwort (Sonos am nuc, 13.11.2026). Jeder andere Text bleibt, wie er ist.
+     */
+    public static function errorText(string $text): string
+    {
+        // ohne /u: Ein Text mit ungültigem UTF-8 (CP850 eines Fremdmoduls) soll nicht verloren gehen
+        if (preg_match('/^\s*(?:PHP )?Fatal error:\s+Uncaught\s+[\w\\\\]+:\s+(.*)$/s', $text, $found) !== 1) {
+            return $text;
+        }
+        $message = (string)preg_replace('/\s*Stack trace:.*$/s', '', $found[1]);
+        // gierig: Es zählt das letzte „ in “, eine Meldung darf selbst eines enthalten
+        if (preg_match('/^(.+)\s+in\s+\S.*:\d+\s*$/s', $message, $cut) === 1) {
+            $message = $cut[1];
+        }
+        return trim($message);
+    }
+
     /** Ist die Raumangabe eine der Angaben für „das ganze Haus“? */
     public static function isAllRooms(string $room): bool
     {

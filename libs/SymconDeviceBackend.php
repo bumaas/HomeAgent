@@ -754,7 +754,7 @@ final class SymconDeviceBackend implements DeviceBackend
         } finally {
             restore_error_handler();
         }
-        return $ok ? null : ($error ?? $fallback);
+        return $ok ? null : ($error === null ? $fallback : DeviceIndex::errorText($error));
     }
 
     /** Einheit einer Variable: Suffix des Profils, sonst das der Darstellung. */

@@ -310,6 +310,13 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   am Sonos-Modul rund 0,1 s je Befehl, über das HomeAssistant-Modul nichts (der Statustext kommt später). Eine Abfrage
   gleich danach kann noch „spielt“ zeigen, bis das Sonos-Modul die Variable berichtigt. Nur für Wiedergabebefehle:
   Bei den übrigen Aktionen ist kein Fall gemessen, in dem ein Modul trotz gemeldetem Fehlschlag den Zielwert hält.
+  Der Fehlertext dazu lautete „Fatal error: Uncaught Exception: Error during Soap Call: UPnPError s:Client 701 (…) in
+  C:\ProgramData\Symcon\modules\Sonos\libs\sonosAccess.php:812 Stack trace: #0 …“, bis 300 Zeichen in der Zeile des
+  Geräts. Pfade der Anlage und Quelltextstellen helfen dem Assistenten nicht und gehören nicht in seine Antwort. Seit
+  build 299 bleibt von einer Exception die Meldung (`DeviceIndex::errorText`: Vorsatz und Klasse weg, Schnitt am letzten
+  „ in <Datei>:<Zeile>“), das Log der Instanz behält den ganzen Text. Texte ohne diesen Rahmen („HomeMatic Fehler:
+  Failure“, „No valid action available“) bleiben unverändert. Gemessen ist nur der Windows-Pfad; der Fall mit
+  Schrägstrichen steht im Test als angenommen.
   `volume` (Prozent), `volume_change` (Punkte, gekappt bei 0 und 100) und `mute` stehen je allein
   (`runVolume`, `runMute`, gemeinsames Warten in `confirmJobs`). `volume` oder `volume_change` dürfen mit `play`,
   `pause` oder `stop` kommen (erst Lautstärke, dann Befehl, `combineResults` über den Status je Gerät aus

@@ -2119,6 +2119,14 @@ pruefe(mb_strlen($text) <= 300 && !preg_match('/[\x00-\x1F]/', $text) && str_sta
 $alleLogs = $m->logs();
 $letzte = (string)(end($alleLogs)['Message'] ?? '');
 pruefe(!preg_match('/[\x00-\x1F]/', $letzte) && mb_strlen($letzte) < 400, 'auch im Log einzeilig und gekürzt: ' . mb_strlen($letzte));
+// Exception eines fremden Moduls (Sonos, nuc 13.11.2026): Der Assistent bekommt nur die Meldung, das Log den ganzen Text
+$roh = fixture('nuc_2026-11-13_fehlertexte.json')['sonos_701'];
+IPS_RequestAction($iid, 'ActionFailed', json_encode(['key' => 'bbbbbbbbbbbb', 'variable' => $licht, 'error' => $roh]));
+$text = (string)$lesen->invoke($m, 'bbbbbbbbbbbb');
+pruefe($text === 'Error during Soap Call: UPnPError s:Client 701 (ERROR_AV_UPNP_AVT_INVALID_TRANSITION)', 'vom Fehlertext einer Exception bleibt für den Assistenten die Meldung: ' . json_encode($text));
+$alleLogs = $m->logs();
+$letzte = (string)(end($alleLogs)['Message'] ?? '');
+pruefe(str_contains($letzte, 'sonosAccess.php:812') && str_contains($letzte, 'Stack trace'), 'das Log behält Datei, Zeile und Stacktrace: ' . json_encode(mb_substr($letzte, 0, 200)));
 foreach (['../etc', 'ABCDEFABCDEF', str_repeat('a', 13), ''] as $schluessel) {
     try {
         IPS_RequestAction($iid, 'ActionFailed', json_encode(['key' => $schluessel, 'variable' => $licht, 'error' => 'x']));

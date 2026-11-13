@@ -323,10 +323,10 @@ class HomeAgent extends IPSModuleStrict
             trigger_error($this->Translate('ActionFailed expects a JSON object with key, variable and error.'), E_USER_WARNING);
             return;
         }
-        $error = DeviceIndex::singleLine($report['error'], self::FAILURE_TEXT_LENGTH);
-        // Ins Log geht jeder Fehlschlag, auch wenn der Assistent seine Antwort längst hat.
-        $this->LogMessage(sprintf($this->Translate('Action on variable %d failed: %s'), (int)($report['variable'] ?? 0), $error), KL_WARNING);
-        $this->storeFailure($report['key'], $error);
+        // Ins Log geht jeder Fehlschlag, auch wenn der Assistent seine Antwort längst hat, und zwar mit Datei und
+        // Stacktrace einer Exception. Der Assistent bekommt davon nur die Meldung (DeviceIndex::errorText).
+        $this->LogMessage(sprintf($this->Translate('Action on variable %d failed: %s'), (int)($report['variable'] ?? 0), DeviceIndex::singleLine($report['error'], self::FAILURE_TEXT_LENGTH)), KL_WARNING);
+        $this->storeFailure($report['key'], DeviceIndex::singleLine(DeviceIndex::errorText($report['error']), self::FAILURE_TEXT_LENGTH));
     }
 
     /**

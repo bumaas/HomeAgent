@@ -1,0 +1,11 @@
+{
+    "_quelle": "Fehlertexte fehlgeschlagener Aktionen, nuc. „sonos_701“ ist der Text, den das Aktionsskript am 13.11.2026 vom Sonos-Modul bekam (RequestAction auf Status #27341 bei leerer Warteschlange), roh mit Zeilenumbrüchen und beim Mitschneiden nach 300 Zeichen abgeschnitten. „sonos_701_log“ ist derselbe Fehlschlag, wie er am 13.11.2026 im Log des nuc stand (einzeilig, vom Modul auf 300 Zeichen gekürzt). „schlicht“ sind Texte ohne PHP-Rahmen: die ersten beiden aus dem Log des nuc (Homematic), die anderen beiden aus Messungen vom Oktober 2026 (Kern von Symcon).",
+    "sonos_701": "\nFatal error: Uncaught Exception: Error during Soap Call: UPnPError s:Client 701 (ERROR_AV_UPNP_AVT_INVALID_TRANSITION) in C:\\ProgramData\\Symcon\\modules\\Sonos\\libs\\sonosAccess.php:812\nStack trace:\n#0 C:\\ProgramData\\Symcon\\modules\\Sonos\\libs\\sonosAccess.php(476): SonosAccess->processSoapCall('/MediaR",
+    "sonos_701_log": "Fatal error: Uncaught Exception: Error during Soap Call: UPnPError s:Client 701 (ERROR_AV_UPNP_AVT_INVALID_TRANSITION) in C:\\ProgramData\\Symcon\\modules\\Sonos\\libs\\sonosAccess.php:812 Stack trace: #0 C:\\ProgramData\\Symcon\\modules\\Sonos\\libs\\sonosAccess.php(476): SonosAccess->processSoapCall('/MediaR…",
+    "schlicht": [
+        "Zeitüberschreitung beim Warten auf Antwort",
+        "HomeMatic Fehler: Failure",
+        "No valid action available",
+        "Cannot auto-convert value for parameter VariableValue (stod)"
+    ]
+}
