@@ -6214,7 +6214,7 @@ final class DeviceIndex
         } else {
             $room = $this->effectiveRoom($room, $name, $floor);
             $filter = $this->describeFilter($room, $type, $name, $floor) . ', versus=' . $versus;
-            $yMatches = $this->roomClimate($this->find($room, $type, $name, $floor), $type, $name);
+            $yMatches = self::onePerState($this->roomClimate($this->find($room, $type, $name, $floor), $type, $name));
             if ($yMatches === []) {
                 $this->noMatch($room, $name);
                 return $this->fail(sprintf($this->t('No released device matches %s.'), $this->describeFilter($room, $type, $name, $floor)));
@@ -6309,7 +6309,7 @@ final class DeviceIndex
         } else {
             $room = $this->effectiveRoom($room, $name, $floor);
             $filter = $this->describeFilter($room, $type, $name, $floor) . ', ' . $when;
-            $matches = $this->roomClimate($this->find($room, $type, $name, $floor), $type, $name);
+            $matches = self::onePerState($this->roomClimate($this->find($room, $type, $name, $floor), $type, $name));
             if ($matches === []) {
                 $this->noMatch($room, $name);
                 return $this->fail(sprintf($this->t('No released device matches %s.'), $this->describeFilter($room, $type, $name, $floor)));
@@ -6414,6 +6414,29 @@ final class DeviceIndex
     {
         sort($values);
         return (float)$values[(int)floor($share * (count($values) - 1))];
+    }
+
+    /**
+     * Treffer, die dieselbe Variable als Zustand lesen, sind für ein Diagramm aus genau einem Gerät eins; der erste der
+     * Liste bleibt. Im Keller am nuc lesen Raumfühler und Thermostat #26722, mit dem Klima des Raums lehnten Heatmap und
+     * Punktwolke „2 Geräte“ ab (Code-Review 13.11.2026). Geräte ohne Zustand bleiben alle.
+     *
+     * @param list<array<string, mixed>> $matches
+     * @return list<array<string, mixed>>
+     */
+    private static function onePerState(array $matches): array
+    {
+        $seen = [];
+        return array_values(array_filter($matches, static function (array $entry) use (&$seen): bool {
+            $state = $entry['roles']['state'] ?? 0;
+            if ($state <= 0) {
+                return true;
+            }
+            if (isset($seen[$state])) {
+                return false;
+            }
+            return $seen[$state] = true;
+        }));
     }
 
     /** Absage, wenn eine Achse mehr als ein Gerät trifft, mit den Kandidaten. */

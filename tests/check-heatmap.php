@@ -14,6 +14,7 @@ declare(strict_types=1);
 require __DIR__ . '/pruefen.php';
 require_once dirname(__DIR__) . '/libs/DeviceIndex.php';
 require_once __DIR__ . '/FakeBackend.php';
+require_once dirname(__DIR__) . '/libs/RoomIndex.php';
 
 $mitschnitt = fixture('nuc_2026-10-13_heatmap.json');
 date_default_timezone_set($mitschnitt['zeitzone']);
@@ -111,5 +112,22 @@ $r = karte(['name' => 'Nischenlicht', 'heatmap' => true, 'period' => 'last_month
 pruefe($r['isError'] && str_contains($r['text'], 'has no values for a heatmap'), 'ein Licht nur mit Zustand: Absage: ' . $r['text']);
 $r = karte(['heatmap' => true, 'period' => 'last_month', 'compare' => 'previous']);
 pruefe($r['isError'] && str_contains($r['text'], 'one room and no comparison'), 'Heatmap mit Vergleich: Absage: ' . $r['text']);
+
+// Zwei Zeilen, eine Variable (Code-Review 13.11.2026, zu Befund 7): Im Keller am nuc lesen Raumfühler und Thermostat
+// dieselbe Variable #26722 (Mitschnitt nuc_2026-11-12_raumklima.json). Mit dem Klima des Raums in der Raumliste lässt
+// type=temperature genau diese beiden übrig, und Heatmap und Punktwolke lehnten „2 Geräte“ ab. Nachgestellt im Garten,
+// weil in diesem Mitschnitt nur die Außentemperatur archiviert ist; die zweite Zeile „Thermostat“ ist angenommen.
+$zweiZeilen = array_merge($mitschnitt['geraete'], [['Room' => 'Garten', 'Name' => 'Thermostat', 'Aliases' => '', 'Type' => 'thermostat', 'StateVariableID' => 53076]]);
+$raeume = [['Name' => 'Flur', 'Aliases' => '', 'Floor' => ''], ['Name' => 'Garten', 'Aliases' => '', 'Floor' => '', 'TemperatureVariableID' => 53076]];
+$anlage = new FakeBackend($mitschnitt['variablen']);
+$anlage->jetzt = $mitschnitt['jetzt'];
+$r = (new DeviceIndex($zweiZeilen, $anlage, new RoomIndex($raeume), '', $mitschnitt['bilanz']))->chart(['room' => 'Garten', 'type' => 'temperature', 'heatmap' => true, 'period' => 'last_month']);
+pruefe(!$r['isError'] && ($r['structuredContent']['kind'] ?? '') === 'heatmap', 'zwei Zeilen mit derselben Variable ergeben eine Heatmap: ' . substr($r['text'], 0, 300));
+$r = (new DeviceIndex($zweiZeilen, $anlage, new RoomIndex($raeume), '', $mitschnitt['bilanz']))->chart(['room' => 'Garten', 'heatmap' => true, 'period' => 'last_month']);
+pruefe(!$r['isError'] && ($r['structuredContent']['kind'] ?? '') === 'heatmap', 'ohne Typ ebenso, im Garten stehen nur die beiden Zeilen: ' . substr($r['text'], 0, 200));
+// Gegenprobe: zwei Zeilen mit verschiedenen Variablen bleiben mehrdeutig (angenommen: das Licht #39774 auch im Garten)
+$mitLicht = array_merge($zweiZeilen, [['Room' => 'Garten', 'Name' => 'Gartenlicht', 'Aliases' => '', 'Type' => 'light', 'StateVariableID' => 39774]]);
+$r = (new DeviceIndex($mitLicht, $anlage, new RoomIndex($raeume), '', $mitschnitt['bilanz']))->chart(['room' => 'Garten', 'heatmap' => true, 'period' => 'last_month']);
+pruefe($r['isError'] && str_contains($r['text'], 'exactly one device') && str_contains($r['text'], 'Garten · Gartenlicht'), 'Gegenprobe: zwei verschiedene Werte bleiben mehrdeutig: ' . $r['text']);
 
 ende('Heatmap');

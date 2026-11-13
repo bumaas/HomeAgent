@@ -297,6 +297,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
     `check-punktwolke.php`.
   - Heatmap (`heatmap=true`, bis 62 Tage je Tag, sonst Wochentage, Farbskala bis zum 95. Perzentil). Test
     `check-heatmap.php`.
+  - Beide brauchen genau ein Gerät; Zeilen mit derselben Variable zählen als eins (`onePerState`, Raumfühler und
+    Thermostat im selben Raum).
   - Summenkurve (`cumulative=true`, `cumulativeOf`, Hochrechnung nach dem Vorjahr bei 80 % Abdeckung, sonst linear).
     Test `check-summenkurve.php`.
   - Teil der Bilanz (`part`, `PARTS`, eine Reihe je Quelle; `partError`, wenn `name` einen Teil meint: Die Absage nennt
