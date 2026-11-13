@@ -330,6 +330,11 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   Etage und Name (Typ höchstens `media`) setzt fort, was in der letzten Stunde per Werkzeug pausiert
   wurde (`recentlyPaused`, Merker über `DeviceBackend::rememberPaused`, im Modul Buffer `Paused`, unter einer Sperre wie alle Buffer, die gleichzeitige Anfragen ändern).
   Noch offen: Ein/Aus; das Sonos-Modul hat an `Volume` teils keine Aktion (dann „nicht stellbar“).
+  Ein Player nur mit Lautstärke (13.11.2026): Der Einrichtungsauftrag hatte an einem Echo nur die Lautstärke eingetragen,
+  die Zeile lautete „Bad | Echo | media | (Lautstärke 40 %)“. Bei „Was läuft im Bad?“ brauchte das Modell zweimal von
+  drei eine zweite Runde und sagte einmal „der Echo hat keinen Status angegeben“. Jetzt ist die Lautstärke dort der
+  Zustand („Lautstärke 40 %“), so wie die Leistung bei einem Gerät, das nur sie hat. Ein Wort wie „Wiedergabe unbekannt“
+  kommt nicht dazu: Das Modul weiß bei so einer Zeile nichts über die Wiedergabe und erfindet nichts.
 - **Mediaplayer ein/aus** über den Schaltzustand, wenn er ein Wahrheitswert mit Aktion ist (Denon-Receiver am nuc:
   an nach 0,5 s, aus nach 0,1 s); der Statustext des HomeAssistant-Moduls wird nie geschaltet. Ohne solchen Schaltzustand,
   aber mit Wiedergabe pausiert `off` und `on` mit `type=media` setzt fort (`pausesOnOff`, `runPlayback`; B86): Im Vergleichslauf gegen HA

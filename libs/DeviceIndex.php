@@ -4762,7 +4762,9 @@ final class DeviceIndex
         }
         $text = implode(' ', $words);
         if ($extras !== []) {
-            $text = trim($text . ' (' . implode(', ', $extras) . ')');
+            // Hat der Player sonst nichts (Echo nur mit Lautstärke), ist das der Zustand: „(volume 40 %)“ hinter einer
+            // leeren Stelle las ein Modell als „hat keinen Status angegeben“ (Vergleichslauf 13.11.2026).
+            $text = $text === '' ? implode(', ', $extras) : $text . ' (' . implode(', ', $extras) . ')';
         }
         return ['text' => $text === '' ? '-' : $text, 'active' => $active];
     }

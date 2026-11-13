@@ -1,0 +1,11 @@
+{
+    "_quelle": "13.11.2026, nuc: Zeile „Echo“ im Raum „Bad“ der Freigabeliste, wie sie der Einrichtungsauftrag am 12.11.2026 eingetragen hat (nur die Lautstärke), gelesen über HAGT_ExportConfiguration. Variable #30800 „Volume“ (Ident EchoVolume) der EchoRemote-Instanz #29103 mit Wert, Anzeigetext, Profil und Aktion wie gelesen. Im Vergleichslauf vom 13.11.2026 lautete die Zeile „Bad | Echo | media | (Lautstärke 40 %)“. Angenommen, nicht gemessen: die Stummschaltung #57213 im zweiten Gerät (die Variable gehört am nuc zum Echo im Gästezimmer und stand auf false).",
+    "variablen": {
+        "30800": {"name": "Echo Dot Badezimmer: Volume", "wert": 40, "formatiert": "40 %", "aktion": true, "bereich": {"min": 0, "max": 100, "profil": "~Volume"}},
+        "57213": {"name": "Stummschaltung", "wert": true, "formatiert": "An", "aktion": true}
+    },
+    "geraete": [
+        {"Room": "Bad", "Name": "Echo", "Aliases": "Echo Dot, Alexa", "Type": "media", "Invert": false, "VolumeVariableID": 30800},
+        {"Room": "Gast", "Name": "Echo", "Aliases": "", "Type": "media", "Invert": false, "VolumeVariableID": 30800, "MuteVariableID": 57213}
+    ]
+}

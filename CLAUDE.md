@@ -218,7 +218,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   nur Zustand, wenn das Gerät sonst nichts hat. Test `check-leistung-typen.php`.
 - **Mediaplayer** (`media`): `state`, `playback`, `volume`, `mute`, `title`, `artist` wie die Darstellung „Media
   Player“. Wiedergabewerte je Profil (`PLAYBACK_CODES`), Statustext des HomeAssistant-Moduls über `MEDIA_STATES` und
-  `playbackPhase`. `play`, `pause`, `stop`, `next`, `previous` (`runPlayback`): fremdes Profil abgewiesen, Player in der
+  `playbackPhase`. Ein Player nur mit Lautstärke nennt sie als Zustand, ohne Klammer (Test
+  `check-medien-nur-lautstaerke.php`). `play`, `pause`, `stop`, `next`, `previous` (`runPlayback`): fremdes Profil abgewiesen, Player in der
   Zielphase bekommt nichts; Weiter/Zurück bestätigt durch Änderung von Wert, Titel oder Interpret. Ein gemeldeter
   Fehlschlag geht der Variable vor, sie zählt frühestens `PLAYBACK_SETTLE_MS` nach dem Senden (das Sonos-Modul setzt sie
   beim Senden, Test `check-wiedergabe-abgelehnt.php`). Lautstärke in Prozent
