@@ -411,6 +411,20 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   mit zwei Thermostaten und einem Fühler drei. Auf eine Prüfung des Werts (etwa unter −10 °C) wurde verzichtet, ein
   Außenfühler im Winter hätte sie ausgelöst. Offen bis zur zweiten Stufe: Ein Warmwasserspeicher als `thermostat`
   erscheint weiter unter `type=temperature` seines Raums.
+- **Klima am Raum** (13.11.2026, zweite Stufe): Die Raumliste nennt je Raum die Variable für Temperatur und
+  Luftfeuchte. Der Verweis geht über die Variable wie bei `MeteredBy`, nicht über den Namen einer Gerätezeile, der
+  beim Umbenennen bräche. Gewählt wurde die Angabe am Raum und nicht am Gerät, weil die Frage „wie warm ist es dort“
+  dem Raum gilt und ein Raum dann genau eine Antwort hat, auch mit zwei echten Raumfühlern. Am Mitschnitt des Kellers
+  (17 Zeilen unter `type=temperature`) bleiben mit der Angabe zwei: Raumfühler und Raumthermostat tragen dieselbe
+  Variable, die Schlusszeile zählt die übrigen 15, darunter den Warmwasserspeicher. Der Filter greift nur beim Lesen
+  (`get_state`, Verlauf, Diagramme, Karten) und nie mit Namen; `set_state` weist `type=temperature` ohnehin ab. Ein
+  Thermostat, dessen Ist-Temperatur eine andere Variable ist als der Fühler des Raums, fällt unter `type=temperature`
+  damit ebenfalls weg und bleibt über `type=thermostat` oder seinen Namen erreichbar. Steht die Variable in keiner
+  Gerätezeile des Raums, hängt der Konstruktor eine gedachte Zeile an (Name „Temperatur“ bzw. „Luftfeuchte“ in der
+  Sprache der Anlage, nur abfragen); so arbeiten Verlauf, Diagramm und Karte ohne eigenen Zweig. Eine Migration gibt
+  es nicht: Ein Raum ohne Angabe antwortet wie vorher, und ein Raum mit einem Fühler hat ohnehin eine Antwort. Eine
+  Variable, die es nicht mehr gibt, sperrt die Raumliste nicht, sie wirkt nur nicht, wie ein unbekannter Standardraum.
+  Der Selbsttest lässt Räume mit Angabe beim Hinweis auf viele Temperaturen aus.
 
 ## Energie
 

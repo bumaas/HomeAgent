@@ -171,6 +171,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Raumklima:** `temperature` und `humidity` meinen das Klima des Raums, die Temperatur eines Geräts oder einer Anlage
   (Vorlauf, Speicher, Kühltruhe) ist `measurement`, weil `type=temperature` sonst jeden Fühler des Raums liefert. Der
   Selbsttest nennt Räume über `ROOM_CLIMATE_MAX` verschiedenen Werten (`crowdedClimate`). Test `check-raumklima.php`.
+- **Klima am Raum:** `TemperatureVariableID`/`HumidityVariableID` der Raumliste (`climateOf`). Mit Angabe liefert
+  `type=temperature`/`humidity` ohne Namen nur diese Variable, nur beim Lesen (`roomClimate`, Schlusszeile `climateNote`);
+  ohne Gerätezeile entsteht eine gedachte (`climateRows`). Fehlende Variable wirkt nicht (`missingClimate`).
 - **Licht:** Prozent rechnet das Modul selbst. Farbtemperatur in Kelvin, ein Bereich bis 1000 ist Mired; Schrittweite
   der Darstellung zählt nicht, außerhalb aufs nächste Ende, ein ausgeschaltetes Licht wird eingeschaltet. Farbe nur als
   Ganzzahl aus `COLORS` (Farbe als Text ist nicht dokumentiert). Ein Licht ohne Schaltzustand ist an, solange die Farbe

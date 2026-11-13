@@ -11,7 +11,7 @@ require_once __DIR__ . '/DeviceIndex.php';
  */
 final class RoomIndex
 {
-    /** @var list<array{name: string, key: string, keys: list<string>, floor: string}> */
+    /** @var list<array{name: string, key: string, keys: list<string>, floor: string, temperature: int, humidity: int}> */
     private array $rooms = [];
 
     /** @param list<array<string, mixed>> $rows Zeilen der Formularliste „Rooms“ */
@@ -29,8 +29,40 @@ final class RoomIndex
                     $keys[] = $key;
                 }
             }
-            $this->rooms[] = ['name' => $name, 'key' => $keys[0], 'keys' => $keys, 'floor' => trim((string)($row['Floor'] ?? ''))];
+            // Raumklima: die Variable, die für Temperatur bzw. Luftfeuchte des Raums steht; IDs bis 1 heißen „nicht gesetzt“
+            $temperature = (int)($row['TemperatureVariableID'] ?? 0);
+            $humidity = (int)($row['HumidityVariableID'] ?? 0);
+            $this->rooms[] = ['name' => $name, 'key' => $keys[0], 'keys' => $keys, 'floor' => trim((string)($row['Floor'] ?? '')),
+                'temperature' => $temperature > 1 ? $temperature : 0, 'humidity' => $humidity > 1 ? $humidity : 0];
         }
+    }
+
+    /**
+     * Die Variablen, die für das Klima des Raums eines Geräts stehen; 0 = keine Angabe oder Raum nicht in der Liste.
+     *
+     * @return array{temperature: int, humidity: int}
+     */
+    public function climateOf(string $deviceRoom): array
+    {
+        $roomKey = DeviceIndex::normalize($deviceRoom);
+        foreach ($this->rooms as $room) {
+            if ($room['key'] === $roomKey) {
+                return ['temperature' => $room['temperature'], 'humidity' => $room['humidity']];
+            }
+        }
+        return ['temperature' => 0, 'humidity' => 0];
+    }
+
+    /** @return list<array{name: string, temperature: int, humidity: int}> Räume mit einer Angabe zum Klima */
+    public function climates(): array
+    {
+        $found = [];
+        foreach ($this->rooms as $room) {
+            if ($room['temperature'] > 0 || $room['humidity'] > 0) {
+                $found[] = ['name' => $room['name'], 'temperature' => $room['temperature'], 'humidity' => $room['humidity']];
+            }
+        }
+        return $found;
     }
 
     /**

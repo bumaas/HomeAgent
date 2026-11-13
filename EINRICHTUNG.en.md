@@ -135,13 +135,18 @@ How to proceed:
    alias ("Kitchen"). Existing rooms keep their names, a renaming you only propose. What is already in
    the instance or taken over in step 0 comes first. For everything else use the device names and rooms
    of an Alexa instance as a template (module ID {CC759EB6-7821-4AA5-9267-EF08C6A6A5B3}), if there is
-   none, the categories in the object tree.
+   none, the categories in the object tree. The climate of a room goes into the room list, not as a
+   device row of its own: TemperatureVariableID and HumidityVariableID are the variables that stand
+   for the temperature and humidity of the room, such as the wall sensor or the actual temperature
+   of the room thermostat. Existing rows for temperature and humidity stay. If a room has several
+   sensors, choose the one of the room and name the others in the table.
 3. Devices: Go through all device instances, including ModBus, MQTT and cloud devices, and propose a
    release list with speakable names, unique per room.
    Add:
    - Lights, sockets, blinds, windows and doors, thermostats, media players, heating and ventilation
-     (heat pump, hot water, air conditioners, ventilation systems) and the climate of the rooms,
-     that is per room temperature and humidity as temperature and humidity. The temperature of a
+     (heat pump, hot water, air conditioners, ventilation systems). The climate of the rooms goes
+     into the room list (step 2); the types temperature and humidity are for further sensors of a
+     room, such as one at the radiator. The temperature of a
      device or system (freezer, heating circuit, tank) is measurement; if one of these is already
      in the instance as temperature, propose the change. For everything that should switch, only
      variables with an action (HasAction(<VariableID>) returns true); measurements without an
@@ -195,7 +200,7 @@ How to proceed:
    about twelve measurements of a heating system (then name the remaining ones for me to choose from).
    For devices that are already in the instance, ReadOnly, Invert and the names stay as they are; you
    change type or variables only if I agree in the table.
-4. Show me all proposals as tables: rooms (name, floor, aliases), devices (room, name, type,
+4. Show me all proposals as tables: rooms (name, floor, aliases, temperature, humidity), devices (room, name, type,
    variables), sources (type, name, meter, power) and the electricity price, the measurements of the
    heating as a separate block. Mark what is already in the instance and what is new or changes. With more than about 50 devices show only what is new or
    changed in the chat and write the whole tables to a file in the current working folder. Then wait

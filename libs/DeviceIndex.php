@@ -395,6 +395,8 @@ final class DeviceIndex
         foreach ($this->powerBalance as $key => $id) {
             $this->powerVars[$key] = [['variable' => $id, 'name' => '', 'signed' => null, 'inverted' => false]];
         }
+        $rooms ??= new RoomIndex([]);
+        $entries = array_merge(array_values($entries), self::climateRows($entries, $rooms, $backend));
         $this->entries = array_map(static fn (array $e): array => [
             'Name'     => trim((string)($e['Name'] ?? '')),
             'Aliases'  => (string)($e['Aliases'] ?? ''),
@@ -429,8 +431,99 @@ final class DeviceIndex
         }
         unset($entry);
         $this->backend = $backend;
-        $this->rooms = $rooms ?? new RoomIndex([]);
+        $this->rooms = $rooms;
         $this->defaultRoom = trim($defaultRoom);
+    }
+
+    /** Typen, die eine Angabe der Raumliste beantwortet, und der Name ihrer gedachten Zeile. */
+    private const CLIMATE_KINDS = ['temperature' => 'Temperature', 'humidity' => 'Humidity'];
+
+    /** Nach roomClimate(): so viele Treffer waren nicht das Klima ihres Raums, und nach welchem Typ gefragt war. */
+    private int $besideClimate = 0;
+    private string $climateKind = '';
+
+    /**
+     * Raumklima: Nennt die Raumliste für einen Raum die Variable seiner Temperatur oder Luftfeuchte und steht sie in keiner
+     * Gerätezeile dieses Raums, antwortet der Raum selbst. Dafür entsteht eine gedachte Zeile, nur zum Abfragen, mit
+     * der alles Weitere (Zustand, Verlauf, Diagramm, Karte) wie mit einer eingetragenen arbeitet.
+     *
+     * @param list<array<string, mixed>> $rows Zeilen der Property Devices
+     * @return list<array<string, mixed>>
+     */
+    private static function climateRows(array $rows, RoomIndex $rooms, DeviceBackend $backend): array
+    {
+        $added = [];
+        foreach ($rooms->climates() as $room) {
+            foreach (self::CLIMATE_KINDS as $kind => $name) {
+                $variable = $room[$kind];
+                if ($variable > 0 && !array_any($rows, static fn (array $row): bool => self::climateKindOf($row) === $kind
+                    && self::normalize((string)($row['Room'] ?? '')) === self::normalize($room['name']) && (self::rolesOf($row)['state'] ?? 0) === $variable)) {
+                    $added[] = ['Room' => $room['name'], 'Name' => $backend->translate($name), 'Aliases' => '', 'Type' => $kind, 'StateVariableID' => $variable, 'ReadOnly' => true];
+                }
+            }
+        }
+        return $added;
+    }
+
+    /** Zählt die Zeile bei type=temperature bzw. type=humidity mit? Bei der Temperatur auch die Ist-Temperatur eines Thermostats. */
+    private static function climateKindOf(array $row): ?string
+    {
+        return match ((string)($row['Type'] ?? '')) {
+            'temperature', 'thermostat' => 'temperature',
+            'humidity'                  => 'humidity',
+            default                     => null,
+        };
+    }
+
+    /**
+     * Raumklima beim Lesen: Hat der Raum eines Treffers eine Angabe in der Raumliste, zählt bei type=temperature bzw.
+     * type=humidity ohne Namen nur diese Variable. Die übrigen Treffer des Raums fallen weg und werden gezählt
+     * (climateNote). Räume ohne Angabe und jede Suche mit Namen bleiben, wie sie sind.
+     *
+     * @param list<array<string, mixed>> $matches
+     * @return list<array<string, mixed>>
+     */
+    private function roomClimate(array $matches, string $type, string $name): array
+    {
+        $this->besideClimate = 0;
+        $this->climateKind = $type;
+        if ($name !== '' || !isset(self::CLIMATE_KINDS[$type])) {
+            return $matches;
+        }
+        $kept = [];
+        foreach ($matches as $entry) {
+            $variable = $this->rooms->climateOf($entry['Room'])[$type];
+            if ($variable > 0 && ($entry['roles']['state'] ?? 0) !== $variable) {
+                $this->besideClimate++;
+                continue;
+            }
+            $kept[] = $entry;
+        }
+        return $kept;
+    }
+
+    /** Schlusszeile zu roomClimate(): wie viele Werte dort nicht das Klima des Raums sind und wie man sie abfragt. */
+    private function climateNote(): string
+    {
+        if ($this->besideClimate === 0) {
+            return '';
+        }
+        return sprintf($this->climateKind === 'humidity'
+            ? $this->t('%d further humidity value(s) there are not the room humidity; ask for them with name.')
+            : $this->t('%d further temperature value(s) there are not the room temperature; ask for them with name.'), $this->besideClimate);
+    }
+
+    /**
+     * @param array{text: string, isError: bool} $result
+     * @return array{text: string, isError: bool}
+     */
+    private function withClimateNote(array $result): array
+    {
+        $note = $this->climateNote();
+        if ($note !== '' && !$result['isError']) {
+            $result['text'] .= "\n" . $note;
+        }
+        return $result;
     }
 
     /**
@@ -535,7 +628,7 @@ final class DeviceIndex
 
         $room = $this->effectiveRoom($room, $name, $floor);
         $filter = $this->describeFilter($room, $type, $name, $floor);
-        $matches = $this->find($room, $powerMode ? '' : $type, $name, $floor);
+        $matches = $this->roomClimate($this->find($room, $powerMode ? '' : $type, $name, $floor), $type, $name);
         if ($powerMode) {
             return $this->powerState($matches, $room === '' && $floor === '' && $name === '', $filter, $range, $rangeLabel, $rangeLevel, $period);
         }
@@ -566,12 +659,17 @@ final class DeviceIndex
                     && (array_any($matches, static fn (array $e): bool => self::isMeasured($e)) || !array_any($matches, static fn (array $e): bool => isset($e['roles']['energy']))))
                 || in_array($type, self::HISTORY_TYPES, true)
                 || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy']) || self::hasHeat($e)) && array_any($matches, fn (array $e): bool => self::isMeasured($e) || $this->isTimed($e))))) {
+            // roomClimate() hat vor dem Verlauf gezählt; history() sucht nicht selbst
+            $beside = $this->besideClimate;
             if ($range !== null) {
                 [, $from, $to] = $range;
-                return $this->history($matches, $rangeLevel, $from, $to, $filter . $rangeLabel);
+                $result = $this->history($matches, $rangeLevel, $from, $to, $filter . $rangeLabel);
+            } else {
+                [, $from, $to] = self::periodBounds($period, $this->backend->timestamp());
+                $result = $this->history($matches, $this->chartLevel($period, $from, $to), $from, $to, $filter . ', period=' . $period);
             }
-            [, $from, $to] = self::periodBounds($period, $this->backend->timestamp());
-            return $this->history($matches, $this->chartLevel($period, $from, $to), $from, $to, $filter . ', period=' . $period);
+            $this->besideClimate = $beside;
+            return $this->withClimateNote($result);
         }
         if ($range !== null) {
             return $this->consumption($matches, $range, $filter . $rangeLabel, $wholeHouse, $rangeLevel);
@@ -640,6 +738,9 @@ final class DeviceIndex
         // zählte dann sechs auf (11.10.2026). Nur bei gemischten Treffern, sonst sagt die Zeile nichts Neues.
         if ($driven > 0 && $driven < $windows) {
             $lines[] = sprintf($this->t('%d of %d windows have a drive.'), $driven, $windows);
+        }
+        if ($this->climateNote() !== '') {
+            $lines[] = $this->climateNote();
         }
         return ['text' => implode("\n", array_merge([$head], $lines)), 'isError' => false];
     }
@@ -1678,24 +1779,21 @@ final class DeviceIndex
      * Räume mit mehr Temperaturen oder Feuchten, als ein Raum als Klima hat (Selbsttest). Die Typen temperature und
      * humidity meinen das Klima des Raums; die Temperatur eines Geräts oder einer Anlage (Vorlauf, Speicher, Kühltruhe)
      * gehört zu measurement. Gezählt wird, was find() bei type=temperature liefert, also auch die Ist-Temperatur eines
-     * Thermostats, jede Variable einmal.
+     * Thermostats, jede Variable einmal. Ein Raum, dessen Klima die Raumliste nennt, fällt nicht auf: Dort zählt ohnehin
+     * nur die genannte Variable.
      *
      * @param list<array<string, mixed>> $rows Zeilen der Property Devices
      * @return list<array{room: string, type: string, count: int}> Raum in der ersten Schreibweise
      */
-    public static function crowdedClimate(array $rows): array
+    public static function crowdedClimate(array $rows, ?RoomIndex $rooms = null): array
     {
         $variables = [];
         $names = [];
         foreach ($rows as $row) {
             $room = self::normalize((string)($row['Room'] ?? ''));
             $state = self::rolesOf($row)['state'] ?? 0;
-            $kind = match ((string)($row['Type'] ?? '')) {
-                'temperature', 'thermostat' => 'temperature',
-                'humidity'                  => 'humidity',
-                default                     => null,
-            };
-            if ($room === '' || $state <= 0 || $kind === null) {
+            $kind = self::climateKindOf($row);
+            if ($room === '' || $state <= 0 || $kind === null || ($rooms !== null && $rooms->climateOf($room)[$kind] > 0)) {
                 continue;
             }
             $names[$room] ??= trim((string)$row['Room']);
@@ -6072,7 +6170,7 @@ final class DeviceIndex
         } else {
             $room = $this->effectiveRoom($room, $name, $floor);
             $filter = $this->describeFilter($room, $type, $name, $floor) . ', versus=' . $versus;
-            $yMatches = $this->find($room, $type, $name, $floor);
+            $yMatches = $this->roomClimate($this->find($room, $type, $name, $floor), $type, $name);
             if ($yMatches === []) {
                 $this->noMatch($room, $name);
                 return $this->fail(sprintf($this->t('No released device matches %s.'), $this->describeFilter($room, $type, $name, $floor)));
@@ -6167,7 +6265,7 @@ final class DeviceIndex
         } else {
             $room = $this->effectiveRoom($room, $name, $floor);
             $filter = $this->describeFilter($room, $type, $name, $floor) . ', ' . $when;
-            $matches = $this->find($room, $type, $name, $floor);
+            $matches = $this->roomClimate($this->find($room, $type, $name, $floor), $type, $name);
             if ($matches === []) {
                 $this->noMatch($room, $name);
                 return $this->fail(sprintf($this->t('No released device matches %s.'), $this->describeFilter($room, $type, $name, $floor)));
@@ -6810,7 +6908,8 @@ final class DeviceIndex
         }
         $name = trim((string)($arguments['name'] ?? ''));
         $floor = trim((string)($arguments['floor'] ?? ''));
-        $matches = $this->find($this->effectiveRoom(trim((string)($arguments['room'] ?? '')), $name, $floor), trim((string)($arguments['type'] ?? '')), $name, $floor);
+        $type = trim((string)($arguments['type'] ?? ''));
+        $matches = $this->roomClimate($this->find($this->effectiveRoom(trim((string)($arguments['room'] ?? '')), $name, $floor), $type, $name, $floor), $type, $name);
         if ((bool)($arguments['active_only'] ?? false)) {
             $matches = array_values(array_filter($matches, fn (array $entry): bool => $this->stateOf($entry)['active'] === true));
         }

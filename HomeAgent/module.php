@@ -484,10 +484,15 @@ class HomeAgent extends IPSModuleStrict
         }
         // Raumklima: temperature und humidity meinen das Klima des Raums. Stehen viele davon in einem Raum, sind es Werte
         // von Geräten und Anlagen, die als measurement gemeint sind (Blindtest nuc 12.11.2026: 17 Zeilen im Keller).
-        foreach (DeviceIndex::crowdedClimate($list) as $crowd) {
+        foreach (DeviceIndex::crowdedClimate($list, $this->roomIndex()) as $crowd) {
             $lines[] = $crowd['type'] === 'humidity'
-                ? sprintf($this->Translate('Note: room "%s" has %d humidity values; the type humidity means the climate of the room, other humidity values belong to the type measurement'), $crowd['room'], $crowd['count'])
-                : sprintf($this->Translate('Note: room "%s" has %d temperatures; the type temperature means the climate of the room, the values of devices and systems (flow, storage tank, freezer) belong to the type measurement'), $crowd['room'], $crowd['count']);
+                ? sprintf($this->Translate('Note: room "%s" has %d humidity values; the type humidity means the climate of the room. Enter other humidity values as measurement, or name the humidity of the room in the room list'), $crowd['room'], $crowd['count'])
+                : sprintf($this->Translate('Note: room "%s" has %d temperatures; the type temperature means the climate of the room. Enter the values of devices and systems (flow, storage tank, freezer) as measurement, or name the temperature of the room in the room list'), $crowd['room'], $crowd['count']);
+        }
+        foreach ($this->missingClimate() as $gap) {
+            $lines[] = $gap['kind'] === 'humidity'
+                ? sprintf($this->Translate('Note: room "%s": the variable for the humidity (#%d) does not exist, the entry has no effect'), $gap['room'], $gap['variable'])
+                : sprintf($this->Translate('Note: room "%s": the variable for the temperature (#%d) does not exist, the entry has no effect'), $gap['room'], $gap['variable']);
         }
         // Energiebilanz: Jeder Zähler muss als Zähler archiviert sein, sonst gibt es keinen Hausverbrauch, und jede
         // Leistung eine Leistung; die Hinweise nennen die Quelle mit Namen.
@@ -1057,7 +1062,8 @@ class HomeAgent extends IPSModuleStrict
         }
         $values = [];
         foreach (array_values($rows) as $index => $row) {
-            $values[] = array_merge($row, $list === 'Devices' ? $this->deviceLabels($row) : [], ['rowColor' => isset($failed[$index]) ? self::ROW_COLOR_ERROR : '']);
+            // Eine Raumzeile aus der Zeit vor den Klimaspalten oder aus dem Alexa-Vorschlag hat sie noch nicht
+            $values[] = array_merge($row + ($list === 'Rooms' ? array_fill_keys(array_keys(self::ROOM_CLIMATE), 0) : []), $list === 'Devices' ? $this->deviceLabels($row) : [], ['rowColor' => isset($failed[$index]) ? self::ROW_COLOR_ERROR : '']);
         }
         return $values;
     }
@@ -3235,6 +3241,12 @@ class HomeAgent extends IPSModuleStrict
                 $variables[] = (int)($source[$field] ?? 0);
             }
         }
+        // Raumklima: die Variablen, die für Temperatur und Luftfeuchte eines Raums stehen
+        foreach ($this->listProperty('Rooms') as $room) {
+            foreach (self::ROOM_CLIMATE as $field => $kind) {
+                $variables[] = (int)($room[$field] ?? 0);
+            }
+        }
         // Das Standbild einer Kamera (B102) ist ein Medienobjekt
         $media = [];
         foreach ($this->deviceList() as $entry) {
@@ -3256,7 +3268,38 @@ class HomeAgent extends IPSModuleStrict
 
     private function roomIndex(): RoomIndex
     {
-        return new RoomIndex($this->listProperty('Rooms'));
+        // Raumklima: Eine Variable, die es nicht mehr gibt, wirkt nicht, so wie ein unbekannter Standardraum. Gesperrt
+        // wird nichts, der Selbsttest nennt sie (missingClimate).
+        return new RoomIndex(array_map(static function (array $room): array {
+            foreach (self::ROOM_CLIMATE as $field => $label) {
+                if ((int)($room[$field] ?? 0) > 1 && !IPS_VariableExists((int)$room[$field])) {
+                    $room[$field] = 0;
+                }
+            }
+            return $room;
+        }, $this->listProperty('Rooms')));
+    }
+
+    /** Spalten der Raumliste für das Klima des Raums und wie der Selbsttest sie nennt. */
+    private const ROOM_CLIMATE = ['TemperatureVariableID' => 'temperature', 'HumidityVariableID' => 'humidity'];
+
+    /**
+     * Angaben zum Klima in der Raumliste, deren Variable es nicht gibt.
+     *
+     * @return list<array{room: string, kind: string, variable: int}>
+     */
+    private function missingClimate(): array
+    {
+        $missing = [];
+        foreach ($this->listProperty('Rooms') as $room) {
+            foreach (self::ROOM_CLIMATE as $field => $kind) {
+                $variable = (int)($room[$field] ?? 0);
+                if ($variable > 1 && !IPS_VariableExists($variable)) {
+                    $missing[] = ['room' => trim((string)($room['Name'] ?? '')), 'kind' => $kind, 'variable' => $variable];
+                }
+            }
+        }
+        return $missing;
     }
 
     /**

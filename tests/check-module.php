@@ -456,7 +456,7 @@ $zugangsDialog = array_column(flach($benannt['Accesses']['form'] ?? []), null, '
 // Burkhard 12.10.2026: Das Token braucht der Anwender nur für Claude Code und ähnliche Clients. Im Dialog steht es
 // deshalb gar nicht mehr sichtbar; ein leeres Token füllt das Modul beim Übernehmen.
 pruefe(($zugangsDialog['Token']['visible'] ?? true) === false && !isset($zugangsDialog['Token']['validate']) && isset($zugangsDialog['Name'], $zugangsDialog['ReadOnly'], $zugangsDialog['DefaultRoom'], $zugangsDialog['InPath']), 'der Bearbeiten-Dialog zeigt das Token nicht: ' . json_encode($zugangsDialog['Token'] ?? null));
-pruefe(array_column($benannt['Rooms']['columns'] ?? [], 'name') === ['Name', 'Aliases', 'Floor'], 'Spalten der Raumliste');
+pruefe(array_column($benannt['Rooms']['columns'] ?? [], 'name') === ['Name', 'Aliases', 'Floor', 'TemperatureVariableID', 'HumidityVariableID'], 'Spalten der Raumliste, seit 13.11.2026 mit dem Klima des Raums');
 pruefe(str_contains($m->GetConfigurationForm(), 'Bearer <token>') && !str_contains($m->GetConfigurationForm(), 'gast-token-0123456789abcdef'), 'das Formular nennt das Token nur mit Platzhalter, kein echtes Token');
 
 /* --- Raumliste mit Aliasen und Etagen -------------------------------------------------------- */
@@ -720,9 +720,9 @@ foreach (['EINRICHTUNG.md', 'EINRICHTUNG.en.md'] as $datei) {
     // „Wie warm ist es im Keller?“ lieferte danach 17 Zeilen. temperature und humidity sind das Klima des Raums, die
     // Temperatur eines Geräts oder einer Anlage ist measurement (Burkhard 13.11.2026).
     array_push($muster, ...($datei === 'EINRICHTUNG.md'
-        ? ['je Raum Temperatur und Luftfeuchte als temperature und humidity', 'Die Temperatur eines Geräts oder einer Anlage',
+        ? ['Das Klima der Räume steht in der Raumliste', 'Die Temperatur eines Geräts oder einer Anlage',
             'alle als measurement', 'ohne Solltemperatur als measurement', 'schlag die Änderung vor']
-        : ['per room temperature and humidity as temperature and humidity', 'The temperature of a device or system',
+        : ['The climate of the rooms goes into the room list', 'The temperature of a device or system',
             'all as measurement', 'without a target temperature as measurement', 'propose the change']));
     foreach ($datei === 'EINRICHTUNG.md' ? ['Vorlauf-Soll als temperature', 'ohne Solltemperatur als temperature'] : ['flow setpoint as temperature', 'without a target temperature as temperature'] as $nicht) {
         pruefe(!str_contains((string)preg_replace('/\s+/', ' ', $auftrag), $nicht), $datei . ' trägt keine technische Temperatur mehr als temperature ein: ' . $nicht);
@@ -1900,7 +1900,7 @@ $m->formUpdates = [];
 $meldung = (string)oderNull(static fn () => $m->UIApplyAlexa('[[0, "Diele EG"], [1, "Diele OG"]]'));
 $uebernehmen($listenImFormular());
 $raumListe = json_decode(IPS_GetProperty($iid, 'Rooms'), true);
-pruefe($meldung === 'MESSAGE:2 device(s) added to the device list and 2 room(s) to the room list, save them with "Apply".' && array_slice($raumListe, 2) === [['Name' => 'Diele EG', 'Aliases' => 'Diele', 'Floor' => 'EG'], ['Name' => 'Diele OG', 'Aliases' => 'Diele', 'Floor' => 'OG']], 'neue Räume mit Etage und gemeinsamem Alias: ' . json_encode($raumListe, JSON_UNESCAPED_UNICODE));
+pruefe($meldung === 'MESSAGE:2 device(s) added to the device list and 2 room(s) to the room list, save them with "Apply".' && array_slice($raumListe, 2) === [['Name' => 'Diele EG', 'Aliases' => 'Diele', 'Floor' => 'EG', 'TemperatureVariableID' => 0, 'HumidityVariableID' => 0], ['Name' => 'Diele OG', 'Aliases' => 'Diele', 'Floor' => 'OG', 'TemperatureVariableID' => 0, 'HumidityVariableID' => 0]], 'neue Räume mit Etage und gemeinsamem Alias: ' . json_encode($raumListe, JSON_UNESCAPED_UNICODE));
 $r = $aufruf->invoke($m, 'get_state', ['room' => 'Diele'], null);
 pruefe(str_starts_with($r['text'], '2 device(s) found (room=Diele).'), 'der gemeinsame Alias trifft beide Räume: ' . $r['text']);
 $r = $aufruf->invoke($m, 'get_state', ['floor' => 'OG'], null);
@@ -4236,15 +4236,62 @@ foreach (['Temperatur', 'Vorlauf', 'Rücklauf', 'Temperatur Kühltruhe'] as $nr 
 IPS_SetProperty($iid, 'Devices', json_encode($klimaZeilen));
 IPS_ApplyChanges($iid);
 $klimaTest = $m->RunSelfTest();
-$klimaSatz = 'Note: room "Keller" has 4 temperatures; the type temperature means the climate of the room, the values of devices and systems (flow, storage tank, freezer) belong to the type measurement';
+// seit Stufe 2 nennt der Satz auch den Weg über die Raumliste
+$klimaSatz = 'Note: room "Keller" has 4 temperatures; the type temperature means the climate of the room. Enter the values of devices and systems (flow, storage tank, freezer) as measurement, or name the temperature of the room in the room list';
 pruefe(str_contains($klimaTest, $klimaSatz), 'der Selbsttest nennt den Raum mit vier Temperaturen: ' . $klimaTest);
-pruefe(($uebersetzt[str_replace(['"Keller"', ' 4 '], ['"%s"', ' %d '], $klimaSatz)] ?? '') === 'Hinweis: Raum „%s“ hat %d Temperaturen; der Typ Raumtemperatur meint das Klima des Raums, die Werte von Geräten und Anlagen (Vorlauf, Speicher, Kühltruhe) gehören zum Typ sonstiger Messwert', 'der Hinweis ist übersetzt');
-pruefe(array_key_exists('Note: room "%s" has %d humidity values; the type humidity means the climate of the room, other humidity values belong to the type measurement', $uebersetzt), 'der Hinweis zur Luftfeuchte ist übersetzt');
+pruefe(($uebersetzt[str_replace(['"Keller"', ' 4 '], ['"%s"', ' %d '], $klimaSatz)] ?? '') === 'Hinweis: Raum „%s“ hat %d Temperaturen; der Typ Raumtemperatur meint das Klima des Raums. Tragen Sie die Werte von Geräten und Anlagen (Vorlauf, Speicher, Kühltruhe) als sonstigen Messwert ein, oder nennen Sie die Temperatur des Raums in der Raumliste', 'der Hinweis ist übersetzt');
+pruefe(array_key_exists('Note: room "%s" has %d humidity values; the type humidity means the climate of the room. Enter other humidity values as measurement, or name the humidity of the room in the room list', $uebersetzt), 'der Hinweis zur Luftfeuchte ist übersetzt');
 foreach ([1, 2, 3] as $nr) {
     $klimaZeilen[$nr]['Type'] = 'measurement';
 }
 IPS_SetProperty($iid, 'Devices', json_encode($klimaZeilen));
 IPS_ApplyChanges($iid);
 pruefe(!str_contains($m->RunSelfTest(), 'temperatures;'), 'als Messwert eingetragen entfällt der Hinweis: ' . $m->RunSelfTest());
+
+// Raumklima Stufe 2 (Burkhard 13.11.2026): Die Raumliste nennt je Raum die Variable für Temperatur und Luftfeuchte. Die
+// Suche selbst prüft check-raumklima.php am Mitschnitt; hier Formular, Referenzen, Selbsttest und eine Variable, die es
+// nicht gibt (#69997, Platzhalter).
+$raumSpalten = array_column(array_column(flach($formular['elements']), null, 'name')['Rooms']['columns'] ?? [], null, 'name');
+pruefe(($raumSpalten['TemperatureVariableID']['edit']['type'] ?? '') === 'SelectVariable' && ($raumSpalten['HumidityVariableID']['edit']['type'] ?? '') === 'SelectVariable'
+    && ($raumSpalten['TemperatureVariableID']['add'] ?? null) === 0 && ($raumSpalten['HumidityVariableID']['add'] ?? null) === 0, 'die Raumliste hat je eine Variablenspalte für Temperatur und Luftfeuchte: ' . json_encode(array_keys($raumSpalten)));
+pruefe(($raumSpalten['TemperatureVariableID']['caption'] ?? '') === 'Temperature' && ($uebersetzt['Temperature'] ?? '') === 'Temperatur' && ($raumSpalten['HumidityVariableID']['caption'] ?? '') === 'Humidity', 'mit den Überschriften Temperatur und Luftfeuchte');
+foreach ([0, 1, 2, 3] as $nr) {
+    $klimaZeilen[$nr]['Type'] = 'temperature';
+}
+IPS_SetProperty($iid, 'Devices', json_encode($klimaZeilen));
+IPS_SetProperty($iid, 'Rooms', json_encode([['Name' => 'Keller', 'Aliases' => '', 'Floor' => '', 'TemperatureVariableID' => $fuehler[0], 'HumidityVariableID' => 69997]]));
+IPS_ApplyChanges($iid);
+pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'eine Raumvariable, die es nicht gibt, sperrt nichts');
+$klimaText = $m->QueryState('Keller', 'temperature', '', false);
+pruefe(str_starts_with($klimaText, "1 device(s) found (room=Keller, type=temperature).\nKeller | Temperatur | temperature | ") && str_ends_with($klimaText, "\n3 further temperature value(s) there are not the room temperature; ask for them with name."), 'über das Modul nennt der Keller nur seine Temperatur: ' . $klimaText);
+pruefe(str_starts_with($m->QueryState('Keller', 'humidity', '', false), 'No released device matches'), 'die fehlende Feuchtevariable ergibt keine Zeile: ' . $m->QueryState('Keller', 'humidity', '', false));
+$klimaTest = $m->RunSelfTest();
+pruefe(!str_contains($klimaTest, 'temperatures;'), 'mit Angabe am Raum entfällt der Hinweis auf die vielen Temperaturen: ' . $klimaTest);
+pruefe(str_contains($klimaTest, 'Note: room "Keller": the variable for the humidity (#69997) does not exist, the entry has no effect'), 'der Selbsttest nennt die Raumvariable, die es nicht gibt: ' . $klimaTest);
+pruefe(($uebersetzt['Note: room "%s": the variable for the humidity (#%d) does not exist, the entry has no effect'] ?? '') === 'Hinweis: Raum „%s“: Die Variable für die Luftfeuchte (#%d) gibt es nicht, die Angabe wirkt nicht'
+    && ($uebersetzt['Note: room "%s": the variable for the temperature (#%d) does not exist, the entry has no effect'] ?? '') === 'Hinweis: Raum „%s“: Die Variable für die Temperatur (#%d) gibt es nicht, die Angabe wirkt nicht', 'beide Hinweise sind übersetzt');
+pruefe(($uebersetzt['%d further temperature value(s) there are not the room temperature; ask for them with name.'] ?? '') === '%d weitere Temperatur(en) dort sind nicht die Raumtemperatur; mit name abfragen.'
+    && ($uebersetzt['%d further humidity value(s) there are not the room humidity; ask for them with name.'] ?? '') === '%d weitere Feuchtewert(e) dort sind nicht die Raumluftfeuchte; mit name abfragen.', 'die Schlusszeilen sind übersetzt');
+// Ein Raum, dessen Variable in keiner Gerätezeile steht, antwortet selbst und meldet sie als Referenz
+$raumFuehler = variable(VARIABLETYPE_FLOAT, 17.5);
+IPS_SetProperty($iid, 'Rooms', json_encode([['Name' => 'Keller', 'Aliases' => '', 'Floor' => '', 'TemperatureVariableID' => $raumFuehler, 'HumidityVariableID' => 0]]));
+IPS_ApplyChanges($iid);
+pruefe(in_array($raumFuehler, $m->GetReferenceList(), true), 'die Variable des Raums ist als Referenz gemeldet: ' . json_encode($m->GetReferenceList()));
+$klimaText = $m->QueryState('Keller', 'temperature', '', false);
+pruefe(str_starts_with($klimaText, "1 device(s) found (room=Keller, type=temperature).\nKeller | Temperature | temperature | ") && str_contains($klimaText, '4 further temperature value(s)'), 'der Raum antwortet ohne eigene Gerätezeile: ' . $klimaText);
+foreach ([
+    'The property Rooms is an optional JSON list (Name, Aliases, Floor, TemperatureVariableID, HumidityVariableID)' => 'Die Property Rooms ist eine optionale JSON-Liste (Name, Aliases, Floor, TemperatureVariableID, HumidityVariableID)',
+    'type=temperature and type=humidity then return only this value for the room' => 'type=temperature und type=humidity liefern für den Raum dann nur diesen Wert',
+    'the room answers even without a device row' => 'der Raum antwortet auch ohne eigene Gerätezeile',
+] as $en => $de) {
+    pruefe(str_contains($klimaHinweis, $en), 'Hinweistext nennt: ' . $en);
+    pruefe(str_contains($klimaHinweisDe, $de), 'Hinweistext deutsch nennt: ' . $de);
+}
+foreach (['EINRICHTUNG.md' => ['TemperatureVariableID', 'HumidityVariableID', 'nicht als eigene Gerätezeile'], 'EINRICHTUNG.en.md' => ['TemperatureVariableID', 'HumidityVariableID', 'not as a device row of its own']] as $klimaDatei => $klimaMuster) {
+    $klimaAuftrag = (string)preg_replace('/\s+/', ' ', (string)file_get_contents(dirname(__DIR__) . '/' . $klimaDatei));
+    foreach ($klimaMuster as $muss) {
+        pruefe(str_contains($klimaAuftrag, $muss), $klimaDatei . ' nennt ' . $muss);
+    }
+}
 
 ende('Modul');

@@ -137,13 +137,18 @@ So gehst du vor:
    („Küche“). Vorhandene Räume behalten ihren Namen, eine Umbenennung schlägst du nur vor. Was schon in
    der Instanz steht oder aus Schritt 0 übernommen ist, geht vor. Für alles andere nimm die Gerätenamen
    und Räume einer Alexa-Instanz als Vorlage (Modul-ID {CC759EB6-7821-4AA5-9267-EF08C6A6A5B3}), gibt es
-   keine, die Kategorien im Objektbaum.
+   keine, die Kategorien im Objektbaum. Das Klima eines Raums trägst du an der Raumliste ein, nicht
+   als eigene Gerätezeile: TemperatureVariableID und HumidityVariableID sind die Variablen, die für
+   Temperatur und Luftfeuchte des Raums stehen, etwa der Wandfühler oder die Ist-Temperatur des
+   Raumthermostats. Vorhandene Zeilen für Temperatur und Luftfeuchte bleiben. Hat ein Raum mehrere
+   Fühler, wähl den des Raums und nenne die anderen in der Tabelle.
 3. Geräte: Geh alle Geräteinstanzen durch, auch ModBus-, MQTT- und Cloud-Geräte, und schlag eine
    Freigabeliste vor, mit sprechbaren Namen, je Raum eindeutig.
    Aufnehmen:
    - Lichter, Steckdosen, Rollläden, Fenster und Türen, Thermostate, Mediaplayer, Heizung und Lüftung
-     (Wärmepumpe, Warmwasser, Klimageräte, Lüftungsanlagen) und das Klima der Räume, also je Raum
-     Temperatur und Luftfeuchte als temperature und humidity. Die Temperatur eines Geräts oder einer
+     (Wärmepumpe, Warmwasser, Klimageräte, Lüftungsanlagen). Das Klima der Räume steht in der
+     Raumliste (Schritt 2); die Typen temperature und humidity sind für weitere Fühler eines Raums,
+     etwa am Heizkörper. Die Temperatur eines Geräts oder einer
      Anlage (Kühltruhe, Heizstrang, Speicher) ist measurement; steht so eine schon als temperature
      in der Instanz, schlag die Änderung vor. Für alles, was schalten soll, nur Variablen mit Aktion
      (HasAction(<VariablenID>) liefert true); Messwerte ohne Aktion sind in Ordnung.
@@ -197,7 +202,7 @@ So gehst du vor:
    einer Heizungsanlage (dann nennst du mir die übrigen zur Auswahl).
    Bei Geräten, die schon in der Instanz stehen, bleiben ReadOnly, Invert und die Namen, wie sie sind;
    Typ oder Variablen änderst du nur, wenn ich in der Tabelle zustimme.
-4. Zeig mir alle Vorschläge als Tabellen: Räume (Name, Etage, Aliase), Geräte (Raum, Name, Typ,
+4. Zeig mir alle Vorschläge als Tabellen: Räume (Name, Etage, Aliase, Temperatur, Luftfeuchte), Geräte (Raum, Name, Typ,
    Variablen), Quellen (Art, Name, Zähler, Leistung) und den Strompreis, die Messwerte der Heizung als
    eigenen Block. Kennzeichne, was schon in der Instanz steht und was neu ist oder sich ändert. Bei mehr als etwa 50 Geräten zeigst du im Chat nur
    Neues und Änderungen und schreibst die ganzen Tabellen in eine Datei im aktuellen Arbeitsordner.
