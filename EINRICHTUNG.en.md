@@ -148,7 +148,9 @@ How to proceed:
      into the room list (step 2); the types temperature and humidity are for further sensors of a
      room, such as one at the radiator. The temperature of a
      device or system (freezer, heating circuit, tank) is measurement; if one of these is already
-     in the instance as temperature, propose the change. For everything that should switch, only
+     in the instance as temperature, propose the change. The sensor inside a fridge or freezer that
+     is in the list as switch, socket or appliance goes there as InsideVariableID instead of a row
+     of its own. For everything that should switch, only
      variables with an action (HasAction(<VariableID>) returns true); measurements without an
      action are fine.
    - Detectors for querying: water detectors as water_leak, smoke detectors as measurement.

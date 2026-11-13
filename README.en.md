@@ -221,8 +221,8 @@ Which variables a device needs depends on its type:
 | Type | Variables |
 |---|---|
 | Light | Switching state, brightness or both. A dimmer without a separate switch only has the brightness. Optionally power, energy meter, colour temperature and colour. |
-| Switch, socket | Switching state, optionally power and energy meter |
-| Appliance | Switching state or power, optionally energy meter, heat meter and heat output. An appliance with power only, such as a heat pump, can be queried but not switched. |
+| Switch, socket | Switching state, optionally power, energy meter and inside temperature |
+| Appliance | Switching state or power, optionally energy meter, inside temperature, heat meter and heat output. An appliance with power only, such as a heat pump, can be queried but not switched. |
 | Blind | Position, optionally moving state and stop |
 | Thermostat | Setpoint, optionally the current temperature, up to three valves, mode and fan speed (air conditioner), power and energy meter |
 | Media player | On/off, playback or volume, optionally mute, title, artist, power and energy meter |
@@ -239,6 +239,11 @@ Room temperature and room humidity are the climate of the room, that is what the
 warm is it in the basement?". Enter the temperature of a device or system, such as flow, hot water tank or freezer,
 as other measured value and ask for it by its name. If a room holds more than three different temperatures, the
 self-test points it out.
+
+If a fridge or freezer already has a row, as a metering socket for example, choose the sensor inside the device there
+as **Inside temperature**. The answer then reads "off (0.0 W, inside -19.0 °C)", and the sensor needs no row of its
+own. There is no history of the inside temperature this way yet; if you need one, keep the sensor as other measured
+value.
 
 There is no type of its own for smoke detectors. Enter them as other measured value, the assistant cannot switch
 a measured value anyway.

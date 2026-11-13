@@ -425,6 +425,13 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   es nicht: Ein Raum ohne Angabe antwortet wie vorher, und ein Raum mit einem Fühler hat ohnehin eine Antwort. Eine
   Variable, die es nicht mehr gibt, sperrt die Raumliste nicht, sie wirkt nur nicht, wie ein unbekannter Standardraum.
   Der Selbsttest lässt Räume mit Angabe beim Hinweis auf viele Temperaturen aus.
+- **Innentemperatur am Gerät** (13.11.2026, dritte Stufe): Der Fühler in Kühlschrank oder Kühltruhe gehört zum Gerät,
+  so wie Leistung und Zähler. An der Anlage des Anlasses stehen drei Kühlgeräte als Messsteckdosen im Keller, ihre
+  1-Wire-Fühler standen daneben als eigene Zeilen. Mit `InsideVariableID` lautet die Zeile „off (0.0 W, inside
+  -19.0 °C)“. Die Fähigkeit gibt es nur an `switch`, `socket` und `appliance`; ein Gerät nur mit Leistung und Fühler
+  behält die Leistung als Zustand. Eine fehlende Variable sperrt die Zeile wie jede andere Fähigkeit. Bewusst klein
+  gehalten: kein Verlauf, kein Diagramm und keine zweite Zahl auf der Karte (`devices.html` bleibt unverändert, der
+  Text der Karte trägt den Wert). Wer den Verlauf braucht, lässt den Fühler als `measurement` eingetragen.
 
 ## Energie
 

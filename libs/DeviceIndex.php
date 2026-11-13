@@ -77,6 +77,8 @@ final class DeviceIndex
         'valve2'    => 'Valve2VariableID',
         'valve3'    => 'Valve3VariableID',
         'image'     => 'ImageMediaID',
+        // Innentemperatur eines Kühlgeräts (Raumklima Stufe 3): gehört zum Gerät, nicht zum Klima des Raums
+        'inside'    => 'InsideVariableID',
     ];
 
     /**
@@ -134,10 +136,10 @@ final class DeviceIndex
      */
     public const TYPE_ROLES = [
         'light'       => ['roles' => ['state', 'level', 'power', 'energy', 'colortemp', 'color'], 'required' => ['state', 'level']],
-        'switch'      => ['roles' => ['state', 'power', 'energy'], 'required' => ['state']],
-        'socket'      => ['roles' => ['state', 'power', 'energy'], 'required' => ['state']],
+        'switch'      => ['roles' => ['state', 'power', 'energy', 'inside'], 'required' => ['state']],
+        'socket'      => ['roles' => ['state', 'power', 'energy', 'inside'], 'required' => ['state']],
         // Wärmepumpe (B83): Wärmezähler und Wärmeleistung wahlweise, daraus Arbeitszahl und Leistungszahl
-        'appliance'   => ['roles' => ['state', 'power', 'energy', 'heat', 'heatpower'], 'required' => ['state', 'power']],
+        'appliance'   => ['roles' => ['state', 'power', 'energy', 'heat', 'heatpower', 'inside'], 'required' => ['state', 'power']],
         'blind'       => ['roles' => ['level', 'moving', 'stop'], 'required' => ['level']],
         // Klimagerät und AV-Receiver nehmen Strom auf (B85): Leistung und Zähler wahlweise. Bis zu drei Ventile (B101,
         // Burkhard 25.10.2026: drei feste Felder), ein Raum hat oft mehrere Heizkörper an einem Thermostat.
@@ -5124,17 +5126,21 @@ final class DeviceIndex
         }
         // Ein Gerät nur mit Leistung (Wärmepumpe ohne Schaltzustand): die Leistung ist der Zustand. Ein Klimagerät ohne
         // Ist-Temperatur hat noch den Sollwert (B85), ein Luftentfeuchter die Zielfeuchte.
-        if (isset($entry['roles']['power']) && array_diff(array_keys($entry['roles']), ['power', 'energy']) === []) {
-            $power = $this->backend->read($entry['roles']['power']);
-            return ['text' => $power === null ? sprintf($this->t('not available (variable %d is missing)'), $entry['roles']['power']) : $power['formatted'], 'active' => null];
-        }
-        $state = $this->mainStateOf($entry);
         $append = static function (array $state, string $text): array {
             $state['text'] = str_ends_with($state['text'], ')')
                 ? substr($state['text'], 0, -1) . ', ' . $text . ')'
                 : $state['text'] . ' (' . $text . ')';
             return $state;
         };
+        // Innentemperatur eines Kühlgeräts: steht hinter Zustand und Leistung. Fehlt die Variable, bleibt sie weg.
+        $inside = isset($entry['roles']['inside']) ? $this->backend->read($entry['roles']['inside']) : null;
+        $insideText = $inside === null || $inside['formatted'] === '' ? null : sprintf($this->t('inside %s'), $inside['formatted']);
+        if (isset($entry['roles']['power']) && array_diff(array_keys($entry['roles']), ['power', 'energy', 'inside']) === []) {
+            $power = $this->backend->read($entry['roles']['power']);
+            $state = ['text' => $power === null ? sprintf($this->t('not available (variable %d is missing)'), $entry['roles']['power']) : $power['formatted'], 'active' => null];
+            return $insideText === null || $power === null ? $state : $append($state, $insideText);
+        }
+        $state = $this->mainStateOf($entry);
         // Die Farbtemperatur nur bei eingeschaltetem Licht; ausgeschaltet meldet etwa das
         // HomeAssistant-Modul 0 K. Mit bekanntem Farbmodus nur der gültige Wert: Ein weißes Licht nannte sonst die
         // umgerechnete Farbe („2732 K, gelb“), ein farbiges eine alte Farbtemperatur (betreute Anlage 16.10.2026).
@@ -5155,10 +5161,10 @@ final class DeviceIndex
         // Fehlt die Hauptvariable, steht das schon im Zustand; ein Klimagerät ohne Ist-Temperatur hat keine (B85)
         $main = $this->mainVariable($entry);
         $power = isset($entry['roles']['power']) && ($main === 0 || $this->backend->read($main) !== null) ? $this->backend->read($entry['roles']['power']) : null;
-        if ($power === null || $power['formatted'] === '') {
-            return $state;
+        if ($power !== null && $power['formatted'] !== '') {
+            $state = $append($state, $power['formatted']);
         }
-        return $append($state, $power['formatted']);
+        return $insideText !== null && ($main === 0 || $this->backend->read($main) !== null) ? $append($state, $insideText) : $state;
     }
 
     /**

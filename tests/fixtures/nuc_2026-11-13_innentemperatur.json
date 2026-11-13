@@ -1,0 +1,32 @@
+{
+    "_quelle": "nuc 13.11.2026 08:21, nur gelesen (IPS_GetProperty Devices, GetValue, GetValueFormatted, HasAction): Kühlschrank, Kühltruhe und Weinkühlschrank im Keller, je eine Messsteckdose mit Schaltzustand, Leistung und Zähler, dazu die drei 1-Wire-Fühler in den Geräten, die seit 13.11.2026 als measurement eingetragen sind, und Raumfühler und Raumthermostat des Kellers. Zeilen, Namen, Werte und formatierte Werte echt; die Einheit ist aus dem formatierten Wert abgelesen, der Sollbereich des Thermostats stammt aus dem Selbsttest vom 12.11.2026. Angenommen: Das Feld InsideVariableID gab es an diesem Tag noch nicht; der Test hängt die Fühler unter „fuehler“ an ihre Geräte.",
+    "zeitzone": "Europe/Berlin",
+    "jetzt": 1794558077,
+    "fuehler": {"Kühlschrank":42676,"Kühltruhe":10645,"Weinkühlschrank":45915},
+    "geraete": [
+        {"Room":"Keller","Name":"Kühlschrank","Aliases":"","Type":"switch","StateVariableID":56941,"PowerVariableID":53389,"EnergyVariableID":57576,"ReadOnly":true},
+        {"Room":"Keller","Name":"Kühltruhe","Aliases":"Gefriertruhe","Type":"switch","StateVariableID":41438,"PowerVariableID":29008,"EnergyVariableID":17393,"ReadOnly":true},
+        {"Room":"Keller","Name":"Weinkühlschrank","Aliases":"Weinkühler","Type":"switch","StateVariableID":58967,"PowerVariableID":25376,"EnergyVariableID":36893,"ReadOnly":true},
+        {"Room":"Keller","Name":"Temperatur","Aliases":"","Type":"temperature","StateVariableID":26722,"ReadOnly":false},
+        {"Room":"Keller","Name":"Thermostat","Aliases":"Heizkörper","Type":"thermostat","StateVariableID":26722,"SetpointVariableID":32272,"ReadOnly":false},
+        {"Room":"Keller","Name":"Temperatur Kühlschrank","Aliases":"Kühlschranktemperatur","Type":"measurement","StateVariableID":42676,"ReadOnly":false},
+        {"Room":"Keller","Name":"Temperatur Kühltruhe","Aliases":"Kühltruhentemperatur","Type":"measurement","StateVariableID":10645,"ReadOnly":false},
+        {"Room":"Keller","Name":"Temperatur Weinkühlschrank","Aliases":"Weinkühlschranktemperatur","Type":"measurement","StateVariableID":45915,"ReadOnly":false}
+    ],
+    "variablen": {
+        "56941": {"name":"nuc: Keller.Aktorgruppe3.Kühlschrank:1 / STATE","wert":false,"formatiert":"Aus","aktion":true,"einheit":""},
+        "53389": {"name":"nuc: Keller.Energie.Kühlschrank:6 / POWER","wert":0,"formatiert":"0.0 W","aktion":false,"einheit":" W"},
+        "57576": {"name":"nuc: Keller.Energie.Kühlschrank:6 / ENERGY_COUNTER","wert":3438.8,"formatiert":"3.4 kWh","aktion":false,"einheit":" kWh"},
+        "41438": {"name":"nuc: Keller.Aktorgruppe3.Kühltruhe:4 / STATE","wert":false,"formatiert":"Aus","aktion":true,"einheit":""},
+        "29008": {"name":"nuc: Keller.Energie.Kühltruhe:2 / POWER","wert":0,"formatiert":"0.0 W","aktion":false,"einheit":" W"},
+        "17393": {"name":"nuc: Keller.Energie.Kühltruhe:2 / ENERGY_COUNTER","wert":9942.8,"formatiert":"9.9 kWh","aktion":false,"einheit":" kWh"},
+        "58967": {"name":"nuc: Keller.Energie.Weinkühlschrank:3 / STATE","wert":false,"formatiert":"Aus","aktion":true,"einheit":""},
+        "25376": {"name":"nuc: Keller.Energie.Weinkühlschrank:6 / POWER","wert":0,"formatiert":"0.0 W","aktion":false,"einheit":" W"},
+        "36893": {"name":"nuc: Keller.Energie.Weinkühlschrank:6 / ENERGY_COUNTER","wert":1200.9,"formatiert":"1.2 kWh","aktion":false,"einheit":" kWh"},
+        "26722": {"name":"nuc: Keller.Heizung.Thermostat:1 / TEMPERATURE","wert":19.3,"formatiert":"19.3 °C","aktion":false,"einheit":" °C"},
+        "32272": {"name":"nuc: Keller.Heizung.Thermostat:2 / SETPOINT","wert":17,"formatiert":"17.0 °C","aktion":true,"einheit":" °C","sollbereich":{"min":6,"max":30,"schritt":0.5}},
+        "42676": {"name":"nuc: Sensor.Temperatur.Kühlschrank (AC228) / Temperatur","wert":11.875,"formatiert":"11.9 °C","aktion":false,"einheit":" °C"},
+        "10645": {"name":"nuc: Sensor.Temperatur.Kühltruhe (7E928) / Temperatur","wert":-19,"formatiert":"-19.0 °C","aktion":false,"einheit":" °C"},
+        "45915": {"name":"nuc: Sensor.Temperatur.Weinkühlschrank (D3228) / Temperatur","wert":17.4375,"formatiert":"17.4 °C","aktion":false,"einheit":" °C"}
+    }
+}

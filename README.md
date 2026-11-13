@@ -228,8 +228,8 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 | Typ | Variablen |
 |---|---|
 | Licht | Schaltzustand, Helligkeit oder beides. Ein Dimmer ohne eigenen Schalter hat nur die Helligkeit. Wahlweise Leistung, Zähler, Farbtemperatur und Farbe. |
-| Schalter, Steckdose | Schaltzustand, wahlweise Leistung und Zähler |
-| Gerät | Schaltzustand oder Leistung, wahlweise Zähler, Wärmezähler und Wärmeleistung. Ein Gerät nur mit Leistung, etwa eine Wärmepumpe, lässt sich abfragen, aber nicht schalten. |
+| Schalter, Steckdose | Schaltzustand, wahlweise Leistung, Zähler und Innentemperatur |
+| Gerät | Schaltzustand oder Leistung, wahlweise Zähler, Innentemperatur, Wärmezähler und Wärmeleistung. Ein Gerät nur mit Leistung, etwa eine Wärmepumpe, lässt sich abfragen, aber nicht schalten. |
 | Rollladen | Position, dazu wahlweise Fahrstatus und Stopp |
 | Thermostat | Sollwert, wahlweise die Ist-Temperatur, bis zu drei Ventile, Modus und Lüfterstufe (Klimagerät), Leistung und Zähler |
 | Mediaplayer | Ein/Aus, Wiedergabe oder Lautstärke, wahlweise Stumm, Titel, Interpret, Leistung und Zähler |
@@ -246,6 +246,11 @@ Raumtemperatur und Raumluftfeuchte sind das Klima des Raums, also das, was der A
 Keller?“ nennt. Die Temperatur eines Geräts oder einer Anlage, etwa Vorlauf, Warmwasserspeicher oder Kühltruhe,
 tragen Sie als sonstigen Messwert ein und fragen sie mit ihrem Namen ab. Stehen in einem Raum mehr als drei
 verschiedene Temperaturen, weist der Selbsttest darauf hin.
+
+Hat ein Kühlschrank oder eine Kühltruhe schon eine Zeile, etwa als Messsteckdose, wählen Sie den Fühler im Gerät dort
+als **Innentemperatur**. Die Antwort lautet dann „aus (0.0 W, innen -19.0 °C)“, und eine eigene Zeile für den Fühler
+entfällt. Einen Verlauf der Innentemperatur gibt es so noch nicht; wer ihn braucht, lässt den Fühler als sonstigen
+Messwert eingetragen.
 
 Einen eigenen Typ für Rauchmelder gibt es nicht. Tragen Sie sie als sonstigen Messwert ein, schalten kann der
 Assistent einen Messwert ohnehin nicht.

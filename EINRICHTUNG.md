@@ -150,7 +150,9 @@ So gehst du vor:
      Raumliste (Schritt 2); die Typen temperature und humidity sind für weitere Fühler eines Raums,
      etwa am Heizkörper. Die Temperatur eines Geräts oder einer
      Anlage (Kühltruhe, Heizstrang, Speicher) ist measurement; steht so eine schon als temperature
-     in der Instanz, schlag die Änderung vor. Für alles, was schalten soll, nur Variablen mit Aktion
+     in der Instanz, schlag die Änderung vor. Den Fühler in einem Kühlgerät, das als Schalter,
+     Steckdose oder Gerät in der Liste steht, trägst du dort als InsideVariableID ein statt als
+     eigene Zeile. Für alles, was schalten soll, nur Variablen mit Aktion
      (HasAction(<VariablenID>) liefert true); Messwerte ohne Aktion sind in Ordnung.
    - Melder zum Abfragen: Wassermelder als water_leak, Rauchmelder als measurement.
    - Kameras als Typ camera, wenn es zu ihnen ein Medienobjekt vom Typ Bild mit einem Standbild gibt

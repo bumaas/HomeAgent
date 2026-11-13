@@ -174,6 +174,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Klima am Raum:** `TemperatureVariableID`/`HumidityVariableID` der Raumliste (`climateOf`). Mit Angabe liefert
   `type=temperature`/`humidity` ohne Namen nur diese Variable, nur beim Lesen (`roomClimate`, Schlusszeile `climateNote`);
   ohne Gerätezeile entsteht eine gedachte (`climateRows`). Fehlende Variable wirkt nicht (`missingClimate`).
+- **Innentemperatur** (`inside`, `InsideVariableID`) wahlweise an `switch`, `socket`, `appliance`: steht hinter Zustand und
+  Leistung („inside -19.0 °C“), zählt nie als Raumtemperatur, bringt keinen Befehl. Noch nicht: Verlauf, eigene Zahl auf
+  der Karte. Test `check-innentemperatur.php`.
 - **Licht:** Prozent rechnet das Modul selbst. Farbtemperatur in Kelvin, ein Bereich bis 1000 ist Mired; Schrittweite
   der Darstellung zählt nicht, außerhalb aufs nächste Ende, ein ausgeschaltetes Licht wird eingeschaltet. Farbe nur als
   Ganzzahl aus `COLORS` (Farbe als Text ist nicht dokumentiert). Ein Licht ohne Schaltzustand ist an, solange die Farbe
