@@ -326,7 +326,10 @@ final class DeviceIndex
     /** Art des Problems der letzten Anfrage, null = alles erreicht (problem()). */
     private ?string $problem = null;
 
-    /** Ob die letzte Anfrage eine Kamera mit ihrem Zustand genannt hat (namedCamera()). */
+    /**
+     * Ob die letzte Anfrage eine Kamera mit ihrem Zustand genannt hat (namedCamera()). Gesetzt in line() und cardOf(), nicht
+     * in stateOf(): Das läuft auch für Treffer, die active_only danach weglässt (Code-Review 13.11.2026, Befund 4).
+     */
     private bool $cameraNamed = false;
 
     /** Während chart(): hier sammelt history() die Daten fürs Diagramm statt der Tabellenzeilen. */
@@ -5138,7 +5141,6 @@ final class DeviceIndex
     private function stateOf(array $entry): array
     {
         if ($entry['Type'] === 'camera') {
-            $this->cameraNamed = true;
             return ['text' => $this->cameraText($entry), 'active' => null];
         }
         // Ein Gerät nur mit Leistung (Wärmepumpe ohne Schaltzustand): die Leistung ist der Zustand. Ein Klimagerät ohne
@@ -5511,6 +5513,9 @@ final class DeviceIndex
 
     private function line(array $entry, string $text, int $maxLength = self::VALUE_TEXT_LENGTH): string
     {
+        if ($entry['Type'] === 'camera') {
+            $this->cameraNamed = true;
+        }
         // Der Text kommt aus der Anlage (Anzeigetexte, Warnungen von Modulen) und kann von außen
         // gefüllt sein. Er darf das Format „eine Zeile je Gerät“ nicht zerbrechen.
         return ($entry['Room'] !== '' ? $entry['Room'] : '-') . ' | ' . self::displayName($entry) . ' | ' . $entry['Type'] . ' | ' . str_replace('|', '/', self::singleLine($text, $maxLength));
@@ -7002,6 +7007,9 @@ final class DeviceIndex
         $this->blindMoving = false;
         $state = $this->stateOf($entry);
         $moving = $this->blindMoving;
+        if ($entry['Type'] === 'camera') {
+            $this->cameraNamed = true;
+        }
         $abilities = $readOnly ? [] : self::abilitiesOf($entry);
         $controls = [];
         // Ein Thermostat mit „On“ als Sonder-Sollwert bekommt keinen Schalter: Ein Antippen öffnete das Ventil dauerhaft.

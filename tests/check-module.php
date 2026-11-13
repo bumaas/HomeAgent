@@ -4067,6 +4067,18 @@ pruefe(($r['isError'] ?? true) === false && str_ends_with((string)($r['text'] ??
     'show_devices ohne Haken: der Text endet mit dem Satz, die Karte bleibt: ' . ($r['text'] ?? ''));
 $r = $zFrage($zZugaenge['Ohne Bild'] ?? null, 'show_devices', ['room' => 'Küche']);
 pruefe(!str_contains((string)($r['text'] ?? ''), 'Camera images'), 'show_devices ohne Kamera: kein Satz: ' . ($r['text'] ?? ''));
+// Mit active_only fällt die Kamera weg (sie kennt kein an/aus); dann gehört der Satz nicht in die Antwort (Code-Review
+// 13.11.2026, Befund 4: stateOf() lief vor dem Filter für jeden Treffer und merkte sich die Kamera).
+SetValue($zLicht, true);
+$r = $zFrage($zZugaenge['Ohne Bild'] ?? null, 'get_state', ['active_only' => true]);
+pruefe(str_contains((string)($r['text'] ?? ''), 'Küche | Deckenlicht | light | ') && !str_contains((string)($r['text'] ?? ''), 'Einfahrt') && !str_contains((string)($r['text'] ?? ''), 'Camera images'),
+    'get_state active_only ohne Kamera in der Antwort: kein Satz zu Bildern: ' . ($r['text'] ?? ''));
+$r = $zFrage($zZugaenge['Ohne Bild'] ?? null, 'show_devices', ['active_only' => true]);
+pruefe(array_column($r['structuredContent']['cards'] ?? [], 'name') === ['Deckenlicht'] && !str_contains((string)($r['text'] ?? ''), 'Camera images'),
+    'show_devices active_only ohne Kamera auf den Karten: kein Satz: ' . ($r['text'] ?? ''));
+$r = $zFrage($zZugaenge['Ohne Bild'] ?? null, 'get_state', []);
+pruefe(str_contains((string)($r['text'] ?? ''), 'Einfahrt | camera') && str_contains((string)($r['text'] ?? ''), $zSatz), 'ohne active_only steht die Kamera drin und der Satz bleibt: ' . ($r['text'] ?? ''));
+SetValue($zLicht, false);
 $r = $zFrage($zZugaenge['Mit Bild'] ?? null, 'show_devices', ['name' => 'Einfahrt']);
 pruefe(!str_contains((string)($r['text'] ?? ''), 'not released'), 'show_devices mit Haken: kein Satz: ' . ($r['text'] ?? ''));
 

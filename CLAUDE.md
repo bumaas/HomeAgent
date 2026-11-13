@@ -200,7 +200,7 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   und fasst Streams nicht an (Zugangsdaten in der Adresse). Test `check-kamera.php`.
 - **`show_camera`** (`DeviceIndex::camera`): nur für Zugänge mit `Images` (Haken „Kamerabilder“, Standard aus, nie über
   `HAGT_AddAccess`), sonst sagen es die Beschreibung von `get_state` und jede Antwort von `get_state` und `show_devices`
-  mit einer Kamera (`withImageNote`, `namedCamera`; Werkzeuglisten halten Clients lange fest). Genau ein Treffer, sonst Kandidaten ohne Bild;
+  mit einer Kamera (`withImageNote`, `namedCamera` erst aus `line()`/`cardOf()`, nicht vor `active_only`; Werkzeuglisten halten Clients lange fest). Genau ein Treffer, sonst Kandidaten ohne Bild;
   `CameraImage::prepare` verkleinert auf 1280 px oder sagt ab (`memoryNeeded`). Test `check-kamerabild.php` (braucht GD).
 - **Ansicht des Kamerabilds** (`camera.html`): Die Seite holt ihr Bild selbst über `camera_image` (`cameraPart`, 960 px,
   Stücke von `CAMERA_PART` Zeichen), weil ein Ergebnis über rund 150.000 Zeichen sie bei claude.ai nicht erreicht;
