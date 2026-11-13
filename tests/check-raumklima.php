@@ -118,14 +118,38 @@ pruefe(str_starts_with($r['text'], "17 device(s) found (room=Keller, type=temper
 
 /* --- mit Angabe nur das Klima des Raums ---------------------------------------------------------- */
 
+// Die Schlusszeile nennt die übrigen Werte beim Namen (Code-Review 13.11.2026, Befund 2): Ohne Namen riet das Modell
+// name=Temperatur und bekam wieder nur den Raumwert, weil der genaue Treffer die Teiltreffer verdeckt.
+$kellerNamen = 'Warmwasserspeicher, Vorlauf, Rücklauf, Vorlauf-Soll, Temperatur Kühlschrank, Temperatur Kühltruhe, Temperatur Weinkühlschrank, '
+    . 'Strang 1 Vorlauf, Strang 1 Rücklauf, Strang 2 Vorlauf, Strang 2 Rücklauf, Strang 3 Vorlauf, Strang 3 Rücklauf, Warmwasser Vorlauf, Warmwasser Rücklauf';
+
 $r = frage(['room' => 'Keller', 'type' => 'temperature'], raeume());
 pruefe(!$r['isError'] && $r['text'] === "2 device(s) found (room=Keller, type=temperature).\n"
     . "Keller | Temperatur | temperature | 19.3 °C\n"
     . "Keller | Thermostat | thermostat | setpoint 17 °C (currently 19.3 °C)\n"
-    . '15 further temperature value(s) there are not the room temperature; ask for them with name.', 'der Keller nennt Raumfühler und Raumthermostat (dieselbe Variable), die übrigen 15 zählt die Schlusszeile: ' . $r['text']);
-$r = frage(['room' => 'Keller', 'type' => 'temperature'], raeume(), null, 'get', ['%d further temperature value(s) there are not the room temperature; ask for them with name.' => '%d weitere Temperatur(en) dort sind nicht die Raumtemperatur; mit name abfragen.',
+    . '15 further temperature value(s) there are not the room temperature; ask for them with name: ' . $kellerNamen . '.', 'der Keller nennt Raumfühler und Raumthermostat (dieselbe Variable), die übrigen 15 nennt die Schlusszeile beim Namen: ' . $r['text']);
+$r = frage(['room' => 'Keller', 'type' => 'temperature'], raeume(), null, 'get', ['%d further temperature value(s) there are not the room temperature; ask for them with name: %s.' => '%d weitere Temperatur(en) dort sind nicht die Raumtemperatur; mit name abfragen: %s.',
     '%d device(s) found (%s).' => '%d Gerät(e) gefunden (%s).', 'setpoint %s (currently %s)' => 'Soll %s (derzeit %s)']);
-pruefe(str_ends_with($r['text'], "\n15 weitere Temperatur(en) dort sind nicht die Raumtemperatur; mit name abfragen."), 'die Schlusszeile ist übersetzbar: ' . $r['text']);
+pruefe(str_ends_with($r['text'], "\n15 weitere Temperatur(en) dort sind nicht die Raumtemperatur; mit name abfragen: " . $kellerNamen . '.'), 'die Schlusszeile ist übersetzbar: ' . $r['text']);
+
+// Aus mehreren Räumen weggelassen: jeder Name mit seinem Raum, damit das Modell auch room angeben kann
+$r = frage(['type' => 'temperature'], raeume(['Keller' => [26722, 56003], 'Wintergarten' => [19960, 28691]]));
+$schluss = (string)array_last(explode("\n", $r['text']));
+pruefe(str_starts_with($schluss, '16 further temperature value(s) there are not the room temperature; ask for them with name: Warmwasserspeicher (Keller), Heizkörper (Wintergarten), Vorlauf (Keller), ')
+    && str_ends_with($schluss, ', Warmwasser Rücklauf (Keller).'), 'aus zwei Räumen nennt die Schlusszeile Name und Raum: ' . $schluss);
+
+// Höchstens 20 Namen, der Rest als Anzahl. Echt sind die 15 Fühler des Kellers; die sechs Zeilen „Strang 4“ bis „Strang 6“
+// sind angenommen (ein Keller mit sechs Heizkreisen), sie lesen die Variablen der Stränge 1 bis 3 noch einmal.
+$mehr = $geraete;
+foreach ([4 => [42662, 10801], 5 => [37795, 17808], 6 => [15208, 53796]] as $strang => [$vor, $rueck]) {
+    $mehr[] = ['Room' => 'Keller', 'Name' => 'Strang ' . $strang . ' Vorlauf', 'Aliases' => '', 'Type' => 'temperature', 'StateVariableID' => $vor];
+    $mehr[] = ['Room' => 'Keller', 'Name' => 'Strang ' . $strang . ' Rücklauf', 'Aliases' => '', 'Type' => 'temperature', 'StateVariableID' => $rueck];
+}
+$r = frage(['room' => 'Keller', 'type' => 'temperature'], raeume(), $mehr);
+pruefe(str_ends_with($r['text'], "\n21 further temperature value(s) there are not the room temperature; ask for them with name: " . $kellerNamen . ', Strang 4 Vorlauf, Strang 4 Rücklauf, Strang 5 Vorlauf, Strang 5 Rücklauf, Strang 6 Vorlauf and 1 more.'),
+    'nach 20 Namen nur noch die Anzahl: ' . $r['text']);
+$r = frage(['room' => 'Keller', 'type' => 'temperature'], raeume(), $mehr, 'get', ['%s and %d more' => '%s und %d weitere']);
+pruefe(str_ends_with($r['text'], 'Strang 6 Vorlauf und 1 weitere.'), 'der Rest ist übersetzbar: ' . $r['text']);
 
 $r = frage(['room' => 'Keller', 'type' => 'humidity'], raeume());
 pruefe($r['text'] === "1 device(s) found (room=Keller, type=humidity).\nKeller | Luftfeuchte | humidity | 61 %", 'die Luftfeuchte des Kellers, ohne Schlusszeile: ' . $r['text']);
@@ -154,7 +178,7 @@ pruefe(str_contains($haus['text'], "\nWintergarten | Heizkörper | temperature |
 $ohneZeilen = array_values(array_filter($geraete, static fn (array $g): bool => !($g['Room'] === 'Keller' && in_array($g['Name'], ['Temperatur', 'Thermostat', 'Luftfeuchte'], true))));
 $r = frage(['room' => 'Keller', 'type' => 'temperature'], raeume(), $ohneZeilen);
 pruefe(!$r['isError'] && $r['text'] === "1 device(s) found (room=Keller, type=temperature).\nKeller | Temperature | temperature | 19.3 °C\n"
-    . '15 further temperature value(s) there are not the room temperature; ask for them with name.', 'ohne Gerätezeile antwortet der Raum selbst: ' . $r['text']);
+    . '15 further temperature value(s) there are not the room temperature; ask for them with name: ' . $kellerNamen . '.', 'ohne Gerätezeile antwortet der Raum selbst: ' . $r['text']);
 $r = frage(['room' => 'Keller', 'type' => 'humidity'], raeume(), $ohneZeilen, 'get', ['Humidity' => 'Luftfeuchte', '%d device(s) found (%s).' => '%d Gerät(e) gefunden (%s).']);
 pruefe($r['text'] === "1 Gerät(e) gefunden (room=Keller, type=humidity).\nKeller | Luftfeuchte | humidity | 61 %", 'ebenso die Luftfeuchte, mit übersetztem Namen: ' . $r['text']);
 $ohneRaumklima = frage(['room' => 'Keller'], raeume([]), $ohneZeilen);

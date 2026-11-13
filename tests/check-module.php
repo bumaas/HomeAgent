@@ -4277,15 +4277,17 @@ IPS_SetProperty($iid, 'Rooms', json_encode([['Name' => 'Keller', 'Aliases' => ''
 IPS_ApplyChanges($iid);
 pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE, 'eine Raumvariable, die es nicht gibt, sperrt nichts');
 $klimaText = $m->QueryState('Keller', 'temperature', '', false);
-pruefe(str_starts_with($klimaText, "1 device(s) found (room=Keller, type=temperature).\nKeller | Temperatur | temperature | ") && str_ends_with($klimaText, "\n3 further temperature value(s) there are not the room temperature; ask for them with name."), 'über das Modul nennt der Keller nur seine Temperatur: ' . $klimaText);
+pruefe(str_starts_with($klimaText, "1 device(s) found (room=Keller, type=temperature).\nKeller | Temperatur | temperature | ") && str_ends_with($klimaText, "\n3 further temperature value(s) there are not the room temperature; ask for them with name: Vorlauf, Rücklauf, Temperatur Kühltruhe."), 'über das Modul nennt der Keller nur seine Temperatur: ' . $klimaText);
 pruefe(str_starts_with($m->QueryState('Keller', 'humidity', '', false), 'No released device matches'), 'die fehlende Feuchtevariable ergibt keine Zeile: ' . $m->QueryState('Keller', 'humidity', '', false));
 $klimaTest = $m->RunSelfTest();
 pruefe(!str_contains($klimaTest, 'temperatures;'), 'mit Angabe am Raum entfällt der Hinweis auf die vielen Temperaturen: ' . $klimaTest);
 pruefe(str_contains($klimaTest, 'Note: room "Keller": the variable for the humidity (#69997) does not exist, the entry has no effect'), 'der Selbsttest nennt die Raumvariable, die es nicht gibt: ' . $klimaTest);
 pruefe(($uebersetzt['Note: room "%s": the variable for the humidity (#%d) does not exist, the entry has no effect'] ?? '') === 'Hinweis: Raum „%s“: Die Variable für die Luftfeuchte (#%d) gibt es nicht, die Angabe wirkt nicht'
     && ($uebersetzt['Note: room "%s": the variable for the temperature (#%d) does not exist, the entry has no effect'] ?? '') === 'Hinweis: Raum „%s“: Die Variable für die Temperatur (#%d) gibt es nicht, die Angabe wirkt nicht', 'beide Hinweise sind übersetzt');
-pruefe(($uebersetzt['%d further temperature value(s) there are not the room temperature; ask for them with name.'] ?? '') === '%d weitere Temperatur(en) dort sind nicht die Raumtemperatur; mit name abfragen.'
-    && ($uebersetzt['%d further humidity value(s) there are not the room humidity; ask for them with name.'] ?? '') === '%d weitere Feuchtewert(e) dort sind nicht die Raumluftfeuchte; mit name abfragen.', 'die Schlusszeilen sind übersetzt');
+pruefe(($uebersetzt['%d further temperature value(s) there are not the room temperature; ask for them with name: %s.'] ?? '') === '%d weitere Temperatur(en) dort sind nicht die Raumtemperatur; mit name abfragen: %s.'
+    && ($uebersetzt['%d further humidity value(s) there are not the room humidity; ask for them with name: %s.'] ?? '') === '%d weitere Feuchtewert(e) dort sind nicht die Raumluftfeuchte; mit name abfragen: %s.'
+    && ($uebersetzt['%s and %d more'] ?? '') === '%s und %d weitere', 'die Schlusszeilen sind übersetzt');
+pruefe(!isset($uebersetzt['%d further temperature value(s) there are not the room temperature; ask for them with name.']), 'die alte Schlusszeile ohne Namen ist aus der locale.json entfernt');
 // Ein Raum, dessen Variable in keiner Gerätezeile steht, antwortet selbst und meldet sie als Referenz
 $raumFuehler = variable(VARIABLETYPE_FLOAT, 17.5);
 IPS_SetProperty($iid, 'Rooms', json_encode([['Name' => 'Keller', 'Aliases' => '', 'Floor' => '', 'TemperatureVariableID' => $raumFuehler, 'HumidityVariableID' => 0]]));

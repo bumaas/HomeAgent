@@ -425,6 +425,12 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   es nicht: Ein Raum ohne Angabe antwortet wie vorher, und ein Raum mit einem Fühler hat ohnehin eine Antwort. Eine
   Variable, die es nicht mehr gibt, sperrt die Raumliste nicht, sie wirkt nur nicht, wie ein unbekannter Standardraum.
   Der Selbsttest lässt Räume mit Angabe beim Hinweis auf viele Temperaturen aus.
+  Seit build 293 nennt die Schlusszeile die übrigen Werte beim Namen (Code-Review vom 13.11.2026). Vorher hieß es nur
+  „mit name abfragen“; ein Modell, das daraufhin `name=Temperatur` riet, bekam wieder nur den Raumwert, weil der genaue
+  Treffer die Teiltreffer verdeckt (Regel vom 08.10.). Die gedachte Zeile war daran unschuldig, am nuc heißt die
+  eingetragene Zeile genauso. Alle Namen statt der ersten fünf, weil eine Kürzung gerade den gesuchten Strang abschneiden
+  kann und eine zweite Runde mehr kostet als rund 60 Tokens für 15 Namen; ab 20 Namen folgt nur die Anzahl. Aus mehreren
+  Räumen trägt jeder Name seinen Raum.
 - **Innentemperatur am Gerät** (13.11.2026, dritte Stufe): Der Fühler in Kühlschrank oder Kühltruhe gehört zum Gerät,
   so wie Leistung und Zähler. An der Anlage des Anlasses stehen drei Kühlgeräte als Messsteckdosen im Keller, ihre
   1-Wire-Fühler standen daneben als eigene Zeilen. Mit `InsideVariableID` lautet die Zeile „off (0.0 W, inside

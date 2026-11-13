@@ -440,8 +440,15 @@ final class DeviceIndex
     /** Typen, die eine Angabe der Raumliste beantwortet, und der Name ihrer gedachten Zeile. */
     private const CLIMATE_KINDS = ['temperature' => 'Temperature', 'humidity' => 'Humidity'];
 
-    /** Nach roomClimate(): so viele Treffer waren nicht das Klima ihres Raums, und nach welchem Typ gefragt war. */
-    private int $besideClimate = 0;
+    /** So viele Namen nennt die Schlusszeile des Raumklimas höchstens, den Rest als Anzahl. */
+    private const CLIMATE_NAMES_MAX = 20;
+
+    /**
+     * Nach roomClimate(): die Treffer, die nicht das Klima ihres Raums waren (Name und Raum), und nach welchem Typ gefragt war.
+     *
+     * @var list<array{0: string, 1: string}>
+     */
+    private array $besideClimate = [];
     private string $climateKind = '';
 
     /**
@@ -487,7 +494,7 @@ final class DeviceIndex
      */
     private function roomClimate(array $matches, string $type, string $name): array
     {
-        $this->besideClimate = 0;
+        $this->besideClimate = [];
         $this->climateKind = $type;
         if ($name !== '' || !isset(self::CLIMATE_KINDS[$type])) {
             return $matches;
@@ -496,7 +503,7 @@ final class DeviceIndex
         foreach ($matches as $entry) {
             $variable = $this->rooms->climateOf($entry['Room'])[$type];
             if ($variable > 0 && ($entry['roles']['state'] ?? 0) !== $variable) {
-                $this->besideClimate++;
+                $this->besideClimate[] = [(string)$entry['Name'], (string)$entry['Room']];
                 continue;
             }
             $kept[] = $entry;
@@ -504,15 +511,25 @@ final class DeviceIndex
         return $kept;
     }
 
-    /** Schlusszeile zu roomClimate(): wie viele Werte dort nicht das Klima des Raums sind und wie man sie abfragt. */
+    /**
+     * Schlusszeile zu roomClimate(): wie viele Werte dort nicht das Klima des Raums sind und wie sie heißen. Ohne Namen riet
+     * das Modell name=Temperatur und bekam wieder nur den Raumwert (Code-Review 13.11.2026). Aus mehreren Räumen trägt
+     * jeder Name seinen Raum; nach CLIMATE_NAMES_MAX Namen folgt nur noch die Anzahl.
+     */
     private function climateNote(): string
     {
-        if ($this->besideClimate === 0) {
+        if ($this->besideClimate === []) {
             return '';
         }
+        $oneRoom = count(array_unique(array_map(static fn (array $b): string => self::normalize($b[1]), $this->besideClimate))) === 1;
+        $names = array_values(array_unique(array_map(static fn (array $b): string => $oneRoom ? $b[0] : $b[0] . ' (' . $b[1] . ')', $this->besideClimate)));
+        $list = implode(', ', array_slice($names, 0, self::CLIMATE_NAMES_MAX));
+        if (count($names) > self::CLIMATE_NAMES_MAX) {
+            $list = sprintf($this->t('%s and %d more'), $list, count($names) - self::CLIMATE_NAMES_MAX);
+        }
         return sprintf($this->climateKind === 'humidity'
-            ? $this->t('%d further humidity value(s) there are not the room humidity; ask for them with name.')
-            : $this->t('%d further temperature value(s) there are not the room temperature; ask for them with name.'), $this->besideClimate);
+            ? $this->t('%d further humidity value(s) there are not the room humidity; ask for them with name: %s.')
+            : $this->t('%d further temperature value(s) there are not the room temperature; ask for them with name: %s.'), count($this->besideClimate), $list);
     }
 
     /**
