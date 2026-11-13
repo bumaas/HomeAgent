@@ -173,7 +173,7 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   (Vorlauf, Speicher, Kühltruhe) ist `measurement`, weil `type=temperature` sonst jeden Fühler des Raums liefert. Der
   Selbsttest nennt Räume über `ROOM_CLIMATE_MAX` verschiedenen Werten (`crowdedClimate`). Test `check-raumklima.php`.
 - **Klima am Raum:** `TemperatureVariableID`/`HumidityVariableID` der Raumliste (`climateOf`). Mit Angabe liefert
-  `type=temperature`/`humidity` ohne Namen nur diese Variable, nur beim Lesen (`roomClimate`); die Schlusszeile
+  `type=temperature`/`humidity` ohne Namen nur diese Variable, nur beim Lesen (`roomClimate` über `findForReading`); die Schlusszeile
   `climateNote` nennt die übrigen beim Namen (`nameList`, bis `NOTE_NAMES_MAX`, aus mehreren Räumen mit Raum). Ohne Gerätezeile
   entsteht eine gedachte (`climateRows`). Fehlende Variable wirkt nicht (`missingClimate`). Test `check-raumklima.php`.
 - **Innentemperatur** (`inside`, `InsideVariableID`) wahlweise an `switch`, `socket`, `appliance`: steht hinter Zustand und

@@ -3276,16 +3276,30 @@ class HomeAgent extends IPSModuleStrict
 
     private function roomIndex(): RoomIndex
     {
+        // Innerhalb von checkedOnce() gilt die Raumliste der Anfrage; sie wird je Anfrage sonst bis zu sechsmal gebaut,
+        // jedes Mal mit IPS_VariableExists je Klimavariable (Code-Review 13.11.2026, Befund 10).
+        if ($this->rooms !== null) {
+            return $this->rooms;
+        }
         // Raumklima: Eine Variable, die es nicht mehr gibt, wirkt nicht, so wie ein unbekannter Standardraum. Gesperrt
         // wird nichts, der Selbsttest nennt sie (missingClimate).
         return new RoomIndex(array_map(static function (array $room): array {
             foreach (self::ROOM_CLIMATE as $field => $label) {
-                if ((int)($room[$field] ?? 0) > 1 && !IPS_VariableExists((int)$room[$field])) {
+                if (self::climateGone((int)($room[$field] ?? 0))) {
                     $room[$field] = 0;
                 }
             }
             return $room;
         }, $this->listProperty('Rooms')));
+    }
+
+    /** Raumliste der laufenden Anfrage (checkedOnce()); null = jeder Aufruf baut sie selbst. */
+    private ?RoomIndex $rooms = null;
+
+    /** Eine Klimavariable der Raumliste, die angegeben ist, aber nicht mehr existiert (roomIndex(), missingClimate()). */
+    private static function climateGone(int $variable): bool
+    {
+        return $variable > 1 && !IPS_VariableExists($variable);
     }
 
     /** Spalten der Raumliste für das Klima des Raums und wie der Selbsttest sie nennt. */
@@ -3342,7 +3356,7 @@ class HomeAgent extends IPSModuleStrict
         foreach ($this->listProperty('Rooms') as $room) {
             foreach (self::ROOM_CLIMATE as $field => $kind) {
                 $variable = (int)($room[$field] ?? 0);
-                if ($variable > 1 && !IPS_VariableExists($variable)) {
+                if (self::climateGone($variable)) {
                     $missing[] = ['room' => trim((string)($room['Name'] ?? '')), 'kind' => $kind, 'variable' => $variable];
                 }
             }
@@ -3640,11 +3654,13 @@ class HomeAgent extends IPSModuleStrict
         if ($this->problems !== null) {
             return $work();
         }
-        $this->problems = $this->findProblems();
+        $this->rooms = $this->roomIndex();
         try {
+            $this->problems = $this->findProblems();
             return $work();
         } finally {
             $this->problems = null;
+            $this->rooms = null;
         }
     }
 

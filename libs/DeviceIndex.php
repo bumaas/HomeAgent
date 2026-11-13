@@ -515,6 +515,18 @@ final class DeviceIndex
     }
 
     /**
+     * Suche zum Lesen (get_state, Karten, Heatmap, Punktwolke): find() und danach das Klima des Raums. Jede lesende
+     * Suche geht hierüber, sonst fehlt ihr die Regel (Code-Review 13.11.2026, Befund 8). Schalten, Kandidaten und die
+     * Fehlersuche bleiben bei find(), weil roomClimate() die Zählung für climateNote() zurücksetzt.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function findForReading(string $room, string $type, string $name, string $floor): array
+    {
+        return $this->roomClimate($this->find($room, $type, $name, $floor), $type, $name);
+    }
+
+    /**
      * Schlusszeile zu roomClimate(): wie viele Werte dort nicht das Klima des Raums sind und wie sie heißen. Ohne Namen riet
      * das Modell name=Temperatur und bekam wieder nur den Raumwert (Code-Review 13.11.2026).
      */
@@ -660,7 +672,8 @@ final class DeviceIndex
 
         $room = $this->effectiveRoom($room, $name, $floor);
         $filter = $this->describeFilter($room, $type, $name, $floor);
-        $matches = $this->roomClimate($this->find($room, $powerMode ? '' : $type, $name, $floor), $type, $name);
+        // type=power ist kein Gerätetyp und hat kein Raumklima
+        $matches = $this->findForReading($room, $powerMode ? '' : $type, $name, $floor);
         if ($powerMode) {
             return $this->powerState($matches, $room === '' && $floor === '' && $name === '', $filter, $range, $rangeLabel, $rangeLevel, $period);
         }
@@ -691,8 +704,7 @@ final class DeviceIndex
                     && (array_any($matches, static fn (array $e): bool => self::isMeasured($e)) || !array_any($matches, static fn (array $e): bool => isset($e['roles']['energy']))))
                 || in_array($type, self::HISTORY_TYPES, true)
                 || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy']) || self::hasHeat($e)) && array_any($matches, fn (array $e): bool => self::isMeasured($e) || $this->isTimed($e))))) {
-            // roomClimate() hat vor dem Verlauf gezählt; history() sucht nicht selbst
-            $beside = $this->besideClimate;
+            // roomClimate() hat vor dem Verlauf gezählt; history() sucht nicht selbst und lässt die Zählung stehen
             if ($range !== null) {
                 [, $from, $to] = $range;
                 $result = $this->history($matches, $rangeLevel, $from, $to, $filter . $rangeLabel, $room !== '');
@@ -700,7 +712,6 @@ final class DeviceIndex
                 [, $from, $to] = self::periodBounds($period, $this->backend->timestamp());
                 $result = $this->history($matches, $this->chartLevel($period, $from, $to), $from, $to, $filter . ', period=' . $period, $room !== '');
             }
-            $this->besideClimate = $beside;
             return $this->withClimateNote($result);
         }
         if ($range !== null) {
@@ -5193,13 +5204,15 @@ final class DeviceIndex
                 $state = $append($state, $this->t($name));
             }
         }
-        // Fehlt die Hauptvariable, steht das schon im Zustand; ein Klimagerät ohne Ist-Temperatur hat keine (B85)
+        // Fehlt die Hauptvariable, steht das schon im Zustand; ein Klimagerät ohne Ist-Temperatur hat keine (B85).
+        // Einmal geprüft, und nur, wenn Leistung oder Innentemperatur dazukommen (Code-Review 13.11.2026, Befund 9).
         $main = $this->mainVariable($entry);
-        $power = isset($entry['roles']['power']) && ($main === 0 || $this->backend->read($main) !== null) ? $this->backend->read($entry['roles']['power']) : null;
+        $mainThere = (isset($entry['roles']['power']) || $insideText !== null) && ($main === 0 || $this->backend->read($main) !== null);
+        $power = isset($entry['roles']['power']) && $mainThere ? $this->backend->read($entry['roles']['power']) : null;
         if ($power !== null && $power['formatted'] !== '') {
             $state = $append($state, $power['formatted']);
         }
-        return $insideText !== null && ($main === 0 || $this->backend->read($main) !== null) ? $append($state, $insideText) : $state;
+        return $insideText !== null && $mainThere ? $append($state, $insideText) : $state;
     }
 
     /**
@@ -6214,7 +6227,7 @@ final class DeviceIndex
         } else {
             $room = $this->effectiveRoom($room, $name, $floor);
             $filter = $this->describeFilter($room, $type, $name, $floor) . ', versus=' . $versus;
-            $yMatches = self::onePerState($this->roomClimate($this->find($room, $type, $name, $floor), $type, $name));
+            $yMatches = self::onePerState($this->findForReading($room, $type, $name, $floor));
             if ($yMatches === []) {
                 $this->noMatch($room, $name);
                 return $this->fail(sprintf($this->t('No released device matches %s.'), $this->describeFilter($room, $type, $name, $floor)));
@@ -6309,7 +6322,7 @@ final class DeviceIndex
         } else {
             $room = $this->effectiveRoom($room, $name, $floor);
             $filter = $this->describeFilter($room, $type, $name, $floor) . ', ' . $when;
-            $matches = self::onePerState($this->roomClimate($this->find($room, $type, $name, $floor), $type, $name));
+            $matches = self::onePerState($this->findForReading($room, $type, $name, $floor));
             if ($matches === []) {
                 $this->noMatch($room, $name);
                 return $this->fail(sprintf($this->t('No released device matches %s.'), $this->describeFilter($room, $type, $name, $floor)));
@@ -6976,7 +6989,7 @@ final class DeviceIndex
         $name = trim((string)($arguments['name'] ?? ''));
         $floor = trim((string)($arguments['floor'] ?? ''));
         $type = trim((string)($arguments['type'] ?? ''));
-        $matches = $this->roomClimate($this->find($this->effectiveRoom(trim((string)($arguments['room'] ?? '')), $name, $floor), $type, $name, $floor), $type, $name);
+        $matches = $this->findForReading($this->effectiveRoom(trim((string)($arguments['room'] ?? '')), $name, $floor), $type, $name, $floor);
         if ((bool)($arguments['active_only'] ?? false)) {
             $matches = array_values(array_filter($matches, fn (array $entry): bool => $this->stateOf($entry)['active'] === true));
         }
