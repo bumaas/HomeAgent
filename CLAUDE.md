@@ -217,7 +217,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Mediaplayer** (`media`): `state`, `playback`, `volume`, `mute`, `title`, `artist` wie die Darstellung „Media
   Player“. Wiedergabewerte je Profil (`PLAYBACK_CODES`), Statustext des HomeAssistant-Moduls über `MEDIA_STATES` und
   `playbackPhase`. `play`, `pause`, `stop`, `next`, `previous` (`runPlayback`): fremdes Profil abgewiesen, Player in der
-  Zielphase bekommt nichts; Weiter/Zurück bestätigt durch Änderung von Wert, Titel oder Interpret. Lautstärke in Prozent
+  Zielphase bekommt nichts; Weiter/Zurück bestätigt durch Änderung von Wert, Titel oder Interpret. Ein gemeldeter
+  Fehlschlag geht der Variable vor, sie zählt frühestens `PLAYBACK_SETTLE_MS` nach dem Senden (das Sonos-Modul setzt sie
+  beim Senden, Test `check-wiedergabe-abgelehnt.php`). Lautstärke in Prozent
   des Bereichs, gesendet im Raster der Variable (`range()['step']`), andere Einheit in der Abfrage dabei. `volume` oder
   `volume_change` dürfen mit `play`/`pause`/`stop` kommen (`combineResults`). `play` ohne Raum setzt fort, was in der
   letzten Stunde per Werkzeug pausiert wurde (Buffer `Paused`). Ein/Aus über einen schaltbaren Wahrheitswert; ohne ihn

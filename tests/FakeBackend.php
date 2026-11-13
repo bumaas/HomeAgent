@@ -35,6 +35,9 @@ final class FakeBackend implements DeviceBackend
     /** @var array<int, string> Fehlertext der letzten Aktion je Variable */
     private array $failures = [];
 
+    /** @var list<array{at: int, id: int, text: string}> Fehlschläge, die erst nach einer gemessenen Zeit feststehen */
+    private array $pendingFailures = [];
+
     /**
      * Fahrten von Aktoren, die nur beim Losfahren und am Ende melden (Homematic, Mitschnitt nuc
      * 08.10.2026), und der Laufstatus blockierender Aktoren (Velux).
@@ -143,6 +146,12 @@ final class FakeBackend implements DeviceBackend
                 // Die Befehlsvariable selbst behält ihren Wert, solange die Folge sie nicht setzt.
                 foreach ($v['reaktion'][(string)$value] ?? [] as [$ms, $id, $reaction]) {
                     $this->pending[] = ['at' => $this->slept + (int)$ms, 'id' => (int)$id, 'value' => $reaction];
+                }
+                // Sonos-Modul (nuc 13.11.2026): Die Variable zeigt den Zielwert schon, der Fehlschlag der Aktion
+                // steht erst danach fest: „fehlschlag“ je Befehlswert als [ms, Text].
+                if (isset($v['fehlschlag'][(string)$value])) {
+                    [$ms, $text] = $v['fehlschlag'][(string)$value];
+                    $this->pendingFailures[] = ['at' => $this->slept + (int)$ms, 'id' => $variableId, 'text' => (string)$text];
                 }
                 break;
             case 'startEnde':
@@ -389,6 +398,12 @@ final class FakeBackend implements DeviceBackend
     public function sleep(int $milliseconds): void
     {
         $this->slept += $milliseconds;
+        foreach ($this->pendingFailures as $key => $f) {
+            if ($f['at'] <= $this->slept) {
+                $this->failures[$f['id']] = $f['text'];
+                unset($this->pendingFailures[$key]);
+            }
+        }
         foreach ($this->pending as $key => $p) {
             if ($p['at'] <= $this->slept) {
                 $this->write($p['id'], $p['value']);

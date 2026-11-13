@@ -1,0 +1,22 @@
+{
+    "_quelle": "13.11.2026 gegen 14:15, nuc, Sonos Wintergarten über das Sonos-Modul #13088, Warteschlange leer (Status 1 Stop, Track 0, kein Titel). Play (2) wie Home Agent in einem eigenen Skript (IPS_RunScriptTextEx mit RequestAction) gesendet, dreimal, alle 5 ms mitgelesen. Das Sonos-Modul setzt den Status sofort auf 2 (nach 24, 18 und 12 ms), der SOAP-Aufruf scheitert danach mit UPnP-Fehler 701, RequestAction liefert false (Skript fertig nach 40, 31 und 47 ms), der Status fällt mit der nächsten Abfrage des Moduls auf 1 zurück (nach 4014, 2089 und 151 ms). Die Fixture nimmt je Schritt den spätesten Wert. Angenommen, nicht gemessen: Der Weg vom Skript über IPS_RequestAction(ActionFailed) bis in den Buffer des Moduls ist in den 47 ms nicht enthalten. Der Fehlertext ist der mitgeschnittene, nach 300 Zeichen abgeschnitten wie im Modul (FAILURE_TEXT_LENGTH).",
+    "variablen": {
+        "27341": {
+            "name": "Wintergarten: Status",
+            "wert": 1,
+            "formatiert": "Stop",
+            "aktion": true,
+            "bereich": {"min": 0, "max": 4, "profil": "~PlaybackPreviousNext"},
+            "verhalten": "reaktion",
+            "reaktion": {"2": [[24, 27341, 2], [4014, 27341, 1]]},
+            "fehlschlag": {"2": [47, "Fatal error: Uncaught Exception: Error during Soap Call: UPnPError s:Client 701 (ERROR_AV_UPNP_AVT_INVALID_TRANSITION) in C:\\ProgramData\\Symcon\\modules\\Sonos\\libs\\sonosAccess.php:812 Stack trace: #0 C:\\ProgramData\\Symcon\\modules\\Sonos\\libs\\sonosAccess.php(476): SonosAccess->processSoapCall('/MediaR"]}
+        },
+        "27915": {"name": "Wintergarten: Lautstärke", "wert": 20, "formatiert": "20 %", "aktion": true, "bereich": {"min": 0, "max": 100, "profil": "~Volume"}},
+        "28490": {"name": "Wintergarten: Mute", "wert": false, "formatiert": "Aus", "aktion": true},
+        "31197": {"name": "Wintergarten: Titel", "wert": "", "formatiert": "...", "aktion": false},
+        "35899": {"name": "Wintergarten: Künstler", "wert": "", "formatiert": "...", "aktion": false}
+    },
+    "geraete": [
+        {"Room": "Wintergarten", "Name": "Sonos", "Aliases": "", "Type": "media", "Invert": false, "PlaybackVariableID": 27341, "VolumeVariableID": 27915, "MuteVariableID": 28490, "TitleVariableID": 31197, "ArtistVariableID": 35899}
+    ]
+}

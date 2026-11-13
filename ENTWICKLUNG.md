@@ -300,6 +300,16 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   Sonos-Modul meldet „Weiter“ teils nach 0,2 s (Status -1), teils erst nach 4,5 s mit dem neuen Titel;
   über das HomeAssistant-Modul kam „paused“ in 3 s nie. Dann bleibt es bei „noch nicht bestätigt“, die
   Wartezeit bleibt 2 s. `stop` teilt sich in Rollläden (`runStop`) und Mediaplayer.
+  Ein gemeldeter Fehlschlag geht der Variable vor (B110, 13.11.2026): Im Vergleichslauf über HA Assist meldete
+  `set_state` bei „Spiel die Musik im Wintergarten weiter“ dreimal „spielt“, das Sonos blieb still. Die Warteschlange
+  war leer, das Sonos lehnte mit UPnP-Fehler 701 ab. Das Sonos-Modul schreibt den Zielwert aber schon beim Senden in die
+  Variable (gemessen nach 12 bis 24 ms), der Fehlschlag der Aktion stand nach 31 bis 47 ms fest, und die Variable fiel
+  erst mit der nächsten Abfrage des Moduls zurück (nach 0,15 bis 4 s). Das Werkzeug sah den Zielwert, hörte auf zu
+  warten und sah den Fehlschlag nicht mehr an; er stand nur im Log. Jetzt zählt die Variable frühestens
+  `PLAYBACK_SETTLE_MS` (200 ms) nach dem Senden, und ein Fehlschlag gilt auch dann, wenn sie den Zielwert zeigt. Kostet
+  am Sonos-Modul rund 0,1 s je Befehl, über das HomeAssistant-Modul nichts (der Statustext kommt später). Eine Abfrage
+  gleich danach kann noch „spielt“ zeigen, bis das Sonos-Modul die Variable berichtigt. Nur für Wiedergabebefehle:
+  Bei den übrigen Aktionen ist kein Fall gemessen, in dem ein Modul trotz gemeldetem Fehlschlag den Zielwert hält.
   `volume` (Prozent), `volume_change` (Punkte, gekappt bei 0 und 100) und `mute` stehen je allein
   (`runVolume`, `runMute`, gemeinsames Warten in `confirmJobs`). `volume` oder `volume_change` dürfen mit `play`,
   `pause` oder `stop` kommen (erst Lautstärke, dann Befehl, `combineResults` über den Status je Gerät aus

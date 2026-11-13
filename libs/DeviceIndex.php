@@ -264,6 +264,13 @@ final class DeviceIndex
     /** So lange wartet ein schaltendes Werkzeug höchstens auf die Rückmeldung der Geräte. */
     private const CONFIRM_TIMEOUT_MS = 2000;
 
+    /**
+     * So lange nach dem Senden wartet ein Wiedergabebefehl mindestens auf einen Fehlschlag, bevor die Variable als Beleg
+     * zählt (B110): Das Sonos-Modul setzt sie schon beim Senden (nach 12 bis 24 ms), die Ablehnung des Geräts stand
+     * nach 31 bis 47 ms fest (nuc 13.11.2026).
+     */
+    private const PLAYBACK_SETTLE_MS = 200;
+
     /** So lange setzt „play“ ohne Raum die per Werkzeug pausierten Mediaplayer fort (wie Home Assistant). */
     public const PAUSE_MEMORY_MS = 3600000;
 
@@ -4802,6 +4809,10 @@ final class DeviceIndex
      * nuc (Sonos Wintergarten, 10.10.2026): Sonos-Modul nach 0,1 s, HomeAssistant-Modul nach 0,9 s
      * (Statustext) bzw. 1,6 s (neuer Titel).
      *
+     * Ein gemeldeter Fehlschlag geht der Variable vor, und sie zählt frühestens PLAYBACK_SETTLE_MS nach dem Senden
+     * (B110): Das Sonos-Modul schreibt den Zielwert schon beim Senden. Lehnt das Gerät ab (leere Warteschlange,
+     * UPnP-Fehler 701), stand „Play“ bis zu 4 s in der Variable, und das Werkzeug meldete „spielt“.
+     *
      * @param array<int, array<string, mixed>> $entries
      * @return array{lines: array<int, string>, total: int, reached: int, pending: int, failed: int}
      */
@@ -4814,7 +4825,7 @@ final class DeviceIndex
         $jobs = [];
         foreach ($entries as $index => $entry) {
             $variable = $entry['roles']['playback'];
-            $job = ['entry' => $entry, 'variable' => $variable, 'note' => null, 'done' => false, 'before' => []];
+            $job = ['entry' => $entry, 'variable' => $variable, 'note' => null, 'done' => false, 'before' => [], 'sent' => 0];
             $current = $this->backend->read($variable);
             $profile = (string)($this->backend->range($variable)['profile'] ?? '');
             $codes = self::PLAYBACK_CODES[$profile] ?? null;
@@ -4831,6 +4842,7 @@ final class DeviceIndex
                 $job['done'] = true;
             } else {
                 $job['before'] = $snapshot($entry);
+                $job['sent'] = $this->backend->now();
                 $error = $this->backend->request($variable, $codes[$command]);
                 if ($error !== null) {
                     $job['note'] = sprintf($this->t('failed: %s'), $error);
@@ -4850,7 +4862,10 @@ final class DeviceIndex
             : $this->playbackPhase($job['entry']) === $command;
         $this->waitUntil(function () use ($jobs, $reached): bool {
             foreach ($jobs as $job) {
-                if ($job['note'] === null && !$reached($job) && $this->backend->failure($job['variable']) === null) {
+                if ($job['note'] !== null || $this->backend->failure($job['variable']) !== null) {
+                    continue;
+                }
+                if (!$reached($job) || $this->backend->now() - $job['sent'] < self::PLAYBACK_SETTLE_MS) {
                     return false;
                 }
             }
@@ -4860,8 +4875,9 @@ final class DeviceIndex
         $result = ['lines' => [], 'status' => [], 'total' => count($jobs), 'reached' => 0, 'pending' => 0, 'failed' => 0];
         foreach ($jobs as $index => $job) {
             if ($job['note'] === null) {
-                $confirmed = $reached($job);
-                $error = $confirmed ? null : $this->backend->failure($job['variable']);
+                // Erst der Fehlschlag, dann die Variable: Sie kann den Zielwert zeigen, obwohl das Gerät abgelehnt hat.
+                $error = $this->backend->failure($job['variable']);
+                $confirmed = $error === null && $reached($job);
                 if ($error !== null) {
                     $job['note'] = sprintf($this->t('failed: %s'), $error);
                     $status = 'failed';
