@@ -646,7 +646,9 @@ foreach ([
     'The fields of each type (volume, mode, fan and others) are named by HAGT_UIDeviceForm(int $InstanceID, string $Type, string $Room, int $MeteredBy); \'\' and 0 are enough for Room and MeteredBy.'                           => 'Die Felder je Typ (Lautstärke, Modus, Lüfter und andere) nennt HAGT_UIDeviceForm(int $InstanceID, string $Type, string $Room, int $MeteredBy); für Room und MeteredBy genügen \'\' und 0.',
     // Prompttest an der Testbox 22.10.2026: volle Signatur, Feldnamen als Schlüssel, Abgrenzung der Messwerte, Einheit der Wärme
     'HAGT_UISourceForm(int $InstanceID, string $Type, int $PowerOut) names the fields of each type; 0 is enough for PowerOut.' => 'Die Felder je Art nennt HAGT_UISourceForm(int $InstanceID, string $Type, int $PowerOut); für PowerOut genügt 0.',
-    'The name of each field is its key in the rows of Devices (for example PowerVariableID, EnergyVariableID, MeteredBy). air_quality is for CO2, VOC, particulate matter and air quality indices, measurement for every other value such as brightness or pressure.' => 'Der Name jedes Felds ist sein Schlüssel in den Zeilen von Devices (etwa PowerVariableID, EnergyVariableID, MeteredBy). air_quality ist für CO2, VOC, Feinstaub und Luftqualitätsindizes, measurement für alle anderen Werte wie Helligkeit oder Luftdruck.',
+    'The name of each field is its key in the rows of Devices (for example PowerVariableID, EnergyVariableID, MeteredBy).' => 'Der Name jedes Felds ist sein Schlüssel in den Zeilen von Devices (etwa PowerVariableID, EnergyVariableID, MeteredBy).',
+    // seit 13.11.2026 mit dem Raumklima davor und der Temperatur von Geräten und Anlagen dahinter
+    'air_quality is for CO2, VOC, particulate matter and air quality indices, measurement for every other value such as brightness or pressure, and for the temperature' => 'air_quality ist für CO2, VOC, Feinstaub und Luftqualitätsindizes, measurement für alle anderen Werte wie Helligkeit oder Luftdruck und für die Temperatur',
     // Prompttest am nuc 22.10.2026: Pflichtfelder je Typ, fehlende Schlüssel, Aliase, Einheiten, Melder mit Zahl
     'Each type needs at least one of these fields: light StateVariableID or LevelVariableID, blind LevelVariableID, window StateVariableID or LevelVariableID, thermostat SetpointVariableID, appliance StateVariableID or PowerVariableID, media StateVariableID, PlaybackVariableID or VolumeVariableID, humidifier StateVariableID or SetpointVariableID, fan StateVariableID or FanVariableID, meter EnergyVariableID, camera ImageMediaID, all other types StateVariableID; an ID of 0 or 1 means not set. A missing key counts as 0; the columns ending in Label are filled by the form, a script may leave them out.' => 'Jeder Typ braucht mindestens eines dieser Felder: light StateVariableID oder LevelVariableID, blind LevelVariableID, window StateVariableID oder LevelVariableID, thermostat SetpointVariableID, appliance StateVariableID oder PowerVariableID, media StateVariableID, PlaybackVariableID oder VolumeVariableID, humidifier StateVariableID oder SetpointVariableID, fan StateVariableID oder FanVariableID, meter EnergyVariableID, camera ImageMediaID, alle anderen Typen StateVariableID; eine ID von 0 oder 1 bedeutet nicht gesetzt. Ein fehlender Schlüssel zählt als 0; die Spalten, die auf Label enden, füllt das Formular, ein Skript kann sie weglassen.',
     'Room names are the words the user speaks (Küche, Bad oben), without technical additions. Each room name may appear only once; an alias may belong to several rooms, room= then means all of them.' => 'Raumnamen sind die Wörter, die der Anwender spricht (Küche, Bad oben), ohne technische Zusätze. Jeder Raumname darf nur einmal vorkommen; ein Alias darf zu mehreren Räumen gehören, room= meint dann alle.',
@@ -709,11 +711,22 @@ foreach (['EINRICHTUNG.md', 'EINRICHTUNG.en.md'] as $datei) {
     // Probelauf am nuc 12.11.2026 (frischer Agent, nur der Auftrag): Speicher war doppelt geregelt, „die archivierte“
     // entschied nie (alle archiviert), ReadOnly des Speichers, Betriebsart oder Status, Raum und eigene Fühler blieben offen
     array_push($muster, ...($datei === 'EINRICHTUNG.md'
-        ? ['ohne Solltemperatur als temperature', 'wähl eine und nenne die anderen in der Tabelle', 'als thermostat mit ReadOnly',
+        ? ['wähl eine und nenne die anderen in der Tabelle', 'als thermostat mit ReadOnly',
             'je Heizkreis und fürs Warmwasser die Betriebsart', 'Raum ist der des Wärmeerzeugers', 'Eigene Fühler an Vor- und Rücklauf']
-        : ['without a target temperature as temperature', 'choose one and name the others in the table', 'as thermostat with ReadOnly',
+        : ['choose one and name the others in the table', 'as thermostat with ReadOnly',
             'for each heating circuit and for hot water the operating mode', 'The room is that of the heat generator',
             'Separate sensors on flow and return']));
+    // Blindtest am nuc 12.11.2026: Der Auftrag legte Vorlauf, Strangfühler und Kühlgeräte als temperature in den Keller,
+    // „Wie warm ist es im Keller?“ lieferte danach 17 Zeilen. temperature und humidity sind das Klima des Raums, die
+    // Temperatur eines Geräts oder einer Anlage ist measurement (Burkhard 13.11.2026).
+    array_push($muster, ...($datei === 'EINRICHTUNG.md'
+        ? ['je Raum Temperatur und Luftfeuchte als temperature und humidity', 'Die Temperatur eines Geräts oder einer Anlage',
+            'alle als measurement', 'ohne Solltemperatur als measurement', 'schlag die Änderung vor']
+        : ['per room temperature and humidity as temperature and humidity', 'The temperature of a device or system',
+            'all as measurement', 'without a target temperature as measurement', 'propose the change']));
+    foreach ($datei === 'EINRICHTUNG.md' ? ['Vorlauf-Soll als temperature', 'ohne Solltemperatur als temperature'] : ['flow setpoint as temperature', 'without a target temperature as temperature'] as $nicht) {
+        pruefe(!str_contains((string)preg_replace('/\s+/', ' ', $auftrag), $nicht), $datei . ' trägt keine technische Temperatur mehr als temperature ein: ' . $nicht);
+    }
     // Probelauf 12.11.2026: Wie man „archiviert“ feststellt, stand nirgends (Index der Modulfunktionen, Modul-ID des
     // Archivs, Aggregationstyp laut Doku AC_GetAggregationType); über JSON-RPC kam das Formular englisch
     array_push($muster, 'function-index-modules.md', '{43192F0B-135B-4CE7-A0A7-1475603F3060}', 'Hint for scripts and AI assistants', ...($datei === 'EINRICHTUNG.md'
@@ -4184,5 +4197,54 @@ pruefe(str_contains($zLog, ' | Mit Bild | camera_image | ') && str_contains($zLo
 // Die Kamerakarte in show_devices hat ein eigenes Symbol
 $kartenSeite = (string)file_get_contents(dirname(__DIR__) . '/HomeAgent/devices.html');
 pruefe(preg_match('/\n    camera: "M[^"]+",?\n/', $kartenSeite) === 1, 'die Kartenseite kennt ein Symbol für die Kamera');
+
+// Raumklima (Stufe 1, Burkhard 13.11.2026): temperature und humidity sind das Klima des Raums. Das sagen Hinweistext und
+// Typauswahl, und der Selbsttest nennt einen Raum mit mehr als drei verschiedenen Temperaturen. Die Zählung selbst prüft
+// check-raumklima.php am Mitschnitt des nuc; hier stehen vier Platzhaltervariablen des Stubs im Raum „Keller“.
+$formular = json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/form.json'), true);
+$uebersetzt = json_decode((string)file_get_contents(dirname(__DIR__) . '/HomeAgent/locale.json'), true)['translations']['de'];
+$klimaHinweis = '';
+foreach (flach($formular['elements']) as $element) {
+    if (str_starts_with((string)($element['caption'] ?? ''), 'Hint for scripts and AI assistants')) {
+        $klimaHinweis = (string)$element['caption'];
+    }
+}
+$klimaHinweisDe = (string)($uebersetzt[$klimaHinweis] ?? '');
+foreach ([
+    'temperature and humidity mean the climate of a room' => 'temperature und humidity meinen das Klima eines Raums',
+    'and for the temperature of a device or system (flow, return, storage tank, freezer)' => 'und für die Temperatur eines Geräts oder einer Anlage (Vorlauf, Rücklauf, Speicher, Kühltruhe)',
+] as $en => $de) {
+    pruefe(str_contains($klimaHinweis, $en), 'Hinweistext nennt: ' . $en);
+    pruefe(str_contains($klimaHinweisDe, $de), 'Hinweistext deutsch nennt: ' . $de);
+}
+$typNamen = [];
+// die Typauswahl steckt im Bearbeitungsdialog einer Listenspalte, deshalb durch das ganze Formular
+array_walk_recursive($formular, static function (mixed $wert, int|string $schluessel) use (&$typNamen, &$zuletzt): void {
+    if ($schluessel === 'caption') {
+        $zuletzt = $wert;
+    } elseif ($schluessel === 'value' && in_array($wert, ['temperature', 'humidity'], true)) {
+        $typNamen[$wert] = $zuletzt;
+    }
+});
+pruefe($typNamen === ['temperature' => 'Room temperature', 'humidity' => 'Room humidity'], 'die Typauswahl nennt beide Typen als Werte des Raums: ' . json_encode($typNamen));
+pruefe(($uebersetzt['Room temperature'] ?? '') === 'Raumtemperatur' && ($uebersetzt['Room humidity'] ?? '') === 'Raumluftfeuchte', 'deutsch Raumtemperatur und Raumluftfeuchte');
+$fuehler = [variable(VARIABLETYPE_FLOAT, 18.0), variable(VARIABLETYPE_FLOAT, 33.0), variable(VARIABLETYPE_FLOAT, 30.0), variable(VARIABLETYPE_FLOAT, -21.0)];
+$klimaZeilen = [];
+foreach (['Temperatur', 'Vorlauf', 'Rücklauf', 'Temperatur Kühltruhe'] as $nr => $name) {
+    $klimaZeilen[] = ['Room' => 'Keller', 'Name' => $name, 'Aliases' => '', 'Type' => 'temperature', 'StateVariableID' => $fuehler[$nr], 'LevelVariableID' => 0, 'Invert' => false];
+}
+IPS_SetProperty($iid, 'Devices', json_encode($klimaZeilen));
+IPS_ApplyChanges($iid);
+$klimaTest = $m->RunSelfTest();
+$klimaSatz = 'Note: room "Keller" has 4 temperatures; the type temperature means the climate of the room, the values of devices and systems (flow, storage tank, freezer) belong to the type measurement';
+pruefe(str_contains($klimaTest, $klimaSatz), 'der Selbsttest nennt den Raum mit vier Temperaturen: ' . $klimaTest);
+pruefe(($uebersetzt[str_replace(['"Keller"', ' 4 '], ['"%s"', ' %d '], $klimaSatz)] ?? '') === 'Hinweis: Raum „%s“ hat %d Temperaturen; der Typ Raumtemperatur meint das Klima des Raums, die Werte von Geräten und Anlagen (Vorlauf, Speicher, Kühltruhe) gehören zum Typ sonstiger Messwert', 'der Hinweis ist übersetzt');
+pruefe(array_key_exists('Note: room "%s" has %d humidity values; the type humidity means the climate of the room, other humidity values belong to the type measurement', $uebersetzt), 'der Hinweis zur Luftfeuchte ist übersetzt');
+foreach ([1, 2, 3] as $nr) {
+    $klimaZeilen[$nr]['Type'] = 'measurement';
+}
+IPS_SetProperty($iid, 'Devices', json_encode($klimaZeilen));
+IPS_ApplyChanges($iid);
+pruefe(!str_contains($m->RunSelfTest(), 'temperatures;'), 'als Messwert eingetragen entfällt der Hinweis: ' . $m->RunSelfTest());
 
 ende('Modul');

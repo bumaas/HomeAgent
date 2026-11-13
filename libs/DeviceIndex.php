@@ -1671,6 +1671,47 @@ final class DeviceIndex
         return $found;
     }
 
+    /** So viele verschiedene Temperaturen oder Feuchten hat ein Raum höchstens als Klima; darüber fragt der Selbsttest nach. */
+    public const ROOM_CLIMATE_MAX = 3;
+
+    /**
+     * Räume mit mehr Temperaturen oder Feuchten, als ein Raum als Klima hat (Selbsttest). Die Typen temperature und
+     * humidity meinen das Klima des Raums; die Temperatur eines Geräts oder einer Anlage (Vorlauf, Speicher, Kühltruhe)
+     * gehört zu measurement. Gezählt wird, was find() bei type=temperature liefert, also auch die Ist-Temperatur eines
+     * Thermostats, jede Variable einmal.
+     *
+     * @param list<array<string, mixed>> $rows Zeilen der Property Devices
+     * @return list<array{room: string, type: string, count: int}> Raum in der ersten Schreibweise
+     */
+    public static function crowdedClimate(array $rows): array
+    {
+        $variables = [];
+        $names = [];
+        foreach ($rows as $row) {
+            $room = self::normalize((string)($row['Room'] ?? ''));
+            $state = self::rolesOf($row)['state'] ?? 0;
+            $kind = match ((string)($row['Type'] ?? '')) {
+                'temperature', 'thermostat' => 'temperature',
+                'humidity'                  => 'humidity',
+                default                     => null,
+            };
+            if ($room === '' || $state <= 0 || $kind === null) {
+                continue;
+            }
+            $names[$room] ??= trim((string)$row['Room']);
+            $variables[$room][$kind][$state] = true;
+        }
+        $found = [];
+        foreach ($variables as $room => $kinds) {
+            foreach ($kinds as $kind => $ids) {
+                if (count($ids) > self::ROOM_CLIMATE_MAX) {
+                    $found[] = ['room' => $names[$room], 'type' => $kind, 'count' => count($ids)];
+                }
+            }
+        }
+        return $found;
+    }
+
     /**
      * Stufe der Punkte bzw. Balken eines Diagramms: heute und gestern je Stunde, Jahre je Monat, sonst je Tag; ein
      * freier Zeitraum ($period leer) nach seiner Länge (bis 2 Tage je Stunde, bis 100 Tage je Tag).

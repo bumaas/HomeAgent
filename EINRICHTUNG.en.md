@@ -140,9 +140,12 @@ How to proceed:
    release list with speakable names, unique per room.
    Add:
    - Lights, sockets, blinds, windows and doors, thermostats, media players, heating and ventilation
-     (heat pump, hot water, air conditioners, ventilation systems) and measurements such as
-     temperature and humidity. For everything that should switch, only variables with an action
-     (HasAction(<VariableID>) returns true); measurements without an action are fine.
+     (heat pump, hot water, air conditioners, ventilation systems) and the climate of the rooms,
+     that is per room temperature and humidity as temperature and humidity. The temperature of a
+     device or system (freezer, heating circuit, tank) is measurement; if one of these is already
+     in the instance as temperature, propose the change. For everything that should switch, only
+     variables with an action (HasAction(<VariableID>) returns true); measurements without an
+     action are fine.
    - Detectors for querying: water detectors as water_leak, smoke detectors as measurement.
    - Cameras as type camera if there is a media object of type image with a still image for them
      (IPS_GetMediaListByType(1), for example below an Image Grabber); that is ImageMediaID. Leave out
@@ -158,12 +161,12 @@ How to proceed:
      otherwise one. If the heat only counts the environmental yield (Vaillant over ebusd:
      "Energieertrag", "Ertragsleistung"), set HeatIsYield to true.
    - Measurements of the heating system where the controller provides them (eBUS, ModBus, cloud),
-     with the names people say: flow, return and flow setpoint as temperature, heating curve,
-     heating limit, system pressure, modulation and compressor starts as measurement, plus for each
+     with the names people say, all as measurement: flow, return, flow setpoint, heating curve,
+     heating limit, system pressure, modulation and compressor starts, plus for each
      heating circuit and for hot water the operating mode and one status of the heat generator (the
      variable with texts, not the one with numbers). A hot water tank with actual and target
      temperature as thermostat with ReadOnly, even if it is already in the instance without
-     ReadOnly; without a target temperature as temperature. The room is that of the heat generator
+     ReadOnly; without a target temperature as measurement. The room is that of the heat generator
      if it is already in the instance, otherwise ask me once for all of them. If a value exists
      more than once, take the archived variable; if several are archived, choose one and name the
      others in the table. Leave out: variables that have not been updated for days

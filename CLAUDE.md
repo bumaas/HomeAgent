@@ -168,6 +168,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   (0 zu, 100 offen). **Stopp** über Stoppvariable (Wahrheitswert oder Eintrag „Stop“), sonst `STOP_MODULES`.
 - **Fenster mit Antrieb** tragen in `get_state` „with drive“ (nicht bei „Nur abfragen“), bei gemischten Treffern zählt
   eine Schlusszeile sie.
+- **Raumklima:** `temperature` und `humidity` meinen das Klima des Raums, die Temperatur eines Geräts oder einer Anlage
+  (Vorlauf, Speicher, Kühltruhe) ist `measurement`, weil `type=temperature` sonst jeden Fühler des Raums liefert. Der
+  Selbsttest nennt Räume über `ROOM_CLIMATE_MAX` verschiedenen Werten (`crowdedClimate`). Test `check-raumklima.php`.
 - **Licht:** Prozent rechnet das Modul selbst. Farbtemperatur in Kelvin, ein Bereich bis 1000 ist Mired; Schrittweite
   der Darstellung zählt nicht, außerhalb aufs nächste Ende, ein ausgeschaltetes Licht wird eingeschaltet. Farbe nur als
   Ganzzahl aus `COLORS` (Farbe als Text ist nicht dokumentiert). Ein Licht ohne Schaltzustand ist an, solange die Farbe

@@ -195,7 +195,7 @@ Name, Alias, Typ und den Namen der Variablen.
 |---|---|
 | Raum | Ein Raum aus der Raumliste oder „-“. In Anfragen sind Groß- und Kleinschreibung und Umlaute egal („Küche“ = „kueche“). |
 | Name, Aliase | Der Name und weitere Bezeichnungen, durch Komma getrennt. Ein Teilwort genügt beim Suchen. Wird ein Gerät über einen Alias gefunden, steht er in der Antwort in Klammern hinter dem Namen. |
-| Typ | Licht, Schalter, Steckdose, Gerät, Rollladen, Thermostat, Mediaplayer, Luftbe-/entfeuchter, Lüftung/Ventilator, Fenster, Tür, Anwesenheit, Wasserleck, Temperatur, Luftfeuchte, Luftqualität, sonstiger Messwert, Zähler oder Kamera. |
+| Typ | Licht, Schalter, Steckdose, Gerät, Rollladen, Thermostat, Mediaplayer, Luftbe-/entfeuchter, Lüftung/Ventilator, Fenster, Tür, Anwesenheit, Wasserleck, Raumtemperatur, Raumluftfeuchte, Luftqualität, sonstiger Messwert, Zähler oder Kamera. |
 | Zustand oder Messwert | Die Variable für an/aus, offen/zu oder erkannt, bei Messwerten der Wert selbst. Beim Thermostat die Ist-Temperatur. |
 | Sollwert | Die Variable mit der Solltemperatur. Sie braucht eine Aktion. Bereich und Schrittweite liest das Modul aus der Darstellung oder dem Profil, ohne Schrittweite gilt der Abstand der Einträge (etwa 15,0, 15,5, 16,0). Ein Wert am Rand mit eigenem Text zählt nicht zum Bereich, ob der Text aus einem Eintrag des Profils oder aus einem Intervall der Darstellung mit festem Wert kommt, etwa „On“ bei 30,5. Der Selbsttest zeigt den Bereich je Thermostat. |
 | Ventilstellung, 2, 3 | Wahlweise bis zu drei Ventile der Heizkörper, im Dialog nebeneinander. Gezählt wird in Prozent des Bereichs der Variable. Bei Homematic IP steht die Stellung in `LEVEL`, nicht in `VALVE_STATE` (das ist der Status der Ventiladaption); ein Stellantrieb HM-CC-VD ist ein eigenes Gerät neben dem HM-CC-TC. |
@@ -232,9 +232,14 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 | Fenster | Kontakt, Antrieb oder beides, zum Antrieb wahlweise Fahrstatus und Stopp |
 | Tür | Kontakt |
 | Anwesenheit, Wasserleck | Melder |
-| Temperatur, Luftfeuchte, Luftqualität, sonstiger Messwert | Messwert |
+| Raumtemperatur, Raumluftfeuchte, Luftqualität, sonstiger Messwert | Messwert |
 | Zähler | Zähler, wahlweise Leistung |
 | Kamera | Bild |
+
+Raumtemperatur und Raumluftfeuchte sind das Klima des Raums, also das, was der Assistent auf „Wie warm ist es im
+Keller?“ nennt. Die Temperatur eines Geräts oder einer Anlage, etwa Vorlauf, Warmwasserspeicher oder Kühltruhe,
+tragen Sie als sonstigen Messwert ein und fragen sie mit ihrem Namen ab. Stehen in einem Raum mehr als drei
+verschiedene Temperaturen, weist der Selbsttest darauf hin.
 
 Einen eigenen Typ für Rauchmelder gibt es nicht. Tragen Sie sie als sonstigen Messwert ein, schalten kann der
 Assistent einen Messwert ohnehin nicht.

@@ -482,6 +482,13 @@ class HomeAgent extends IPSModuleStrict
         foreach (DeviceIndex::yieldWithoutElectricity($list) as $index) {
             $lines[] = sprintf($this->Translate('Note: %s: the heat is the environmental yield, but without energy meter and power there is no electricity to add'), $this->entryLabel($list[$index]));
         }
+        // Raumklima: temperature und humidity meinen das Klima des Raums. Stehen viele davon in einem Raum, sind es Werte
+        // von Geräten und Anlagen, die als measurement gemeint sind (Blindtest nuc 12.11.2026: 17 Zeilen im Keller).
+        foreach (DeviceIndex::crowdedClimate($list) as $crowd) {
+            $lines[] = $crowd['type'] === 'humidity'
+                ? sprintf($this->Translate('Note: room "%s" has %d humidity values; the type humidity means the climate of the room, other humidity values belong to the type measurement'), $crowd['room'], $crowd['count'])
+                : sprintf($this->Translate('Note: room "%s" has %d temperatures; the type temperature means the climate of the room, the values of devices and systems (flow, storage tank, freezer) belong to the type measurement'), $crowd['room'], $crowd['count']);
+        }
         // Energiebilanz: Jeder Zähler muss als Zähler archiviert sein, sonst gibt es keinen Hausverbrauch, und jede
         // Leistung eine Leistung; die Hinweise nennen die Quelle mit Namen.
         foreach ($this->usableSources() as $source) {

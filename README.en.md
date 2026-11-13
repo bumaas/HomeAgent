@@ -188,7 +188,7 @@ name, alias, type and the names of the variables.
 |---|---|
 | Room | A room from the room list or "-". In requests case and umlauts do not matter ("Küche" = "kueche"). |
 | Name, aliases | The name and further names, separated by commas. A partial word is enough when searching. If a device is found through an alias, the answer shows it in brackets after the name. |
-| Type | Light, switch, socket, appliance, blind, thermostat, media player, humidifier, ventilation/fan, window, door, presence, water leak, temperature, humidity, air quality, other measured value, meter or camera. |
+| Type | Light, switch, socket, appliance, blind, thermostat, media player, humidifier, ventilation/fan, window, door, presence, water leak, room temperature, room humidity, air quality, other measured value, meter or camera. |
 | State or measured value | The variable for on/off, open/closed or detected, for measured values the value itself. For a thermostat the current temperature. |
 | Setpoint | The variable with the target temperature. It needs an action. The module reads range and step size from the presentation or the profile; without a step size the spacing of the entries counts (for example 15.0, 15.5, 16.0). A value at the edge with a text of its own is not part of the range, whether the text comes from a profile association or from a presentation interval with a fixed value, for example "On" at 30.5. The self-test shows the range for each thermostat. |
 | Valve position, 2, 3 | Optional: up to three valves of the radiators, side by side in the dialog. They count in percent of the range of the variable. On Homematic IP the position is in `LEVEL`, not in `VALVE_STATE` (that is the status of the valve adaption); an HM-CC-VD actuator is a device of its own next to the HM-CC-TC. |
@@ -225,9 +225,14 @@ Which variables a device needs depends on its type:
 | Window | Contact, drive or both, optionally moving state and stop for the drive |
 | Door | Contact |
 | Presence, water leak | Detector |
-| Temperature, humidity, air quality, other measured value | Measured value |
+| Room temperature, room humidity, air quality, other measured value | Measured value |
 | Meter | Energy meter, optionally power |
 | Camera | Image |
+
+Room temperature and room humidity are the climate of the room, that is what the assistant names when asked "How
+warm is it in the basement?". Enter the temperature of a device or system, such as flow, hot water tank or freezer,
+as other measured value and ask for it by its name. If a room holds more than three different temperatures, the
+self-test points it out.
 
 There is no type of its own for smoke detectors. Enter them as other measured value, the assistant cannot switch
 a measured value anyway.

@@ -394,6 +394,23 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   aus den Argumenten aus (sechs Aufrufe statt drei). Seitdem beginnt die Seite gleich mit den Argumenten, ein laufendes
   Laden wird nicht wiederholt, und die Stücke nach dem ersten kommen gleichzeitig. Scheitert das Laden aus den
   Argumenten (keine oder mehrere Kameras), bleibt die Ansicht leer, die Absage steht im Text der Antwort.
+- **Raumklima** (13.11.2026, erste von drei Stufen): Anlass war der Lauf des Einrichtungsauftrags an einer Anlage mit
+  225 Geräten am 12.11.2026. Der Auftrag aus den Builds 283 bis 285 legte elf Messwerte der Heizung, acht Fühler an den
+  Heizsträngen und die Innentemperaturen von drei Kühlgeräten als `temperature` in den Raum des Wärmeerzeugers. Die
+  Frage nach der Temperatur im Keller (`room=Keller, type=temperature`) lieferte danach 17 Zeilen statt 3, darunter
+  33 °C am Vorlauf und −21 °C in der Kühltruhe. Im Code meinte `temperature` schon vorher das Raumklima: `find()` nimmt
+  bei `type=temperature` die Ist-Temperatur der Thermostate mit, und die Karten ordnen den Typ unter „climate“ ein,
+  `measurement` unter „measure“. Die Regel stand nur nirgends. Verworfen wurde ein Haken „technischer Messwert“ am
+  Gerät: Er wäre eine Ausnahme an einem Filter für zwei Typen gewesen, und dasselbe hätte sich auf zwei Arten eintragen
+  lassen (`temperature` mit Haken oder `measurement`). Home Assistant benennt am Bereich je einen Temperatur- und
+  Feuchtesensor, der für ihn steht; das ist als zweite Stufe vorgesehen (Variablen an der Raumliste, ein Raum ohne
+  Angabe antwortet wie bisher), als dritte die Innentemperatur als Fähigkeit eines Geräts. Diese Stufe ändert keine
+  Antwort: Hinweistext, Typauswahl („Raumtemperatur“, „Raumluftfeuchte“), README und Auftrag sagen die Bedeutung, und
+  der Selbsttest nennt einen Raum mit mehr als drei verschiedenen Temperaturen oder Feuchten. Die Grenze drei kommt aus
+  der Anlage: Ein Raum mit Raumfühler, Fühler am Heizkörper und Thermostat hat zwei verschiedene Variablen, ein Raum
+  mit zwei Thermostaten und einem Fühler drei. Auf eine Prüfung des Werts (etwa unter −10 °C) wurde verzichtet, ein
+  Außenfühler im Winter hätte sie ausgelöst. Offen bis zur zweiten Stufe: Ein Warmwasserspeicher als `thermostat`
+  erscheint weiter unter `type=temperature` seines Raums.
 
 ## Energie
 

@@ -142,9 +142,11 @@ So gehst du vor:
    Freigabeliste vor, mit sprechbaren Namen, je Raum eindeutig.
    Aufnehmen:
    - Lichter, Steckdosen, Rollläden, Fenster und Türen, Thermostate, Mediaplayer, Heizung und Lüftung
-     (Wärmepumpe, Warmwasser, Klimageräte, Lüftungsanlagen) und Messwerte wie Temperatur und
-     Luftfeuchte. Für alles, was schalten soll, nur Variablen mit Aktion (HasAction(<VariablenID>)
-     liefert true); Messwerte ohne Aktion sind in Ordnung.
+     (Wärmepumpe, Warmwasser, Klimageräte, Lüftungsanlagen) und das Klima der Räume, also je Raum
+     Temperatur und Luftfeuchte als temperature und humidity. Die Temperatur eines Geräts oder einer
+     Anlage (Kühltruhe, Heizstrang, Speicher) ist measurement; steht so eine schon als temperature
+     in der Instanz, schlag die Änderung vor. Für alles, was schalten soll, nur Variablen mit Aktion
+     (HasAction(<VariablenID>) liefert true); Messwerte ohne Aktion sind in Ordnung.
    - Melder zum Abfragen: Wassermelder als water_leak, Rauchmelder als measurement.
    - Kameras als Typ camera, wenn es zu ihnen ein Medienobjekt vom Typ Bild mit einem Standbild gibt
      (IPS_GetMediaListByType(1), etwa unter einem Image Grabber); das ist ImageMediaID. Streams
@@ -160,12 +162,12 @@ So gehst du vor:
      gemessen werden, sonst eine. Zählt die Wärme nur den Umweltertrag (Vaillant über ebusd:
      „Energieertrag“, „Ertragsleistung“), HeatIsYield auf true.
    - Messwerte der Heizungsanlage, wo der Regler sie liefert (eBUS, ModBus, Cloud), mit den Namen,
-     die man spricht: Vorlauf, Rücklauf und Vorlauf-Soll als temperature, Heizkurve, Heizgrenze,
-     Anlagendruck, Modulation und Kompressorstarts als measurement, dazu je Heizkreis und fürs
+     die man spricht, alle als measurement: Vorlauf, Rücklauf, Vorlauf-Soll, Heizkurve, Heizgrenze,
+     Anlagendruck, Modulation und Kompressorstarts, dazu je Heizkreis und fürs
      Warmwasser die Betriebsart und einen Status des Wärmeerzeugers (die Variable mit Texten,
      nicht die mit Zahlen). Einen Warmwasserspeicher mit Ist- und Solltemperatur als thermostat
      mit ReadOnly, auch wenn er schon ohne ReadOnly in der Instanz steht; ohne Solltemperatur als
-     temperature. Der Raum ist der des Wärmeerzeugers, wenn der schon in der Instanz steht, sonst
+     measurement. Der Raum ist der des Wärmeerzeugers, wenn der schon in der Instanz steht, sonst
      fragst du mich einmal für alle. Gibt es einen Wert mehrfach, nimm die archivierte Variable;
      sind mehrere archiviert, wähl eine und nenne die anderen in der Tabelle. Auslassen:
      Variablen, die seit Tagen nicht aktualisiert wurden (VariableUpdated), Zeitprogramme,
