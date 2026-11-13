@@ -263,6 +263,7 @@
             "%d further temperature value(s) there are not the room temperature; ask for them with name: %s.": "%d weitere Temperatur(en) dort sind nicht die Raumtemperatur; mit name abfragen: %s.",
             "%d further humidity value(s) there are not the room humidity; ask for them with name: %s.": "%d weitere Feuchtewert(e) dort sind nicht die Raumluftfeuchte; mit name abfragen: %s.",
             "%s and %d more": "%s und %d weitere",
+            "For the inside temperature over time ask with name and type=temperature.": "Für den Verlauf der Innentemperatur mit name und type=temperature fragen.",
             "%d device(s) without on/off were not counted (%s).": "%d Gerät(e) ohne an/aus wurden nicht gezählt (%s).",
             "%d device(s) found (%s). None of them knows on/off, so all are listed with their state.": "%d Gerät(e) gefunden (%s). Keins davon kennt an/aus, deshalb alle mit Zustand.",
             "%d device(s) found (%s).": "%d Gerät(e) gefunden (%s).",

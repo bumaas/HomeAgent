@@ -1,0 +1,358 @@
+{
+    "_quelle": "nuc. Zeilen, Namen, Werte und formatierte Werte aus dem Mitschnitt vom 13.11.2026 08:21 (nuc_2026-11-13_innentemperatur.json). Dazu am 13.11.2026 gelesen: die Archivaggregate des Kühltruhenfühlers #10645 mit AC_GetAggregatedValues, Stufe 0 (Stunden) für den 12.11.2026 und Stufe 1 (Tage) für 06. bis 12.11.2026, je Zeile zeit, min, mittel, max, minzeit, maxzeit. Angenommen, nicht gemessen: dass die Fühler als InsideVariableID an den Geräten hängen (am nuc stehen sie am Tag des Mitschnitts noch als eigene Zeilen vom Typ measurement). Der Fühler des Kühlschranks #42676 ist am nuc archiviert, die Fixture führt ihn bewusst ohne Archivwerte.",
+    "zeitzone": "Europe/Berlin",
+    "jetzt": 1794558077,
+    "geraete": [
+        {
+            "Room": "Keller",
+            "Name": "Kühlschrank",
+            "Aliases": "",
+            "Type": "switch",
+            "StateVariableID": 56941,
+            "PowerVariableID": 53389,
+            "EnergyVariableID": 57576,
+            "ReadOnly": true,
+            "InsideVariableID": 42676
+        },
+        {
+            "Room": "Keller",
+            "Name": "Kühltruhe",
+            "Aliases": "Gefriertruhe",
+            "Type": "switch",
+            "StateVariableID": 41438,
+            "PowerVariableID": 29008,
+            "EnergyVariableID": 17393,
+            "ReadOnly": true,
+            "InsideVariableID": 10645
+        },
+        {
+            "Room": "Keller",
+            "Name": "Temperatur",
+            "Aliases": "",
+            "Type": "temperature",
+            "StateVariableID": 26722,
+            "ReadOnly": false
+        }
+    ],
+    "variablen": {
+        "41438": {
+            "name": "nuc: Keller.Aktorgruppe3.Kühltruhe:4 / STATE",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "einheit": ""
+        },
+        "29008": {
+            "name": "nuc: Keller.Energie.Kühltruhe:2 / POWER",
+            "wert": 0,
+            "formatiert": "0.0 W",
+            "aktion": false,
+            "einheit": " W"
+        },
+        "17393": {
+            "name": "nuc: Keller.Energie.Kühltruhe:2 / ENERGY_COUNTER",
+            "wert": 9942.8,
+            "formatiert": "9.9 kWh",
+            "aktion": false,
+            "einheit": " kWh"
+        },
+        "10645": {
+            "name": "nuc: Sensor.Temperatur.Kühltruhe (7E928) / Temperatur",
+            "wert": -19,
+            "formatiert": "-19.0 °C",
+            "aktion": false,
+            "einheit": " °C",
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "aggregate": [
+                [
+                    {
+                        "zeit": 1794438000,
+                        "min": -21.0625,
+                        "mittel": -17.503836805555558,
+                        "max": -15.4375,
+                        "minzeit": 1794440365,
+                        "maxzeit": 1794439656
+                    },
+                    {
+                        "zeit": 1794441600,
+                        "min": -21.0625,
+                        "mittel": -17.498506944444443,
+                        "max": -15.375,
+                        "minzeit": 1794444024,
+                        "maxzeit": 1794443435
+                    },
+                    {
+                        "zeit": 1794445200,
+                        "min": -21.0625,
+                        "mittel": -17.49473958333333,
+                        "max": -15.4375,
+                        "minzeit": 1794447740,
+                        "maxzeit": 1794447092
+                    },
+                    {
+                        "zeit": 1794448800,
+                        "min": -21.0625,
+                        "mittel": -17.444861111111123,
+                        "max": -15.375,
+                        "minzeit": 1794451516,
+                        "maxzeit": 1794450925
+                    },
+                    {
+                        "zeit": 1794452400,
+                        "min": -21.0625,
+                        "mittel": -17.420295138888882,
+                        "max": -15.375,
+                        "minzeit": 1794455292,
+                        "maxzeit": 1794454702
+                    },
+                    {
+                        "zeit": 1794456000,
+                        "min": -21.125,
+                        "mittel": -17.465069444444435,
+                        "max": -15.4375,
+                        "minzeit": 1794459009,
+                        "maxzeit": 1794458359
+                    },
+                    {
+                        "zeit": 1794459600,
+                        "min": -20.8125,
+                        "mittel": -17.346128472222226,
+                        "max": -15.375,
+                        "minzeit": 1794462727,
+                        "maxzeit": 1794462196
+                    },
+                    {
+                        "zeit": 1794463200,
+                        "min": -21.125,
+                        "mittel": -17.54282986111111,
+                        "max": -15.4375,
+                        "minzeit": 1794466327,
+                        "maxzeit": 1794465616
+                    },
+                    {
+                        "zeit": 1794466800,
+                        "min": -21.125,
+                        "mittel": -17.393559027777776,
+                        "max": -15.4375,
+                        "minzeit": 1794470103,
+                        "maxzeit": 1794469393
+                    },
+                    {
+                        "zeit": 1794470400,
+                        "min": -21.0625,
+                        "mittel": -17.361718749999998,
+                        "max": -15.4375,
+                        "minzeit": 1794473818,
+                        "maxzeit": 1794473169
+                    },
+                    {
+                        "zeit": 1794474000,
+                        "min": -21,
+                        "mittel": -17.389097222222215,
+                        "max": -15.4375,
+                        "minzeit": 1794477536,
+                        "maxzeit": 1794476888
+                    },
+                    {
+                        "zeit": 1794477600,
+                        "min": -21,
+                        "mittel": -17.439288194444448,
+                        "max": -15.4375,
+                        "minzeit": 1794477600,
+                        "maxzeit": 1794480546
+                    },
+                    {
+                        "zeit": 1794481200,
+                        "min": -21,
+                        "mittel": -17.514670138888885,
+                        "max": -15.375,
+                        "minzeit": 1794481200,
+                        "maxzeit": 1794484204
+                    },
+                    {
+                        "zeit": 1794484800,
+                        "min": -21,
+                        "mittel": -17.49894097222222,
+                        "max": -15.375,
+                        "minzeit": 1794484800,
+                        "maxzeit": 1794487801
+                    },
+                    {
+                        "zeit": 1794488400,
+                        "min": -21,
+                        "mittel": -17.8737326388889,
+                        "max": -15.4375,
+                        "minzeit": 1794488400,
+                        "maxzeit": 1794490987
+                    },
+                    {
+                        "zeit": 1794492000,
+                        "min": -20.9375,
+                        "mittel": -17.5853472222222,
+                        "max": -15.375,
+                        "minzeit": 1794495058,
+                        "maxzeit": 1794494467
+                    },
+                    {
+                        "zeit": 1794495600,
+                        "min": -20.9375,
+                        "mittel": -17.538055555555555,
+                        "max": -15.375,
+                        "minzeit": 1794498539,
+                        "maxzeit": 1794497949
+                    },
+                    {
+                        "zeit": 1794499200,
+                        "min": -20.9375,
+                        "mittel": -17.541614583333338,
+                        "max": -15.4375,
+                        "minzeit": 1794502020,
+                        "maxzeit": 1794501372
+                    },
+                    {
+                        "zeit": 1794502800,
+                        "min": -21,
+                        "mittel": -17.543819444444452,
+                        "max": -15.4375,
+                        "minzeit": 1794505560,
+                        "maxzeit": 1794504853
+                    },
+                    {
+                        "zeit": 1794506400,
+                        "min": -20.9375,
+                        "mittel": -17.53524305555555,
+                        "max": -15.4375,
+                        "minzeit": 1794508983,
+                        "maxzeit": 1794508333
+                    },
+                    {
+                        "zeit": 1794510000,
+                        "min": -20.9375,
+                        "mittel": -17.534809027777793,
+                        "max": -15.4375,
+                        "minzeit": 1794512466,
+                        "maxzeit": 1794511814
+                    },
+                    {
+                        "zeit": 1794513600,
+                        "min": -20.9375,
+                        "mittel": -17.483732638888878,
+                        "max": -15.375,
+                        "minzeit": 1794516005,
+                        "maxzeit": 1794515413
+                    },
+                    {
+                        "zeit": 1794517200,
+                        "min": -21,
+                        "mittel": -17.547100694444445,
+                        "max": -15.4375,
+                        "minzeit": 1794519427,
+                        "maxzeit": 1794518775
+                    },
+                    {
+                        "zeit": 1794520800,
+                        "min": -20.9375,
+                        "mittel": -17.50600694444445,
+                        "max": -15.4375,
+                        "minzeit": 1794522907,
+                        "maxzeit": 1794522256
+                    }
+                ],
+                [
+                    {
+                        "zeit": 1793919600,
+                        "min": -21.125,
+                        "mittel": -17.585724103009287,
+                        "max": -15.375,
+                        "minzeit": 1793987514,
+                        "maxzeit": 1793923794
+                    },
+                    {
+                        "zeit": 1794006000,
+                        "min": -21.0625,
+                        "mittel": -17.61938874421296,
+                        "max": -15.3125,
+                        "minzeit": 1794069608,
+                        "maxzeit": 1794047069
+                    },
+                    {
+                        "zeit": 1794092400,
+                        "min": -21.125,
+                        "mittel": -17.555546875,
+                        "max": -15.25,
+                        "minzeit": 1794153646,
+                        "maxzeit": 1794160137
+                    },
+                    {
+                        "zeit": 1794178800,
+                        "min": -21.125,
+                        "mittel": -17.484995659722152,
+                        "max": -15.375,
+                        "minzeit": 1794226949,
+                        "maxzeit": 1794193144
+                    },
+                    {
+                        "zeit": 1794265200,
+                        "min": -21.0625,
+                        "mittel": -17.46831235532408,
+                        "max": -15.375,
+                        "minzeit": 1794290870,
+                        "maxzeit": 1794266621
+                    },
+                    {
+                        "zeit": 1794351600,
+                        "min": -21.0625,
+                        "mittel": -17.490727719907287,
+                        "max": -15.3125,
+                        "minzeit": 1794425649,
+                        "maxzeit": 1794382167
+                    },
+                    {
+                        "zeit": 1794438000,
+                        "min": -21.125,
+                        "mittel": -17.50012514467592,
+                        "max": -15.375,
+                        "minzeit": 1794459009,
+                        "maxzeit": 1794443435
+                    }
+                ]
+            ]
+        },
+        "56941": {
+            "name": "nuc: Keller.Aktorgruppe3.Kühlschrank:1 / STATE",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "einheit": ""
+        },
+        "53389": {
+            "name": "nuc: Keller.Energie.Kühlschrank:6 / POWER",
+            "wert": 0,
+            "formatiert": "0.0 W",
+            "aktion": false,
+            "einheit": " W"
+        },
+        "57576": {
+            "name": "nuc: Keller.Energie.Kühlschrank:6 / ENERGY_COUNTER",
+            "wert": 3438.8,
+            "formatiert": "3.4 kWh",
+            "aktion": false,
+            "einheit": " kWh"
+        },
+        "42676": {
+            "name": "nuc: Sensor.Temperatur.Kühlschrank (AC228) / Temperatur",
+            "wert": 11.875,
+            "formatiert": "11.9 °C",
+            "aktion": false,
+            "einheit": " °C"
+        },
+        "26722": {
+            "name": "nuc: Keller.Heizung.Thermostat:1 / TEMPERATURE",
+            "wert": 19.3,
+            "formatiert": "19.3 °C",
+            "aktion": false,
+            "einheit": " °C"
+        }
+    }
+}

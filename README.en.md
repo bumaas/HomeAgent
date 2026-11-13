@@ -242,8 +242,8 @@ self-test points it out.
 
 If a fridge or freezer already has a row, as a metering socket for example, choose the sensor inside the device there
 as **Inside temperature**. The answer then reads "off (0.0 W, inside -19.0 °C)", and the sensor needs no row of its
-own. There is no history of the inside temperature this way yet; if you need one, keep the sensor as other measured
-value.
+own. Its history is still there: when the assistant asks for the temperature of the device by its name ("How cold was
+the freezer yesterday?"), the device answers with its inside temperature as a measured value, as a chart too.
 
 There is no type of its own for smoke detectors. Enter them as other measured value, the assistant cannot switch
 a measured value anyway.

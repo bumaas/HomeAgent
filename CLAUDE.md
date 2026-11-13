@@ -179,8 +179,11 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   `climateNote` nennt die übrigen beim Namen (`nameList`, bis `NOTE_NAMES_MAX`, aus mehreren Räumen mit Raum). Ohne Gerätezeile
   entsteht eine gedachte (`climateRows`). Fehlende Variable wirkt nicht (`missingClimate`). Test `check-raumklima.php`.
 - **Innentemperatur** (`inside`, `InsideVariableID`) wahlweise an `switch`, `socket`, `appliance`: steht hinter Zustand und
-  Leistung („inside -19.0 °C“), zählt nie als Raumtemperatur, bringt keinen Befehl. Noch nicht: Verlauf, eigene Zahl auf
-  der Karte. Test `check-innentemperatur.php`.
+  Leistung („inside -19.0 °C“), zählt nie als Raumtemperatur, bringt keinen Befehl. Mit Namen und `type=temperature` oder
+  `measurement` (`INSIDE_TYPES`) antwortet das Gerät beim Lesen mit einer gedachten Messwertzeile (`insideRows` in
+  `findForReading`, nur wenn keine eingetragene Zeile passt): Verlauf und Diagramme laufen darüber, ein Zeitraum ohne Typ
+  nennt den Weg (`withInsideNote`). Noch nicht: eigene Zahl auf der Karte. Tests `check-innentemperatur.php`,
+  `check-innentemperatur-verlauf.php`.
 - **Licht:** Prozent rechnet das Modul selbst. Farbtemperatur in Kelvin, ein Bereich bis 1000 ist Mired; Schrittweite
   der Darstellung zählt nicht, außerhalb aufs nächste Ende, ein ausgeschaltetes Licht wird eingeschaltet. Farbe nur als
   Ganzzahl aus `COLORS` (Farbe als Text ist nicht dokumentiert). Ein Licht ohne Schaltzustand ist an, solange die Farbe

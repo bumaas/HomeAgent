@@ -249,8 +249,8 @@ verschiedene Temperaturen, weist der Selbsttest darauf hin.
 
 Hat ein Kühlschrank oder eine Kühltruhe schon eine Zeile, etwa als Messsteckdose, wählen Sie den Fühler im Gerät dort
 als **Innentemperatur**. Die Antwort lautet dann „aus (0.0 W, innen -19.0 °C)“, und eine eigene Zeile für den Fühler
-entfällt. Einen Verlauf der Innentemperatur gibt es so noch nicht; wer ihn braucht, lässt den Fühler als sonstigen
-Messwert eingetragen.
+entfällt. Den Verlauf gibt es trotzdem: Fragt der Assistent mit dem Namen des Geräts nach dessen Temperatur („Wie kalt
+war die Kühltruhe gestern?“), antwortet das Gerät mit seiner Innentemperatur als Messwert, auch als Diagramm.
 
 Einen eigenen Typ für Rauchmelder gibt es nicht. Tragen Sie sie als sonstigen Messwert ein, schalten kann der
 Assistent einen Messwert ohnehin nicht.

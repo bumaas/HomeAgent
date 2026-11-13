@@ -460,6 +460,15 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   behält die Leistung als Zustand. Eine fehlende Variable sperrt die Zeile wie jede andere Fähigkeit. Bewusst klein
   gehalten: kein Verlauf, kein Diagramm und keine zweite Zahl auf der Karte (`devices.html` bleibt unverändert, der
   Text der Karte trägt den Wert). Wer den Verlauf braucht, lässt den Fühler als `measurement` eingetragen.
+  Seit build 301 gibt es den Verlauf doch (Burkhard 13.11.2026): Gerade bei Kühlgeräten liegt die Frage nahe, ob die
+  Truhe über Nacht zu warm war, und ohne Verlauf hätte der Fühler an der Anlage des Anlasses eine eigene Zeile behalten
+  müssen. Verworfen: die Innentemperatur in die Verbrauchszeile hängen (kein Diagramm, keine Heatmap) und ein eigener
+  Parameter. Gebaut: Wird ein Gerät mit Fühler beim Namen und mit `type=temperature` oder `type=measurement` gefragt und
+  passt keine eingetragene Zeile, antwortet es mit einer gedachten Messwertzeile („Keller | Kühltruhe | measurement |
+  -19.0 °C“), nur beim Lesen. Zustand, Verlauf, Diagramm, Heatmap und Punktwolke laufen damit über die Wege der
+  Messwerte, ohne eigenen Code je Weg. Ohne Namen nie, sonst stünde der Fühler wieder unter den Temperaturen des Raums.
+  Ein Zeitraum ohne Typ liefert weiter Verbrauch und Zeitleiste des Geräts und nennt den Weg in einer Schlusszeile, weil
+  Home Assistant die Anleitung des Servers nicht ans Modell gibt.
 
 ## Energie
 

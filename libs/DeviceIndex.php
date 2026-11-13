@@ -530,7 +530,50 @@ final class DeviceIndex
      */
     private function findForReading(string $room, string $type, string $name, string $floor): array
     {
-        return $this->roomClimate($this->find($room, $type, $name, $floor), $type, $name);
+        $matches = $this->roomClimate($this->find($room, $type, $name, $floor), $type, $name);
+        // Eine eingetragene Zeile geht vor; erst wenn keine passt, antwortet ein genanntes Gerät mit seiner Innentemperatur.
+        return $matches === [] ? $this->insideRows($room, $type, $name, $floor) : $matches;
+    }
+
+    /** Typen, unter denen ein mit Namen genanntes Gerät mit seiner Innentemperatur als Messwert antwortet. */
+    private const INSIDE_TYPES = ['temperature', 'measurement'];
+
+    /**
+     * Innentemperatur als Messwert: Wird ein Gerät mit Fühler (inside) beim Namen und mit type=temperature oder
+     * type=measurement gefragt, antwortet es mit einer gedachten Messwertzeile, nur zum Lesen. Damit gibt es Verlauf,
+     * Diagramm, Heatmap und Punktwolke der Innentemperatur über die Wege der Messwerte (Burkhard 13.11.2026: „Wie kalt
+     * war die Kühltruhe gestern?“). Ohne Namen nie: type=temperature meint das Klima des Raums.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function insideRows(string $room, string $type, string $name, string $floor): array
+    {
+        if (trim($name) === '' || !in_array($type, self::INSIDE_TYPES, true)) {
+            return [];
+        }
+        return array_map(static fn (array $entry): array => array_merge($entry, [
+            'Type'      => 'measurement',
+            'Invert'    => false,
+            'ReadOnly'  => true,
+            'roles'     => ['state' => $entry['roles']['inside']],
+            'MeteredBy' => 0,
+        ]), $this->find($room, '', $name, $floor, static fn (array $entry): bool => isset($entry['roles']['inside'])));
+    }
+
+    /**
+     * Schlusszeile bei einem Zeitraum für Geräte mit Innentemperatur: Die Antwort nennt Verbrauch oder Zeitleiste, den Weg
+     * zum Verlauf des Fühlers muss sie selbst nennen (Home Assistant gibt die Anleitung des Servers nicht ans Modell).
+     *
+     * @param array{text: string, isError: bool} $result
+     * @param list<array<string, mixed>> $matches
+     * @return array{text: string, isError: bool}
+     */
+    private function withInsideNote(array $result, array $matches): array
+    {
+        if (!$result['isError'] && array_any($matches, static fn (array $entry): bool => isset($entry['roles']['inside']))) {
+            $result['text'] .= "\n" . $this->t('For the inside temperature over time ask with name and type=temperature.');
+        }
+        return $result;
     }
 
     /**
@@ -719,17 +762,17 @@ final class DeviceIndex
                 [, $from, $to] = self::periodBounds($period, $this->backend->timestamp());
                 $result = $this->history($matches, $this->chartLevel($period, $from, $to), $from, $to, $filter . ', period=' . $period, $room !== '');
             }
-            return $this->withClimateNote($result);
+            return $this->withInsideNote($this->withClimateNote($result), $matches);
         }
         if ($range !== null) {
-            return $this->consumption($matches, $range, $filter . $rangeLabel, $wholeHouse, $rangeLevel);
+            return $this->withInsideNote($this->consumption($matches, $range, $filter . $rangeLabel, $wholeHouse, $rangeLevel), $wholeHouse ? [] : $matches);
         }
         if ($period !== '') {
             if ($period === self::NOW) {
                 return $this->power($matches, $filter . ', period=' . $period, $wholeHouse);
             }
             $bounds = self::periodBounds($period, $this->backend->timestamp());
-            return $this->consumption($matches, $bounds, $filter . ', period=' . $period, $wholeHouse, $this->chartLevel($period, $bounds[1], $bounds[2]));
+            return $this->withInsideNote($this->consumption($matches, $bounds, $filter . ', period=' . $period, $wholeHouse, $this->chartLevel($period, $bounds[1], $bounds[2])), $wholeHouse ? [] : $matches);
         }
 
         $lines = [];
