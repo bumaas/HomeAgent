@@ -178,7 +178,7 @@ room goes into the room list first; after applying it appears in the selection. 
 in the room list (set by a script, for example) are still found by their name. The form names them
 above the device list, and so does the self-test.
 
-In the columns **Temperature** and **Humidity** you choose the variable that stands for the climate of the room,
+In the dialog of a room you choose under **Temperature of the room** and **Humidity of the room** the variable that stands for its climate,
 such as the wall sensor or the actual temperature of the room thermostat. "How warm is it in the basement?" then
 names this value, even if further sensors are released in the basement; the answer counts the others, and you
 still ask for them by their name. The room needs no row of its own in the device list for this. Without an entry

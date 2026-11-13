@@ -185,7 +185,7 @@ Raum kommt zuerst in die Raumliste; nach dem Übernehmen steht er in der Auswahl
 Raumliste fehlen (etwa per Skript eingetragen), werden weiter über ihren Namen gefunden. Das Formular
 nennt sie über der Geräteliste, der Selbsttest ebenso.
 
-In den Spalten **Temperatur** und **Luftfeuchte** wählen Sie die Variable, die für das Klima des Raums steht,
+Im Dialog eines Raums wählen Sie unter **Temperatur des Raums** und **Luftfeuchte des Raums** die Variable, die für sein Klima steht,
 etwa den Wandfühler oder die Ist-Temperatur des Raumthermostats. „Wie warm ist es im Keller?“ nennt dann diesen
 Wert, auch wenn im Keller weitere Fühler freigegeben sind; die Antwort zählt die übrigen, und mit ihrem Namen
 fragen Sie sie weiter ab. Eine eigene Zeile in der Geräteliste braucht der Raum dafür nicht. Ohne Angabe nennt der

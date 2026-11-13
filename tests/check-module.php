@@ -456,7 +456,7 @@ $zugangsDialog = array_column(flach($benannt['Accesses']['form'] ?? []), null, '
 // Burkhard 12.10.2026: Das Token braucht der Anwender nur für Claude Code und ähnliche Clients. Im Dialog steht es
 // deshalb gar nicht mehr sichtbar; ein leeres Token füllt das Modul beim Übernehmen.
 pruefe(($zugangsDialog['Token']['visible'] ?? true) === false && !isset($zugangsDialog['Token']['validate']) && isset($zugangsDialog['Name'], $zugangsDialog['ReadOnly'], $zugangsDialog['DefaultRoom'], $zugangsDialog['InPath']), 'der Bearbeiten-Dialog zeigt das Token nicht: ' . json_encode($zugangsDialog['Token'] ?? null));
-pruefe(array_column($benannt['Rooms']['columns'] ?? [], 'name') === ['Name', 'Aliases', 'Floor', 'TemperatureVariableID', 'HumidityVariableID'], 'Spalten der Raumliste, seit 13.11.2026 mit dem Klima des Raums');
+pruefe(array_column($benannt['Rooms']['columns'] ?? [], 'name') === ['Name', 'Aliases', 'Floor', 'TemperatureLabel', 'TemperatureVariableID', 'HumidityLabel', 'HumidityVariableID'], 'Spalten der Raumliste, seit 13.11.2026 mit dem Klima des Raums');
 pruefe(str_contains($m->GetConfigurationForm(), 'Bearer <token>') && !str_contains($m->GetConfigurationForm(), 'gast-token-0123456789abcdef'), 'das Formular nennt das Token nur mit Platzhalter, kein echtes Token');
 
 /* --- Raumliste mit Aliasen und Etagen -------------------------------------------------------- */
@@ -1793,7 +1793,8 @@ $sammeln = static function (array $elemente) use (&$sammeln, &$ohneEdit): void {
     }
 };
 $sammeln(json_decode((string)file_get_contents(__DIR__ . '/../HomeAgent/form.json'), true)['elements']);
-pruefe(in_array('StateLabel', $ohneEdit['Devices'], true) && $ohneEdit['Rooms'] === [], 'Beschriftungsspalten der Geräteliste werden nicht gespeichert: ' . json_encode($ohneEdit));
+// seit 13.11.2026 hat auch die Raumliste zwei Textspalten (Temperatur und Luftfeuchte des Raums)
+pruefe(in_array('StateLabel', $ohneEdit['Devices'], true) && $ohneEdit['Rooms'] === ['TemperatureLabel', 'HumidityLabel'], 'Beschriftungsspalten der Geräte- und der Raumliste werden nicht gespeichert: ' . json_encode($ohneEdit));
 $listenImFormular = static function () use ($m): array {
     $listen = [];
     foreach ($m->formUpdates as [$feld, $parameter, $wert]) {
@@ -4255,6 +4256,19 @@ $raumSpalten = array_column(array_column(flach($formular['elements']), null, 'na
 pruefe(($raumSpalten['TemperatureVariableID']['edit']['type'] ?? '') === 'SelectVariable' && ($raumSpalten['HumidityVariableID']['edit']['type'] ?? '') === 'SelectVariable'
     && ($raumSpalten['TemperatureVariableID']['add'] ?? null) === 0 && ($raumSpalten['HumidityVariableID']['add'] ?? null) === 0, 'die Raumliste hat je eine Variablenspalte für Temperatur und Luftfeuchte: ' . json_encode(array_keys($raumSpalten)));
 pruefe(($raumSpalten['TemperatureVariableID']['caption'] ?? '') === 'Temperature' && ($uebersetzt['Temperature'] ?? '') === 'Temperatur' && ($raumSpalten['HumidityVariableID']['caption'] ?? '') === 'Humidity', 'mit den Überschriften Temperatur und Luftfeuchte');
+// Hardcopy Burkhard 13.11.2026: Die Variablenauswahl als Spalte zeigte „Kein(e)“ in jeder leeren Zelle und im Keller
+// „TEMPERATURE (Hardware\Hom…“, abgeschnitten vor dem Gerät. Sichtbar ist deshalb wie in der Geräteliste ein Text, den
+// das Modul füllt; die Auswahl steht nur im Dialog.
+pruefe(($raumSpalten['TemperatureVariableID']['visible'] ?? true) === false && ($raumSpalten['HumidityVariableID']['visible'] ?? true) === false, 'die Variablenauswahl ist in der Liste unsichtbar');
+pruefe(($raumSpalten['TemperatureLabel']['caption'] ?? '') === 'Temperature' && ($raumSpalten['HumidityLabel']['caption'] ?? '') === 'Humidity'
+    && !isset($raumSpalten['TemperatureLabel']['edit']) && !isset($raumSpalten['HumidityLabel']['edit'])
+    && ($raumSpalten['TemperatureLabel']['add'] ?? null) === '-' && ($raumSpalten['HumidityLabel']['add'] ?? null) === '-', 'sichtbar sind zwei Textspalten ohne Eingabe, leer mit „-“: ' . json_encode(array_keys($raumSpalten)));
+$raumDialog = array_column(array_column(flach($formular['elements']), null, 'name')['Rooms']['form'] ?? [], null, 'name');
+pruefe(array_keys($raumDialog) === ['Name', 'Aliases', 'Floor', 'TemperatureVariableID', 'TemperatureLabel', 'HumidityVariableID', 'HumidityLabel'], 'der Dialog einer Raumzeile: ' . json_encode(array_keys($raumDialog)));
+$raumWechsel = 'HAGT_UIRoomChanged($id, $TemperatureVariableID, $HumidityVariableID);';
+pruefe(($raumDialog['TemperatureVariableID']['type'] ?? '') === 'SelectVariable' && ($raumDialog['TemperatureVariableID']['onChange'] ?? '') === $raumWechsel
+    && ($raumDialog['HumidityVariableID']['type'] ?? '') === 'SelectVariable' && ($raumDialog['HumidityVariableID']['onChange'] ?? '') === $raumWechsel, 'die Auswahl im Dialog zieht den Text nach');
+pruefe(($raumDialog['TemperatureLabel']['visible'] ?? true) === false && ($raumDialog['HumidityLabel']['visible'] ?? true) === false, 'die Textfelder im Dialog sind unsichtbar');
 foreach ([0, 1, 2, 3] as $nr) {
     $klimaZeilen[$nr]['Type'] = 'temperature';
 }
@@ -4277,6 +4291,15 @@ $raumFuehler = variable(VARIABLETYPE_FLOAT, 17.5);
 IPS_SetProperty($iid, 'Rooms', json_encode([['Name' => 'Keller', 'Aliases' => '', 'Floor' => '', 'TemperatureVariableID' => $raumFuehler, 'HumidityVariableID' => 0]]));
 IPS_ApplyChanges($iid);
 pruefe(in_array($raumFuehler, $m->GetReferenceList(), true), 'die Variable des Raums ist als Referenz gemeldet: ' . json_encode($m->GetReferenceList()));
+IPS_SetName($raumFuehler, 'TEMPERATURE');
+$raumWerte = array_column(flach(json_decode($m->GetConfigurationForm(), true)['elements']), null, 'name')['Rooms']['values'] ?? [];
+pruefe(str_starts_with((string)($raumWerte[0]['TemperatureLabel'] ?? ''), 'TEMPERATURE') && ($raumWerte[0]['HumidityLabel'] ?? '') === '-', 'das Formular füllt die Textspalten: ' . json_encode($raumWerte, JSON_UNESCAPED_UNICODE));
+$m->formUpdates = [];
+oderNull(static fn () => $m->UIRoomChanged($raumFuehler, 69997));
+pruefe(in_array(['TemperatureLabel', 'value', $raumWerte[0]['TemperatureLabel'] ?? '?'], $m->formUpdates, true) && in_array(['HumidityLabel', 'value', '#69997 ?'], $m->formUpdates, true), 'die Wahl im Dialog setzt die Texte, eine fehlende Variable mit Fragezeichen: ' . json_encode($m->formUpdates, JSON_UNESCAPED_UNICODE));
+$m->formUpdates = [];
+oderNull(static fn () => $m->UIRoomChanged(0, 1));
+pruefe(in_array(['TemperatureLabel', 'value', '-'], $m->formUpdates, true) && in_array(['HumidityLabel', 'value', '-'], $m->formUpdates, true), 'ohne Auswahl „-“: ' . json_encode($m->formUpdates));
 $klimaText = $m->QueryState('Keller', 'temperature', '', false);
 pruefe(str_starts_with($klimaText, "1 device(s) found (room=Keller, type=temperature).\nKeller | Temperature | temperature | ") && str_contains($klimaText, '4 further temperature value(s)'), 'der Raum antwortet ohne eigene Gerätezeile: ' . $klimaText);
 foreach ([

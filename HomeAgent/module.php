@@ -778,6 +778,10 @@ class HomeAgent extends IPSModuleStrict
                 $list = json_decode($this->ReadPropertyString('Devices'), true);
                 $element['values'] = array_map(fn (array $row): array => $this->deviceLabels($row), is_array($list) ? array_values($list) : []);
             }
+            // Raumliste: die Texte zu den Variablen für Temperatur und Luftfeuchte des Raums
+            if (($element['name'] ?? '') === 'Rooms') {
+                $element['values'] = array_map(fn (array $row): array => $this->roomLabels($row), $this->listProperty('Rooms'));
+            }
             // Quellen der Bilanz (B82): Dialog je Art wie bei den Geräten, sichtbar sind die Namen der Variablen
             if (($element['name'] ?? '') === 'Sources') {
                 $element['form'] = "return json_decode(HAGT_UISourceForm(\$id, \$Sources['Type'] ?? 'grid', \$Sources['PowerOut'] ?? 0), true);";
@@ -1063,7 +1067,11 @@ class HomeAgent extends IPSModuleStrict
         $values = [];
         foreach (array_values($rows) as $index => $row) {
             // Eine Raumzeile aus der Zeit vor den Klimaspalten oder aus dem Alexa-Vorschlag hat sie noch nicht
-            $values[] = array_merge($row + ($list === 'Rooms' ? array_fill_keys(array_keys(self::ROOM_CLIMATE), 0) : []), $list === 'Devices' ? $this->deviceLabels($row) : [], ['rowColor' => isset($failed[$index]) ? self::ROW_COLOR_ERROR : '']);
+            $values[] = array_merge($row + ($list === 'Rooms' ? array_fill_keys(array_keys(self::ROOM_CLIMATE), 0) : []), match ($list) {
+                'Devices' => $this->deviceLabels($row),
+                'Rooms'   => $this->roomLabels($row),
+                default   => [],
+            }, ['rowColor' => isset($failed[$index]) ? self::ROW_COLOR_ERROR : '']);
         }
         return $values;
     }
@@ -3283,6 +3291,46 @@ class HomeAgent extends IPSModuleStrict
     /** Spalten der Raumliste für das Klima des Raums und wie der Selbsttest sie nennt. */
     private const ROOM_CLIMATE = ['TemperatureVariableID' => 'temperature', 'HumidityVariableID' => 'humidity'];
 
+    /** Name eines Objekts mit dem Ort darüber, so wie ihn die Textspalten der Listen zeigen. */
+    private static function objectLabel(int $objectId): string
+    {
+        $parent = IPS_GetParent($objectId);
+        return IPS_GetName($objectId) . ($parent > 0 ? ' (' . IPS_GetLocation($parent) . ')' : '');
+    }
+
+    /**
+     * Texte für die sichtbaren Spalten der Raumliste, wie deviceLabels() für die Geräteliste: der Name der Variable mit
+     * ihrem Ort, „-“ ohne Angabe. Die Variablenauswahl als Spalte zeigte „Kein(e)“ in jeder leeren Zelle und schnitt den
+     * Ort vor dem Gerät ab (Hardcopy 13.11.2026).
+     *
+     * @param array<string, mixed> $row Zeile der Property Rooms
+     * @return array<string, string> Spaltenname (TemperatureLabel, HumidityLabel) => Text
+     */
+    private function roomLabels(array $row): array
+    {
+        $labels = [];
+        foreach (self::ROOM_CLIMATE as $field => $kind) {
+            $variableId = (int)($row[$field] ?? 0);
+            $labels[str_replace('VariableID', 'Label', $field)] = match (true) {
+                $variableId <= 1                  => '-',
+                IPS_VariableExists($variableId)   => self::objectLabel($variableId),
+                default                           => '#' . $variableId . ' ?',
+            };
+        }
+        return $labels;
+    }
+
+    /**
+     * Nur für das Konfigurationsformular: zieht im Dialog einer Raumzeile die unsichtbaren Texte nach, wenn dort eine
+     * andere Variable für Temperatur oder Luftfeuchte gewählt wird; aus ihnen entstehen die Spalten der Liste.
+     */
+    public function UIRoomChanged(int $TemperatureVariableID, int $HumidityVariableID): void
+    {
+        foreach ($this->roomLabels(['TemperatureVariableID' => $TemperatureVariableID, 'HumidityVariableID' => $HumidityVariableID]) as $field => $label) {
+            $this->UpdateFormField($field, 'value', $label);
+        }
+    }
+
     /**
      * Angaben zum Klima in der Raumliste, deren Variable es nicht gibt.
      *
@@ -3787,8 +3835,7 @@ class HomeAgent extends IPSModuleStrict
             $label = '-';
             // Das Standbild einer Kamera ist ein Medienobjekt (ImageMediaID), alles andere eine Variable
             if ($variableId > 0 && ($role === 'image' ? IPS_MediaExists($variableId) : IPS_VariableExists($variableId))) {
-                $parent = IPS_GetParent($variableId);
-                $label = IPS_GetName($variableId) . ($parent > 0 ? ' (' . IPS_GetLocation($parent) . ')' : '');
+                $label = self::objectLabel($variableId);
             } elseif ($variableId > 0) {
                 $label = '#' . $variableId . ' ?';
             }

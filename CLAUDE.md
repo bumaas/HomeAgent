@@ -330,6 +330,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   (Alias bzw. „nicht in der Raumliste“). `missingRooms()` nennt fehlende Räume, gesperrt wird nichts. `MeteredBy` als
   Auswahl wie der Raum, `UIDeviceChanged` leert es beim Ausblenden. Dialog „Quellen“ über `UISourceForm`/
   `UISourceChanged`, Textspalten `EnergyLabel`/`PowerLabel` (`sourceLabels`).
+- **Raumliste** wie die Geräteliste: sichtbar die Textspalten `TemperatureLabel`/`HumidityLabel` (`roomLabels`, „-“ ohne
+  Angabe), die Variablenauswahl unsichtbar und im Dialog (`form`), `UIRoomChanged` zieht die Texte nach. Test `check-module.php`.
 - **Alexa-Vorschlag** im `PopupAlert` mit Haken und Raum je Vorschlag; Räume nur, wenn die Raumliste nichts weiß
   (`proposeRooms`, Buffer `AlexaRooms`). Ein Knopf in `popup.buttons` zeigt Ausgaben rot, außer mit `MESSAGE:`.
   Freigeben trägt per `UpdateFormField` ein (`listValues`, Buffer `AlexaPending`), nie per `IPS_SetProperty`
