@@ -137,7 +137,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   Ein Fehler bleibt es bei unbekanntem Raum oder unbekannter Etage (zweiter Versuch mit der Raumliste), bei `set_state`,
   `control_device` und `show_chart`. Test `check-kein-treffer.php`.
 - **Absagen nennen nur Wege des aufgerufenen Werkzeugs**, mit Parameternamen: `room` nimmt bei `get_state` einen Raum,
-  die Kommaliste gibt es nur bei `show_chart` (deshalb zwei Texte für „zu viele Messwerte“). Test `check-verlauf.php`.
+  die Kommaliste gibt es nur bei `show_chart` (deshalb zwei Texte für „zu viele Messwerte“); mit genanntem Raum nennt die
+  Absage die Geräte beim Namen (`nameList`). Tests `check-verlauf.php`, `check-raumklima.php`.
 - **Namenssuche** in Stufen, nur die beste zählt: genauer Name oder Alias, Anfrage als Teil des Namens, Name in der
   Anfrage nur an einem Wortanfang. Genannte Geräte gehören in `name`, nicht in `type` (steht in der Beschreibung).
 - **Vokabular:** Die Beschreibung von `room` nennt die bekannten Räume, die von `mode`/`fan_speed` die Einträge der
@@ -173,7 +174,7 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   Selbsttest nennt Räume über `ROOM_CLIMATE_MAX` verschiedenen Werten (`crowdedClimate`). Test `check-raumklima.php`.
 - **Klima am Raum:** `TemperatureVariableID`/`HumidityVariableID` der Raumliste (`climateOf`). Mit Angabe liefert
   `type=temperature`/`humidity` ohne Namen nur diese Variable, nur beim Lesen (`roomClimate`); die Schlusszeile
-  `climateNote` nennt die übrigen beim Namen (bis `CLIMATE_NAMES_MAX`, aus mehreren Räumen mit Raum). Ohne Gerätezeile
+  `climateNote` nennt die übrigen beim Namen (`nameList`, bis `NOTE_NAMES_MAX`, aus mehreren Räumen mit Raum). Ohne Gerätezeile
   entsteht eine gedachte (`climateRows`). Fehlende Variable wirkt nicht (`missingClimate`). Test `check-raumklima.php`.
 - **Innentemperatur** (`inside`, `InsideVariableID`) wahlweise an `switch`, `socket`, `appliance`: steht hinter Zustand und
   Leistung („inside -19.0 °C“), zählt nie als Raumtemperatur, bringt keinen Befehl. Noch nicht: Verlauf, eigene Zahl auf

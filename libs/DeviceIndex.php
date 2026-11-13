@@ -443,8 +443,8 @@ final class DeviceIndex
     /** Typen, die eine Angabe der Raumliste beantwortet, und der Name ihrer gedachten Zeile. */
     private const CLIMATE_KINDS = ['temperature' => 'Temperature', 'humidity' => 'Humidity'];
 
-    /** So viele Namen nennt die Schlusszeile des Raumklimas höchstens, den Rest als Anzahl. */
-    private const CLIMATE_NAMES_MAX = 20;
+    /** So viele Namen nennt ein Hinweis (Schlusszeile des Raumklimas, Absage beim Verlauf) höchstens, den Rest als Anzahl. */
+    private const NOTE_NAMES_MAX = 20;
 
     /**
      * Nach roomClimate(): die Treffer, die nicht das Klima ihres Raums waren (Name und Raum), und nach welchem Typ gefragt war.
@@ -516,23 +516,33 @@ final class DeviceIndex
 
     /**
      * Schlusszeile zu roomClimate(): wie viele Werte dort nicht das Klima des Raums sind und wie sie heißen. Ohne Namen riet
-     * das Modell name=Temperatur und bekam wieder nur den Raumwert (Code-Review 13.11.2026). Aus mehreren Räumen trägt
-     * jeder Name seinen Raum; nach CLIMATE_NAMES_MAX Namen folgt nur noch die Anzahl.
+     * das Modell name=Temperatur und bekam wieder nur den Raumwert (Code-Review 13.11.2026).
      */
     private function climateNote(): string
     {
         if ($this->besideClimate === []) {
             return '';
         }
-        $oneRoom = count(array_unique(array_map(static fn (array $b): string => self::normalize($b[1]), $this->besideClimate))) === 1;
-        $names = array_values(array_unique(array_map(static fn (array $b): string => $oneRoom ? $b[0] : $b[0] . ' (' . $b[1] . ')', $this->besideClimate)));
-        $list = implode(', ', array_slice($names, 0, self::CLIMATE_NAMES_MAX));
-        if (count($names) > self::CLIMATE_NAMES_MAX) {
-            $list = sprintf($this->t('%s and %d more'), $list, count($names) - self::CLIMATE_NAMES_MAX);
-        }
         return sprintf($this->climateKind === 'humidity'
             ? $this->t('%d further humidity value(s) there are not the room humidity; ask for them with name: %s.')
-            : $this->t('%d further temperature value(s) there are not the room temperature; ask for them with name: %s.'), count($this->besideClimate), $list);
+            : $this->t('%d further temperature value(s) there are not the room temperature; ask for them with name: %s.'), count($this->besideClimate), $this->nameList($this->besideClimate));
+    }
+
+    /**
+     * Namen für einen Hinweis, mit dem ein Modell gezielt weiterfragt: aus mehreren Räumen jeder mit seinem Raum, nach
+     * NOTE_NAMES_MAX Namen nur noch die Anzahl.
+     *
+     * @param list<array{0: string, 1: string}> $named Name und Raum
+     */
+    private function nameList(array $named): string
+    {
+        $oneRoom = count(array_unique(array_map(static fn (array $n): string => self::normalize($n[1]), $named))) === 1;
+        $names = array_values(array_unique(array_map(static fn (array $n): string => $oneRoom ? $n[0] : $n[0] . ' (' . $n[1] . ')', $named)));
+        $list = implode(', ', array_slice($names, 0, self::NOTE_NAMES_MAX));
+        if (count($names) > self::NOTE_NAMES_MAX) {
+            $list = sprintf($this->t('%s and %d more'), $list, count($names) - self::NOTE_NAMES_MAX);
+        }
+        return $list;
     }
 
     /**
@@ -685,10 +695,10 @@ final class DeviceIndex
             $beside = $this->besideClimate;
             if ($range !== null) {
                 [, $from, $to] = $range;
-                $result = $this->history($matches, $rangeLevel, $from, $to, $filter . $rangeLabel);
+                $result = $this->history($matches, $rangeLevel, $from, $to, $filter . $rangeLabel, $room !== '');
             } else {
                 [, $from, $to] = self::periodBounds($period, $this->backend->timestamp());
-                $result = $this->history($matches, $this->chartLevel($period, $from, $to), $from, $to, $filter . ', period=' . $period);
+                $result = $this->history($matches, $this->chartLevel($period, $from, $to), $from, $to, $filter . ', period=' . $period, $room !== '');
             }
             $this->besideClimate = $beside;
             return $this->withClimateNote($result);
@@ -1442,7 +1452,7 @@ final class DeviceIndex
      * @param list<array<string, mixed>> $matches
      * @return array{text: string, isError: bool}
      */
-    private function history(array $matches, int $level, int $from, int $to, string $filter): array
+    private function history(array $matches, int $level, int $from, int $to, string $filter, bool $oneRoom = false): array
     {
         // Zustände (an/aus, offen/zu, Auswahl wie der Batteriemodus) bekommen eine Zeitleiste statt Minimum, Mittel und
         // Maximum: „05:00 1 / 1.8 / 2“ sagte niemandem etwas (B69, 13.10.2026).
@@ -1496,7 +1506,12 @@ final class DeviceIndex
         if (count($measured) > self::HISTORY_MAX) {
             // „Gib einen Raum oder einen Namen an, höchstens 5 auf einmal“ las ein Modell als fünf Räume in room; die
             // Kommaliste gibt es aber nur bei show_chart (B105, Claude-App 08.11.2026). Für get_state nennt die Absage
-            // deshalb den Weg, den es gibt; im Diagramm bleibt der alte Satz.
+            // deshalb den Weg, den es gibt; im Diagramm bleibt der alte Satz. Ist schon ein Raum genannt, hilft „je Raum“
+            // nicht, dann nennt sie die Geräte beim Namen (Code-Review 13.11.2026, Befund 5).
+            if ($this->chart === null && $oneRoom) {
+                return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s), at most %d per call. Ask for each device on its own with name: %s.'), count($measured), $filter, self::HISTORY_MAX,
+                    $this->nameList(array_map(static fn (array $e): array => [(string)$e['Name'], (string)$e['Room']], $measured))));
+            }
             if ($this->chart === null) {
                 return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s), at most %d per call. room takes a single room, not a list. Make one call per room or give one device in name.'), count($measured), $filter, self::HISTORY_MAX));
             }

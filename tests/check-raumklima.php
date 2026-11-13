@@ -227,4 +227,23 @@ $gedraengeMit = static function (array $zeilen, RoomIndex $liste): mixed {
 pruefe($gedraengeMit($geraete, $liste) === [], 'mit Angabe am Raum fällt der Keller im Selbsttest nicht mehr auf: ' . json_encode($gedraengeMit($geraete, $liste), JSON_UNESCAPED_UNICODE));
 pruefe($gedraengeMit($geraete, new RoomIndex(raeume(['Keller' => [0, 56003]]))) === [['room' => 'Keller', 'type' => 'temperature', 'count' => 16]], 'nur die Luftfeuchte anzugeben hilft der Temperatur nicht');
 
+/* --- Verlauf: zu viele Fühler in einem genannten Raum ------------------------------------------------ */
+
+// Code-Review 13.11.2026, Befund 5: Die Absage aus build 286 riet auch bei genanntem Raum „Make one call per room“. Das
+// Modell hätte denselben Aufruf wiederholt. Mit Raum nennt sie die Geräte beim Namen, wie die Schlusszeile des
+// Raumklimas; ohne Raum (auch mit Etage) bleibt der Satz aus build 286. Der Keller ohne Angabe hat 16 Fühler (Raumfühler
+// und Thermostat lesen dieselbe Variable).
+$verlaufNamen = 'Temperatur, Warmwasserspeicher, Vorlauf, Rücklauf, Vorlauf-Soll, Temperatur Kühlschrank, Temperatur Kühltruhe, Temperatur Weinkühlschrank, '
+    . 'Strang 1 Vorlauf, Strang 1 Rücklauf, Strang 2 Vorlauf, Strang 2 Rücklauf, Strang 3 Vorlauf, Strang 3 Rücklauf, Warmwasser Vorlauf, Warmwasser Rücklauf';
+$r = frage(['room' => 'Keller', 'type' => 'temperature', 'period' => 'last_week'], raeume([]));
+pruefe($r['isError'] && $r['text'] === 'Too many measured values (16) for a history (room=Keller, type=temperature, period=last_week), at most 5 per call. Ask for each device on its own with name: ' . $verlaufNamen . '.',
+    'mit Raum nennt die Absage die Geräte, nicht „je Raum“: ' . $r['text']);
+$r = frage(['room' => 'Keller', 'type' => 'temperature', 'period' => 'last_week'], raeume([]), null, 'get', ['Too many measured values (%d) for a history (%s), at most %d per call. Ask for each device on its own with name: %s.' => 'Zu viele Messwerte (%d) für einen Verlauf (%s), höchstens %d je Aufruf. Frag jedes Gerät einzeln mit name ab: %s.']);
+pruefe($r['text'] === 'Zu viele Messwerte (16) für einen Verlauf (room=Keller, type=temperature, period=last_week), höchstens 5 je Aufruf. Frag jedes Gerät einzeln mit name ab: ' . $verlaufNamen . '.', 'übersetzbar: ' . $r['text']);
+$r = frage(['floor' => 'Keller', 'type' => 'temperature', 'period' => 'last_week'], raeume([]));
+pruefe($r['isError'] && str_ends_with($r['text'], 'room takes a single room, not a list. Make one call per room or give one device in name.'), 'mit Etage ohne Raum bleibt „je Raum“ ein Weg: ' . $r['text']);
+// Der genannte Weg führt zum Ziel
+$r = frage(['room' => 'Keller', 'name' => 'Strang 2 Vorlauf', 'period' => 'last_week'], raeume([]));
+pruefe(!$r['isError'] && str_starts_with($r['text'], 'History of 1 measured value(s) (room=Keller, name=Strang 2 Vorlauf, period=last_week)'), 'ein Name aus der Absage liefert den Verlauf: ' . strtok($r['text'], "\n"));
+
 ende('Raumklima');
