@@ -5132,7 +5132,8 @@ final class DeviceIndex
                 : $state['text'] . ' (' . $text . ')';
             return $state;
         };
-        // Innentemperatur eines Kühlgeräts: steht hinter Zustand und Leistung. Fehlt die Variable, bleibt sie weg.
+        // Innentemperatur eines Kühlgeräts: steht hinter Zustand und Leistung. Fehlt die Variable, sperrt
+        // das Modul die Zeile schon vorher wie bei jeder Fähigkeit (findProblems); bleibt der Wert trotzdem aus, fehlt nur der Text.
         $inside = isset($entry['roles']['inside']) ? $this->backend->read($entry['roles']['inside']) : null;
         $insideText = $inside === null || $inside['formatted'] === '' ? null : sprintf($this->t('inside %s'), $inside['formatted']);
         if (isset($entry['roles']['power']) && array_diff(array_keys($entry['roles']), ['power', 'energy', 'inside']) === []) {

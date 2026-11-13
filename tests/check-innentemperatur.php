@@ -87,7 +87,8 @@ $nurLeistung = array_map(static fn (array $g): array => $g['Name'] === 'Kühltru
 $r = frage(['room' => 'Keller', 'name' => 'Kühltruhe'], $nurLeistung);
 pruefe(str_ends_with($r['text'], 'Keller | Kühltruhe | appliance | 0.0 W (inside -19.0 °C)'), 'nur Leistung und Fühler: ' . $r['text']);
 
-// Fehlt der Fühler an der Anlage, sagt es die Zeile, der Rest bleibt
+// Liefert der Fühler keinen Wert, fehlt nur die Innentemperatur. Am Modul sperrt eine gelöschte Variable die Zeile schon
+// vorher (findProblems, wie bei jeder Fähigkeit); hier prüft DeviceIndex allein.
 $r = frage(['room' => 'Keller', 'name' => 'Kühltruhe'], array_map(static fn (array $g): array => $g['Name'] === 'Kühltruhe' ? ['InsideVariableID' => 69990] + $g : $g, mitFuehler()));
 pruefe(str_ends_with($r['text'], 'Keller | Kühltruhe | switch | off (0.0 W)'), 'ein Fühler, den es nicht gibt, lässt die Zeile ohne Innentemperatur: ' . $r['text']);
 
