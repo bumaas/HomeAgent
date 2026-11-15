@@ -7108,10 +7108,11 @@ final class DeviceIndex
     private function hourlyPrices(int $from, int $to): ?array
     {
         $history = $this->priceVariable > 0 ? $this->historyRows($this->priceVariable, 0, $from, $to) : null;
-        $cent = $history === null ? null : self::centUnit($history['unit']);
-        if ($history === null || $cent === null || $history['rows'] === []) {
+        if ($history === null || $history['rows'] === []) {
             return null;
         }
+        // Eine Einheit, die weder Cent noch Euro ist, kommt hier nicht an (costSlices)
+        $cent = self::centUnit($history['unit']) ?? false;
         return array_map(static fn (float $v): float => $cent ? $v / 100 : $v, array_column($history['rows'], 'avg', 'time'));
     }
 
@@ -7175,13 +7176,13 @@ final class DeviceIndex
     /**
      * Kosten je Stunde: Netzbezug × Preis, Vergütung der Einspeisung, Hausverbrauch × Preis (ohne PV und Batterie). Stunden
      * ohne Preis zählen als fehlend, auch wenn der ganze Zeitraum keinen Preis hat (Preis später archiviert als die
-     * Zähler). null = kein Strompreis eingetragen, Strompreis ohne Einheit oder keine Bilanz.
+     * Zähler). null = kein Strompreis eingetragen oder keine Bilanz. Die Einheit des Preises prüft costSlices.
      *
      * @return null|array{0: array<int, array{kwh: float, import: float, revenue: float, house: float, price: float}>, 1: int}
      */
     private function hourlyCosts(int $from, int $to): ?array
     {
-        if ($this->priceVariable === 0 || $this->balance === [] || $this->priceUnitMissing()) {
+        if ($this->priceVariable === 0 || $this->balance === []) {
             return null;
         }
         $parts = $this->balanceParts($this->balance, 0, $from, $to);
@@ -7216,7 +7217,8 @@ final class DeviceIndex
      */
     private function costSlices(int $from, int $to): Generator
     {
-        if ($this->priceVariable === 0 || $this->balance === []) {
+        // Ohne Einheit in Cent oder Euro gibt es keine Kosten; das prüft nur diese Stelle, jede Kostenrechnung geht hier durch
+        if ($this->priceVariable === 0 || $this->balance === [] || $this->priceUnitMissing()) {
             return;
         }
         // Ohne Beginn (von Anfang an) gibt es keinen ersten Monat; das kommt nur aus eigenen Aufrufen ohne Zeitraum

@@ -397,7 +397,7 @@ class HomeAgent extends IPSModuleStrict
         if ($price === 0) {
             return $line;
         }
-        $unit = $this->priceUnitMissing() ? trim($this->backend()->unit($price)) : null;
+        $unit = $this->priceUnitProblem($price);
         return $line . sprintf($this->Translate(', electricity price from "%s"'), IPS_GetName($price)) . match (true) {
             $unit === null => '',
             $unit === ''   => $this->Translate(' (no unit, no costs)'),
@@ -487,8 +487,8 @@ class HomeAgent extends IPSModuleStrict
             }
         }
         // Strompreis ohne Einheit: Cent oder Euro rät das Modul nicht, dann gibt es keine Kosten
-        if ($this->priceUnitMissing()) {
-            $unit = trim($this->backend()->unit($this->priceVariable()));
+        $unit = $this->priceUnitProblem($this->priceVariable());
+        if ($unit !== null) {
             $lines[] = $unit === ''
                 ? sprintf($this->Translate('Note: the electricity price %s has no unit, so there are no costs; its presentation or profile needs ct/kWh or €/kWh as suffix'), $named($this->priceVariable()))
                 : sprintf($this->Translate('Note: the electricity price %s has the unit "%s", which is neither cents nor euros, so there are no costs; its presentation or profile needs ct/kWh or €/kWh as suffix'), $named($this->priceVariable()), $unit);
@@ -2367,7 +2367,8 @@ class HomeAgent extends IPSModuleStrict
         // Die Leistung jetzt (period=now) mit einem Gerät mit Leistung oder der Leistungsbilanz.
         $hasPowerBalance = $this->balanceKeys(true) !== [];
         // Kosten gibt es nur mit einem Strompreis in Cent oder Euro; ohne das Feld nennt es auch keine Beschreibung
-        $hasCosts = $this->priceVariable() > 0 && !$this->priceUnitMissing();
+        $price = $this->priceVariable();
+        $hasCosts = $price > 0 && $this->priceUnitProblem($price) === null;
         $hasPower = $hasPowerBalance || array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['power']));
         // Verlauf von Messwerten (Temperatur, Feuchte …) über dieselben Zeiträume.
         $hasHistory = array_any($this->usableDevices(), static fn (array $row): bool => DeviceIndex::isMeasured($row));
@@ -3177,11 +3178,17 @@ class HomeAgent extends IPSModuleStrict
         return $id > 1 && IPS_VariableExists($id) && $this->balanceKeys() !== [] ? $id : 0;
     }
 
-    /** Ist ein Strompreis eingetragen, dessen Variable weder Cent noch Euro als Einheit trägt? Dann gibt es keine Kosten. */
-    private function priceUnitMissing(): bool
+    /**
+     * Was an der Einheit des Strompreises fehlt: null = nichts (oder kein Strompreis), '' = keine Einheit, sonst die
+     * Einheit, die weder Cent noch Euro ist. Dann gibt es keine Kosten. Die Regel selbst steht in DeviceIndex.
+     */
+    private function priceUnitProblem(int $price): ?string
     {
-        $id = $this->priceVariable();
-        return $id > 0 && !DeviceIndex::priceUnitKnown($this->backend()->unit($id));
+        if ($price === 0) {
+            return null;
+        }
+        $unit = trim($this->backend()->unit($price));
+        return DeviceIndex::priceUnitKnown($unit) ? null : $unit;
     }
 
     /**
