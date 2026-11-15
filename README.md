@@ -540,12 +540,23 @@ Für Geräte mit einem Zustand (an/aus, offen/zu, Bewegung, eine Auswahl wie die
 dieselben Zeiträume eine **Zeitleiste**: wie lange jeder Zustand galt und, bei wenigen Abschnitten, wann. Die Antwort
 lautet dann etwa „Flur | Haustür | door | offen 12 min, geschlossen 15 h 36 min“ und darunter „offen 08:32,
 09:17-09:18, …“. Hat ein Gerät auch einen Zähler, stehen Verbrauch und Zeiten in einer Zeile („0.2 kWh, an 3 h 31 min,
-aus 12 h 18 min“). Ein Zustand ohne Archiv wird ausgelassen und gezählt. Fürs ganze Haus gibt es keine Zeitleiste.
+aus 12 h 18 min“). Ein Zustand ohne Archiv wird ausgelassen, die Antwort nennt das Gerät und die Variable, deren
+Archiv fehlt („Fenster (Bad): Position #24234“). Fürs ganze Haus gibt es keine Zeitleiste.
 
 Rollläden und Fenster mit Antrieb bekommen ihre Zeitleiste aus der Position: offen, teilweise offen und geschlossen,
 beim Kippfenster gekippt. Auf „Wann wurden die Rollläden geschlossen?“ steht dann je Rollladen etwa „geschlossen
 9 h 45 min, geschlossen seit 09.11. 17:48“. Ist die Position nicht geloggt, sagt die Antwort das. Lamellen haben
-keine Zeitleiste, ihre Position kennt kein Offen oder Geschlossen.
+keine Zeitleiste, ihre Position kennt kein Offen oder Geschlossen. Hat ein Fenster einen Kontakt und einen Antrieb,
+kommt die Zeitleiste vom Kontakt. Ist nur die Position geloggt, kommt sie von dort.
+
+### „Wann ging das Ventil im Musikzimmer zu?“
+
+Der Verlauf eines Thermostats hat drei Teile, jeder mit seinem Namen in der Zeile. Die Ist-Temperatur und jedes Ventil
+kommen mit Minimum und Maximum samt Zeitpunkt („Ventil: Minimum 0 % (2026-11-14 11:04), Maximum 98 % …“), bei einem
+einzelnen Thermostat auch das Ventil je Stunde. Der Sollwert steht als Zeitleiste da, mit der Dauer je Wert und dem
+Zeitpunkt jeder Änderung („Sollwert: 21.5 °C 16 h, 20.5 °C 6 h“), ein Sonder-Sollwert mit dem Text seines Eintrags.
+Ist eine der Variablen nicht geloggt, steht in ihrer Zeile „kein Verlauf archiviert“. Im Diagramm sind Temperatur und
+Ventile Linien, der Sollwert ist ein Band darunter. Bei der Frage nach der Raumtemperatur bleibt es bei der Temperatur.
 
 ### Für Skripte
 
@@ -743,7 +754,6 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
 
 - Farbe als Text geht noch nicht. Die Betriebsart eines Thermostats geht nur über eine Variable mit Aktion;
   bei Homematic-Wandthermostaten hat `CONTROL_MODE` keine.
-- Den Verlauf einer Ventilstellung zeigt das Modul noch nicht, nur die Stellung von jetzt.
 - Von einer Kamera gibt es das gespeicherte Standbild, kein Livebild und keinen Stream. Zum Verkleinern braucht ein Bild
   Arbeitsspeicher, bei 3840 x 2160 Pixeln rund 45 MB. Hat das PHP der Anlage weniger frei (auf kleinen Geräten kann
   das so sein), sagt der Assistent das. Stellen Sie dann an der Kamera oder am Grabber ein kleineres Bild ein.

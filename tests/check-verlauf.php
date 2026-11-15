@@ -99,8 +99,9 @@ pruefe(($anlage->historyRequests[0] ?? null) === [41351, 1], 'Tageswerte aus Stu
 /* --- Stunden: heute und gestern ---------------------------------------------------------------- */
 
 $r = frage(['type' => 'thermostat', 'period' => 'yesterday']);
-pruefe(!$r['isError'] && str_contains($zeile($r, 0), 'per hour') && $zeile($r, 1) === 'Wintergarten | Heizung | thermostat | ' . $spanne($r, 1, '°C'), 'beim Thermostat der Verlauf der Ist-Temperatur, stündlich: ' . $zeile($r, 0) . ' / ' . $zeile($r, 1));
-pruefe($anzahl($r) === 26 && $zeile($r, 2) === $erwartet(19960, '0', '2026-10-09 00:00', 'Y-m-d H:i') && $zeile($r, 25) === $erwartet(19960, '0', '2026-10-09 23:00', 'Y-m-d H:i'), 'gestern: 24 Stunden von 0 bis 23 Uhr: ' . $anzahl($r));
+pruefe(!$r['isError'] && str_contains($zeile($r, 0), 'per hour') && $zeile($r, 1) === 'Wintergarten | Heizung | thermostat | actual temperature: ' . $spanne($r, 1, '°C'), 'beim Thermostat der Verlauf der Ist-Temperatur, als solche benannt, stündlich: ' . $zeile($r, 0) . ' / ' . $zeile($r, 1));
+// Seit 15.11.2026 folgt die Zeile des Sollwerts; er ist in diesem Mitschnitt nicht archiviert
+pruefe($anzahl($r) === 27 && $zeile($r, 26) === 'Wintergarten | Heizung | thermostat | setpoint: no history archived' && $zeile($r, 2) === $erwartet(19960, '0', '2026-10-09 00:00', 'Y-m-d H:i') && $zeile($r, 25) === $erwartet(19960, '0', '2026-10-09 23:00', 'Y-m-d H:i'), 'gestern: 24 Stunden von 0 bis 23 Uhr: ' . $anzahl($r));
 $r = frage(['name' => 'Außentemperatur', 'period' => 'today']);
 pruefe(!$r['isError'] && $zeile($r, 1) === 'Garten | Temperatur (Außentemperatur) | temperature | ' . $spanne($r, 1, '°C') && $anzahl($r) === 18 && $zeile($r, 17) === $erwartet(53076, '0', '2026-10-10 15:00', 'Y-m-d H:i'), 'heute über einen Alias, stündlich bis jetzt: ' . $r['text']);
 
@@ -116,7 +117,7 @@ pruefe(!$r['isError'] && str_contains($zeile($r, 0), 'per month') && ($anlage->h
 $r = frage(['room' => 'Gast', 'period' => 'last_week']);
 pruefe(!$r['isError'] && str_starts_with($zeile($r, 0), 'History of 2 measured value(s) (room=Gast, period=last_week)') && (explode("\n", $r['text'])[$zeileMit($r, 'Gast | Luftfeuchte | humidity | ')] ?? '') === 'Gast | Luftfeuchte | humidity | ' . $spanne($r, $zeileMit($r, 'Gast | Luftfeuchte | humidity | '), '%'), 'ohne Typ: Temperatur und Feuchte: ' . $zeile($r, 0));
 // Seit 10.11.2026 nennt die Zeile den Grund: Der Zustand des Fensters ist nicht archiviert
-pruefe($zeile($r, -1) === '1 device(s) without archived history were left out.', 'das Fenster wird ausgelassen und gezählt: ' . $zeile($r, -1));
+pruefe($zeile($r, -1) === '1 device(s) without archived history were left out. Not archived in Symcon: Fenster links: state #24052.', 'das Fenster wird ausgelassen, gezählt und mit seiner Variable genannt: ' . $zeile($r, -1));
 $r = frage(['name' => 'Heizkörper', 'period' => 'today']);
 pruefe(!$r['isError'] && $zeile($r, 1) === 'Wintergarten | Heizkörper | temperature | no history archived', 'nicht archiviert: ' . $r['text']);
 $r = frage(['type' => 'temperature', 'period' => 'last_week']);
@@ -143,9 +144,9 @@ $r = frage(['room' => 'Gast', 'type' => 'temperature', 'from' => '2026-09-10', '
 pruefe(!$r['isError'] && str_starts_with($zeile($r, 0), 'History of 1 measured value(s)') && $anzahl($r) === 32 && $zeile($r, 1) === 'Gast | Temperatur | temperature | ' . $spanne($r, 1, '°C'), 'Raumfühler und Ist-Temperatur des Thermostats sind eine Variable: nur einmal: ' . $zeile($r, 0) . ' / ' . $anzahl($r));
 pruefe($anlage->historyRequests === [[41351, 1]], 'das Archiv wird nur einmal gefragt: ' . json_encode($anlage->historyRequests));
 $r = frage(['room' => 'Gast', 'period' => 'last_week']);
-pruefe(str_starts_with($zeile($r, 0), 'History of 2 measured value(s)') && $zeile($r, -1) === '1 device(s) without archived history were left out.', 'ohne Typ: die Dublette zählt weder als Messwert noch als ausgelassen: ' . $zeile($r, 0) . ' / ' . $zeile($r, -1));
+pruefe(str_starts_with($zeile($r, 0), 'History of 2 measured value(s)') && $zeile($r, -1) === '1 device(s) without archived history were left out. Not archived in Symcon: Fenster links: state #24052.', 'ohne Typ: die Dublette zählt weder als Messwert noch als ausgelassen: ' . $zeile($r, 0) . ' / ' . $zeile($r, -1));
 $r = frage(['room' => 'Gast', 'name' => 'Heizung', 'period' => 'last_week']);
-pruefe(!$r['isError'] && $zeile($r, 1) === 'Gast | Heizung | thermostat | ' . $spanne($r, 1, '°C'), 'nach Namen gefragt kommt das Thermostat selbst: ' . $zeile($r, 1));
+pruefe(!$r['isError'] && $zeile($r, 1) === 'Gast | Heizung | thermostat | actual temperature: ' . $spanne($r, 1, '°C'), 'nach Namen gefragt kommt das Thermostat selbst: ' . $zeile($r, 1));
 $liste = $listeVorher;
 
 /* --- Deutsch ----------------------------------------------------------------------------------- */

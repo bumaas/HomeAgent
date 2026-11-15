@@ -200,7 +200,7 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   versteht `on`/`off`, nur mit `type=thermostat` oder Namen; Karte ohne Schalter, mit Knöpfen „Off“/„On“ am Sollwert\n  (`specials`, `valueCaption`). Test `check-sonderwert-befehl.php`.
 - **Ventile** (B101): `valve`, `valve2`, `valve3` am `thermostat`, im Dialog nebeneinander (`ValveRow`); es zählt das offenste
   in Prozent des Bereichs (`valveOf`). Aktiv nur mit Ventil über 0 und nie auf einem Sonder-Sollwert (`heatingActive`); der
-  Selbsttest nennt Ventilvariablen mit nur benannten Einträgen (HmIP `VALVE_STATE`). Noch nicht: Verlauf. Test `check-ventil.php`.
+  Selbsttest nennt Ventilvariablen mit nur benannten Einträgen (HmIP `VALVE_STATE`). Test `check-ventil.php`.
 - **Kamera** (`camera`, B102): Fähigkeit `image` = Medienobjekt vom Typ Bild (`ImageMediaID`, die einzige Fähigkeit ohne
   Variable, nur über `DeviceBackend::image()`). `get_state` nennt die Aufnahmezeit (`cameraText`), das Modul frischt nie auf
   und fasst Streams nicht an (Zugangsdaten in der Adresse). Test `check-kamera.php`.
@@ -291,6 +291,11 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   offen, geschlossen (`travelClass`), alle Abschnitte einzeln, im Band mit fester Farbe je Zustand (`color`); bis jetzt
   nennt die Zeile „seit“, den Beginn des Zustands (`earlier`, `SINCE_ROWS`). Ohne Archiv und bei Lamellen oder unbekanntem
   Bereich (`unreadableTravel`) je eigene Absage, nie „misst Energie“. Test `check-fahrzeitleiste.php`.
+- **Ohne Archiv** nennt die Auslassung oder Absage Gerät und Variable (`unarchivedList`: Zustand, Position, mit ID).
+  Fenster mit Kontakt und Antrieb: Kontakt zuerst, ohne dessen Archiv die Position. Test `check-thermostat-verlauf.php`.
+- **Verlauf des Thermostats** (nicht bei `type=temperature`): Ist-Temperatur und Ventile als Messwerte mit Namen des
+  Teils, Sollwert als Zeitleiste aus Rohwerten (`setpointLines`, Sonderwert mit Text), weil Aggregate ihn verzögen.
+  `HISTORY_MAX` zählt nur die Ist-Temperaturen, Ventilreihen tragen `extra`. Test `check-thermostat-verlauf.php`.
 - **`show_chart`** (`DeviceIndex::chart`): nur mit Gerät mit Verlauf oder mit Bilanz. Werte in `structuredContent`, das
   Modell bekommt nur Kopfzeile und Kennzahlen. `resourceUri` `ui://homeagent/chart/<Prüfsumme der Seite>` (claude.ai
   speichert Seiten lange), `readResource` liefert auch zu alten Prüfsummen die heutige Seite. Jede Art liefert `range`

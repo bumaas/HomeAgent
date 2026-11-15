@@ -73,7 +73,7 @@ $r = frage(['room' => 'Küche', 'name' => 'Bewegungsmelder', 'period' => 'yester
 pruefe($hat($r, 'Küche | Bewegungsmelder | presence | erkannt 3 h 24 min (171-mal), nicht erkannt 20 h 36 min (172-mal)'), 'auf Deutsch: ' . $r['text']);
 // Nicht archiviert und kein Zähler: Absage, die beides nennt („misst keine Energie“ allein wäre bei „wann war es an?“ falsch)
 $r = frage(['room' => 'Bad', 'name' => 'Deckenlicht', 'period' => 'yesterday']);
-pruefe($r['isError'] && $r['text'] === 'None of the matching devices measures energy or has an archived state (room=Bad, name=Deckenlicht, period=yesterday).', 'ohne Archiv: gesagt, nicht geraten: ' . $r['text']);
+pruefe($r['isError'] && $r['text'] === 'None of the matching devices measures energy or has an archived state (room=Bad, name=Deckenlicht, period=yesterday). Not archived: Deckenlicht: state #26758.', 'ohne Archiv: gesagt, nicht geraten, mit der Variable: ' . $r['text']);
 
 /* --- Zähler und Zustand in einer Zeile ----------------------------------------------------------- */
 

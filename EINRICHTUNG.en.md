@@ -163,6 +163,9 @@ How to proceed:
    - For blinds also the moving state (MovingVariableID) where there is one. If with KNX the position
      instance has no feedback address, name that as an open question to me: its variable then only
      shows the value sent.
+   - For windows with a drive, besides the position (LevelVariableID) also the contact or a state
+     variable (StateVariableID) where there is one. If neither of the two is archived, name that as
+     an open question to me: the window then has no timeline.
    - Power and energy meters where they exist. For a heat pump also a heat meter or heat output; two
      rows for heating and hot water only if both heat and electricity are measured separately,
      otherwise one. If the heat only counts the environmental yield (Vaillant over ebusd:

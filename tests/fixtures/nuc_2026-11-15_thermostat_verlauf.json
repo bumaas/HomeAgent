@@ -1,0 +1,3173 @@
+{
+    "_quelle": "nuc, nur gelesen am 15.11.2026 10:05 über das Backend des Moduls (SymconDeviceBackend: read, unit, options, range, setpointRange, stateSeries, history). Zeilen der Freigabeliste unverändert (nur die belegten Variablen): drei Thermostate (Musikzimmer, Wohnzimmer mit zwei Ventilen, Wintergarten) und drei Fenster mit Antrieb (Flur, Bad, Schlafen Westfenster). Zeitraum 14.11.2026 00:00 bis jetzt. rohwerte (Wert vor dem Zeitraum zuerst) für Sollwerte, Positionen und die Zusatzvariablen, aggregate Stufe 0 (Stunden) und 1 (Tage) für Ist-Temperaturen und Ventile. Zusatzvariablen, die in keiner Zeile stehen: #17096 Status (selbst angelegte Variable Gekippt/Geschlossen am Antrieb des Westfensters, archiviert) und #20675 WORKING des Flurfensters (nicht archiviert). Nicht archiviert sind am nuc die Positionen #24234 (Bad) und #22996 (Schlafen).",
+    "zeitzone": "Europe/Berlin",
+    "jetzt": 1794733500,
+    "geraete": [
+        {
+            "Room": "Bad",
+            "Name": "Fenster",
+            "Aliases": "Badfenster",
+            "Type": "window",
+            "LevelVariableID": 24234,
+            "MovingVariableID": 46693,
+            "Invert": false,
+            "Tilt": true,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Flur",
+            "Name": "Fenster",
+            "Aliases": "Flurfenster",
+            "Type": "window",
+            "LevelVariableID": 20009,
+            "MovingVariableID": 20675,
+            "Invert": false,
+            "Tilt": true,
+            "ReadOnly": false
+        },
+        {
+            "Room": "Musikzimmer",
+            "Name": "Heizung",
+            "Aliases": "Thermostat, Heizkörper",
+            "Type": "thermostat",
+            "StateVariableID": 41945,
+            "Invert": false,
+            "ReadOnly": false,
+            "SetpointVariableID": 48076,
+            "Tilt": false,
+            "ValveVariableID": 27238
+        },
+        {
+            "Room": "Schlafen",
+            "Name": "Westfenster",
+            "Aliases": "Fenster West",
+            "Type": "window",
+            "LevelVariableID": 22996,
+            "MovingVariableID": 27170,
+            "Invert": false,
+            "Tilt": true,
+            "ReadOnly": false
+        },
+        {
+            "Aliases": "Wandthermostat",
+            "Invert": false,
+            "ReadOnly": false,
+            "Tilt": false,
+            "StateVariableID": 19960,
+            "SetpointVariableID": 11093,
+            "Room": "Wintergarten",
+            "Name": "Heizung",
+            "Type": "thermostat",
+            "ValveVariableID": 27311
+        },
+        {
+            "Room": "Wohnzimmer",
+            "Name": "Heizung",
+            "Aliases": "Thermostat, Heizkörper",
+            "Type": "thermostat",
+            "StateVariableID": 38498,
+            "Invert": false,
+            "ReadOnly": false,
+            "SetpointVariableID": 48140,
+            "Tilt": false,
+            "ValveVariableID": 46683,
+            "Valve2VariableID": 30193
+        }
+    ],
+    "variablen": {
+        "17096": {
+            "name": "Status",
+            "wert": false,
+            "formatiert": "Geschlossen",
+            "aktion": true,
+            "einheit": "",
+            "optionen": [
+                [
+                    false,
+                    "Geschlossen"
+                ],
+                [
+                    true,
+                    "Gekippt"
+                ]
+            ],
+            "geloggt": true,
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "rohwerte": [
+                [
+                    1794610725,
+                    true
+                ],
+                [
+                    1794615301,
+                    false
+                ],
+                [
+                    1794615301,
+                    true
+                ],
+                [
+                    1794615403,
+                    false
+                ],
+                [
+                    1794619980,
+                    true
+                ],
+                [
+                    1794619980,
+                    false
+                ],
+                [
+                    1794620082,
+                    true
+                ],
+                [
+                    1794624660,
+                    false
+                ],
+                [
+                    1794624660,
+                    true
+                ],
+                [
+                    1794624762,
+                    false
+                ],
+                [
+                    1794629340,
+                    true
+                ],
+                [
+                    1794629340,
+                    false
+                ],
+                [
+                    1794629441,
+                    true
+                ],
+                [
+                    1794634020,
+                    false
+                ],
+                [
+                    1794634020,
+                    true
+                ],
+                [
+                    1794634122,
+                    false
+                ],
+                [
+                    1794638700,
+                    true
+                ],
+                [
+                    1794638700,
+                    false
+                ],
+                [
+                    1794638802,
+                    true
+                ],
+                [
+                    1794643383,
+                    false
+                ],
+                [
+                    1794643383,
+                    true
+                ],
+                [
+                    1794643485,
+                    false
+                ],
+                [
+                    1794672900,
+                    true
+                ],
+                [
+                    1794672900,
+                    false
+                ],
+                [
+                    1794673002,
+                    true
+                ],
+                [
+                    1794677581,
+                    false
+                ],
+                [
+                    1794677581,
+                    true
+                ],
+                [
+                    1794677682,
+                    false
+                ],
+                [
+                    1794685320,
+                    true
+                ],
+                [
+                    1794685320,
+                    false
+                ],
+                [
+                    1794685421,
+                    true
+                ],
+                [
+                    1794690002,
+                    false
+                ],
+                [
+                    1794694681,
+                    true
+                ],
+                [
+                    1794694681,
+                    false
+                ],
+                [
+                    1794694783,
+                    true
+                ],
+                [
+                    1794699360,
+                    false
+                ],
+                [
+                    1794699360,
+                    true
+                ],
+                [
+                    1794699482,
+                    false
+                ],
+                [
+                    1794704040,
+                    true
+                ],
+                [
+                    1794704040,
+                    false
+                ],
+                [
+                    1794704162,
+                    true
+                ],
+                [
+                    1794708720,
+                    false
+                ],
+                [
+                    1794708720,
+                    true
+                ],
+                [
+                    1794708842,
+                    false
+                ],
+                [
+                    1794716100,
+                    true
+                ],
+                [
+                    1794716100,
+                    false
+                ],
+                [
+                    1794716202,
+                    true
+                ],
+                [
+                    1794720780,
+                    false
+                ],
+                [
+                    1794720780,
+                    true
+                ],
+                [
+                    1794720882,
+                    false
+                ],
+                [
+                    1794727441,
+                    true
+                ],
+                [
+                    1794727441,
+                    false
+                ],
+                [
+                    1794727542,
+                    true
+                ],
+                [
+                    1794732120,
+                    false
+                ],
+                [
+                    1794732120,
+                    true
+                ],
+                [
+                    1794732242,
+                    false
+                ]
+            ],
+            "aggregate": []
+        },
+        "20675": {
+            "name": "WORKING",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": false,
+            "einheit": "",
+            "optionen": [
+                [
+                    false,
+                    "Aus"
+                ],
+                [
+                    true,
+                    "An"
+                ]
+            ],
+            "geloggt": false,
+            "archiviert": false
+        },
+        "24234": {
+            "name": "LEVEL",
+            "wert": 0,
+            "formatiert": "0.0 %",
+            "aktion": true,
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 1,
+                "offen": 1,
+                "geschlossen": 0,
+                "herkunft": "reversed",
+                "profil": "Intensity.1.Reversed",
+                "schritt": 0
+            },
+            "sollbereich": {
+                "min": 0,
+                "max": 1,
+                "schritt": 0.05
+            },
+            "geloggt": false,
+            "archiviert": false
+        },
+        "46693": {
+            "name": "WORKING",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": false,
+            "einheit": "",
+            "optionen": [
+                [
+                    false,
+                    "Aus"
+                ],
+                [
+                    true,
+                    "An"
+                ]
+            ],
+            "geloggt": false,
+            "archiviert": false
+        },
+        "20009": {
+            "name": "LEVEL",
+            "wert": 0,
+            "formatiert": "0.0 %",
+            "aktion": true,
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 1,
+                "offen": 1,
+                "geschlossen": 0,
+                "herkunft": "reversed",
+                "profil": "Intensity.1.Reversed",
+                "schritt": 0
+            },
+            "sollbereich": {
+                "min": 0,
+                "max": 1,
+                "schritt": 0.05
+            },
+            "geloggt": true,
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "rohwerte": [
+                [
+                    1794592845,
+                    0
+                ],
+                [
+                    1794636046,
+                    1
+                ],
+                [
+                    1794637665,
+                    0
+                ]
+            ],
+            "aggregate": []
+        },
+        "41945": {
+            "name": "TEMPERATURE",
+            "wert": 19.6,
+            "formatiert": "19.6 °C",
+            "aktion": false,
+            "einheit": "°C",
+            "optionen": [
+                [
+                    -2,
+                    "%.1f"
+                ],
+                [
+                    -1,
+                    "%.1f"
+                ],
+                [
+                    0,
+                    "%.1f"
+                ],
+                [
+                    1,
+                    "%.1f"
+                ],
+                [
+                    2,
+                    "%.1f"
+                ],
+                [
+                    3,
+                    "%.1f"
+                ],
+                [
+                    4,
+                    "%.1f"
+                ],
+                [
+                    5,
+                    "%.1f"
+                ],
+                [
+                    6,
+                    "%.1f"
+                ],
+                [
+                    7,
+                    "%.1f"
+                ],
+                [
+                    8,
+                    "%.1f"
+                ],
+                [
+                    9,
+                    "%.1f"
+                ],
+                [
+                    10,
+                    "%.1f"
+                ],
+                [
+                    11,
+                    "%.1f"
+                ],
+                [
+                    12,
+                    "%.1f"
+                ],
+                [
+                    13,
+                    "%.1f"
+                ],
+                [
+                    14,
+                    "%.1f"
+                ],
+                [
+                    15,
+                    "%.1f"
+                ],
+                [
+                    16,
+                    "%.1f"
+                ],
+                [
+                    17,
+                    "%.1f"
+                ],
+                [
+                    18,
+                    "%.1f"
+                ],
+                [
+                    19,
+                    "%.1f"
+                ],
+                [
+                    20,
+                    "%.1f"
+                ],
+                [
+                    21,
+                    "%.1f"
+                ],
+                [
+                    22,
+                    "%.1f"
+                ],
+                [
+                    23,
+                    "%.1f"
+                ],
+                [
+                    24,
+                    "%.1f"
+                ],
+                [
+                    25,
+                    "%.1f"
+                ]
+            ],
+            "geloggt": true,
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "aggregate": [
+                [
+                    {
+                        "zeit": 1794610800,
+                        "min": 20.2,
+                        "mittel": 20.21169444444444,
+                        "max": 20.3,
+                        "minzeit": 1794610800,
+                        "maxzeit": 1794611028
+                    },
+                    {
+                        "zeit": 1794614400,
+                        "min": 20.2,
+                        "mittel": 20.22563888888889,
+                        "max": 20.3,
+                        "minzeit": 1794614400,
+                        "maxzeit": 1794615840
+                    },
+                    {
+                        "zeit": 1794618000,
+                        "min": 20.2,
+                        "mittel": 20.215500000000002,
+                        "max": 20.3,
+                        "minzeit": 1794618000,
+                        "maxzeit": 1794619965
+                    },
+                    {
+                        "zeit": 1794621600,
+                        "min": 20.2,
+                        "mittel": 20.247055555555555,
+                        "max": 20.3,
+                        "minzeit": 1794621809,
+                        "maxzeit": 1794621600
+                    },
+                    {
+                        "zeit": 1794625200,
+                        "min": 20.2,
+                        "mittel": 20.218194444444446,
+                        "max": 20.3,
+                        "minzeit": 1794625200,
+                        "maxzeit": 1794625850
+                    },
+                    {
+                        "zeit": 1794628800,
+                        "min": 20.2,
+                        "mittel": 20.216916666666666,
+                        "max": 20.3,
+                        "minzeit": 1794628930,
+                        "maxzeit": 1794628800
+                    },
+                    {
+                        "zeit": 1794632400,
+                        "min": 20.2,
+                        "mittel": 20.21055555555556,
+                        "max": 20.3,
+                        "minzeit": 1794632400,
+                        "maxzeit": 1794634393
+                    },
+                    {
+                        "zeit": 1794636000,
+                        "min": 20.2,
+                        "mittel": 20.199999999999985,
+                        "max": 20.2,
+                        "minzeit": 1794636000,
+                        "maxzeit": 1794636000
+                    },
+                    {
+                        "zeit": 1794639600,
+                        "min": 20.2,
+                        "mittel": 20.199999999999992,
+                        "max": 20.2,
+                        "minzeit": 1794639600,
+                        "maxzeit": 1794639600
+                    },
+                    {
+                        "zeit": 1794643200,
+                        "min": 20.2,
+                        "mittel": 20.19999999999999,
+                        "max": 20.2,
+                        "minzeit": 1794643200,
+                        "maxzeit": 1794643200
+                    },
+                    {
+                        "zeit": 1794646800,
+                        "min": 20.2,
+                        "mittel": 20.200000000000003,
+                        "max": 20.2,
+                        "minzeit": 1794646800,
+                        "maxzeit": 1794646800
+                    },
+                    {
+                        "zeit": 1794650400,
+                        "min": 20.2,
+                        "mittel": 20.203694444444444,
+                        "max": 20.3,
+                        "minzeit": 1794650400,
+                        "maxzeit": 1794653813
+                    },
+                    {
+                        "zeit": 1794654000,
+                        "min": 20.2,
+                        "mittel": 20.228916666666656,
+                        "max": 20.3,
+                        "minzeit": 1794654000,
+                        "maxzeit": 1794656559
+                    },
+                    {
+                        "zeit": 1794657600,
+                        "min": 20.2,
+                        "mittel": 20.29125000000001,
+                        "max": 20.3,
+                        "minzeit": 1794658657,
+                        "maxzeit": 1794657600
+                    },
+                    {
+                        "zeit": 1794661200,
+                        "min": 20.1,
+                        "mittel": 20.211499999999997,
+                        "max": 20.3,
+                        "minzeit": 1794663684,
+                        "maxzeit": 1794661200
+                    },
+                    {
+                        "zeit": 1794664800,
+                        "min": 20,
+                        "mittel": 20.01925,
+                        "max": 20.1,
+                        "minzeit": 1794665493,
+                        "maxzeit": 1794664800
+                    },
+                    {
+                        "zeit": 1794668400,
+                        "min": 19.9,
+                        "mittel": 19.962555555555557,
+                        "max": 20,
+                        "minzeit": 1794670504,
+                        "maxzeit": 1794668400
+                    },
+                    {
+                        "zeit": 1794672000,
+                        "min": 19.8,
+                        "mittel": 19.83519444444444,
+                        "max": 19.9,
+                        "minzeit": 1794673267,
+                        "maxzeit": 1794672000
+                    },
+                    {
+                        "zeit": 1794675600,
+                        "min": 19.7,
+                        "mittel": 19.76519444444445,
+                        "max": 19.8,
+                        "minzeit": 1794677534,
+                        "maxzeit": 1794675600
+                    },
+                    {
+                        "zeit": 1794679200,
+                        "min": 19.6,
+                        "mittel": 19.666833333333333,
+                        "max": 19.7,
+                        "minzeit": 1794680826,
+                        "maxzeit": 1794679200
+                    },
+                    {
+                        "zeit": 1794682800,
+                        "min": 19.6,
+                        "mittel": 19.6,
+                        "max": 19.6,
+                        "minzeit": 1794682800,
+                        "maxzeit": 1794682800
+                    },
+                    {
+                        "zeit": 1794686400,
+                        "min": 19.5,
+                        "mittel": 19.595944444444434,
+                        "max": 19.6,
+                        "minzeit": 1794689854,
+                        "maxzeit": 1794686400
+                    },
+                    {
+                        "zeit": 1794690000,
+                        "min": 19.5,
+                        "mittel": 19.51225,
+                        "max": 19.6,
+                        "minzeit": 1794690000,
+                        "maxzeit": 1794690005
+                    },
+                    {
+                        "zeit": 1794693600,
+                        "min": 19.4,
+                        "mittel": 19.44924999999999,
+                        "max": 19.5,
+                        "minzeit": 1794694836,
+                        "maxzeit": 1794693600
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "min": 19.4,
+                        "mittel": 19.401416666666666,
+                        "max": 19.5,
+                        "minzeit": 1794697251,
+                        "maxzeit": 1794697200
+                    },
+                    {
+                        "zeit": 1794700800,
+                        "min": 19.4,
+                        "mittel": 19.39999999999999,
+                        "max": 19.4,
+                        "minzeit": 1794700800,
+                        "maxzeit": 1794700800
+                    },
+                    {
+                        "zeit": 1794704400,
+                        "min": 19.4,
+                        "mittel": 19.399999999999995,
+                        "max": 19.4,
+                        "minzeit": 1794704400,
+                        "maxzeit": 1794704400
+                    },
+                    {
+                        "zeit": 1794708000,
+                        "min": 19.3,
+                        "mittel": 19.38861111111111,
+                        "max": 19.4,
+                        "minzeit": 1794709991,
+                        "maxzeit": 1794708000
+                    },
+                    {
+                        "zeit": 1794711600,
+                        "min": 19.3,
+                        "mittel": 19.318916666666667,
+                        "max": 19.4,
+                        "minzeit": 1794711685,
+                        "maxzeit": 1794711600
+                    },
+                    {
+                        "zeit": 1794715200,
+                        "min": 19.3,
+                        "mittel": 19.299999999999994,
+                        "max": 19.3,
+                        "minzeit": 1794715200,
+                        "maxzeit": 1794715200
+                    },
+                    {
+                        "zeit": 1794718800,
+                        "min": 19.2,
+                        "mittel": 19.288888888888895,
+                        "max": 19.3,
+                        "minzeit": 1794721855,
+                        "maxzeit": 1794718800
+                    },
+                    {
+                        "zeit": 1794722400,
+                        "min": 19.2,
+                        "mittel": 19.258750000000003,
+                        "max": 19.3,
+                        "minzeit": 1794722400,
+                        "maxzeit": 1794722472
+                    },
+                    {
+                        "zeit": 1794726000,
+                        "min": 19.2,
+                        "mittel": 19.35002777777778,
+                        "max": 19.4,
+                        "minzeit": 1794726733,
+                        "maxzeit": 1794727652
+                    },
+                    {
+                        "zeit": 1794729600,
+                        "min": 19.4,
+                        "mittel": 19.56299999999999,
+                        "max": 19.6,
+                        "minzeit": 1794729600,
+                        "maxzeit": 1794730654
+                    },
+                    {
+                        "zeit": 1794733200,
+                        "min": 19.6,
+                        "mittel": 19.6,
+                        "max": 19.6,
+                        "minzeit": 1794733200,
+                        "maxzeit": 1794733200
+                    }
+                ],
+                [
+                    {
+                        "zeit": 1794610800,
+                        "min": 19.4,
+                        "mittel": 20.028641203703692,
+                        "max": 20.3,
+                        "minzeit": 1794694836,
+                        "maxzeit": 1794611028
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "min": 19.2,
+                        "mittel": 19.368785139455408,
+                        "max": 19.6,
+                        "minzeit": 1794721855,
+                        "maxzeit": 1794730654
+                    }
+                ]
+            ]
+        },
+        "48076": {
+            "name": "SETPOINT",
+            "wert": 100,
+            "formatiert": "On",
+            "aktion": true,
+            "einheit": "°C",
+            "optionen": [
+                [
+                    0,
+                    "Off"
+                ],
+                [
+                    100,
+                    "On"
+                ]
+            ],
+            "bereich": {
+                "min": 6,
+                "max": 30,
+                "offen": 6,
+                "geschlossen": 30,
+                "herkunft": "default",
+                "profil": "",
+                "schritt": 0.5
+            },
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            },
+            "geloggt": true,
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "rohwerte": [
+                [
+                    1794155613,
+                    100
+                ]
+            ],
+            "aggregate": []
+        },
+        "27238": {
+            "name": "VALVE_STATE",
+            "wert": 98,
+            "formatiert": "98 %",
+            "aktion": false,
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100,
+                "offen": 0,
+                "geschlossen": 100,
+                "herkunft": "default",
+                "profil": "~Intensity.100",
+                "schritt": 1
+            },
+            "sollbereich": {
+                "min": 0,
+                "max": 100,
+                "schritt": 1
+            },
+            "geloggt": true,
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "aggregate": [
+                [
+                    {
+                        "zeit": 1794610800,
+                        "min": 98,
+                        "mittel": 98.00000000000006,
+                        "max": 98,
+                        "minzeit": 1794610800,
+                        "maxzeit": 1794610800
+                    },
+                    {
+                        "zeit": 1794614400,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794614400,
+                        "maxzeit": 1794614400
+                    },
+                    {
+                        "zeit": 1794618000,
+                        "min": 98,
+                        "mittel": 98.00000000000004,
+                        "max": 98,
+                        "minzeit": 1794618000,
+                        "maxzeit": 1794618000
+                    },
+                    {
+                        "zeit": 1794621600,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794621600,
+                        "maxzeit": 1794621600
+                    },
+                    {
+                        "zeit": 1794625200,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794625200,
+                        "maxzeit": 1794625200
+                    },
+                    {
+                        "zeit": 1794628800,
+                        "min": 98,
+                        "mittel": 98.00000000000007,
+                        "max": 98,
+                        "minzeit": 1794628800,
+                        "maxzeit": 1794628800
+                    },
+                    {
+                        "zeit": 1794632400,
+                        "min": 98,
+                        "mittel": 98.00000000000003,
+                        "max": 98,
+                        "minzeit": 1794632400,
+                        "maxzeit": 1794632400
+                    },
+                    {
+                        "zeit": 1794636000,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794636000,
+                        "maxzeit": 1794636000
+                    },
+                    {
+                        "zeit": 1794639600,
+                        "min": 98,
+                        "mittel": 98.00000000000004,
+                        "max": 98,
+                        "minzeit": 1794639600,
+                        "maxzeit": 1794639600
+                    },
+                    {
+                        "zeit": 1794643200,
+                        "min": 98,
+                        "mittel": 98.00000000000004,
+                        "max": 98,
+                        "minzeit": 1794643200,
+                        "maxzeit": 1794643200
+                    },
+                    {
+                        "zeit": 1794646800,
+                        "min": 98,
+                        "mittel": 98.00000000000004,
+                        "max": 98,
+                        "minzeit": 1794646800,
+                        "maxzeit": 1794646800
+                    },
+                    {
+                        "zeit": 1794650400,
+                        "min": 0,
+                        "mittel": 93.09999999999998,
+                        "max": 98,
+                        "minzeit": 1794650654,
+                        "maxzeit": 1794650400
+                    },
+                    {
+                        "zeit": 1794654000,
+                        "min": 98,
+                        "mittel": 98.00000000000006,
+                        "max": 98,
+                        "minzeit": 1794654000,
+                        "maxzeit": 1794654000
+                    },
+                    {
+                        "zeit": 1794657600,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794657600,
+                        "maxzeit": 1794657600
+                    },
+                    {
+                        "zeit": 1794661200,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794661200,
+                        "maxzeit": 1794661200
+                    },
+                    {
+                        "zeit": 1794664800,
+                        "min": 98,
+                        "mittel": 98.00000000000006,
+                        "max": 98,
+                        "minzeit": 1794664800,
+                        "maxzeit": 1794664800
+                    },
+                    {
+                        "zeit": 1794668400,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794668400,
+                        "maxzeit": 1794668400
+                    },
+                    {
+                        "zeit": 1794672000,
+                        "min": 98,
+                        "mittel": 97.99999999999996,
+                        "max": 98,
+                        "minzeit": 1794672000,
+                        "maxzeit": 1794672000
+                    },
+                    {
+                        "zeit": 1794675600,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794675600,
+                        "maxzeit": 1794675600
+                    },
+                    {
+                        "zeit": 1794679200,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794679200,
+                        "maxzeit": 1794679200
+                    },
+                    {
+                        "zeit": 1794682800,
+                        "min": 98,
+                        "mittel": 97.99999999999991,
+                        "max": 98,
+                        "minzeit": 1794682800,
+                        "maxzeit": 1794682800
+                    },
+                    {
+                        "zeit": 1794686400,
+                        "min": 98,
+                        "mittel": 98.00000000000001,
+                        "max": 98,
+                        "minzeit": 1794686400,
+                        "maxzeit": 1794686400
+                    },
+                    {
+                        "zeit": 1794690000,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794690000,
+                        "maxzeit": 1794690000
+                    },
+                    {
+                        "zeit": 1794693600,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794693600,
+                        "maxzeit": 1794693600
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794697200,
+                        "maxzeit": 1794697200
+                    },
+                    {
+                        "zeit": 1794700800,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794700800,
+                        "maxzeit": 1794700800
+                    },
+                    {
+                        "zeit": 1794704400,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794704400,
+                        "maxzeit": 1794704400
+                    },
+                    {
+                        "zeit": 1794708000,
+                        "min": 98,
+                        "mittel": 98.00000000000001,
+                        "max": 98,
+                        "minzeit": 1794708000,
+                        "maxzeit": 1794708000
+                    },
+                    {
+                        "zeit": 1794711600,
+                        "min": 98,
+                        "mittel": 97.99999999999996,
+                        "max": 98,
+                        "minzeit": 1794711600,
+                        "maxzeit": 1794711600
+                    },
+                    {
+                        "zeit": 1794715200,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794715200,
+                        "maxzeit": 1794715200
+                    },
+                    {
+                        "zeit": 1794718800,
+                        "min": 98,
+                        "mittel": 98.00000000000001,
+                        "max": 98,
+                        "minzeit": 1794718800,
+                        "maxzeit": 1794718800
+                    },
+                    {
+                        "zeit": 1794722400,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794722400,
+                        "maxzeit": 1794722400
+                    },
+                    {
+                        "zeit": 1794726000,
+                        "min": 0,
+                        "mittel": 94.54277777777774,
+                        "max": 98,
+                        "minzeit": 1794726291,
+                        "maxzeit": 1794726000
+                    },
+                    {
+                        "zeit": 1794729600,
+                        "min": 98,
+                        "mittel": 98.00000000000003,
+                        "max": 98,
+                        "minzeit": 1794729600,
+                        "maxzeit": 1794729600
+                    },
+                    {
+                        "zeit": 1794733200,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794733200,
+                        "maxzeit": 1794733200
+                    }
+                ],
+                [
+                    {
+                        "zeit": 1794610800,
+                        "min": 0,
+                        "mittel": 97.79583333333333,
+                        "max": 98,
+                        "minzeit": 1794650654,
+                        "maxzeit": 1794610800
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "min": 0,
+                        "mittel": 97.65698379450998,
+                        "max": 98,
+                        "minzeit": 1794726291,
+                        "maxzeit": 1794697200
+                    }
+                ]
+            ]
+        },
+        "22996": {
+            "name": "LEVEL",
+            "wert": 0,
+            "formatiert": "0.0 %",
+            "aktion": true,
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 1,
+                "offen": 1,
+                "geschlossen": 0,
+                "herkunft": "reversed",
+                "profil": "Intensity.1.Reversed",
+                "schritt": 0
+            },
+            "sollbereich": {
+                "min": 0,
+                "max": 1,
+                "schritt": 0.05
+            },
+            "geloggt": false,
+            "archiviert": false
+        },
+        "27170": {
+            "name": "WORKING",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": false,
+            "einheit": "",
+            "optionen": [
+                [
+                    false,
+                    "Aus"
+                ],
+                [
+                    true,
+                    "An"
+                ]
+            ],
+            "geloggt": false,
+            "archiviert": false
+        },
+        "19960": {
+            "name": "ACTUAL_TEMPERATURE",
+            "wert": 20.3,
+            "formatiert": "20.3 °C",
+            "aktion": false,
+            "einheit": "°C",
+            "optionen": [
+                [
+                    -2,
+                    "%.1f"
+                ],
+                [
+                    -1,
+                    "%.1f"
+                ],
+                [
+                    0,
+                    "%.1f"
+                ],
+                [
+                    1,
+                    "%.1f"
+                ],
+                [
+                    2,
+                    "%.1f"
+                ],
+                [
+                    3,
+                    "%.1f"
+                ],
+                [
+                    4,
+                    "%.1f"
+                ],
+                [
+                    5,
+                    "%.1f"
+                ],
+                [
+                    6,
+                    "%.1f"
+                ],
+                [
+                    7,
+                    "%.1f"
+                ],
+                [
+                    8,
+                    "%.1f"
+                ],
+                [
+                    9,
+                    "%.1f"
+                ],
+                [
+                    10,
+                    "%.1f"
+                ],
+                [
+                    11,
+                    "%.1f"
+                ],
+                [
+                    12,
+                    "%.1f"
+                ],
+                [
+                    13,
+                    "%.1f"
+                ],
+                [
+                    14,
+                    "%.1f"
+                ],
+                [
+                    15,
+                    "%.1f"
+                ],
+                [
+                    16,
+                    "%.1f"
+                ],
+                [
+                    17,
+                    "%.1f"
+                ],
+                [
+                    18,
+                    "%.1f"
+                ],
+                [
+                    19,
+                    "%.1f"
+                ],
+                [
+                    20,
+                    "%.1f"
+                ],
+                [
+                    21,
+                    "%.1f"
+                ],
+                [
+                    22,
+                    "%.1f"
+                ],
+                [
+                    23,
+                    "%.1f"
+                ],
+                [
+                    24,
+                    "%.1f"
+                ],
+                [
+                    25,
+                    "%.1f"
+                ]
+            ],
+            "geloggt": true,
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "aggregate": [
+                [
+                    {
+                        "zeit": 1794610800,
+                        "min": 20.4,
+                        "mittel": 20.475027777777772,
+                        "max": 20.6,
+                        "minzeit": 1794613127,
+                        "maxzeit": 1794610800
+                    },
+                    {
+                        "zeit": 1794614400,
+                        "min": 20.4,
+                        "mittel": 20.46936111111111,
+                        "max": 20.5,
+                        "minzeit": 1794616897,
+                        "maxzeit": 1794614400
+                    },
+                    {
+                        "zeit": 1794618000,
+                        "min": 20.4,
+                        "mittel": 20.400000000000002,
+                        "max": 20.4,
+                        "minzeit": 1794618000,
+                        "maxzeit": 1794618000
+                    },
+                    {
+                        "zeit": 1794621600,
+                        "min": 20.3,
+                        "mittel": 20.328527777777786,
+                        "max": 20.4,
+                        "minzeit": 1794622627,
+                        "maxzeit": 1794621600
+                    },
+                    {
+                        "zeit": 1794625200,
+                        "min": 20.3,
+                        "mittel": 20.299999999999997,
+                        "max": 20.3,
+                        "minzeit": 1794625200,
+                        "maxzeit": 1794625200
+                    },
+                    {
+                        "zeit": 1794628800,
+                        "min": 20.2,
+                        "mittel": 20.257722222222213,
+                        "max": 20.3,
+                        "minzeit": 1794630136,
+                        "maxzeit": 1794628800
+                    },
+                    {
+                        "zeit": 1794632400,
+                        "min": 20.2,
+                        "mittel": 20.284055555555558,
+                        "max": 20.3,
+                        "minzeit": 1794635426,
+                        "maxzeit": 1794632400
+                    },
+                    {
+                        "zeit": 1794636000,
+                        "min": 20.2,
+                        "mittel": 20.199999999999985,
+                        "max": 20.2,
+                        "minzeit": 1794636000,
+                        "maxzeit": 1794636000
+                    },
+                    {
+                        "zeit": 1794639600,
+                        "min": 20.1,
+                        "mittel": 20.10311111111111,
+                        "max": 20.2,
+                        "minzeit": 1794639712,
+                        "maxzeit": 1794639600
+                    },
+                    {
+                        "zeit": 1794643200,
+                        "min": 20,
+                        "mittel": 20.088138888888896,
+                        "max": 20.1,
+                        "minzeit": 1794646242,
+                        "maxzeit": 1794643200
+                    },
+                    {
+                        "zeit": 1794646800,
+                        "min": 20,
+                        "mittel": 20.00138888888888,
+                        "max": 20.1,
+                        "minzeit": 1794646850,
+                        "maxzeit": 1794646800
+                    },
+                    {
+                        "zeit": 1794650400,
+                        "min": 20,
+                        "mittel": 20.160083333333333,
+                        "max": 20.3,
+                        "minzeit": 1794650400,
+                        "maxzeit": 1794653117
+                    },
+                    {
+                        "zeit": 1794654000,
+                        "min": 20.4,
+                        "mittel": 20.602722222222216,
+                        "max": 20.9,
+                        "minzeit": 1794654000,
+                        "maxzeit": 1794657339
+                    },
+                    {
+                        "zeit": 1794657600,
+                        "min": 20.9,
+                        "mittel": 21.156027777777794,
+                        "max": 21.4,
+                        "minzeit": 1794657600,
+                        "maxzeit": 1794660491
+                    },
+                    {
+                        "zeit": 1794661200,
+                        "min": 21.2,
+                        "mittel": 21.238750000000003,
+                        "max": 21.4,
+                        "minzeit": 1794662301,
+                        "maxzeit": 1794661200
+                    },
+                    {
+                        "zeit": 1794664800,
+                        "min": 21,
+                        "mittel": 21.16191666666667,
+                        "max": 21.2,
+                        "minzeit": 1794668257,
+                        "maxzeit": 1794664800
+                    },
+                    {
+                        "zeit": 1794668400,
+                        "min": 20.8,
+                        "mittel": 20.882138888888893,
+                        "max": 21,
+                        "minzeit": 1794670418,
+                        "maxzeit": 1794668400
+                    },
+                    {
+                        "zeit": 1794672000,
+                        "min": 20.6,
+                        "mittel": 20.632500000000004,
+                        "max": 20.8,
+                        "minzeit": 1794673112,
+                        "maxzeit": 1794672000
+                    },
+                    {
+                        "zeit": 1794675600,
+                        "min": 20.6,
+                        "mittel": 20.60000000000001,
+                        "max": 20.6,
+                        "minzeit": 1794675600,
+                        "maxzeit": 1794675600
+                    },
+                    {
+                        "zeit": 1794679200,
+                        "min": 20.5,
+                        "mittel": 20.534555555555546,
+                        "max": 20.6,
+                        "minzeit": 1794680444,
+                        "maxzeit": 1794679200
+                    },
+                    {
+                        "zeit": 1794682800,
+                        "min": 20.5,
+                        "mittel": 20.499999999999982,
+                        "max": 20.5,
+                        "minzeit": 1794682800,
+                        "maxzeit": 1794682800
+                    },
+                    {
+                        "zeit": 1794686400,
+                        "min": 20.4,
+                        "mittel": 20.475055555555553,
+                        "max": 20.5,
+                        "minzeit": 1794689102,
+                        "maxzeit": 1794686400
+                    },
+                    {
+                        "zeit": 1794690000,
+                        "min": 20.3,
+                        "mittel": 20.364333333333327,
+                        "max": 20.4,
+                        "minzeit": 1794692316,
+                        "maxzeit": 1794690000
+                    },
+                    {
+                        "zeit": 1794693600,
+                        "min": 20.3,
+                        "mittel": 20.32266666666667,
+                        "max": 20.4,
+                        "minzeit": 1794693600,
+                        "maxzeit": 1794694254
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "min": 20.3,
+                        "mittel": 20.359194444444437,
+                        "max": 20.4,
+                        "minzeit": 1794697200,
+                        "maxzeit": 1794698669
+                    },
+                    {
+                        "zeit": 1794700800,
+                        "min": 20.3,
+                        "mittel": 20.349972222222213,
+                        "max": 20.4,
+                        "minzeit": 1794702599,
+                        "maxzeit": 1794700800
+                    },
+                    {
+                        "zeit": 1794704400,
+                        "min": 20.3,
+                        "mittel": 20.299999999999994,
+                        "max": 20.3,
+                        "minzeit": 1794704400,
+                        "maxzeit": 1794704400
+                    },
+                    {
+                        "zeit": 1794708000,
+                        "min": 20.3,
+                        "mittel": 20.299999999999997,
+                        "max": 20.3,
+                        "minzeit": 1794708000,
+                        "maxzeit": 1794708000
+                    },
+                    {
+                        "zeit": 1794711600,
+                        "min": 20.3,
+                        "mittel": 20.29999999999999,
+                        "max": 20.3,
+                        "minzeit": 1794711600,
+                        "maxzeit": 1794711600
+                    },
+                    {
+                        "zeit": 1794715200,
+                        "min": 20.2,
+                        "mittel": 20.289333333333335,
+                        "max": 20.3,
+                        "minzeit": 1794718416,
+                        "maxzeit": 1794715200
+                    },
+                    {
+                        "zeit": 1794718800,
+                        "min": 20.2,
+                        "mittel": 20.242333333333335,
+                        "max": 20.3,
+                        "minzeit": 1794718800,
+                        "maxzeit": 1794720876
+                    },
+                    {
+                        "zeit": 1794722400,
+                        "min": 20.3,
+                        "mittel": 20.299999999999997,
+                        "max": 20.3,
+                        "minzeit": 1794722400,
+                        "maxzeit": 1794722400
+                    },
+                    {
+                        "zeit": 1794726000,
+                        "min": 20.3,
+                        "mittel": 20.300000000000004,
+                        "max": 20.3,
+                        "minzeit": 1794726000,
+                        "maxzeit": 1794726000
+                    },
+                    {
+                        "zeit": 1794729600,
+                        "min": 20.2,
+                        "mittel": 20.275055555555564,
+                        "max": 20.3,
+                        "minzeit": 1794731679,
+                        "maxzeit": 1794729600
+                    },
+                    {
+                        "zeit": 1794733200,
+                        "min": 20.3,
+                        "mittel": 20.299999999999997,
+                        "max": 20.3,
+                        "minzeit": 1794733200,
+                        "maxzeit": 1794733200
+                    }
+                ],
+                [
+                    {
+                        "zeit": 1794610800,
+                        "min": 20,
+                        "mittel": 20.480753472222265,
+                        "max": 21.4,
+                        "minzeit": 1794646242,
+                        "maxzeit": 1794660491
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "min": 20.2,
+                        "mittel": 20.30157645243085,
+                        "max": 20.4,
+                        "minzeit": 1794718416,
+                        "maxzeit": 1794698669
+                    }
+                ]
+            ]
+        },
+        "11093": {
+            "name": "SET_TEMPERATURE",
+            "wert": 20.5,
+            "formatiert": "20.5 °C",
+            "aktion": true,
+            "einheit": "°C",
+            "optionen": [
+                [
+                    4.5,
+                    "Off"
+                ],
+                [
+                    30.5,
+                    "On"
+                ]
+            ],
+            "bereich": {
+                "min": 4.5,
+                "max": 30.5,
+                "offen": 4.5,
+                "geschlossen": 30.5,
+                "herkunft": "default",
+                "profil": "",
+                "schritt": 0.5
+            },
+            "sollbereich": {
+                "min": 5,
+                "max": 30,
+                "schritt": 0.5
+            },
+            "geloggt": true,
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "rohwerte": [
+                [
+                    1794560088,
+                    20.5
+                ]
+            ],
+            "aggregate": []
+        },
+        "27311": {
+            "name": "VALVE_STATE",
+            "wert": 31,
+            "formatiert": "31 %",
+            "aktion": false,
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100,
+                "offen": 0,
+                "geschlossen": 100,
+                "herkunft": "default",
+                "profil": "~Intensity.100",
+                "schritt": 1
+            },
+            "sollbereich": {
+                "min": 0,
+                "max": 100,
+                "schritt": 1
+            },
+            "geloggt": true,
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "aggregate": [
+                [
+                    {
+                        "zeit": 1794610800,
+                        "min": 23,
+                        "mittel": 24.546388888888888,
+                        "max": 36,
+                        "minzeit": 1794610800,
+                        "maxzeit": 1794610921
+                    },
+                    {
+                        "zeit": 1794614400,
+                        "min": 24,
+                        "mittel": 23.99999999999999,
+                        "max": 24,
+                        "minzeit": 1794614400,
+                        "maxzeit": 1794614400
+                    },
+                    {
+                        "zeit": 1794618000,
+                        "min": 24,
+                        "mittel": 24,
+                        "max": 24,
+                        "minzeit": 1794618000,
+                        "maxzeit": 1794618000
+                    },
+                    {
+                        "zeit": 1794621600,
+                        "min": 24,
+                        "mittel": 24.000000000000004,
+                        "max": 24,
+                        "minzeit": 1794621600,
+                        "maxzeit": 1794621600
+                    },
+                    {
+                        "zeit": 1794625200,
+                        "min": 24,
+                        "mittel": 24.000000000000007,
+                        "max": 24,
+                        "minzeit": 1794625200,
+                        "maxzeit": 1794625200
+                    },
+                    {
+                        "zeit": 1794628800,
+                        "min": 24,
+                        "mittel": 28.84999999999999,
+                        "max": 34,
+                        "minzeit": 1794628800,
+                        "maxzeit": 1794630654
+                    },
+                    {
+                        "zeit": 1794632400,
+                        "min": 34,
+                        "mittel": 33.999999999999986,
+                        "max": 34,
+                        "minzeit": 1794632400,
+                        "maxzeit": 1794632400
+                    },
+                    {
+                        "zeit": 1794636000,
+                        "min": 34,
+                        "mittel": 34.000000000000014,
+                        "max": 34,
+                        "minzeit": 1794636000,
+                        "maxzeit": 1794636000
+                    },
+                    {
+                        "zeit": 1794639600,
+                        "min": 34,
+                        "mittel": 34,
+                        "max": 34,
+                        "minzeit": 1794639600,
+                        "maxzeit": 1794639600
+                    },
+                    {
+                        "zeit": 1794643200,
+                        "min": 34,
+                        "mittel": 34,
+                        "max": 34,
+                        "minzeit": 1794643200,
+                        "maxzeit": 1794643200
+                    },
+                    {
+                        "zeit": 1794646800,
+                        "min": 34,
+                        "mittel": 34,
+                        "max": 34,
+                        "minzeit": 1794646800,
+                        "maxzeit": 1794646800
+                    },
+                    {
+                        "zeit": 1794650400,
+                        "min": 34,
+                        "mittel": 33.99999999999999,
+                        "max": 34,
+                        "minzeit": 1794650400,
+                        "maxzeit": 1794650400
+                    },
+                    {
+                        "zeit": 1794654000,
+                        "min": 24,
+                        "mittel": 32.194444444444464,
+                        "max": 34,
+                        "minzeit": 1794656950,
+                        "maxzeit": 1794654000
+                    },
+                    {
+                        "zeit": 1794657600,
+                        "min": 0,
+                        "mittel": 16.80777777777777,
+                        "max": 24,
+                        "minzeit": 1794660722,
+                        "maxzeit": 1794657600
+                    },
+                    {
+                        "zeit": 1794661200,
+                        "min": 0,
+                        "mittel": 0,
+                        "max": 0,
+                        "minzeit": 1794661200,
+                        "maxzeit": 1794661200
+                    },
+                    {
+                        "zeit": 1794664800,
+                        "min": 0,
+                        "mittel": 0,
+                        "max": 0,
+                        "minzeit": 1794664800,
+                        "maxzeit": 1794664800
+                    },
+                    {
+                        "zeit": 1794668400,
+                        "min": 0,
+                        "mittel": 9.722222222222223,
+                        "max": 14,
+                        "minzeit": 1794668400,
+                        "maxzeit": 1794669500
+                    },
+                    {
+                        "zeit": 1794672000,
+                        "min": 14,
+                        "mittel": 19.577777777777776,
+                        "max": 24,
+                        "minzeit": 1794672000,
+                        "maxzeit": 1794673592
+                    },
+                    {
+                        "zeit": 1794675600,
+                        "min": 24,
+                        "mittel": 24.000000000000007,
+                        "max": 24,
+                        "minzeit": 1794675600,
+                        "maxzeit": 1794675600
+                    },
+                    {
+                        "zeit": 1794679200,
+                        "min": 24,
+                        "mittel": 24.00000000000001,
+                        "max": 24,
+                        "minzeit": 1794679200,
+                        "maxzeit": 1794679200
+                    },
+                    {
+                        "zeit": 1794682800,
+                        "min": 24,
+                        "mittel": 24.000000000000004,
+                        "max": 24,
+                        "minzeit": 1794682800,
+                        "maxzeit": 1794682800
+                    },
+                    {
+                        "zeit": 1794686400,
+                        "min": 24,
+                        "mittel": 23.999999999999993,
+                        "max": 24,
+                        "minzeit": 1794686400,
+                        "maxzeit": 1794686400
+                    },
+                    {
+                        "zeit": 1794690000,
+                        "min": 24,
+                        "mittel": 24.000000000000004,
+                        "max": 24,
+                        "minzeit": 1794690000,
+                        "maxzeit": 1794690000
+                    },
+                    {
+                        "zeit": 1794693600,
+                        "min": 24,
+                        "mittel": 23.999999999999982,
+                        "max": 24,
+                        "minzeit": 1794693600,
+                        "maxzeit": 1794693600
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "min": 24,
+                        "mittel": 31.17444444444445,
+                        "max": 43,
+                        "minzeit": 1794697200,
+                        "maxzeit": 1794697376
+                    },
+                    {
+                        "zeit": 1794700800,
+                        "min": 31,
+                        "mittel": 31.000000000000007,
+                        "max": 31,
+                        "minzeit": 1794700800,
+                        "maxzeit": 1794700800
+                    },
+                    {
+                        "zeit": 1794704400,
+                        "min": 31,
+                        "mittel": 30.999999999999996,
+                        "max": 31,
+                        "minzeit": 1794704400,
+                        "maxzeit": 1794704400
+                    },
+                    {
+                        "zeit": 1794708000,
+                        "min": 31,
+                        "mittel": 31,
+                        "max": 31,
+                        "minzeit": 1794708000,
+                        "maxzeit": 1794708000
+                    },
+                    {
+                        "zeit": 1794711600,
+                        "min": 31,
+                        "mittel": 31.00000000000001,
+                        "max": 31,
+                        "minzeit": 1794711600,
+                        "maxzeit": 1794711600
+                    },
+                    {
+                        "zeit": 1794715200,
+                        "min": 31,
+                        "mittel": 31.000000000000007,
+                        "max": 31,
+                        "minzeit": 1794715200,
+                        "maxzeit": 1794715200
+                    },
+                    {
+                        "zeit": 1794718800,
+                        "min": 31,
+                        "mittel": 31.00000000000001,
+                        "max": 31,
+                        "minzeit": 1794718800,
+                        "maxzeit": 1794718800
+                    },
+                    {
+                        "zeit": 1794722400,
+                        "min": 31,
+                        "mittel": 30.999999999999982,
+                        "max": 31,
+                        "minzeit": 1794722400,
+                        "maxzeit": 1794722400
+                    },
+                    {
+                        "zeit": 1794726000,
+                        "min": 31,
+                        "mittel": 31.00000000000001,
+                        "max": 31,
+                        "minzeit": 1794726000,
+                        "maxzeit": 1794726000
+                    },
+                    {
+                        "zeit": 1794729600,
+                        "min": 31,
+                        "mittel": 30.99999999999999,
+                        "max": 31,
+                        "minzeit": 1794729600,
+                        "maxzeit": 1794729600
+                    },
+                    {
+                        "zeit": 1794733200,
+                        "min": 31,
+                        "mittel": 31,
+                        "max": 31,
+                        "minzeit": 1794733200,
+                        "maxzeit": 1794733200
+                    }
+                ],
+                [
+                    {
+                        "zeit": 1794610800,
+                        "min": 0,
+                        "mittel": 23.987442129629645,
+                        "max": 36,
+                        "minzeit": 1794660722,
+                        "maxzeit": 1794610921
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "min": 24,
+                        "mittel": 31.017307904310414,
+                        "max": 43,
+                        "minzeit": 1794697200,
+                        "maxzeit": 1794697376
+                    }
+                ]
+            ]
+        },
+        "38498": {
+            "name": "TEMPERATURE",
+            "wert": 22.3,
+            "formatiert": "22.3 °C",
+            "aktion": false,
+            "einheit": "°C",
+            "optionen": [
+                [
+                    -2,
+                    "%.1f"
+                ],
+                [
+                    -1,
+                    "%.1f"
+                ],
+                [
+                    0,
+                    "%.1f"
+                ],
+                [
+                    1,
+                    "%.1f"
+                ],
+                [
+                    2,
+                    "%.1f"
+                ],
+                [
+                    3,
+                    "%.1f"
+                ],
+                [
+                    4,
+                    "%.1f"
+                ],
+                [
+                    5,
+                    "%.1f"
+                ],
+                [
+                    6,
+                    "%.1f"
+                ],
+                [
+                    7,
+                    "%.1f"
+                ],
+                [
+                    8,
+                    "%.1f"
+                ],
+                [
+                    9,
+                    "%.1f"
+                ],
+                [
+                    10,
+                    "%.1f"
+                ],
+                [
+                    11,
+                    "%.1f"
+                ],
+                [
+                    12,
+                    "%.1f"
+                ],
+                [
+                    13,
+                    "%.1f"
+                ],
+                [
+                    14,
+                    "%.1f"
+                ],
+                [
+                    15,
+                    "%.1f"
+                ],
+                [
+                    16,
+                    "%.1f"
+                ],
+                [
+                    17,
+                    "%.1f"
+                ],
+                [
+                    18,
+                    "%.1f"
+                ],
+                [
+                    19,
+                    "%.1f"
+                ],
+                [
+                    20,
+                    "%.1f"
+                ],
+                [
+                    21,
+                    "%.1f"
+                ],
+                [
+                    22,
+                    "%.1f"
+                ],
+                [
+                    23,
+                    "%.1f"
+                ],
+                [
+                    24,
+                    "%.1f"
+                ],
+                [
+                    25,
+                    "%.1f"
+                ]
+            ],
+            "geloggt": true,
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "aggregate": [
+                [
+                    {
+                        "zeit": 1794610800,
+                        "min": 22,
+                        "mittel": 22.040222222222237,
+                        "max": 22.1,
+                        "minzeit": 1794610800,
+                        "maxzeit": 1794612502
+                    },
+                    {
+                        "zeit": 1794614400,
+                        "min": 21.9,
+                        "mittel": 21.98980555555557,
+                        "max": 22.1,
+                        "minzeit": 1794615848,
+                        "maxzeit": 1794614400
+                    },
+                    {
+                        "zeit": 1794618000,
+                        "min": 21.9,
+                        "mittel": 21.982888888888876,
+                        "max": 22,
+                        "minzeit": 1794620984,
+                        "maxzeit": 1794618000
+                    },
+                    {
+                        "zeit": 1794621600,
+                        "min": 21.9,
+                        "mittel": 21.946111111111115,
+                        "max": 22,
+                        "minzeit": 1794621600,
+                        "maxzeit": 1794623540
+                    },
+                    {
+                        "zeit": 1794625200,
+                        "min": 22,
+                        "mittel": 22.000000000000007,
+                        "max": 22,
+                        "minzeit": 1794625200,
+                        "maxzeit": 1794625200
+                    },
+                    {
+                        "zeit": 1794628800,
+                        "min": 22,
+                        "mittel": 22.000000000000004,
+                        "max": 22,
+                        "minzeit": 1794628800,
+                        "maxzeit": 1794628800
+                    },
+                    {
+                        "zeit": 1794632400,
+                        "min": 22,
+                        "mittel": 22.012472222222225,
+                        "max": 22.1,
+                        "minzeit": 1794632400,
+                        "maxzeit": 1794634171
+                    },
+                    {
+                        "zeit": 1794636000,
+                        "min": 21.9,
+                        "mittel": 21.932916666666657,
+                        "max": 22,
+                        "minzeit": 1794637035,
+                        "maxzeit": 1794636000
+                    },
+                    {
+                        "zeit": 1794639600,
+                        "min": 21.8,
+                        "mittel": 21.867611111111106,
+                        "max": 21.9,
+                        "minzeit": 1794641281,
+                        "maxzeit": 1794639600
+                    },
+                    {
+                        "zeit": 1794643200,
+                        "min": 21.5,
+                        "mittel": 21.634472222222218,
+                        "max": 21.9,
+                        "minzeit": 1794644332,
+                        "maxzeit": 1794643537
+                    },
+                    {
+                        "zeit": 1794646800,
+                        "min": 21.2,
+                        "mittel": 21.602361111111104,
+                        "max": 21.8,
+                        "minzeit": 1794649595,
+                        "maxzeit": 1794647618
+                    },
+                    {
+                        "zeit": 1794650400,
+                        "min": 21.4,
+                        "mittel": 21.97130555555553,
+                        "max": 22.5,
+                        "minzeit": 1794650400,
+                        "maxzeit": 1794653885
+                    },
+                    {
+                        "zeit": 1794654000,
+                        "min": 22.5,
+                        "mittel": 22.792027777777772,
+                        "max": 22.9,
+                        "minzeit": 1794654000,
+                        "maxzeit": 1794655419
+                    },
+                    {
+                        "zeit": 1794657600,
+                        "min": 22.9,
+                        "mittel": 22.999944444444445,
+                        "max": 23.1,
+                        "minzeit": 1794657600,
+                        "maxzeit": 1794660535
+                    },
+                    {
+                        "zeit": 1794661200,
+                        "min": 22.8,
+                        "mittel": 22.953416666666666,
+                        "max": 23.1,
+                        "minzeit": 1794662510,
+                        "maxzeit": 1794661200
+                    },
+                    {
+                        "zeit": 1794664800,
+                        "min": 23.1,
+                        "mittel": 23.24674999999998,
+                        "max": 23.3,
+                        "minzeit": 1794664800,
+                        "maxzeit": 1794665863
+                    },
+                    {
+                        "zeit": 1794668400,
+                        "min": 22.8,
+                        "mittel": 23.016416666666654,
+                        "max": 23.2,
+                        "minzeit": 1794670998,
+                        "maxzeit": 1794668400
+                    },
+                    {
+                        "zeit": 1794672000,
+                        "min": 22.5,
+                        "mittel": 22.60969444444444,
+                        "max": 22.8,
+                        "minzeit": 1794674775,
+                        "maxzeit": 1794672000
+                    },
+                    {
+                        "zeit": 1794675600,
+                        "min": 22.4,
+                        "mittel": 22.46869444444444,
+                        "max": 22.6,
+                        "minzeit": 1794677679,
+                        "maxzeit": 1794675827
+                    },
+                    {
+                        "zeit": 1794679200,
+                        "min": 22.4,
+                        "mittel": 22.407555555555533,
+                        "max": 22.5,
+                        "minzeit": 1794679338,
+                        "maxzeit": 1794679200
+                    },
+                    {
+                        "zeit": 1794682800,
+                        "min": 22.4,
+                        "mittel": 22.400000000000002,
+                        "max": 22.4,
+                        "minzeit": 1794682800,
+                        "maxzeit": 1794682800
+                    },
+                    {
+                        "zeit": 1794686400,
+                        "min": 22.2,
+                        "mittel": 22.31880555555555,
+                        "max": 22.5,
+                        "minzeit": 1794688562,
+                        "maxzeit": 1794686876
+                    },
+                    {
+                        "zeit": 1794690000,
+                        "min": 22.1,
+                        "mittel": 22.351583333333323,
+                        "max": 22.4,
+                        "minzeit": 1794693579,
+                        "maxzeit": 1794690987
+                    },
+                    {
+                        "zeit": 1794693600,
+                        "min": 22,
+                        "mittel": 22.14063888888888,
+                        "max": 22.3,
+                        "minzeit": 1794693892,
+                        "maxzeit": 1794696923
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "min": 22.3,
+                        "mittel": 22.299999999999994,
+                        "max": 22.3,
+                        "minzeit": 1794697200,
+                        "maxzeit": 1794697200
+                    },
+                    {
+                        "zeit": 1794700800,
+                        "min": 22.3,
+                        "mittel": 22.30000000000001,
+                        "max": 22.3,
+                        "minzeit": 1794700800,
+                        "maxzeit": 1794700800
+                    },
+                    {
+                        "zeit": 1794704400,
+                        "min": 22.3,
+                        "mittel": 22.30000000000001,
+                        "max": 22.3,
+                        "minzeit": 1794704400,
+                        "maxzeit": 1794704400
+                    },
+                    {
+                        "zeit": 1794708000,
+                        "min": 22.3,
+                        "mittel": 22.30405555555554,
+                        "max": 22.4,
+                        "minzeit": 1794708000,
+                        "maxzeit": 1794711454
+                    },
+                    {
+                        "zeit": 1794711600,
+                        "min": 22.3,
+                        "mittel": 22.316777777777787,
+                        "max": 22.4,
+                        "minzeit": 1794711612,
+                        "maxzeit": 1794711600
+                    },
+                    {
+                        "zeit": 1794715200,
+                        "min": 22.3,
+                        "mittel": 22.325333333333333,
+                        "max": 22.4,
+                        "minzeit": 1794715200,
+                        "maxzeit": 1794715581
+                    },
+                    {
+                        "zeit": 1794718800,
+                        "min": 22.3,
+                        "mittel": 22.300000000000008,
+                        "max": 22.3,
+                        "minzeit": 1794718800,
+                        "maxzeit": 1794718800
+                    },
+                    {
+                        "zeit": 1794722400,
+                        "min": 22.3,
+                        "mittel": 22.332083333333323,
+                        "max": 22.4,
+                        "minzeit": 1794722400,
+                        "maxzeit": 1794723737
+                    },
+                    {
+                        "zeit": 1794726000,
+                        "min": 22.3,
+                        "mittel": 22.391333333333325,
+                        "max": 22.4,
+                        "minzeit": 1794727659,
+                        "maxzeit": 1794726000
+                    },
+                    {
+                        "zeit": 1794729600,
+                        "min": 22.3,
+                        "mittel": 22.356388888888873,
+                        "max": 22.4,
+                        "minzeit": 1794731469,
+                        "maxzeit": 1794729600
+                    },
+                    {
+                        "zeit": 1794733200,
+                        "min": 22.3,
+                        "mittel": 22.300000000000004,
+                        "max": 22.3,
+                        "minzeit": 1794733200,
+                        "maxzeit": 1794733200
+                    }
+                ],
+                [
+                    {
+                        "zeit": 1794610800,
+                        "min": 21.2,
+                        "mittel": 22.278570601851886,
+                        "max": 23.3,
+                        "minzeit": 1794649595,
+                        "maxzeit": 1794665863
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "min": 22.3,
+                        "mittel": 22.32242035056775,
+                        "max": 22.4,
+                        "minzeit": 1794697200,
+                        "maxzeit": 1794711454
+                    }
+                ]
+            ]
+        },
+        "48140": {
+            "name": "SETPOINT",
+            "wert": 100,
+            "formatiert": "On",
+            "aktion": true,
+            "einheit": "°C",
+            "optionen": [
+                [
+                    0,
+                    "Off"
+                ],
+                [
+                    100,
+                    "On"
+                ]
+            ],
+            "bereich": {
+                "min": 6,
+                "max": 30,
+                "offen": 6,
+                "geschlossen": 30,
+                "herkunft": "default",
+                "profil": "",
+                "schritt": 0.5
+            },
+            "sollbereich": {
+                "min": 6,
+                "max": 30,
+                "schritt": 0.5
+            },
+            "geloggt": true,
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "rohwerte": [
+                [
+                    1794176306,
+                    100
+                ]
+            ],
+            "aggregate": []
+        },
+        "46683": {
+            "name": "VALVE_STATE",
+            "wert": 98,
+            "formatiert": "98 %",
+            "aktion": false,
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100,
+                "offen": 0,
+                "geschlossen": 100,
+                "herkunft": "default",
+                "profil": "~Intensity.100",
+                "schritt": 1
+            },
+            "sollbereich": {
+                "min": 0,
+                "max": 100,
+                "schritt": 1
+            },
+            "geloggt": true,
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "aggregate": [
+                [
+                    {
+                        "zeit": 1794610800,
+                        "min": 98,
+                        "mittel": 98.00000000000006,
+                        "max": 98,
+                        "minzeit": 1794610800,
+                        "maxzeit": 1794610800
+                    },
+                    {
+                        "zeit": 1794614400,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794614400,
+                        "maxzeit": 1794614400
+                    },
+                    {
+                        "zeit": 1794618000,
+                        "min": 98,
+                        "mittel": 98.00000000000004,
+                        "max": 98,
+                        "minzeit": 1794618000,
+                        "maxzeit": 1794618000
+                    },
+                    {
+                        "zeit": 1794621600,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794621600,
+                        "maxzeit": 1794621600
+                    },
+                    {
+                        "zeit": 1794625200,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794625200,
+                        "maxzeit": 1794625200
+                    },
+                    {
+                        "zeit": 1794628800,
+                        "min": 98,
+                        "mittel": 98.00000000000007,
+                        "max": 98,
+                        "minzeit": 1794628800,
+                        "maxzeit": 1794628800
+                    },
+                    {
+                        "zeit": 1794632400,
+                        "min": 98,
+                        "mittel": 98.00000000000003,
+                        "max": 98,
+                        "minzeit": 1794632400,
+                        "maxzeit": 1794632400
+                    },
+                    {
+                        "zeit": 1794636000,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794636000,
+                        "maxzeit": 1794636000
+                    },
+                    {
+                        "zeit": 1794639600,
+                        "min": 98,
+                        "mittel": 98.00000000000004,
+                        "max": 98,
+                        "minzeit": 1794639600,
+                        "maxzeit": 1794639600
+                    },
+                    {
+                        "zeit": 1794643200,
+                        "min": 98,
+                        "mittel": 98.00000000000004,
+                        "max": 98,
+                        "minzeit": 1794643200,
+                        "maxzeit": 1794643200
+                    },
+                    {
+                        "zeit": 1794646800,
+                        "min": 98,
+                        "mittel": 98.00000000000004,
+                        "max": 98,
+                        "minzeit": 1794646800,
+                        "maxzeit": 1794646800
+                    },
+                    {
+                        "zeit": 1794650400,
+                        "min": 0,
+                        "mittel": 93.86222222222224,
+                        "max": 98,
+                        "minzeit": 1794650572,
+                        "maxzeit": 1794650400
+                    },
+                    {
+                        "zeit": 1794654000,
+                        "min": 98,
+                        "mittel": 98.00000000000006,
+                        "max": 98,
+                        "minzeit": 1794654000,
+                        "maxzeit": 1794654000
+                    },
+                    {
+                        "zeit": 1794657600,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794657600,
+                        "maxzeit": 1794657600
+                    },
+                    {
+                        "zeit": 1794661200,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794661200,
+                        "maxzeit": 1794661200
+                    },
+                    {
+                        "zeit": 1794664800,
+                        "min": 98,
+                        "mittel": 98.00000000000006,
+                        "max": 98,
+                        "minzeit": 1794664800,
+                        "maxzeit": 1794664800
+                    },
+                    {
+                        "zeit": 1794668400,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794668400,
+                        "maxzeit": 1794668400
+                    },
+                    {
+                        "zeit": 1794672000,
+                        "min": 98,
+                        "mittel": 97.99999999999996,
+                        "max": 98,
+                        "minzeit": 1794672000,
+                        "maxzeit": 1794672000
+                    },
+                    {
+                        "zeit": 1794675600,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794675600,
+                        "maxzeit": 1794675600
+                    },
+                    {
+                        "zeit": 1794679200,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794679200,
+                        "maxzeit": 1794679200
+                    },
+                    {
+                        "zeit": 1794682800,
+                        "min": 98,
+                        "mittel": 97.99999999999991,
+                        "max": 98,
+                        "minzeit": 1794682800,
+                        "maxzeit": 1794682800
+                    },
+                    {
+                        "zeit": 1794686400,
+                        "min": 98,
+                        "mittel": 98.00000000000001,
+                        "max": 98,
+                        "minzeit": 1794686400,
+                        "maxzeit": 1794686400
+                    },
+                    {
+                        "zeit": 1794690000,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794690000,
+                        "maxzeit": 1794690000
+                    },
+                    {
+                        "zeit": 1794693600,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794693600,
+                        "maxzeit": 1794693600
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794697200,
+                        "maxzeit": 1794697200
+                    },
+                    {
+                        "zeit": 1794700800,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794700800,
+                        "maxzeit": 1794700800
+                    },
+                    {
+                        "zeit": 1794704400,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794704400,
+                        "maxzeit": 1794704400
+                    },
+                    {
+                        "zeit": 1794708000,
+                        "min": 98,
+                        "mittel": 98.00000000000001,
+                        "max": 98,
+                        "minzeit": 1794708000,
+                        "maxzeit": 1794708000
+                    },
+                    {
+                        "zeit": 1794711600,
+                        "min": 98,
+                        "mittel": 97.99999999999996,
+                        "max": 98,
+                        "minzeit": 1794711600,
+                        "maxzeit": 1794711600
+                    },
+                    {
+                        "zeit": 1794715200,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794715200,
+                        "maxzeit": 1794715200
+                    },
+                    {
+                        "zeit": 1794718800,
+                        "min": 98,
+                        "mittel": 98.00000000000001,
+                        "max": 98,
+                        "minzeit": 1794718800,
+                        "maxzeit": 1794718800
+                    },
+                    {
+                        "zeit": 1794722400,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794722400,
+                        "maxzeit": 1794722400
+                    },
+                    {
+                        "zeit": 1794726000,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794726000,
+                        "maxzeit": 1794726000
+                    },
+                    {
+                        "zeit": 1794729600,
+                        "min": 98,
+                        "mittel": 98.00000000000003,
+                        "max": 98,
+                        "minzeit": 1794729600,
+                        "maxzeit": 1794729600
+                    },
+                    {
+                        "zeit": 1794733200,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794733200,
+                        "maxzeit": 1794733200
+                    }
+                ],
+                [
+                    {
+                        "zeit": 1794610800,
+                        "min": 0,
+                        "mittel": 97.8275925925926,
+                        "max": 98,
+                        "minzeit": 1794650572,
+                        "maxzeit": 1794610800
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794697200,
+                        "maxzeit": 1794697200
+                    }
+                ]
+            ]
+        },
+        "30193": {
+            "name": "VALVE_STATE",
+            "wert": 98,
+            "formatiert": "98 %",
+            "aktion": false,
+            "einheit": "%",
+            "bereich": {
+                "min": 0,
+                "max": 100,
+                "offen": 0,
+                "geschlossen": 100,
+                "herkunft": "default",
+                "profil": "~Intensity.100",
+                "schritt": 1
+            },
+            "sollbereich": {
+                "min": 0,
+                "max": 100,
+                "schritt": 1
+            },
+            "geloggt": true,
+            "archiviert": true,
+            "aggregationstyp": 0,
+            "aggregate": [
+                [
+                    {
+                        "zeit": 1794610800,
+                        "min": 98,
+                        "mittel": 98.00000000000006,
+                        "max": 98,
+                        "minzeit": 1794610800,
+                        "maxzeit": 1794610800
+                    },
+                    {
+                        "zeit": 1794614400,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794614400,
+                        "maxzeit": 1794614400
+                    },
+                    {
+                        "zeit": 1794618000,
+                        "min": 98,
+                        "mittel": 98.00000000000004,
+                        "max": 98,
+                        "minzeit": 1794618000,
+                        "maxzeit": 1794618000
+                    },
+                    {
+                        "zeit": 1794621600,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794621600,
+                        "maxzeit": 1794621600
+                    },
+                    {
+                        "zeit": 1794625200,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794625200,
+                        "maxzeit": 1794625200
+                    },
+                    {
+                        "zeit": 1794628800,
+                        "min": 98,
+                        "mittel": 98.00000000000007,
+                        "max": 98,
+                        "minzeit": 1794628800,
+                        "maxzeit": 1794628800
+                    },
+                    {
+                        "zeit": 1794632400,
+                        "min": 98,
+                        "mittel": 98.00000000000003,
+                        "max": 98,
+                        "minzeit": 1794632400,
+                        "maxzeit": 1794632400
+                    },
+                    {
+                        "zeit": 1794636000,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794636000,
+                        "maxzeit": 1794636000
+                    },
+                    {
+                        "zeit": 1794639600,
+                        "min": 98,
+                        "mittel": 98.00000000000004,
+                        "max": 98,
+                        "minzeit": 1794639600,
+                        "maxzeit": 1794639600
+                    },
+                    {
+                        "zeit": 1794643200,
+                        "min": 98,
+                        "mittel": 98.00000000000004,
+                        "max": 98,
+                        "minzeit": 1794643200,
+                        "maxzeit": 1794643200
+                    },
+                    {
+                        "zeit": 1794646800,
+                        "min": 98,
+                        "mittel": 98.00000000000004,
+                        "max": 98,
+                        "minzeit": 1794646800,
+                        "maxzeit": 1794646800
+                    },
+                    {
+                        "zeit": 1794650400,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794650400,
+                        "maxzeit": 1794650400
+                    },
+                    {
+                        "zeit": 1794654000,
+                        "min": 98,
+                        "mittel": 98.00000000000006,
+                        "max": 98,
+                        "minzeit": 1794654000,
+                        "maxzeit": 1794654000
+                    },
+                    {
+                        "zeit": 1794657600,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794657600,
+                        "maxzeit": 1794657600
+                    },
+                    {
+                        "zeit": 1794661200,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794661200,
+                        "maxzeit": 1794661200
+                    },
+                    {
+                        "zeit": 1794664800,
+                        "min": 98,
+                        "mittel": 98.00000000000006,
+                        "max": 98,
+                        "minzeit": 1794664800,
+                        "maxzeit": 1794664800
+                    },
+                    {
+                        "zeit": 1794668400,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794668400,
+                        "maxzeit": 1794668400
+                    },
+                    {
+                        "zeit": 1794672000,
+                        "min": 98,
+                        "mittel": 97.99999999999996,
+                        "max": 98,
+                        "minzeit": 1794672000,
+                        "maxzeit": 1794672000
+                    },
+                    {
+                        "zeit": 1794675600,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794675600,
+                        "maxzeit": 1794675600
+                    },
+                    {
+                        "zeit": 1794679200,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794679200,
+                        "maxzeit": 1794679200
+                    },
+                    {
+                        "zeit": 1794682800,
+                        "min": 98,
+                        "mittel": 97.99999999999991,
+                        "max": 98,
+                        "minzeit": 1794682800,
+                        "maxzeit": 1794682800
+                    },
+                    {
+                        "zeit": 1794686400,
+                        "min": 98,
+                        "mittel": 98.00000000000001,
+                        "max": 98,
+                        "minzeit": 1794686400,
+                        "maxzeit": 1794686400
+                    },
+                    {
+                        "zeit": 1794690000,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794690000,
+                        "maxzeit": 1794690000
+                    },
+                    {
+                        "zeit": 1794693600,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794693600,
+                        "maxzeit": 1794693600
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794697200,
+                        "maxzeit": 1794697200
+                    },
+                    {
+                        "zeit": 1794700800,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794700800,
+                        "maxzeit": 1794700800
+                    },
+                    {
+                        "zeit": 1794704400,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794704400,
+                        "maxzeit": 1794704400
+                    },
+                    {
+                        "zeit": 1794708000,
+                        "min": 98,
+                        "mittel": 98.00000000000001,
+                        "max": 98,
+                        "minzeit": 1794708000,
+                        "maxzeit": 1794708000
+                    },
+                    {
+                        "zeit": 1794711600,
+                        "min": 98,
+                        "mittel": 97.99999999999996,
+                        "max": 98,
+                        "minzeit": 1794711600,
+                        "maxzeit": 1794711600
+                    },
+                    {
+                        "zeit": 1794715200,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794715200,
+                        "maxzeit": 1794715200
+                    },
+                    {
+                        "zeit": 1794718800,
+                        "min": 98,
+                        "mittel": 98.00000000000001,
+                        "max": 98,
+                        "minzeit": 1794718800,
+                        "maxzeit": 1794718800
+                    },
+                    {
+                        "zeit": 1794722400,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794722400,
+                        "maxzeit": 1794722400
+                    },
+                    {
+                        "zeit": 1794726000,
+                        "min": 98,
+                        "mittel": 97.99999999999997,
+                        "max": 98,
+                        "minzeit": 1794726000,
+                        "maxzeit": 1794726000
+                    },
+                    {
+                        "zeit": 1794729600,
+                        "min": 98,
+                        "mittel": 98.00000000000003,
+                        "max": 98,
+                        "minzeit": 1794729600,
+                        "maxzeit": 1794729600
+                    },
+                    {
+                        "zeit": 1794733200,
+                        "min": 98,
+                        "mittel": 98,
+                        "max": 98,
+                        "minzeit": 1794733200,
+                        "maxzeit": 1794733200
+                    }
+                ],
+                [
+                    {
+                        "zeit": 1794610800,
+                        "min": 98,
+                        "mittel": 98.00000000000023,
+                        "max": 98,
+                        "minzeit": 1794610800,
+                        "maxzeit": 1794610800
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "min": 98,
+                        "mittel": 97.99999999999999,
+                        "max": 98,
+                        "minzeit": 1794697200,
+                        "maxzeit": 1794697200
+                    }
+                ]
+            ]
+        }
+    }
+}

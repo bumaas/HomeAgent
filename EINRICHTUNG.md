@@ -164,6 +164,9 @@ So gehst du vor:
    - Bei Rollläden auch den Fahrstatus (MovingVariableID), wo es ihn gibt. Hat bei KNX die Instanz der
      Position keine Rückmeldeadresse, nennst du mir das als offene Frage: Ihre Variable zeigt dann nur
      den gesendeten Wert.
+   - Bei Fenstern mit Antrieb neben der Position (LevelVariableID) auch den Kontakt oder eine
+     Zustandsvariable (StateVariableID), wo es sie gibt. Ist von beiden keine archiviert, nennst du
+     mir das als offene Frage: Dann gibt es für das Fenster keine Zeitleiste.
    - Leistung und Energiezähler, wo es sie gibt. Bei einer Wärmepumpe auch Wärmezähler oder
      Wärmeleistung; zwei Zeilen für Heizen und Warmwasser nur, wenn Wärme und Strom beide getrennt
      gemessen werden, sonst eine. Zählt die Wärme nur den Umweltertrag (Vaillant über ebusd:

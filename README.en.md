@@ -530,12 +530,23 @@ For devices with a state (on/off, open/closed, motion, a selection such as the o
 periods return a **timeline**: how long each state lasted and, with few sections, when. The answer then reads for
 example "Flur | Haustür | door | open 12 min, closed 15 h 36 min" followed by "open 08:32, 09:17-09:18, …". If a device
 also has a meter, consumption and times share one line ("0.2 kWh, on 3 h 31 min, off 12 h 18 min"). A state without
-archive is left out and counted. There is no timeline for the whole house.
+archive is left out, and the answer names the device and the variable whose archive is missing ("Fenster (Bad):
+position #24234"). There is no timeline for the whole house.
 
 Blinds and windows with a drive get their timeline from the position: open, partly open and closed, tilted for a
 tilting window. For "When were the blinds closed?" each blind then reads for example "closed 9 h 45 min, closed since
 09.11. 17:48". If the position is not logged, the answer says so. Slats have no timeline, their position has no open
-or closed.
+or closed. If a window has a contact and a drive, the timeline comes from the contact. If only the position is logged,
+it comes from there.
+
+### "When did the valve in the music room close?"
+
+The history of a thermostat has three parts, each named in its line. The actual temperature and every valve come with
+minimum and maximum and their time ("valve: minimum 0 % (2026-11-14 11:04), maximum 98 % …"), for a single thermostat
+the valve per hour as well. The setpoint comes as a timeline with the duration of each value and the time of every
+change ("setpoint: 21.5 °C 16 h, 20.5 °C 6 h"), a special setpoint with the text of its entry. If one of the variables
+is not logged, its line reads "no history archived". In a chart temperature and valves are lines, the setpoint is a
+band below them. A question about the room temperature still returns the temperature only.
 
 ### For scripts
 
@@ -727,7 +738,6 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
 
 - Colour as text is not supported yet. The operating mode of a thermostat only works through a variable with an
   action; on Homematic wall thermostats `CONTROL_MODE` has none.
-- The module does not show the history of a valve position yet, only the current position.
 - A camera gives its stored still image, no live view and no stream. Scaling an image down needs memory, about 45 MB
   for 3840 x 2160 pixels. If the PHP of the system has less to spare (this can happen on small devices), the assistant
   says so. Then set a smaller image at the camera or the grabber.

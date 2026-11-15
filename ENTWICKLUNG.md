@@ -895,6 +895,26 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   Vorher wuchs die Grenze mit jeder Diagrammart mit (20 bis 50 KB) und prüfte nichts mehr (Burkhard 13.10.2026).
   
 
+- **Verlauf des Thermostats und fehlendes Archiv beim Namen** (Heizungsanalyse am System des Entwicklers, 15.11.2026):
+  Drei Lücken. Erstens kam bei `type=window` mit Zeitraum für fünf Fenster mit Antrieb nur „5 Gerät(e) ohne
+  archivierten Verlauf wurden ausgelassen“. Die Zeilen tragen nur die Position des Antriebs (`LEVEL`), und die ist dort
+  nicht geloggt; geloggt ist eine selbst angelegte Variable „Status“ unter demselben Aktor, die in keiner Zeile steht.
+  Der Code las also die richtige Variable, sagte aber nicht, welche fehlt. Jetzt nennt `unarchivedList` Gerät und
+  Variable (Zustand oder Position, mit ID), in der Auslassung und in beiden Absagen. Ein Fenster mit Kontakt und Antrieb
+  nahm immer den Kontakt; ist der nicht geloggt, nimmt `timelineOf` jetzt die Position. Zweitens lieferte der Verlauf
+  eines Thermostats nur die Rolle `state`, obwohl Sollwert und Ventile an allen 15 Thermostaten geloggt sind; „wann ging
+  das Ventil zu“ ließ sich nicht beantworten. Drittens stand nicht dabei, dass es die Ist-Temperatur ist. Jetzt baut
+  `history()` je Thermostat Reihen: Ist-Temperatur und jedes Ventil aus den Aggregaten (Ventil in Prozent des Bereichs
+  wie `valveOf`, die Tabelle je Stunde nur bei einem einzelnen Gerät), den Sollwert aus den Rohwerten als Zeitleiste
+  (`setpointLines` über `timelineOf` mit eigener Beschriftung und „seit“). Verworfen für den Sollwert: Minimum, Mittel
+  und Maximum, weil ein Sonderwert (100 = „On“ am HM-CC-TC) jedes Mittel verzieht und eine Stunde zwei Werte mischen
+  kann. `HISTORY_MAX` zählt weiter nur die Ist-Temperaturen, damit Abfragen, die vorher gingen, nicht an den Ventilen
+  scheitern; im Diagramm tragen Ventilreihen `extra` und zählen nicht mit. Bei `type=temperature` bleibt es bei der
+  Temperatur (Raumklima). Am Mitschnitt belegt: Ventil im Musikzimmer am 14.11. um 11:04 und am 15.11. um 08:04 auf
+  0 %, Sollwert seit 08.11. unverändert auf „On“. Noch nicht: Sollwert als Linie im Diagramm (er ist ein Band), der
+  Verlauf des Sollwerts bei Luftentfeuchtern. Test `check-thermostat-verlauf.php`; echt sind die Werte, angenommen sind
+  ein geänderter Sollwert, ein Ventil mit Bereich 0 bis 1 und ein Fenster mit Kontakt und Antrieb in einer Zeile.
+
 ## Formular und Diagnose
 
 - **Ausgabe von Selbsttest und Zustand** (build 243, B99): Beide Knöpfe gaben per `echo` ins Meldungsfenster aus, das

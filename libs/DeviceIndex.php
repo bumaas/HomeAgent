@@ -757,10 +757,10 @@ final class DeviceIndex
             // roomClimate() hat vor dem Verlauf gezählt; history() sucht nicht selbst und lässt die Zählung stehen
             if ($range !== null) {
                 [, $from, $to] = $range;
-                $result = $this->history($matches, $rangeLevel, $from, $to, $filter . $rangeLabel, $room !== '');
+                $result = $this->history($matches, $rangeLevel, $from, $to, $filter . $rangeLabel, $room !== '', $type !== 'temperature');
             } else {
                 [, $from, $to] = self::periodBounds($period, $this->backend->timestamp());
-                $result = $this->history($matches, $this->chartLevel($period, $from, $to), $from, $to, $filter . ', period=' . $period, $room !== '');
+                $result = $this->history($matches, $this->chartLevel($period, $from, $to), $from, $to, $filter . ', period=' . $period, $room !== '', $type !== 'temperature');
             }
             return $this->withInsideNote($this->withClimateNote($result), $matches);
         }
@@ -1334,13 +1334,22 @@ final class DeviceIndex
      *
      * @return null|array{summary: string, sections: ?string, brief: string, band: array<string, mixed>}
      */
-    private function timelineOf(array $entry, int $from, int $to): ?array
+    private function timelineOf(array $entry, int $from, int $to, ?callable $caption = null): ?array
     {
         // Fahrendes Gerät: die Position wird zu offen, teilweise offen und geschlossen, mit denselben Grenzen wie der
         // Zustandstext (levelText). Lamellen und ein unbekannter Bereich haben kein „offen“, also keine Zeitleiste.
         $travel = null;
         $travelLabels = [];
-        if (self::travelTimed($entry['Type'], $entry['roles'])) {
+        $series = null;
+        $byPosition = $caption === null && self::travelTimed($entry['Type'], $entry['roles']);
+        if (!$byPosition) {
+            $variable = $entry['roles']['state'];
+            $series = $this->backend->stateSeries($variable, $from, $to);
+            // Fenster mit Kontakt und Antrieb: Ist der Kontakt nicht archiviert, zählt die Position (Heizungsanalyse
+            // 15.11.2026: „für Zeitleisten die archivierte Variable verwenden“).
+            $byPosition = $series === null && $caption === null && $entry['Type'] === 'window' && isset($entry['roles']['level']);
+        }
+        if ($byPosition) {
             $variable = $entry['roles']['level'];
             $range = $this->backend->range($variable);
             $travel = self::travelOf($entry, $range);
@@ -1349,19 +1358,22 @@ final class DeviceIndex
             }
             $tilt = $entry['Type'] === 'window' && $entry['Tilt'];
             $travelLabels = [$this->t($tilt ? 'tilted' : 'open'), $this->t($tilt ? 'partly tilted' : 'partly open'), $this->t('closed')];
-        } else {
-            $variable = $entry['roles']['state'];
+            $series = $this->backend->stateSeries($variable, $from, $to);
         }
-        $series = $this->backend->stateSeries($variable, $from, $to);
         if ($series === null) {
             return null;
         }
         $now = $this->backend->timestamp();
         $untilNow = $to === 0 || $to >= $now;
         $end = $untilNow ? $now : $to + 1;
-        $words = $travel !== null ? null : (self::TYPES[$entry['Type']] ?? null);
-        $options = $words === null && $travel === null ? ($this->backend->options($variable) ?? []) : [];
-        $label = function (mixed $value) use ($words, $options, $entry, $travel, $travelLabels): string {
+        $words = $travel !== null || $caption !== null ? null : (self::TYPES[$entry['Type']] ?? null);
+        $options = $words === null && $travel === null && $caption === null ? ($this->backend->options($variable) ?? []) : [];
+        // „seit“ nennen fahrende Geräte und Werte mit eigener Beschriftung (Sollwert): Dort ist der Beginn die Auskunft.
+        $sinceWanted = $travel !== null || $caption !== null;
+        $label = function (mixed $value) use ($words, $options, $entry, $travel, $travelLabels, $caption): string {
+            if ($caption !== null) {
+                return $caption($value);
+            }
             if ($travel !== null) {
                 if (!is_int($value) && !is_float($value)) {
                     return (string)$value;
@@ -1400,7 +1412,7 @@ final class DeviceIndex
             if ($known && $time > $begin) {
                 $add($label($value), $begin, $time);
             }
-            if ($travel !== null && $time <= $from && (!$known || $label($next) !== $label($value))) {
+            if ($sinceWanted && $time <= $from && (!$known || $label($next) !== $label($value))) {
                 $since = $time;
                 $sinceBefore = false;
             }
@@ -1450,7 +1462,7 @@ final class DeviceIndex
         $brief = $summarize(count($sections) > 1 && $listed !== []);
         // Fahrendes Gerät bis jetzt: seit wann der jetzige Zustand gilt, auch wenn keine Abschnitte dastehen („Wann wurden
         // die Rollläden geschlossen“ für viele Geräte, oder am Morgen danach ohne Änderung im Zeitraum).
-        if ($travel !== null && $untilNow) {
+        if ($sinceWanted && $untilNow) {
             [$state, $b] = $sections[count($sections) - 1];
             $at = $b > $from ? $b : $since;
             if ($b <= $from && $sinceBefore) {
@@ -1513,7 +1525,7 @@ final class DeviceIndex
      * @param list<array<string, mixed>> $matches
      * @return array{text: string, isError: bool}
      */
-    private function history(array $matches, int $level, int $from, int $to, string $filter, bool $oneRoom = false): array
+    private function history(array $matches, int $level, int $from, int $to, string $filter, bool $oneRoom = false, bool $parts = true): array
     {
         // Zustände (an/aus, offen/zu, Auswahl wie der Batteriemodus) bekommen eine Zeitleiste statt Minimum, Mittel und
         // Maximum: „05:00 1 / 1.8 / 2“ sagte niemandem etwas (B69, 13.10.2026).
@@ -1523,13 +1535,17 @@ final class DeviceIndex
         $unreadable = count(array_filter($matches, fn (array $e): bool => $this->unreadableTravel($e)));
         $candidates = array_values(array_filter($matches, fn (array $e): bool => $this->isTimed($e) && !$this->unreadableTravel($e)));
         $timed = $this->archivedTimelines($candidates, $from, $to);
-        $measured = array_values(array_filter($matches, fn (array $e): bool => self::isMeasured($e) && !$this->isTimed($e)));
-        // Ausgelassen: Geräte ohne Messwert und, eigens gezählt, Zustände und Positionen ohne Archiv.
-        $unarchived = count($candidates) - count($timed);
+        // Ein Thermostat antwortet mit Ist-Temperatur, Sollwert und Ventilen ($parts), auch ohne Ist-Temperatur. Bei
+        // type=temperature nicht: Dort ist nach dem Klima des Raums gefragt.
+        $measured = array_values(array_filter($matches, fn (array $e): bool => (self::isMeasured($e) || ($parts && $e['Type'] === 'thermostat')) && !$this->isTimed($e)));
+        // Ausgelassen: Geräte ohne Messwert und, eigens gezählt und beim Namen genannt, Zustände und Positionen ohne Archiv.
+        $archived = array_column($timed, 'entry');
+        $missing = array_values(array_filter($candidates, static fn (array $e): bool => !in_array($e, $archived, true)));
+        $unarchived = count($missing);
         $skipped = count($matches) - count($measured) - count($candidates) - $unreadable;
         $leftOut = fn (): array => array_merge(
             $skipped > 0 ? [sprintf($this->t('%d device(s) without measured value were left out.'), $skipped)] : [],
-            $unarchived > 0 ? [sprintf($this->t('%d device(s) without archived history were left out.'), $unarchived)] : [],
+            $unarchived > 0 ? [sprintf($this->t('%d device(s) without archived history were left out. Not archived in Symcon: %s.'), $unarchived, $this->unarchivedList($missing))] : [],
             $unreadable > 0 ? [sprintf($this->t('%d device(s) whose position has no open or closed state (slats or unknown range) were left out.'), $unreadable)] : []
         );
         if ($measured === [] && $candidates === [] && $unreadable > 0) {
@@ -1543,9 +1559,9 @@ final class DeviceIndex
                     if ($unreadable > 0) {
                         return $this->fail(sprintf($this->t('%d of the matching devices have no archived position, %d have a position without open or closed state (slats or unknown range), so there is no timeline (%s). Only the current state is known.'), count($candidates), $unreadable, $filter));
                     }
-                    return $this->fail(sprintf($this->t('The position of the matching devices is not archived in Symcon, so there is no history (%s). Only the current state is known.'), $filter));
+                    return $this->fail(sprintf($this->t('The position of the matching devices is not archived in Symcon, so there is no history (%s). Not archived: %s. Only the current state is known.'), $filter, $this->unarchivedList($missing)));
                 }
-                return $this->fail(sprintf($this->t('None of the matching devices measures energy or has an archived state (%s).'), $filter));
+                return $this->fail(sprintf($this->t('None of the matching devices measures energy or has an archived state (%s).'), $filter) . ' ' . sprintf($this->t('Not archived: %s.'), $this->unarchivedList($missing)));
             }
             $lines = $this->timelineLines($timed, $filter);
             if ($this->chart !== null) {
@@ -1556,14 +1572,29 @@ final class DeviceIndex
         }
         // Liest ein Thermostat den Raumfühler als Ist-Temperatur, wäre derselbe Verlauf zweimal da (nuc,
         // Gästezimmer): Jede Variable kommt nur einmal, unter dem ersten Gerät der Liste.
+        // Reihen je Gerät: der Messwert, beim Thermostat dazu Sollwert und Ventile (Heizungsanalyse 15.11.2026: „wann
+        // ging das Ventil zu“ ließ sich nicht beantworten). Die Grenze HISTORY_MAX zählt wie bisher die Messwerte.
         $seen = [];
-        $measured = array_values(array_filter($measured, static function (array $e) use (&$seen): bool {
-            $id = $e['roles']['state'];
-            if (isset($seen[$id])) {
-                return false;
+        $rows = [];
+        $single = count($measured) === 1;
+        foreach ($measured as $e) {
+            $thermostat = $parts && $e['Type'] === 'thermostat';
+            $wanted = isset($e['roles']['state']) ? [['value', $e['roles']['state'], $thermostat ? $this->t('actual temperature') : '']] : [];
+            if ($thermostat) {
+                $wanted[] = ['setpoint', $e['roles']['setpoint'] ?? 0, $this->t('setpoint')];
+                $valves = array_values(array_intersect_key($e['roles'], ['valve' => true, 'valve2' => true, 'valve3' => true]));
+                foreach ($valves as $n => $valve) {
+                    $wanted[] = ['valve', $valve, count($valves) > 1 ? sprintf($this->t('valve %d'), $n + 1) : $this->t('valve')];
+                }
             }
-            return $seen[$id] = true;
-        }));
+            foreach ($wanted as [$kind, $id, $label]) {
+                if ($id > 0 && !isset($seen[$id])) {
+                    $seen[$id] = true;
+                    $rows[] = ['entry' => $e, 'kind' => $kind, 'variable' => $id, 'label' => $label];
+                }
+            }
+        }
+        $measured = array_column(array_values(array_filter($rows, static fn (array $row): bool => $row['kind'] === 'value')), 'entry');
         if (count($measured) > self::HISTORY_MAX) {
             // „Gib einen Raum oder einen Namen an, höchstens 5 auf einmal“ las ein Modell als fünf Räume in room; die
             // Kommaliste gibt es aber nur bei show_chart (B105, Claude-App 08.11.2026). Für get_state nennt die Absage
@@ -1579,10 +1610,18 @@ final class DeviceIndex
             return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s). Give a room or a name, at most %d at a time.'), count($measured), $filter, self::HISTORY_MAX));
         }
         [$per, $format] = self::HISTORY_LEVELS[$level];
-        $lines = [sprintf($this->t('History of %d measured value(s) (%s), per %s: minimum / average / maximum.'), count($measured), $filter, $this->t($per))];
+        $lines = [sprintf($this->t('History of %d measured value(s) (%s), per %s: minimum / average / maximum.'), count(array_filter($rows, static fn (array $row): bool => $row['kind'] !== 'setpoint')), $filter, $this->t($per))];
         $this->historyChart($lines[0], $per, $filter);
-        foreach ($measured as $entry) {
-            $lines = array_merge($lines, $this->historyLines($entry, $this->historyRows($entry['roles']['state'], $level, $from, $to), $format, true));
+        foreach ($rows as ['entry' => $entry, 'kind' => $kind, 'variable' => $variable, 'label' => $label]) {
+            if ($kind === 'setpoint') {
+                $lines = array_merge($lines, $this->setpointLines($entry, $variable, $label, $from, $to, count($measured) > self::TIMELINE_DETAIL));
+                continue;
+            }
+            // Die Tabelle je Abschnitt bekommt der Messwert, das Ventil nur bei einem einzigen Gerät (Tokens)
+            $history = $this->historyRows($variable, $level, $from, $to);
+            $lines = array_merge($lines, $kind === 'valve'
+                ? $this->historyLines($entry, $this->valvePercent($history, $variable), $format, $single, $label, true)
+                : $this->historyLines($entry, $history, $format, true, $label));
         }
         if ($timed !== []) {
             $lines = array_merge($lines, $this->timelineLines($timed, $filter));
@@ -2145,21 +2184,110 @@ final class DeviceIndex
     }
 
     /**
+     * Verlauf des Sollwerts eines Thermostats als Zeitleiste aus den Rohwerten: wie lange welcher Wert galt und wann er
+     * geändert wurde. Minimum, Mittel und Maximum taugen dafür nicht, ein Sonderwert (100 = „On“) verzöge sie. Sonderwerte
+     * tragen den Text ihres Eintrags wie im Zustand. Im Diagramm ein Band.
+     *
+     * @return list<string>
+     */
+    private function setpointLines(array $entry, int $variable, string $label, int $from, int $to, bool $brief): array
+    {
+        $unit = $this->temperatureUnit($variable, (string)$entry['Type']);
+        $range = $this->backend->setpointRange($variable);
+        $caption = function (mixed $value) use ($variable, $unit, $range): string {
+            if (!is_int($value) && !is_float($value)) {
+                return (string)$value;
+            }
+            $text = self::formatNumber((float)$value) . ' ' . $unit;
+            if (!self::outsideRange($range, (float)$value)) {
+                return $text;
+            }
+            $special = $this->specialCaption($variable, (float)$value);
+            return $special === null
+                ? sprintf($this->t('%s (outside %s to %s)'), $text, self::formatNumber($range['min']), self::formatNumber($range['max']) . ' ' . $unit)
+                : sprintf($this->t('“%s” (%s)'), $special, $text);
+        };
+        $timeline = $this->timelineOf(['roles' => ['state' => $variable]] + $entry, $from, $to, $caption);
+        if ($timeline === null) {
+            return [$this->line($entry, $label . ': ' . $this->t('no history archived'))];
+        }
+        if ($this->chart !== null && isset($timeline['band'])) {
+            $this->chart['bands'][] = ['name' => $entry['Name'] . ' (' . $label . ')'] + $timeline['band'];
+        }
+        $lines = [$this->line($entry, $label . ': ' . ($brief ? $timeline['brief'] : $timeline['summary']))];
+        if (!$brief && $timeline['sections'] !== null && $this->chart === null) {
+            $lines[] = $timeline['sections'];
+        }
+        return $lines;
+    }
+
+    /**
+     * Verlauf eines Ventils in Prozent seines Bereichs, wie valveOf() den Zustand rechnet (Homematic IP LEVEL 0 bis 1).
+     *
+     * @param null|array{rows: list<array<string, mixed>>, unit: string} $history
+     * @return null|array{rows: list<array<string, mixed>>, unit: string}
+     */
+    private function valvePercent(?array $history, int $variable): ?array
+    {
+        if ($history === null) {
+            return null;
+        }
+        $range = $this->backend->range($variable);
+        if ($range !== null && $range['max'] > $range['min'] && ($range['min'] !== 0.0 || $range['max'] !== 100.0)) {
+            $percent = static fn (float $value): float => ($value - $range['min']) / ($range['max'] - $range['min']) * 100;
+            $history['rows'] = array_map(static fn (array $row): array => ['min' => $percent($row['min']), 'avg' => $percent($row['avg']), 'max' => $percent($row['max'])] + $row, $history['rows']);
+            $history['unit'] = '%';
+        }
+        if (trim($history['unit']) === '') {
+            $history['unit'] = '%';
+        }
+        return $history;
+    }
+
+    /**
+     * Geräte ohne archivierten Zustand für eine Auslassung oder Absage: Name, aus mehreren Räumen mit Raum, und die
+     * Variable, deren Archiv fehlt (Heizungsanalyse 15.11.2026: „5 Gerät(e) ohne archivierten Verlauf“ sagte nicht,
+     * dass die Position des Antriebs gemeint war). Ein Fenster mit Kontakt und Antrieb nennt beide.
+     *
+     * @param list<array<string, mixed>> $entries
+     */
+    private function unarchivedList(array $entries): string
+    {
+        $oneRoom = count(array_unique(array_map(static fn (array $e): string => self::normalize((string)$e['Room']), $entries))) === 1;
+        $items = [];
+        foreach ($entries as $e) {
+            $travel = self::travelTimed($e['Type'], $e['roles']);
+            $variables = [];
+            if (!$travel && isset($e['roles']['state'])) {
+                $variables[] = $this->t('state') . ' #' . $e['roles']['state'];
+            }
+            if ($travel || ($e['Type'] === 'window' && isset($e['roles']['level']))) {
+                $variables[] = $this->t('position') . ' #' . $e['roles']['level'];
+            }
+            $items[] = ($oneRoom ? $e['Name'] : $e['Name'] . ' (' . $e['Room'] . ')') . ': ' . implode(', ', $variables);
+        }
+        $list = implode(', ', array_slice($items, 0, self::NOTE_NAMES_MAX));
+        return count($items) > self::NOTE_NAMES_MAX ? sprintf($this->t('%s and %d more'), $list, count($items) - self::NOTE_NAMES_MAX) : $list;
+    }
+
+    /**
      * Zeilen eines Verlaufs: Minimum und Maximum über den ganzen Zeitraum mit Zeitpunkt, mit $table dazu die Werte je
      * Abschnitt. Mit Diagramm gehen die Werte an die Seite, nicht ans Modell.
      *
      * @param array<string, mixed> $entry Gerät oder eine Reihe des Hauses (Room, Name, Type)
      * @return list<string>
      */
-    private function historyLines(array $entry, ?array $history, string $format, bool $table): array
+    private function historyLines(array $entry, ?array $history, string $format, bool $table, string $label = '', bool $extra = false): array
     {
+        // $label nennt den Teil des Geräts (Ist-Temperatur, Ventil); $extra: Die Reihe zählt im Diagramm nicht gegen HISTORY_MAX
+        $prefix = $label === '' ? '' : $label . ': ';
         if ($history === null) {
-            return [$this->line($entry, $this->t('no history archived'))];
+            return [$this->line($entry, $prefix . $this->t('no history archived'))];
         }
         $unit = trim($history['unit']);
         $lines = [];
         if ($history['rows'] === []) {
-            $lines[] = $this->line($entry, $unit === '' ? '-' : $unit);
+            $lines[] = $this->line($entry, $prefix . ($unit === '' ? '-' : $unit));
             $lines[] = $this->t('no values in this period');
         } else {
             // Minimum und Maximum über den ganzen Zeitraum mit Zeitpunkt, damit das Modell nicht selbst in der
@@ -2173,7 +2301,7 @@ final class DeviceIndex
             // Der Zeitpunkt aus MinTime/MaxTime der Aggregate (B84), sonst der Beginn des Abschnitts
             $when = static fn (array $row, string $key): string => isset($row[$key]) ? date('Y-m-d H:i', (int)$row[$key]) : date($format, $row['time']);
             $suffix = $unit === '' ? '' : ' ' . $unit;
-            $lines[] = $this->line($entry, sprintf(
+            $lines[] = $this->line($entry, $prefix . sprintf(
                 $this->t('minimum %s (%s), maximum %s (%s)'),
                 self::formatNumber($low['min']) . $suffix,
                 $when($low, 'minTime'),
@@ -2183,8 +2311,8 @@ final class DeviceIndex
         }
         if ($this->chart !== null) {
             if ($history['rows'] !== []) {
-                $this->chart['series'][] = ['room' => $entry['Room'], 'name' => $entry['Name'], 'unit' => $unit,
-                    'points' => array_map(static fn (array $row): array => [$row['time'], $row['min'], $row['avg'], $row['max']], $history['rows'])];
+                $this->chart['series'][] = ['room' => $entry['Room'], 'name' => $entry['Name'] . ($label === '' ? '' : ' (' . $label . ')'), 'unit' => $unit,
+                    'points' => array_map(static fn (array $row): array => [$row['time'], $row['min'], $row['avg'], $row['max']], $history['rows'])] + ($extra ? ['extra' => true] : []);
             }
             return $lines;
         }
@@ -6077,8 +6205,10 @@ final class DeviceIndex
         if (($chart['kind'] ?? '') === 'consumption' && count($rooms) > 1) {
             return $this->fail($this->t('A consumption chart takes one room at a time.'));
         }
-        if (($chart['kind'] ?? '') === 'history' && count($chart['series'] ?? []) > self::HISTORY_MAX) {
-            return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s). Give a room or a name, at most %d at a time.'), count($chart['series']), 'room=' . implode(', ', $rooms), self::HISTORY_MAX));
+        // Ventile eines Thermostats („extra“) zählen nicht mit: Sonst lehnte das Diagramm zweier Räume ab, das es vorher gab
+        $counted = count(array_filter($chart['series'] ?? [], static fn (array $one): bool => !($one['extra'] ?? false)));
+        if (($chart['kind'] ?? '') === 'history' && $counted > self::HISTORY_MAX) {
+            return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s). Give a room or a name, at most %d at a time.'), $counted, 'room=' . implode(', ', $rooms), self::HISTORY_MAX));
         }
         $droppedBands = 0;
         if (count($chart['bands'] ?? []) > self::TIMELINE_CHART_MAX) {
