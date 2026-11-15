@@ -282,7 +282,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   `HOUSE_POWER_DAYS` (400). Momentanwerte als solche gekennzeichnet. 15-Minuten-Mittel zurückgestellt (zu langsam).
   Test `check-leistungsverlauf.php`. Mit `part` in `show_chart` die Sensoren dieses Teils (`partPowerSensors`, ein Sensor
   mit Vorzeichen nach Richtung getrennt, positiv, `directionHistory`), nur mit Zeitraum. Test `check-teil-leistung.php`.
-- **Zeitleiste** für Zustände (`hasTimeline`, `stateSeries`, `allRows` holt in Scheiben): gleiche Zustände zusammengefasst,
+- **Zeitleiste** für Zustände (`hasTimeline`, `stateSeries`, `allRows` holt in Scheiben; Quelle und Beschriftung wählt
+  `timelineOf`, Abschnitte, Summen und Band rechnet `sectionsOf`, auch für den Sollwert): gleiche Zustände zusammengefasst,
   Summen je Zustand, Einzelabschnitte bis `TIMELINE_SECTIONS`/`TIMELINE_DETAIL`. Gerät mit Zähler: Verbrauch und Zeiten in
   einer Zeile. In `show_chart` als Bänder (`chartBands`, höchstens `TIMELINE_CHART_MAX`, neben Linien fallen zu viele weg
   und der Text nennt es), nur vorkommende Zustände, Farbe einer Auswahl nach der Stelle des Eintrags (`color`). Test

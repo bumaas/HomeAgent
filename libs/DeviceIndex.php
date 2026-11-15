@@ -1344,20 +1344,20 @@ final class DeviceIndex
      *
      * @return null|array{summary: string, sections: ?string, brief: string, band: array<string, mixed>}
      */
-    private function timelineOf(array $entry, int $from, int $to, ?callable $caption = null): ?array
+    private function timelineOf(array $entry, int $from, int $to): ?array
     {
         // Fahrendes Gerät: die Position wird zu offen, teilweise offen und geschlossen, mit denselben Grenzen wie der
         // Zustandstext (levelText). Lamellen und ein unbekannter Bereich haben kein „offen“, also keine Zeitleiste.
         $travel = null;
         $travelLabels = [];
         $series = null;
-        $byPosition = $caption === null && self::travelTimed($entry['Type'], $entry['roles']);
+        $byPosition = self::travelTimed($entry['Type'], $entry['roles']);
         if (!$byPosition) {
             $variable = $entry['roles']['state'];
             $series = $this->backend->stateSeries($variable, $from, $to);
             // Fenster mit Kontakt und Antrieb: Ist der Kontakt nicht archiviert, zählt die Position (Heizungsanalyse
             // 15.11.2026: „für Zeitleisten die archivierte Variable verwenden“).
-            $byPosition = $series === null && $caption === null && $entry['Type'] === 'window' && isset($entry['roles']['level']);
+            $byPosition = $series === null && $entry['Type'] === 'window' && isset($entry['roles']['level']);
         }
         if ($byPosition) {
             $variable = $entry['roles']['level'];
@@ -1373,17 +1373,9 @@ final class DeviceIndex
         if ($series === null) {
             return null;
         }
-        $now = $this->backend->timestamp();
-        $untilNow = $to === 0 || $to >= $now;
-        $end = $untilNow ? $now : $to + 1;
-        $words = $travel !== null || $caption !== null ? null : (self::TYPES[$entry['Type']] ?? null);
-        $options = $words === null && $travel === null && $caption === null ? ($this->backend->options($variable) ?? []) : [];
-        // „seit“ nennen fahrende Geräte und Werte mit eigener Beschriftung (Sollwert): Dort ist der Beginn die Auskunft.
-        $sinceWanted = $travel !== null || $caption !== null;
-        $label = function (mixed $value) use ($words, $options, $entry, $travel, $travelLabels, $caption, $variable): string {
-            if ($caption !== null) {
-                return $caption($value);
-            }
+        $words = $travel !== null ? null : (self::TYPES[$entry['Type']] ?? null);
+        $options = $words === null && $travel === null ? ($this->backend->options($variable) ?? []) : [];
+        $label = function (mixed $value) use ($words, $options, $entry, $travel, $travelLabels, $variable): string {
             if ($travel !== null) {
                 if (!is_int($value) && !is_float($value)) {
                     return (string)$value;
@@ -1394,15 +1386,40 @@ final class DeviceIndex
                 $active = self::activeValue($entry, $value);
                 return $active === null ? (string)$value : $this->t($active ? $words[0] : $words[1]);
             }
-            foreach ($options as [$optionValue, $caption]) {
+            foreach ($options as [$optionValue, $optionCaption]) {
                 if ((string)$optionValue === (string)$value) {
-                    return $caption;
+                    return $optionCaption;
                 }
             }
             // Status aus Wertebereichen: der Text, den Symcon für den Wert zeigt
             return $this->backend->statusText($variable, $value)
                 ?? (is_int($value) || is_float($value) ? self::formatNumber((float)$value) : (string)$value);
         };
+        // Alle Zustände in fester Reihenfolge: bei Wörtern der aktive zuerst, bei einer Auswahl die Einträge
+        $labels = $travel !== null ? $travelLabels : ($words !== null ? [$this->t($words[0]), $this->t($words[1])] : array_column($options, 1));
+        // „seit“ nennen nur fahrende Geräte: Dort ist der Beginn die Auskunft.
+        return $this->sectionsOf($entry, $variable, $series, $label, $labels, $words, $travel !== null, $from, $to);
+    }
+
+    /**
+     * Kern jeder Zeitleiste: aus den Rohwerten einer Variable die Abschnitte, die Summen je Zustand, das Band fürs
+     * Diagramm und den Text. Quelle und Beschriftung wählt der Aufrufer (timelineOf für Zustände und Positionen,
+     * setpointLines für den Sollwert).
+     *
+     * @param array<string, mixed>                                                   $entry       Gerät (Room, Name) fürs Band
+     * @param array{start: mixed, since?: ?int, changes: list<array{0: int, 1: mixed}>} $series      Rohwerte aus stateSeries()
+     * @param callable(mixed): string                                               $label       Text eines Werts
+     * @param list<string>                                                          $labels      alle Zustände in fester Reihenfolge, für die Farbe
+     * @param null|array{0: string, 1: string}                                      $words       Wörter für aktiv und nicht aktiv, null ohne
+     * @param bool                                                                  $sinceWanted bis jetzt den Beginn des jetzigen Zustands nennen
+     *
+     * @return array{summary: string, sections: ?string, brief: string, band?: array<string, mixed>}
+     */
+    private function sectionsOf(array $entry, int $variable, array $series, callable $label, array $labels, ?array $words, bool $sinceWanted, int $from, int $to): array
+    {
+        $now = $this->backend->timestamp();
+        $untilNow = $to === 0 || $to >= $now;
+        $end = $untilNow ? $now : $to + 1;
         $sections = [];
         $add = static function (string $state, int $begin, int $finish) use (&$sections): void {
             $last = count($sections) - 1;
@@ -1449,7 +1466,6 @@ final class DeviceIndex
         // Fürs Band: bei Wörtern der aktive Zustand zuerst, bei einer Auswahl die Reihenfolge der Einträge, damit die Farben
         // jeden Tag dieselben sind.
         $present = array_keys($sums);
-        $labels = $travel !== null ? $travelLabels : ($words !== null ? [$this->t($words[0]), $this->t($words[1])] : array_column($options, 1));
         $states = array_values(array_unique(array_merge(array_values(array_intersect($labels, $present)), $present)));
         $index = array_flip($states);
         // Im Band stehen nur die vorkommenden Zustände. Die Farbe einer Auswahl und eines fahrenden Geräts hängt an „color“,
@@ -2233,7 +2249,9 @@ final class DeviceIndex
                 ? sprintf($this->t('%s (outside %s to %s)'), $text, self::formatNumber($range['min']), self::formatNumber($range['max']) . ' ' . $unit)
                 : sprintf($this->t('“%s” (%s)'), $special, $text);
         };
-        $timeline = $this->timelineOf(['roles' => ['state' => $variable]] + $entry, $from, $to, $caption);
+        // Der Sollwert nennt wie ein fahrendes Gerät den Beginn des jetzigen Werts („seit“)
+        $series = $this->backend->stateSeries($variable, $from, $to);
+        $timeline = $series === null ? null : $this->sectionsOf($entry, $variable, $series, $caption, [], null, true, $from, $to);
         if ($timeline === null) {
             return [$this->line($entry, $label . ': ' . $this->t('no history archived'))];
         }
