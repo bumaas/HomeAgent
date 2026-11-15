@@ -182,4 +182,22 @@ unset($zeile);
 [$r] = frage('get', ['from' => '2026-09-01', 'to' => '2026-09-30'], $inEuro);
 pruefe(abs($euro($kostenzeile($r)) - $euro($kostenzeile($kurz))) < 0.02, 'mit „€/kWh“ dieselben Kosten: ' . $kostenzeile($r));
 
+// Nachreview 15.11.2026 (Builds 307 und 308), Befund 6 (kein Fix): Der Hinweis auf die fehlende Einheit steht dort, wo
+// sonst die Kostenzeile stünde. Das gilt auch für den Text zum Diagramm des Hausverbrauchs, der die Kostenzeile trägt.
+[$mitEinheit] = frage('chart', ['from' => '2026-09-01', 'to' => '2026-09-30']);
+[$r] = frage('chart', ['from' => '2026-09-01', 'to' => '2026-09-30'], $einheitlos);
+pruefe($kostenzeile($mitEinheit) !== '' && $kostenzeile($r) === '' && in_array($hinweis, explode("\n", $r['text']), true), 'Diagramm des Hausverbrauchs: Kostenzeile mit Einheit, Hinweis ohne: ' . mb_substr($r['text'], 0, 300));
+// Befund 7: Wechselt der Strompreis am selben Index, gilt die Einheit der neuen Variable. Angenommen ist die zweite
+// Preisvariable #69990, eine Kopie der echten ohne Einheit.
+$zwei = $original;
+$zwei['variablen'][69990] = ['einheit' => ''] + $original['variablen'][$original['preis']];
+$anlageZwei = new FakeBackend($zwei['variablen'], null);
+$anlageZwei->jetzt = $zwei['jetzt'];
+$indexZwei = new DeviceIndex($zwei['geraete'], $anlageZwei, null, '', $zwei['bilanz']);
+$indexZwei->setTariff(69990, $zwei['verguetung']);
+$erst = $indexZwei->getState(['from' => '2026-09-01', 'to' => '2026-09-30']);
+$indexZwei->setTariff($zwei['preis'], $zwei['verguetung']);
+$dann = $indexZwei->getState(['from' => '2026-09-01', 'to' => '2026-09-30']);
+pruefe(in_array($hinweis, explode("\n", $erst['text']), true) && $kostenzeile($dann) !== '' && !str_contains($dann['text'], 'No costs'), 'nach setTariff gilt die Einheit der neuen Preisvariable: ' . mb_substr($dann['text'], 0, 300));
+
 ende('Kosten über lange Zeiträume');

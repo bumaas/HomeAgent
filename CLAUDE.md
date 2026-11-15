@@ -291,7 +291,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   Summen je Zustand, Einzelabschnitte bis `TIMELINE_SECTIONS`/`TIMELINE_DETAIL`. Gerät mit Zähler: Verbrauch und Zeiten in
   einer Zeile. In `show_chart` als Bänder (`chartBands`, höchstens `TIMELINE_CHART_MAX`, neben Linien fallen zu viele weg
   und der Text nennt es), nur vorkommende Zustände, Farbe einer Auswahl nach der Stelle des Eintrags (`color`), eines
-  Status nach der seines Wertebereichs (`statusLabels`, vor den Einträgen), eines Sollwerts nach dem Wert. Jeder Wert wird
+  Status nach der seines Wertebereichs (`statusLabels`, vor den Einträgen, wenn seine Texte sie umfassen), eines Sollwerts
+  nach dem Wert. Jeder Wert wird
   nur einmal beschriftet (Kernelaufrufe). Tests `check-zeitleiste.php`, `check-zeitleiste-quellen.php`,
   `check-nachreview-zeitleiste.php`.
 - **Zeitleiste fahrender Geräte** (`travelTimed`: Rollladen, Fenster nur mit Antrieb): aus der Position offen, teilweise

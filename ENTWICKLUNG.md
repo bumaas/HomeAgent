@@ -1003,9 +1003,18 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
     heißen überall Euro).
   - Befund 3: Die Beschreibungen von `part` und `cumulative` nannten `costs`, auch wenn das Feld im Schema fehlte (ohne
     Strompreis schon vor build 308). Jetzt nur noch mit dem Feld (`$hasCosts`).
-  - Liegen geblieben: 4 (Status vor Einträgen ohne Blick auf die Art der Darstellung), 5 (Diagrammtitel zählt
-    gestrichene Bänder), 6 (Hinweis in jeder Hausantwort), 7 bis 9 (gemerkter Wert, vierfache Prüfung, doppelte Regel
-    im Modul).
+  - Befunde 8 und 9 (build 310, Umbau ohne Verhaltensänderung): Die Einheit des Strompreises prüft nur noch
+    `costSlices`, das Modul fragt sie je Aufruf einmal (`priceUnitProblem`).
+  - Befund 4 (build 311): Die Texte der Wertebereiche gingen bei jeder Zeitleiste den Einträgen vor. Trägt die
+    Darstellung einer Auswahl noch Wertebereiche einer früheren Variante, kämen ihre Farben wieder nach dem Auftreten.
+    Jetzt geht der Status nur vor, wenn seine Texte alle Einträge umfassen (der Fall des Einzelwert-Bereichs). An keiner
+    Anlage gefunden, im Test angenommen (Batteriemodus mit zwei erfundenen Bereichen).
+  - Befund 5 (build 311): Fallen im Diagramm alle Zeitleisten weg und bleibt nur das Band eines Sollwerts, zählte der
+    Titel weiter die weggefallenen Geräte. Er nennt jetzt die Sollwerte.
+  - Befund 7 (build 311): `setTariff` setzt die gemerkte Auskunft zur Einheit zurück.
+  - Befund 6, kein Fix: Der Hinweis „keine Kosten“ steht nur dort, wo sonst die Kostenzeile stünde, auch im Text zum
+    Diagramm des Hausverbrauchs (der trägt die Kostenzeile ebenfalls). Die Annahme des Reviews, dort käme nie eine
+    Kostenzeile, stimmte nicht; `check-kosten-zeitraum.php` hält es fest.
 
 ## Formular und Diagnose
 

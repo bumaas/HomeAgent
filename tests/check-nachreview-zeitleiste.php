@@ -86,4 +86,24 @@ pruefe(!$r['isError'] && array_column($baender, 'name') === ['Heizung (setpoint)
 $r = frage(['room' => 'Musikzimmer'] + $ab, $thermostat, null, array_slice($mit(11), count($heizung)), 'chart');
 pruefe($r['isError'] && str_contains($r['text'], 'Too many devices (11) for a timeline chart.'), 'nur elf Zeitleisten: weiter die Absage: ' . $kurz($r));
 
+/* --- Nachreview der Builds 307 und 308 (15.11.2026) ------------------------------------------------ */
+
+// Befund 5: Fallen die elf Zeitleisten weg, zählt der Titel des Diagramms sie nicht mehr; er nennt, was das Diagramm zeigt
+$r = frage(['room' => 'Musikzimmer'] + $ab, $thermostat, null, $mit(11), 'chart');
+pruefe(($r['structuredContent']['title'] ?? '') === 'Timeline of 1 setpoint(s) (' . $filter . ').', 'Titel über dem einen Band des Sollwerts: ' . ($r['structuredContent']['title'] ?? ''));
+
+// Befund 4, ANGENOMMEN: Eine Auswahl, deren wirksame Darstellung noch Wertebereiche mit Text aus einer früheren Variante
+// trägt (Symcon lässt Parameter anderer Varianten stehen). Echt ist der Batteriemodus #54678 mit seinen fünf Einträgen und
+// seinem Archiv; angenommen sind die zwei Wertebereiche „Niedrig“ und „Hoch“. Die Farben bleiben die der Einträge, die
+// Texte der Wertebereiche kommen im Band nicht vor.
+$auswahl = fixture('nuc_2026-10-13_zeitleiste.json');
+$r = frage(['name' => 'Batteriemodus', 'period' => 'yesterday'], $auswahl, null, null, 'chart');
+$echt = $farben($r['structuredContent']['bands'][0] ?? []);
+pruefe($echt === ['Normal' => 0, 'Halten' => 1, 'Ladesperre' => 3], 'Auswahl am Mitschnitt: Farbe nach der Stelle des Eintrags: ' . json_encode($echt, JSON_UNESCAPED_UNICODE));
+$alteBereiche = $auswahl['variablen'];
+$alteBereiche[54678]['intervalle'] = [[0, 3, true, 'Niedrig'], [3, 10, true, 'Hoch']];
+$alteBereiche[54678]['statustexte'] = [];
+$r = frage(['name' => 'Batteriemodus', 'period' => 'yesterday'], $auswahl, $alteBereiche, null, 'chart');
+pruefe($farben($r['structuredContent']['bands'][0] ?? []) === $echt, 'Auswahl mit übrig gebliebenen Wertebereichen: dieselben Farben: ' . json_encode($farben($r['structuredContent']['bands'][0] ?? []), JSON_UNESCAPED_UNICODE));
+
 ende('Nachreview Zeitleiste: Statusfarbe mit Einzelwert, Sollwertband ohne Linien, erste Zeile neben Zeitleisten');

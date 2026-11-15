@@ -1404,12 +1404,16 @@ final class DeviceIndex
                 ?? (is_int($value) || is_float($value) ? self::formatNumber((float)$value) : (string)$value);
         };
         // Alle Zustände in fester Reihenfolge: bei Wörtern der aktive zuerst, bei einem Status die Texte seiner
-        // Wertebereiche, bei einer Auswahl die Einträge. Der Status geht vor: Umfasst einer seiner Bereiche nur einen Wert,
-        // hat die Variable auch einen Eintrag, und die übrigen Zustände bekämen ihre Farbe nach dem Auftreten.
+        // Wertebereiche, bei einer Auswahl die Einträge. Der Status geht vor, wenn seine Texte die Einträge umfassen:
+        // Umfasst einer seiner Bereiche nur einen Wert, hat die Variable auch einen Eintrag, und die übrigen Zustände
+        // bekämen ihre Farbe nach dem Auftreten. Eine Auswahl mit eigenen Einträgen bleibt bei diesen, auch wenn ihre
+        // Darstellung noch Wertebereiche einer früheren Variante trägt.
+        $captions = array_column($options, 1);
+        $status = $travel === null && $words === null ? $this->backend->statusLabels($variable) : [];
         $labels = match (true) {
             $travel !== null => $travelLabels,
             $words !== null  => [$this->t($words[0]), $this->t($words[1])],
-            default          => $this->backend->statusLabels($variable) ?: array_column($options, 1),
+            default          => $status !== [] && array_diff($captions, $status) === [] ? $status : $captions,
         };
         // „seit“ nennen nur fahrende Geräte: Dort ist der Beginn die Auskunft.
         return $this->sectionsOf($entry, $variable, $series, $label, $labels, $words, $travel !== null, $from, $to);
@@ -6352,6 +6356,9 @@ final class DeviceIndex
             $chart['bands'] = array_values(array_filter($chart['bands'], static fn (array $one): bool => $one['extra'] ?? false));
             if ($chart['bands'] === []) {
                 unset($chart['bands']);
+            } elseif (($chart['series'] ?? []) === []) {
+                // Übrig sind nur Bänder von Sollwerten: Der Titel zählte sonst die Geräte, deren Zeitleisten eben wegfielen
+                $chart['title'] = sprintf($this->t('Timeline of %d setpoint(s) (%s).'), count($chart['bands']), (string)($chart['filter'] ?? ''));
             }
         } else {
             $droppedBands = 0;
@@ -7095,6 +7102,7 @@ final class DeviceIndex
     {
         $this->priceVariable = $priceVariable;
         $this->feedIn = max(0.0, $feedInCent);
+        $this->priceUnitMissing = null;
     }
 
     /**
