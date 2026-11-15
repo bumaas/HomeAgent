@@ -2655,7 +2655,10 @@ class HomeAgent extends IPSModuleStrict
                 $parts = array_filter([
                     in_array('on', $commands, true) ? 'on/off switch a device' : '',
                     $airConditioners ? 'on switches an air conditioner on only with its name' : '',
-                    $specials ? 'on/off set a thermostat to its special setpoint On/Off, only with type=thermostat or its name' : '',
+                    // Neben einem Klimagerät mit Ein-Aus-Variable schaltet on mit type=thermostat auch dieses ein
+                    // (Nachreview 15.11.2026, Befund 2)
+                    $specials ? 'on/off set a thermostat to its special setpoint On/Off, only with type=thermostat or its name'
+                        . ($airConditioners ? '; for on prefer the name, type=thermostat also switches air conditioners on' : '') : '',
                     $pausesOnOff ? 'off pauses a media player without power switch, on with type=media resumes it' : '',
                     $hasBlinds ? 'open/close move a blind or window all the way' : '',
                     $hasStop && $hasBlinds ? ($hasMedia ? 'stop halts a moving blind or window and ends playback of a media player' : 'stop halts a moving blind or window') : ($hasMedia ? 'stop ends playback' : ''),

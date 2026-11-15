@@ -295,8 +295,15 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   - Absage und Schlusszeilen nennen nur den Namen als Weg, nie `type=thermostat` (build 315, Code-Review 15.11.2026,
     Befund 1): Der Aufruf mit Raum und Typ stellt auch einen Heizkörperthermostat desselben Raums auf „On“. Die
     Beschreibung von `command` sagt es ebenfalls (Befund 6). Die Absage zum Klimagerät kommt vor der zum Sonder-Sollwert.
-  - Die erste Zeile eines Verlaufs zählt nur Zeitleisten an/aus mit Archiv; ohne Archiv nennt die Zeile die Variable
-    (Befund 4, Mitschnitt: drei von fünf „Betrieb“ ohne Verlauf).
+  - Die erste Zeile eines Verlaufs zählt nur Zeitleisten an/aus mit Archiv (Befund 4, Mitschnitt: drei von fünf
+    „Betrieb“ ohne Verlauf). Seit build 316 (Nachreview von 59d89be, Befunde 3 und 4) entscheidet auch die Kurzfassung
+    nur nach den archivierten, und die übrigen stehen wie jede Auslassung in einer Schlusszeile über `unarchivedList`
+    (mit Rolle `switch`), nicht mehr als Gerätezeile zwischen den Verläufen.
+  - Nachreview von 59d89be, build 316: Bei mehreren Klimageräten sagt die Absage „je Gerät ein Aufruf“, aus mehreren
+    Räumen mit dem Raum aus der Klammer in `room` („Call again with name: A, B“ war kein gültiger `name`, Befund 1).
+    Neben einem Klimagerät nennen Schlusszeile und Beschreibung von `command` beim Sonder-Sollwert für `on` nur den
+    Namen, weil `type=thermostat` das Klimagerät mit einschaltet (Befund 2). Schlusszeilen von `set_state` nennen
+    höchstens `CLOSING_NAMES_MAX` (5) Namen, sie hängen an jeder Antwort (Befund 5).
   - Sollwert, Betriebsart und Lüfterstufe schalten ein ausgeschaltetes Gerät nicht ein, eine Schlusszeile sagt es.
     Home Assistant schaltet beim Moduswechsel ein; verworfen, weil „stell auf Kühlen“ im Winter sonst ein Gerät startet.
   - Mit der Variable entscheidet sie allein über an/aus, auch wenn die Betriebsart zusätzlich „Aus“ kennt. Die
