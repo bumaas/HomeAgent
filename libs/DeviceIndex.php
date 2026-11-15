@@ -1653,10 +1653,16 @@ final class DeviceIndex
             // „Gib einen Raum oder einen Namen an, höchstens 5 auf einmal“ las ein Modell als fünf Räume in room; die
             // Kommaliste gibt es aber nur bei show_chart (B105, Claude-App 08.11.2026). Für get_state nennt die Absage
             // deshalb den Weg, den es gibt; im Diagramm bleibt der alte Satz. Ist schon ein Raum genannt, hilft „je Raum“
-            // nicht, dann nennt sie die Geräte beim Namen (Code-Review 13.11.2026, Befund 5).
+            // nicht, dann nennt sie die Geräte beim Namen (Code-Review 13.11.2026, Befund 5). Ebenso ohne room, wenn alle
+            // im selben Raum liegen (gemeinsamer Alias „Heizkreis“, 15.11.2026): „je Raum“ führte in dieselbe Absage.
+            $oneRoom = $oneRoom || count(array_unique(array_map(static fn (array $e): string => self::normalize((string)$e['Room']), $measured))) === 1;
             if ($this->chart === null && $oneRoom) {
-                return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s), at most %d per call. Ask for each device on its own with name: %s.'), count($measured), $filter, self::HISTORY_MAX,
-                    $this->nameList(array_map(static fn (array $e): array => [(string)$e['Name'], (string)$e['Room']], $measured))));
+                $named = static fn (array $entries): array => array_map(static fn (array $e): array => [(string)$e['Name'], (string)$e['Room']], $entries);
+                // Die Absage verwirft auch die Zeitleisten der Abfrage (Status, Betriebsart); ohne ihre Namen fragte ein
+                // Assistent, der der Liste folgt, sie nicht ab.
+                $timelines = array_column($timed, 'entry');
+                return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s), at most %d per call. Ask for each device on its own with name: %s.'), count($measured), $filter, self::HISTORY_MAX, $this->nameList($named($measured)))
+                    . ($timelines === [] ? '' : ' ' . sprintf($this->t('%d further device(s) have a timeline, ask for them the same way: %s.'), count($timelines), $this->nameList($named($timelines)))));
             }
             if ($this->chart === null) {
                 return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s), at most %d per call. room takes a single room, not a list. Make one call per room or give one device in name.'), count($measured), $filter, self::HISTORY_MAX));

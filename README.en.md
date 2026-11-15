@@ -557,7 +557,8 @@ period: "Kompressorstarts | measurement | increase 1" followed by the hours or d
 status whose presentation shows every value as text through value ranges (for example 0 to 8 "Standby", 8 to 11
 "Heizbetrieb") gets a timeline with these texts: "Heizbetrieb 21 h 39 min, Warmwasserbereitung 1 h 22 min, Standby
 59 min" and the sections with their times. If the rows of one system share an alias (for example "Heizkreis"), a query
-with that name returns all their values at once.
+with that name returns all their values at once. Over a period a query returns at most five measured values. If there
+are more, the answer lists the values by name and the assistant asks for them one by one.
 
 ### For scripts
 

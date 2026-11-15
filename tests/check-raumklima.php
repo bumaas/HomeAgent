@@ -231,8 +231,9 @@ pruefe($gedraengeMit($geraete, new RoomIndex(raeume(['Keller' => [0, 56003]]))) 
 
 // Code-Review 13.11.2026, Befund 5: Die Absage aus build 286 riet auch bei genanntem Raum „Make one call per room“. Das
 // Modell hätte denselben Aufruf wiederholt. Mit Raum nennt sie die Geräte beim Namen, wie die Schlusszeile des
-// Raumklimas; ohne Raum (auch mit Etage) bleibt der Satz aus build 286. Der Keller ohne Angabe hat 16 Fühler (Raumfühler
-// und Thermostat lesen dieselbe Variable).
+// Raumklimas; ohne Raum bleibt der Satz aus build 286, solange die Fühler aus mehreren Räumen kommen (check-verlauf.php).
+// Liegen sie alle im selben Raum (Etage Keller mit dem einen Raum Keller), nennt sie ebenfalls die Namen (15.11.2026).
+// Der Keller ohne Angabe hat 16 Fühler (Raumfühler und Thermostat lesen dieselbe Variable).
 $verlaufNamen = 'Temperatur, Warmwasserspeicher, Vorlauf, Rücklauf, Vorlauf-Soll, Temperatur Kühlschrank, Temperatur Kühltruhe, Temperatur Weinkühlschrank, '
     . 'Strang 1 Vorlauf, Strang 1 Rücklauf, Strang 2 Vorlauf, Strang 2 Rücklauf, Strang 3 Vorlauf, Strang 3 Rücklauf, Warmwasser Vorlauf, Warmwasser Rücklauf';
 $r = frage(['room' => 'Keller', 'type' => 'temperature', 'period' => 'last_week'], raeume([]));
@@ -241,7 +242,8 @@ pruefe($r['isError'] && $r['text'] === 'Too many measured values (16) for a hist
 $r = frage(['room' => 'Keller', 'type' => 'temperature', 'period' => 'last_week'], raeume([]), null, 'get', ['Too many measured values (%d) for a history (%s), at most %d per call. Ask for each device on its own with name: %s.' => 'Zu viele Messwerte (%d) für einen Verlauf (%s), höchstens %d je Aufruf. Frag jedes Gerät einzeln mit name ab: %s.']);
 pruefe($r['text'] === 'Zu viele Messwerte (16) für einen Verlauf (room=Keller, type=temperature, period=last_week), höchstens 5 je Aufruf. Frag jedes Gerät einzeln mit name ab: ' . $verlaufNamen . '.', 'übersetzbar: ' . $r['text']);
 $r = frage(['floor' => 'Keller', 'type' => 'temperature', 'period' => 'last_week'], raeume([]));
-pruefe($r['isError'] && str_ends_with($r['text'], 'room takes a single room, not a list. Make one call per room or give one device in name.'), 'mit Etage ohne Raum bleibt „je Raum“ ein Weg: ' . $r['text']);
+pruefe($r['isError'] && $r['text'] === 'Too many measured values (16) for a history (floor=Keller, type=temperature, period=last_week), at most 5 per call. Ask for each device on its own with name: ' . $verlaufNamen . '.',
+    'mit Etage, alle im selben Raum: Namen statt „je Raum“: ' . $r['text']);
 // Der genannte Weg führt zum Ziel
 $r = frage(['room' => 'Keller', 'name' => 'Strang 2 Vorlauf', 'period' => 'last_week'], raeume([]));
 pruefe(!$r['isError'] && str_starts_with($r['text'], 'History of 1 measured value(s) (room=Keller, name=Strang 2 Vorlauf, period=last_week)'), 'ein Name aus der Absage liefert den Verlauf: ' . strtok($r['text'], "\n"));

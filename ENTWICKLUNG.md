@@ -937,8 +937,11 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   `GetValueFormattedEx` (laut `IPS_GetFunction` auf 9.0 C++ und 9.1 Rust vorhanden). Verworfen: ein eigener Gerätetyp
   „Heizkreis“. Home Assistant führt die Werte einer Heizungsanlage ebenfalls als einzelne Sensoren; die Abfrage aller
   Werte in einem Aufruf geht über einen gemeinsamen Alias der Zeilen (am Mitschnitt belegt, die Namenssuche liefert
-  alle Zeilen mit genau diesem Alias). Mit Zeitraum scheitert das an `HISTORY_MAX`, die Absage nennt dann noch den Weg
-  über den Raum statt die Namen. Noch nicht: Zuwachs als Balken im Diagramm (er ist eine Linie), ein Zeitprogramm.
+  alle Zeilen mit genau diesem Alias). Mit Zeitraum scheitert das an `HISTORY_MAX` (14 Messwerte am System des
+  Entwicklers). Die Absage riet bis build 311 „je Raum einmal“, obwohl alle Zeilen im selben Raum liegen, und der Weg
+  führte in dieselbe Absage. Seit build 312 nennt sie die Namen, sobald alle Messwerte im selben Raum liegen, auch ohne
+  `room` (ebenso bei einer Etage mit einem einzigen Raum). Die Zeilen mit Zeitleiste (Status, Betriebsart) zählen nicht
+  als Messwert, die Absage verwirft sie aber mit; ein zweiter Satz nennt deshalb auch ihre Namen. Noch nicht: Zuwachs als Balken im Diagramm (er ist eine Linie), ein Zeitprogramm.
   Test `check-heizungsregler.php`, alle Werte echt, nur der Zähler ohne Archiv ist angenommen.
 - **Code-Review der Builds 302 bis 304** (15.11.2026, zehn Befunde, neun behoben in build 306, der Umbau davor in 305):
   - Umbau: `timelineOf()` hatte mit dem Sollwert eine vierte Betriebsart über eine gedachte Zeile und fünf Abfragen auf

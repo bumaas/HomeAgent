@@ -92,4 +92,33 @@ pruefe($hat($r, 'Keller | Eigenverbrauchsoptimierung | measurement | Aus 21 h, A
 $r = frage(['name' => 'Betriebsart Heizung', 'period' => 'yesterday'], $echt, $liste);
 pruefe($hat($r, 'day 00:00-16:27, off 16:27-17:02, day 17:02-24:00'), 'Betriebsart als Zeitleiste: ' . $kurz($r));
 
-ende('Heizungsregler: Status aus Wertebereichen und Zähler als Messwert');
+/* --- echt: alle Werte der Anlage über ihren gemeinsamen Alias, mit Zeitraum ----------------------- */
+
+// Mitschnitt nuc_2026-11-15_heizkreis.json (nur gelesen, 15.11.2026): die 17 Zeilen mit dem Alias „Heizkreis“, alle im Raum
+// Keller, 14 davon Messwerte. Die Absage riet „Make one call per room“, obwohl alle im selben Raum liegen; der Weg führte
+// wieder in dieselbe Absage. Sie nennt jetzt die Namen, wie bei genanntem Raum.
+$mitschnitt = fixture('nuc_2026-11-15_heizkreis.json');
+$kreis = $mitschnitt['variablen'];
+$zeilenKreis = $mitschnitt['geraete'];
+$namen = 'Vorlauf, Rücklauf, Vorlauf-Soll, Heizkurve, Heizgrenze, Modulation, Kompressorstarts, Tag-Soll, Nacht-Soll, Raum-Sollwert, Grundwert Wetterausgleich, Kompressor-Laufzeit, Status Heizkreis, Zeitprogramm Heizung';
+$r = frage(['name' => 'Heizkreis', 'period' => 'yesterday'], $kreis, $zeilenKreis);
+pruefe($r['isError'] && $r['text'] === 'Too many measured values (14) for a history (name=Heizkreis, period=yesterday), at most 5 per call. Ask for each device on its own with name: ' . $namen . '. 3 further device(s) have a timeline, ask for them the same way: Betriebsart Heizung, Status Wärmepumpe, Eigenverbrauchsoptimierung.',
+    'gemeinsamer Alias, alle in einem Raum: Absage nennt die Namen, auch die der Zeitleisten: ' . $r['text']);
+pruefe(!str_contains($r['text'], 'per room'), 'kein Rat „je Raum“, wenn alle im selben Raum liegen: ' . $kurz($r));
+$r = frage(['name' => 'Heizkreis', 'period' => 'yesterday'], $kreis, $zeilenKreis, $de);
+pruefe(str_contains($r['text'], 'höchstens 5 je Aufruf. Frag jedes Gerät einzeln mit name ab: Vorlauf, Rücklauf, '), 'auf Deutsch: ' . $kurz($r));
+pruefe(str_ends_with($r['text'], ' 3 weitere(s) Gerät(e) haben eine Zeitleiste, frag sie genauso ab: Betriebsart Heizung, Status Wärmepumpe, Eigenverbrauchsoptimierung.'), 'Zeitleisten auf Deutsch: ' . $r['text']);
+// Auch dieser Weg führt zum Ziel
+$r = frage(['name' => 'Betriebsart Heizung', 'period' => 'yesterday'], $kreis, $zeilenKreis);
+pruefe(!$r['isError'] && $hat($r, 'day 00:00-16:27, off 16:27-17:02, day 17:02-24:00'), 'ein Name aus dem zweiten Satz liefert seine Zeitleiste: ' . $kurz($r));
+// Der genannte Weg führt zum Ziel: „Vorlauf“ trifft genau die eine Zeile, nicht auch „Vorlauf-Soll“
+$r = frage(['name' => 'Vorlauf', 'period' => 'yesterday'], $kreis, $zeilenKreis);
+pruefe(!$r['isError'] && ($zeilen($r)[0] ?? '') === 'History of 1 measured value(s) (name=Vorlauf, period=yesterday), per hour: minimum / average / maximum.'
+    && $hat($r, 'Keller | Vorlauf | measurement | minimum 19.7 °C (2026-11-14 06:40), maximum 73.4 °C (2026-11-14 14:22)'), 'ein Name aus der Absage liefert seinen Verlauf: ' . $kurz($r));
+// ANGENOMMEN (am nuc liegen alle im Keller): eine Zeile in einem anderen Raum, dann bleibt „je Raum“ ein Weg
+$verteilt = $zeilenKreis;
+$verteilt[0]['Room'] = 'Garten';
+$r = frage(['name' => 'Heizkreis', 'period' => 'yesterday'], $kreis, $verteilt);
+pruefe($r['isError'] && str_ends_with($r['text'], 'room takes a single room, not a list. Make one call per room or give one device in name.'), 'aus zwei Räumen bleibt der Rat „je Raum“: ' . $kurz($r));
+
+ende('Heizungsregler:Status aus Wertebereichen und Zähler als Messwert');
