@@ -4445,7 +4445,7 @@ pruefe(($innenDialog('light')['SwitchVariableID']['visible'] ?? null) === false 
 pruefe(str_ends_with((string)($schaltFeld['onChange'] ?? ''), '$ImageMediaID, $InsideVariableID, $SwitchVariableID);') && ($innenDialog('thermostat')['SwitchLabel']['visible'] ?? null) === false, 'die Auswahl ruft die Dialogfunktion mit dem neuen Parameter, der Text dazu ist unsichtbar');
 $schaltSpalten = array_column(array_column(flach($formular['elements']), null, 'name')['Devices']['columns'] ?? [], null, 'name');
 pruefe(($schaltSpalten['SwitchVariableID']['visible'] ?? true) === false && ($schaltSpalten['SwitchVariableID']['edit']['type'] ?? '') === 'SelectVariable' && ($schaltSpalten['SwitchLabel']['visible'] ?? true) === false, 'die Geräteliste speichert Ein/Aus in einer unsichtbaren Spalte');
-pruefe(($uebersetzt['on/off'] ?? '') === 'Ein/Aus' && ($uebersetzt['%d on/off timeline(s).'] ?? '') !== '' && ($uebersetzt['%d device(s) are switched off and stay off (%s). Switch on with command=on and type=thermostat or the name.'] ?? '') !== '', 'die neuen Texte sind übersetzt');
+pruefe(($uebersetzt['on/off'] ?? '') === 'Ein/Aus' && ($uebersetzt['%d on/off timeline(s).'] ?? '') !== '' && ($uebersetzt['%d device(s) are switched off and stay off (%s). Switch one on with command=on and its name.'] ?? '') !== '', 'die neuen Texte sind übersetzt');
 $schaltBetrieb = variable(VARIABLETYPE_BOOLEAN, false);
 IPS_SetName($schaltBetrieb, 'Betrieb');
 $schaltSoll = variable(VARIABLETYPE_FLOAT, 24.0);
@@ -4465,6 +4465,18 @@ pruefe(IPS_GetInstance($iid)['InstanceStatus'] === IS_ACTIVE && in_array($schalt
 $schaltAntwort = $m->QueryState('Büro', '', 'Klimaanlage', false);
 pruefe(str_contains($schaltAntwort, 'Büro | Klimaanlage | thermostat | off (setpoint ') && !str_contains($schaltAntwort, 'Heizen'), 'über das Modul ist das ausgeschaltete Klimagerät aus: ' . $schaltAntwort);
 pruefe(!str_contains($m->RunSelfTest(), 'has a mode without "off"'), 'Selbsttest mit Ein-Aus-Variable: kein Hinweis: ' . $m->RunSelfTest());
+// Code-Review 15.11.2026, Befund 6: Die Beschreibung von command nennt die Regel für on, sonst braucht das Modell eine
+// zweite Runde (über Home Assistant erreicht nur die Werkzeugbeschreibung das Modell).
+$schaltSchema = static function () use ($m): string {
+    $werkzeuge = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(), $m, HomeAgent::class)()), true), null, 'name');
+    return (string)($werkzeuge['set_state']['inputSchema']['properties']['command']['description'] ?? '');
+};
+IPS_SetProperty($iid, 'Devices', json_encode([['ReadOnly' => false] + $schaltZeile + ['SwitchVariableID' => $schaltBetrieb]]));
+IPS_ApplyChanges($iid);
+pruefe(str_contains($schaltSchema(), 'on switches an air conditioner on only with its name'), 'command nennt die Regel für das Einschalten eines Klimageräts: ' . $schaltSchema());
+IPS_SetProperty($iid, 'Devices', json_encode([['ReadOnly' => false] + $schaltZeile]));
+IPS_ApplyChanges($iid);
+pruefe(!str_contains($schaltSchema(), 'air conditioner'), 'ohne Ein-Aus-Variable steht die Regel nicht in command (schon vorher richtig): ' . $schaltSchema());
 IPS_SetProperty($iid, 'Devices', json_encode([$schaltZeile]));
 IPS_ApplyChanges($iid);
 pruefe(str_contains($m->RunSelfTest(), 'Note: Klimaanlage (Büro) has a mode without "off" and no on/off variable'), 'Selbsttest nennt die Betriebsart ohne „Aus“ und ohne Ein-Aus-Variable: ' . $m->RunSelfTest());

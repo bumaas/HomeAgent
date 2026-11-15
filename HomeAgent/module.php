@@ -2650,8 +2650,11 @@ class HomeAgent extends IPSModuleStrict
                 // Prüfung wie in setState, auch ein Statustext ohne Aktion zählt (Review 18.10.2026, N11).
                 $pausesOnOff = $hasMedia && array_any($devices, static fn (array $e): bool => !$e['ReadOnly'] && $index->pausesOnOff($e));
                 $specials = array_any($devices, static fn (array $e): bool => !$e['ReadOnly'] && ($e['SpecialVia'] ?? []) !== []);
+                // Klimagerät mit Ein-Aus-Variable (B116): Die Regel steht hier, eine Absage kostet eine Runde
+                $airConditioners = array_any($devices, static fn (array $e): bool => !$e['ReadOnly'] && $e['Type'] === 'thermostat' && isset($e['roles']['switch']));
                 $parts = array_filter([
                     in_array('on', $commands, true) ? 'on/off switch a device' : '',
+                    $airConditioners ? 'on switches an air conditioner on only with its name' : '',
                     $specials ? 'on/off set a thermostat to its special setpoint On/Off, only with type=thermostat or its name' : '',
                     $pausesOnOff ? 'off pauses a media player without power switch, on with type=media resumes it' : '',
                     $hasBlinds ? 'open/close move a blind or window all the way' : '',

@@ -108,6 +108,16 @@ $r = rufe('get', $tag, $werte, null, $de);
 pruefe(str_contains($r['text'], 'Büro | Klimaanlage | thermostat | Ein/Aus: an 23 min, aus 23 h 37 min'), 'Verlauf auf Deutsch: ' . $r['text']);
 $r = rufe('chart', $tag, $werte);
 pruefe(!$r['isError'] && in_array('Klimaanlage (on/off)', array_column($r['structuredContent']['bands'] ?? [], 'name'), true), 'Diagramm: Band an/aus: ' . json_encode(array_column($r['structuredContent']['bands'] ?? [], 'name'), JSON_UNESCAPED_UNICODE) . ' ' . $r['text']);
+// Code-Review 15.11.2026, Befund 4. ANGENOMMEN: „Betrieb“ im Büro ist nicht archiviert (an der Anlage sind alle fünf
+// archiviert). Die erste Zeile zählt dann keine Zeitleiste an/aus, und die Zeile nennt die Variable.
+$ohneArchiv = $werte;
+$ohneArchiv[BETRIEB]['geloggt'] = false;
+unset($ohneArchiv[BETRIEB]['rohwerte']);
+$r = rufe('get', $tag, $ohneArchiv);
+pruefe(!$r['isError'] && !str_contains($zeilen($r)[0] ?? '', 'on/off timeline'), 'ohne Archiv: die erste Zeile zählt keine Zeitleiste an/aus: ' . ($zeilen($r)[0] ?? ''));
+pruefe($hat($r, 'Büro | Klimaanlage | thermostat | on/off: not archived in Symcon (variable #49255)'), 'ohne Archiv: die Zeile nennt die Variable: ' . $r['text']);
+$r = rufe('get', $tag, $ohneArchiv, null, $de);
+pruefe($hat($r, 'Büro | Klimaanlage | thermostat | Ein/Aus: in Symcon nicht archiviert (Variable #49255)'), 'ohne Archiv auf Deutsch: ' . $r['text']);
 // type=temperature fragt nach dem Klima des Raums, nicht nach dem Gerät
 $r = rufe('get', ['room' => 'Büro', 'type' => 'temperature', 'from' => '2026-11-11', 'to' => '2026-11-11'], $werte);
 pruefe(!str_contains($r['text'], 'on/off'), 'type=temperature: keine Zeitleiste an/aus: ' . $r['text']);
@@ -119,11 +129,19 @@ pruefe(!$r['isError'] && $gesendet() === [[BETRIEB, true]] && ($zeilen($r)[0] ??
 $r = rufe('set', ['name' => 'Klimaanlage', 'room' => 'Büro', 'command' => 'on'], $werte);
 pruefe(!$r['isError'] && $gesendet() === [[BETRIEB, true]], 'on mit Namen schaltet ein: ' . $r['text']);
 $r = rufe('set', ['room' => 'Büro', 'command' => 'on'], $werte);
-pruefe($r['isError'] && $gesendet() === [] && str_contains($r['text'], '"on" switches an air conditioner on only with type=thermostat or its name'), '„Büro an“ ohne Typ schaltet das Klimagerät nicht ein: ' . $r['text']);
+pruefe($r['isError'] && $gesendet() === [] && $r['text'] === 'Nothing was changed: "on" switches an air conditioner on only with its name (room=Büro). Call again with name: Klimaanlage.', '„Büro an“ ohne Typ schaltet das Klimagerät nicht ein und nennt es beim Namen: ' . $r['text']);
+// Code-Review 15.11.2026, Befund 1: Die Absage empfahl type=thermostat. Der Aufruf mit Raum stellt aber auch einen
+// Heizkörperthermostat mit Sonder-Sollwert auf „On“. ANGENOMMEN ist die Zusammenstellung: das Thermostat aus dem
+// Mitschnitt nuc_2026-10-26_sonderwert_befehl.json (Musikzimmer, On = 100) im Raum des Klimageräts.
+$sonder = fixture('nuc_2026-10-26_sonderwert_befehl.json');
+$heizung = ['Room' => 'Büro'] + array_values(array_filter($sonder['geraete'], static fn (array $z): bool => $z['Room'] === 'Musikzimmer'))[0];
+$r = rufe('set', ['room' => 'Büro', 'command' => 'on'], $werte + $sonder['variablen'], array_merge($liste, [$heizung]));
+pruefe($r['isError'] && $gesendet() === [] && str_contains($r['text'], 'only with its name (room=Büro). Call again with name: Klimaanlage.') && !str_contains($r['text'], 'type=thermostat'),
+    'Klimagerät und Heizkörper im Raum: die Absage nennt das Klimagerät beim Namen, nicht type=thermostat: ' . $r['text']);
 // ANGENOMMEN: ein Licht im selben Raum. „Büro an“ meint das Licht, das Klimagerät bleibt aus und wird genannt.
 $mitLicht = array_merge($liste, [['Room' => 'Büro', 'Name' => 'Deckenlicht', 'Aliases' => '', 'Type' => 'light', 'ReadOnly' => false, 'StateVariableID' => 69990]]);
 $r = rufe('set', ['room' => 'Büro', 'command' => 'on'], $werte + [69990 => ['name' => 'Büro: Deckenlicht', 'wert' => false, 'aktion' => true]], $mitLicht);
-pruefe(!$r['isError'] && $gesendet() === [[69990, true]] && $hat($r, '1 air conditioner(s) left out: "on" switches them on only with type=thermostat or a name.'), '„Büro an“ schaltet das Licht, nicht das Klimagerät: ' . $r['text'] . ' ' . json_encode($gesendet()));
+pruefe(!$r['isError'] && $gesendet() === [[69990, true]] && $hat($r, '1 air conditioner(s) left out: "on" switches one on only with its name (Klimaanlage).'), '„Büro an“ schaltet das Licht, nicht das Klimagerät: ' . $r['text'] . ' ' . json_encode($gesendet()));
 // off geht über „Betrieb“, die Betriebsart bleibt
 $r = rufe('set', ['room' => 'Büro', 'type' => 'thermostat', 'command' => 'off'], $stellbar($an));
 pruefe(!$r['isError'] && $gesendet() === [[BETRIEB, false]] && ($zeilen($r)[0] ?? '') === '1 of 1 devices are now off (room=Büro, type=thermostat).', 'off schaltet „Betrieb“ aus, nicht die Betriebsart: ' . $r['text'] . ' ' . json_encode($gesendet()));
@@ -140,7 +158,7 @@ pruefe(DeviceIndex::abilitiesOf(['ReadOnly' => true] + $zeileBuero) === [], 'nur
 
 /* --- Stellen bei ausgeschaltetem Gerät, ANGENOMMEN: Sollwert und Betriebsart haben eine Aktion ---- */
 
-$bleibtAus = '1 device(s) are switched off and stay off (Klimaanlage). Switch on with command=on and type=thermostat or the name.';
+$bleibtAus = '1 device(s) are switched off and stay off (Klimaanlage). Switch one on with command=on and its name.';
 $r = rufe('set', ['room' => 'Büro', 'type' => 'thermostat', 'temperature' => 22], $stellbar($werte));
 pruefe(!$r['isError'] && $gesendet() === [[SOLLWERT, 22.0]] && $hat($r, 'Büro | Klimaanlage | thermostat | off (setpoint 22 °C, currently 17.0 °C)') && $hat($r, $bleibtAus),
     'Sollwert bei ausgeschaltetem Gerät: gestellt, bleibt aus, und die Antwort sagt es: ' . $r['text'] . ' ' . json_encode($gesendet()));
@@ -150,7 +168,7 @@ pruefe(!$r['isError'] && $gesendet() === [[BETRIEBSART, 2]] && ($zeilen($r)[0] ?
 $r = rufe('set', ['room' => 'Büro', 'type' => 'thermostat', 'mode' => 'Kühlen'], $stellbar($an));
 pruefe(!$r['isError'] && !str_contains($r['text'], 'stay off'), 'eingeschaltet: kein Hinweis „bleibt aus“: ' . $r['text']);
 $r = rufe('set', ['room' => 'Büro', 'type' => 'thermostat', 'temperature' => 22], $stellbar($werte), null, $de);
-pruefe($hat($r, '1 Gerät(e) sind ausgeschaltet und bleiben aus (Klimaanlage). Einschalten mit command=on und type=thermostat oder dem Namen.'), 'Hinweis auf Deutsch: ' . $r['text']);
+pruefe($hat($r, '1 Gerät(e) sind ausgeschaltet und bleiben aus (Klimaanlage). Einschalten mit command=on und dem Namen des Geräts.'), 'Hinweis auf Deutsch: ' . $r['text']);
 
 /* --- Karte --------------------------------------------------------------------------------------- */
 

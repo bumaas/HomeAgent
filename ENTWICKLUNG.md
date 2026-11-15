@@ -292,6 +292,11 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
     Eingeschaltet bleibt sie, wie sie war.
   - `on` schaltet nur mit `type=thermostat`, mit Namen oder von der Karte ein: „Büro an“ meint das Licht (wie bei der
     Musik, B86). `off` nimmt das Klimagerät wie bisher mit, so war es auch über den Modus.
+  - Absage und Schlusszeilen nennen nur den Namen als Weg, nie `type=thermostat` (build 315, Code-Review 15.11.2026,
+    Befund 1): Der Aufruf mit Raum und Typ stellt auch einen Heizkörperthermostat desselben Raums auf „On“. Die
+    Beschreibung von `command` sagt es ebenfalls (Befund 6). Die Absage zum Klimagerät kommt vor der zum Sonder-Sollwert.
+  - Die erste Zeile eines Verlaufs zählt nur Zeitleisten an/aus mit Archiv; ohne Archiv nennt die Zeile die Variable
+    (Befund 4, Mitschnitt: drei von fünf „Betrieb“ ohne Verlauf).
   - Sollwert, Betriebsart und Lüfterstufe schalten ein ausgeschaltetes Gerät nicht ein, eine Schlusszeile sagt es.
     Home Assistant schaltet beim Moduswechsel ein; verworfen, weil „stell auf Kühlen“ im Winter sonst ein Gerät startet.
   - Mit der Variable entscheidet sie allein über an/aus, auch wenn die Betriebsart zusätzlich „Aus“ kennt. Die

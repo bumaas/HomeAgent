@@ -1692,16 +1692,20 @@ final class DeviceIndex
         // Sollwerte sind Zeitleisten: Abschnitte wie dort nur bei höchstens TIMELINE_DETAIL. Mehr werden es nur mit
         // Thermostaten ohne Ist-Temperatur, die anderen begrenzt HISTORY_MAX.
         $setpoints = count(array_filter($rows, static fn (array $row): bool => $row['kind'] === 'setpoint'));
-        // Ebenso die Zeitleisten an/aus der Klimageräte; die erste Zeile nennt ihre Anzahl
+        // Ebenso die Zeitleisten an/aus der Klimageräte; die erste Zeile nennt, wie viele es gibt. Eine Ein-Aus-Variable
+        // ohne Archiv zählt nicht mit (Code-Review 15.11.2026, Befund 4).
         $switches = count(array_filter($rows, static fn (array $row): bool => $row['kind'] === 'switch'));
-        $switchNote = $switches > 0 ? ' ' . sprintf($this->t('%d on/off timeline(s).'), $switches) : '';
+        $switchTimelines = 0;
         foreach ($rows as ['entry' => $entry, 'kind' => $kind, 'variable' => $variable, 'label' => $label]) {
             if ($kind === 'setpoint') {
                 $lines = array_merge($lines, $this->setpointLines($entry, $variable, $label, $from, $to, $setpoints > self::TIMELINE_DETAIL));
                 continue;
             }
             if ($kind === 'switch') {
-                $lines = array_merge($lines, $this->switchLines($entry, $variable, $label, $from, $to, $switches > self::TIMELINE_DETAIL));
+                $switchLines = $this->switchLines($entry, $variable, $label, $from, $to, $switches > self::TIMELINE_DETAIL);
+                $switchTimelines += $switchLines === null ? 0 : 1;
+                // Ohne Archiv nennt die Zeile die Variable, die zu archivieren wäre
+                $lines = array_merge($lines, $switchLines ?? [$this->line($entry, $label . ': ' . sprintf($this->t('not archived in Symcon (variable #%d)'), $variable))]);
                 continue;
             }
             // Die Tabelle je Abschnitt bekommt der Messwert, das Ventil nur bei einem einzigen Gerät (Tokens)
@@ -1717,6 +1721,7 @@ final class DeviceIndex
                 ? $this->historyLines($entry, $this->valvePercent($history, $variable), $format, $single, $label, true)
                 : $this->historyLines($entry, $history, $format, true, $label));
         }
+        $switchNote = $switchTimelines > 0 ? ' ' . sprintf($this->t('%d on/off timeline(s).'), $switchTimelines) : '';
         // Sind alle Reihen Zähler, wäre „Minimum / Mittel / Maximum“ in der Kopfzeile falsch
         $values = count($rows) - $setpoints - $switches;
         if ($values === 0 && $setpoints > 0 && $timed !== []) {
@@ -2314,13 +2319,13 @@ final class DeviceIndex
      * Zeitleiste an/aus eines Klimageräts aus seiner Ein-Aus-Variable (B116), wie die eines Schalters. Im Diagramm ein
      * Band, das wie das des Sollwerts zum Gerät gehört.
      *
-     * @return list<string>
+     * @return null|list<string> null = die Variable ist nicht archiviert
      */
-    private function switchLines(array $entry, int $variable, string $label, int $from, int $to, bool $brief): array
+    private function switchLines(array $entry, int $variable, string $label, int $from, int $to, bool $brief): ?array
     {
         $timeline = $this->timelineOf(['Type' => 'switch', 'roles' => ['state' => $variable], 'Invert' => false] + $entry, $from, $to);
         if ($timeline === null) {
-            return [$this->line($entry, $label . ': ' . $this->t('no history archived'))];
+            return null;
         }
         if ($this->chart !== null && isset($timeline['band'])) {
             $this->chart['bands'][] = ['name' => $entry['Name'] . ' (' . $label . ')', 'extra' => true] + $timeline['band'];
@@ -3464,7 +3469,9 @@ final class DeviceIndex
             : [];
         $understand = array_diff_key($understand, $specialOnly);
         // Ein Klimagerät mit Ein-Aus-Variable schaltet „on“ nur mit type=thermostat, Namen oder von seiner Karte ein:
-        // „Büro an“ meint das Licht (B116). „off“ nimmt es wie bisher mit, so war es auch über den Modus.
+        // „Büro an“ meint das Licht (B116). „off“ nimmt es wie bisher mit, so war es auch über den Modus. Absage und
+        // Schlusszeilen nennen nur den Namen als Weg: type=thermostat mit Raum stellt auch einen Heizkörperthermostat
+        // desselben Raums auf seinen Sonder-Sollwert „On“ (Code-Review 15.11.2026, Befund 1).
         $switchOnly = $command === 'on' && $type !== 'thermostat' && $name === '' && $this->onlyKey === null
             ? array_filter($understand, static fn (array $e): bool => $e['Type'] === 'thermostat' && isset($e['roles']['switch']))
             : [];
@@ -3474,13 +3481,15 @@ final class DeviceIndex
             $this->problem = 'not_understood';
             return $this->fail(sprintf($this->t('Nothing was changed: "on" resumes a media player without power switch only with type=media (%s).'), $filter));
         }
+        $namesOf = fn (array $entries): string => $this->nameList(array_map(static fn (array $e): array => [(string)$e['Name'], (string)$e['Room']], array_values($entries)));
+        // Vor der Absage zum Sonder-Sollwert: Stehen Klimagerät und Heizkörper im selben Raum, ist das Klimagerät gemeint
+        if ($understand === [] && $switchOnly !== []) {
+            $this->problem = 'not_understood';
+            return $this->fail(sprintf($this->t('Nothing was changed: "on" switches an air conditioner on only with its name (%s). Call again with name: %s.'), $filter, $namesOf($switchOnly)));
+        }
         if ($understand === [] && $specialOnly !== []) {
             $this->problem = 'not_understood';
             return $this->fail(sprintf($this->t('Nothing was changed: "%s" sets a thermostat to its special setpoint only with type=thermostat or its name (%s).'), $command, $filter));
-        }
-        if ($understand === [] && $switchOnly !== []) {
-            $this->problem = 'not_understood';
-            return $this->fail(sprintf($this->t('Nothing was changed: "on" switches an air conditioner on only with type=thermostat or its name (%s).'), $filter));
         }
         if ($understand === []) {
             $this->problem = 'not_understood';
@@ -3513,15 +3522,14 @@ final class DeviceIndex
             $closing[] = sprintf($this->t('%d thermostat(s) left out: "%s" sets a special setpoint only with type=thermostat or a name.'), count($specialOnly), $command);
         }
         if ($switchOnly !== []) {
-            $closing[] = sprintf($this->t('%d air conditioner(s) left out: "on" switches them on only with type=thermostat or a name.'), count($switchOnly));
+            $closing[] = sprintf($this->t('%d air conditioner(s) left out: "on" switches one on only with its name (%s).'), count($switchOnly), $namesOf($switchOnly));
         }
         // Sollwert, Betriebsart und Lüfterstufe schalten ein ausgeschaltetes Klimagerät nicht ein; die Antwort sagt es,
         // sonst läse ein Modell „auf Kühlen gestellt“ als „kühlt jetzt“ (B116).
         if (in_array($ability, ['temperature', 'mode', 'fan_speed'], true)) {
             $staysOff = array_filter($understand, fn (array $e): bool => $this->switchedOn($e) === false);
             if ($staysOff !== []) {
-                $closing[] = sprintf($this->t('%d device(s) are switched off and stay off (%s). Switch on with command=on and type=thermostat or the name.'), count($staysOff),
-                    $this->nameList(array_map(static fn (array $e): array => [(string)$e['Name'], (string)$e['Room']], array_values($staysOff))));
+                $closing[] = sprintf($this->t('%d device(s) are switched off and stay off (%s). Switch one on with command=on and its name.'), count($staysOff), $namesOf($staysOff));
             }
         }
         if ($color !== null) {
