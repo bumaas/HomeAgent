@@ -532,7 +532,11 @@ final class SymconDeviceBackend implements DeviceBackend
     /** Datensätze je Abfrage des Archivs, laut Doku das harte Limit, das immer greift. */
     private const ARCHIVE_LIMIT = 10000;
 
-    /** Höchstens so viele Abfragen je Reihe (100000 Datensätze); bremst den Speicher auf der SymBox (64 MB). */
+    /**
+     * Höchstens so viele Abfragen je Reihe (100000 Datensätze). Das allein schützt den Speicher nicht: Gemessen wurden
+     * memory_limit 32M (Symcon 9.0 auf einer SymBox) bis 128 MB, und 27 Monate Stundenwerte von acht Zählern sprengten
+     * die 32M (B113). Wer Stundenwerte über lange Zeiträume braucht, fragt in Scheiben und behält nur Summen.
+     */
     private const ARCHIVE_SLICES = 10;
 
     /**

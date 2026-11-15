@@ -6384,7 +6384,7 @@ final class DeviceIndex
             $filter = $when;
             $series = ['label' => $this->t('house consumption'), 'unit' => 'kWh', 'values' => [], 'sum' => true];
             if ($costs) {
-                $series = ['label' => $this->t('electricity costs'), 'unit' => '€', 'values' => array_map(static fn (array $row): float => $row['import'], $this->hourlyCosts($from, $to)[0] ?? []), 'sum' => true];
+                $series = ['label' => $this->t('electricity costs'), 'unit' => '€', 'values' => $part === '' ? $this->costValues($from, $to, 'import') : [], 'sum' => true];
             }
             foreach ($costs ? [] : $this->balanceParts($this->balance, 0, $from, $to) ?? [] as $time => $parts) {
                 $value = 0.0;
@@ -6396,7 +6396,7 @@ final class DeviceIndex
             if ($part !== '') {
                 $series['label'] = $this->t(self::BALANCE_TERMS[self::PARTS[$part]][1]);
                 if ($costs) {
-                    $series['values'] = array_map(static fn (array $row): float => $part === 'grid' ? $row['import'] : $row['revenue'], $this->hourlyCosts($from, $to)[0] ?? []);
+                    $series['values'] = $this->costValues($from, $to, $part === 'grid' ? 'import' : 'revenue');
                 }
             }
         } else {
@@ -6884,23 +6884,79 @@ final class DeviceIndex
         return [$rows, $missing];
     }
 
+    /**
+     * Die Kostenrechnung je Stunde in Scheiben von einem Kalendermonat (B113). Wer über die Scheiben geht, behält nur
+     * seine Summen: Eine einzige Stundenabfrage aller Zähler der Bilanz über mehrere Jahre sprengte an einer Anlage mit
+     * memory_limit 32M den Speicher, und die Anfrage endete ohne Antwort. $to = 0 heißt bis jetzt.
+     *
+     * @return Generator<int, array{0: array<int, array{kwh: float, import: float, revenue: float, house: float, price: float}>, 1: int}>
+     */
+    private function costSlices(int $from, int $to): Generator
+    {
+        if ($this->priceVariable === 0 || $this->balance === []) {
+            return;
+        }
+        $end = $to === 0 ? $this->backend->timestamp() : $to;
+        // Ohne Beginn (von Anfang an) gibt es keinen ersten Monat; das kommt nur aus eigenen Aufrufen ohne Zeitraum
+        $start = $from > 0 ? $from : $end + 1;
+        if ($from <= 0) {
+            $costs = $this->hourlyCosts($from, $to);
+            if ($costs !== null) {
+                yield $costs;
+            }
+        }
+        while ($start <= $end) {
+            $next = (int)mktime(0, 0, 0, (int)date('n', $start) + 1, 1, (int)date('Y', $start));
+            $costs = $this->hourlyCosts($start, $next > $end ? $to : $next - 1);
+            if ($costs !== null) {
+                yield $costs;
+            }
+            $start = $next;
+        }
+    }
+
+    /**
+     * Ein Feld der Kostenrechnung je Stunde über den ganzen Zeitraum (Heatmap), gelesen in Monatsscheiben.
+     *
+     * @return array<int, float>
+     */
+    private function costValues(int $from, int $to, string $field): array
+    {
+        $values = [];
+        foreach ($this->costSlices($from, $to) as [$rows]) {
+            foreach ($rows as $time => $row) {
+                $values[$time] = $row[$field];
+            }
+        }
+        return $values;
+    }
+
     /** Die Kostenzeile beim Hausverbrauch über einen Zeitraum; null ohne Strompreis. */
     private function costLine(int $from, int $to): ?string
     {
-        $costs = $this->hourlyCosts($from, $to);
-        if ($costs === null || $costs[0] === []) {
+        $import = $kwh = $revenue = $house = $prices = 0.0;
+        $hours = $missing = 0;
+        foreach ($this->costSlices($from, $to) as [$rows, $without]) {
+            $missing += $without;
+            foreach ($rows as $row) {
+                $import += $row['import'];
+                $kwh += $row['kwh'];
+                $revenue += $row['revenue'];
+                $house += $row['house'];
+                $prices += $row['price'];
+                $hours++;
+            }
+        }
+        if ($hours === 0) {
             return null;
         }
-        [$rows, $missing] = $costs;
         $euro = static fn (float $v): string => number_format($v, 2, '.', '');
-        $import = array_sum(array_column($rows, 'import'));
-        $kwh = array_sum(array_column($rows, 'kwh'));
         $text = sprintf($this->t('Costs %s € for %s kWh grid import (paid on average %s ct/kWh, average price %s ct/kWh).'), $euro($import), self::formatNumber($kwh),
-            self::formatNumber($kwh > 0 ? $import / $kwh * 100 : 0.0), self::formatNumber(array_sum(array_column($rows, 'price')) / count($rows) * 100));
+            self::formatNumber($kwh > 0 ? $import / $kwh * 100 : 0.0), self::formatNumber($prices / $hours * 100));
         if ($this->feedIn > 0) {
-            $text .= ' ' . sprintf($this->t('Feed-in %s €.'), $euro(array_sum(array_column($rows, 'revenue'))));
+            $text .= ' ' . sprintf($this->t('Feed-in %s €.'), $euro($revenue));
         }
-        $text .= ' ' . sprintf($this->t('Without solar and battery it would have been %s €.'), $euro(array_sum(array_column($rows, 'house'))));
+        $text .= ' ' . sprintf($this->t('Without solar and battery it would have been %s €.'), $euro($house));
         if ($missing > 0) {
             $text .= ' ' . sprintf($this->t('No price for %d hour(s).'), $missing);
         }
@@ -6916,10 +6972,12 @@ final class DeviceIndex
             default => (int)mktime(0, 0, 0, (int)date('n', $t), (int)date('j', $t), (int)date('Y', $t)),
         };
         $grid = $export = [];
-        foreach ($this->hourlyCosts($from, $to)[0] ?? [] as $time => $row) {
-            $b = $bucket($time);
-            $grid[$b] = ($grid[$b] ?? 0.0) + $row['import'];
-            $export[$b] = ($export[$b] ?? 0.0) - $row['revenue'];
+        foreach ($this->costSlices($from, $to) as [$rows]) {
+            foreach ($rows as $time => $row) {
+                $b = $bucket($time);
+                $grid[$b] = ($grid[$b] ?? 0.0) + $row['import'];
+                $export[$b] = ($export[$b] ?? 0.0) - $row['revenue'];
+            }
         }
         ksort($grid);
         $times = array_keys($grid);

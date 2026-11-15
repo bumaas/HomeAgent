@@ -260,7 +260,8 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   Ohne Wärmeleistung jetzt (Stand-by) nur „heat 0 W“, keine Leistungszahl. Test `check-umweltertrag.php`.
 - **Kosten** (`PriceVariableID` in ct/kWh oder €/kWh, Werte ohne Suffix über 2 sind Cent; `FeedInTariff`, `setTariff`;
   nur mit Bilanz, nur fürs Haus, ohne Grundgebühr): `hourlyCosts` je Stunde, `costLine` in `get_state`, `costs=true` in
-  `show_chart`. Test `check-kosten.php`.
+  `show_chart`. Test `check-kosten.php`. Über einen Zeitraum nur in Monatsscheiben (`costSlices`, `costValues`) und nur
+  Summen behalten, Stundenwerte über Jahre sprengen 32M Speicher. Test `check-kosten-zeitraum.php`.
 - **Plausibilität der Zähler im Selbsttest** (`counterJumps`): erst die Gesamtprobe, dann je Monat Summe gegen Zuwachs des
   Zählerstands (`counterReadings`); die Schwellen (2 kWh, ein Fünftel des Medians, drei Viertel, zwei Mediane,
   `JUMP_KWH`, `JUMP_ABOVE`) sind an echten Fällen gemessen. Stand nach jetzt = Wert der Variable, wenn im letzten Tag

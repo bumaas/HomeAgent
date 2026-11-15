@@ -324,6 +324,9 @@ final class FakeBackend implements DeviceBackend
     /** @var list<array{0: int, 1: int}> jede Verlaufsabfrage: Variable und Aggregationsstufe */
     public array $historyRequests = [];
 
+    /** @var list<array{0: int, 1: int, 2: int, 3: int}> jede Verlaufsabfrage mit Zeitraum: Variable, Stufe, von, bis (B113) */
+    public array $historySpans = [];
+
     /** Verlauf aus dem Mitschnitt: Zeilen [TimeStamp, Min, Avg, Max] je Stufe, wie das Archiv sie lieferte. */
     /** Rohwerte aus dem Mitschnitt (`rohwerte`, aufsteigend, der erste darf vor $from liegen). */
     public function stateSeries(int $variableId, int $from, int $to): ?array
@@ -360,6 +363,7 @@ final class FakeBackend implements DeviceBackend
     public function history(int $variableId, int $level, int $from, int $to): ?array
     {
         $this->historyRequests[] = [$variableId, $level];
+        $this->historySpans[] = [$variableId, $level, $from, $to === 0 ? $this->timestamp() : $to];
         $v = $this->variables[$variableId] ?? null;
         // Neuere Mitschnitte wie bei den Zählern: „archiviert“, „aggregationstyp“ 0 und „aggregate“ je Stufe mit min,
         // mittel, max und dem Zeitpunkt von Minimum und Maximum (B84)
@@ -507,9 +511,13 @@ final class FakeBackend implements DeviceBackend
     /** @var list<array{0: int, 1: int}> abgefragte Zählerreihen als [Variable, Stufe], für Prüfungen der Laufzeit */
     public array $seriesRequests = [];
 
+    /** @var list<array{0: int, 1: int, 2: int, 3: int}> jede Zählerreihe mit Zeitraum: Variable, Stufe, von, bis (B113) */
+    public array $seriesSpans = [];
+
     public function counterSeries(int $variableId, int $level, int $from, int $to): ?array
     {
         $this->seriesRequests[] = [$variableId, $level];
+        $this->seriesSpans[] = [$variableId, $level, $from, $to === 0 ? $this->timestamp() : $to];
         $v = $this->variables[$variableId] ?? null;
         if ($v === null || ($v['archiviert'] ?? false) !== true || ($v['aggregationstyp'] ?? 0) !== 1) {
             return null;

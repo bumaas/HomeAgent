@@ -580,6 +580,18 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   ganze Haus, ohne Grundgebühr. Am Tibber-Preis (`act_price` = API `total`, brutto) gegen eine Monatsrechnung
   geprüft: Archiv 2,6 % über der Rechnung (1,4 % Menge vom eigenen Zähler, 1,2 % Preis aus Stundenmitteln).
   Test `check-kosten.php`.
+- **Kosten in Monatsscheiben** (B113, 14.11.2026): An einer betreuten Anlage (Symcon 9.0, `memory_limit` 32M) endete
+  `show_chart from=2023-10-01 to=2026-11-14 part=pv` ohne Antwort, über Connect als 502, ohne Zeile im Protokoll;
+  einzelne Jahre gingen in 2,5 bis 3,4 s. Mit einem Strompreis hängt jeder Hausverbrauch die Kostenzeile an, und
+  `hourlyCosts` las dafür alle Zähler der Bilanz und den Preis je Stunde in einer Abfrage über den ganzen Zeitraum, auch
+  wenn das Diagramm je Monat rechnet. Gegenprobe an der Anlage ohne Modul: acht Zähler im Stundenraster über 27 Monate
+  enden mit „Allowed memory size of 33554432 bytes exhausted“, im Tagesraster nicht. Jetzt geht `costSlices` Monat für
+  Monat durch `hourlyCosts`, `costLine` und `costChart` behalten nur Summen, die Heatmap der Kosten nur einen Wert je
+  Stunde (`costValues`). Die Zahl der Archivabfragen wächst mit den Monaten (Zähler + Preis je Monat): am System des Entwicklers über 73 Monate 584 statt 32 Abfragen für dieselben 281.000 Datensätze, 2,2 statt 1,0 s; der ganze Aufruf braucht dort 7,6 s. Nicht gebaut:
+  die Kostenzeile bei `part` weglassen (ändert den Text des Werkzeugs) und eine Absage vor dem Lesen nach freiem
+  Speicher. Offen bleiben die anderen Stundenwege über mehrere Jahre (Heatmap und Punktwolke des Hausverbrauchs über
+  `balanceParts` mit Stufe 0), sie behalten ihre Werte je Stunde. Test `check-kosten-zeitraum.php`: Der Mitschnitt ist
+  echt (ein Monat), der lange Zeitraum angenommen; geprüft wird, dass keine Stundenabfrage über einen Monat hinausgeht.
 - **Plausibilität der Energiezähler im Selbsttest** (B78, Burkhard 14.10.2026; Anlass ein ModBus-Fehlwert in einer betreuten
   Anlage, der in der Punktwolke 32,8 Mio. kWh ergab): `DeviceIndex::counterJumps` prüft jeden Zähler der Bilanz und der Geräte
   einmal (die der Bilanz zuerst). Das Archiv summiert nur positive Sprünge, ein Fehlwert nach oben und zurück zählt also als
