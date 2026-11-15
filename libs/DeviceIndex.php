@@ -1403,13 +1403,13 @@ final class DeviceIndex
             return $this->backend->statusText($variable, $value)
                 ?? (is_int($value) || is_float($value) ? self::formatNumber((float)$value) : (string)$value);
         };
-        // Alle Zustände in fester Reihenfolge: bei Wörtern der aktive zuerst, bei einer Auswahl die Einträge, bei einem
-        // Status die Texte seiner Wertebereiche
+        // Alle Zustände in fester Reihenfolge: bei Wörtern der aktive zuerst, bei einem Status die Texte seiner
+        // Wertebereiche, bei einer Auswahl die Einträge. Der Status geht vor: Umfasst einer seiner Bereiche nur einen Wert,
+        // hat die Variable auch einen Eintrag, und die übrigen Zustände bekämen ihre Farbe nach dem Auftreten.
         $labels = match (true) {
             $travel !== null => $travelLabels,
             $words !== null  => [$this->t($words[0]), $this->t($words[1])],
-            $options !== []  => array_column($options, 1),
-            default          => $this->backend->statusLabels($variable),
+            default          => $this->backend->statusLabels($variable) ?: array_column($options, 1),
         };
         // „seit“ nennen nur fahrende Geräte: Dort ist der Beginn die Auskunft.
         return $this->sectionsOf($entry, $variable, $series, $label, $labels, $words, $travel !== null, $from, $to);
@@ -1685,6 +1685,17 @@ final class DeviceIndex
         }
         // Sind alle Reihen Zähler, wäre „Minimum / Mittel / Maximum“ in der Kopfzeile falsch
         $values = count($rows) - $setpoints;
+        if ($values === 0 && $setpoints > 0 && $timed !== []) {
+            // Nur Sollwerte neben Zeitleisten anderer Geräte: eine Kopfzeile, die die Geräte zählt und die Sollwerte dazu
+            // nennt. Zwei Kopfzeilen las ein Modell als „ein Sollwert“ (die erste Zeile nennt die Anzahl).
+            $timeline = $this->timelineLines($timed, $filter);
+            $timeline[0] .= ' ' . sprintf($this->t('%d setpoint(s) as timeline.'), $setpoints);
+            if ($this->chart !== null) {
+                $this->chart += ['kind' => 'timeline', 'title' => $timeline[0], 'filter' => $filter];
+                $this->chartBands($timed);
+            }
+            return ['text' => implode("\n", array_merge($timeline, $lines, $leftOut())), 'isError' => false];
+        }
         if ($values === 0 && $setpoints > 0) {
             // Nur Sollwerte (Thermostat ohne Ist-Temperatur und Ventil): „Verlauf von 0 Messwert(en): Minimum / Mittel /
             // Maximum“ über einer Zeitleiste las sich wie „nichts gefunden“. Im Diagramm eine Zeitleiste, kein Verlauf
@@ -6330,11 +6341,11 @@ final class DeviceIndex
         // Das Band des Sollwerts („extra“) zählt nicht mit und bleibt: Es gehört zu den Linien seines Thermostats
         $droppedBands = count(array_filter($chart['bands'] ?? [], static fn (array $one): bool => !($one['extra'] ?? false)));
         if ($droppedBands > self::TIMELINE_CHART_MAX) {
-            if (($chart['series'] ?? []) === []) {
+            if (($chart['series'] ?? []) === [] && $droppedBands === count($chart['bands'])) {
                 return $this->fail(sprintf($this->t('Too many devices (%d) for a timeline chart. Give a room or a name, at most %d at a time.'), $droppedBands, self::TIMELINE_CHART_MAX));
             }
-            // Neben Linien (Temperaturen einer Etage) fallen nur die Bänder weg: Seit Rollläden eine Zeitleiste haben, wäre
-            // sonst das ganze Diagramm einer Etage abgelehnt.
+            // Neben Linien (Temperaturen einer Etage) oder dem Band eines Sollwerts fallen nur die übrigen Bänder weg: Seit
+            // Rollläden eine Zeitleiste haben, wäre sonst das ganze Diagramm einer Etage abgelehnt.
             $chart['bands'] = array_values(array_filter($chart['bands'], static fn (array $one): bool => $one['extra'] ?? false));
             if ($chart['bands'] === []) {
                 unset($chart['bands']);

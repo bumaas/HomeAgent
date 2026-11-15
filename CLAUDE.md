@@ -289,8 +289,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   Summen je Zustand, Einzelabschnitte bis `TIMELINE_SECTIONS`/`TIMELINE_DETAIL`. Gerät mit Zähler: Verbrauch und Zeiten in
   einer Zeile. In `show_chart` als Bänder (`chartBands`, höchstens `TIMELINE_CHART_MAX`, neben Linien fallen zu viele weg
   und der Text nennt es), nur vorkommende Zustände, Farbe einer Auswahl nach der Stelle des Eintrags (`color`), eines
-  Status nach der seines Wertebereichs (`statusLabels`), eines Sollwerts nach dem Wert. Jeder Wert wird nur einmal
-  beschriftet (Kernelaufrufe). Tests `check-zeitleiste.php`, `check-zeitleiste-quellen.php`.
+  Status nach der seines Wertebereichs (`statusLabels`, vor den Einträgen), eines Sollwerts nach dem Wert. Jeder Wert wird
+  nur einmal beschriftet (Kernelaufrufe). Tests `check-zeitleiste.php`, `check-zeitleiste-quellen.php`,
+  `check-nachreview-zeitleiste.php`.
 - **Zeitleiste fahrender Geräte** (`travelTimed`: Rollladen, Fenster nur mit Antrieb): aus der Position offen, teilweise
   offen, geschlossen (`travelClass`), alle Abschnitte einzeln, im Band mit fester Farbe je Zustand (`color`); bis jetzt
   nennt die Zeile „seit“, den Beginn des Zustands (`earlier`, `SINCE_ROWS`). Ohne Archiv und bei Lamellen oder unbekanntem
@@ -302,8 +303,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   Teils, Sollwert als Zeitleiste aus Rohwerten (`setpointLines`, Sonderwert mit Text), weil Aggregate ihn verzögen.
   `HISTORY_MAX` zählt nur die Ist-Temperaturen, Ventilreihen und das Band des Sollwerts tragen `extra` (es zählt nicht
   gegen `TIMELINE_CHART_MAX`). Ohne Ist-Temperatur kommt der Verlauf auch mit Namen statt Typ. Die Kopfzeile nennt die
-  Sollwerte („%d setpoint(s) as timeline“), nur Sollwerte ergeben „Timeline of %d setpoint(s)“ und `kind: timeline`,
-  über `TIMELINE_DETAIL` Sollwerten die kurze Fassung. Tests `check-thermostat-verlauf.php`, `check-zeitleiste-quellen.php`.
+  Sollwerte („%d setpoint(s) as timeline“, auch hinter der Kopfzeile der Zeitleisten), nur Sollwerte ergeben „Timeline of
+  %d setpoint(s)“ und `kind: timeline`, über `TIMELINE_DETAIL` Sollwerten die kurze Fassung. Tests
+  `check-thermostat-verlauf.php`, `check-zeitleiste-quellen.php`, `check-nachreview-zeitleiste.php`.
 - **Messwert mit Zähler-Archiv** nennt über einen Zeitraum den Zuwachs (`increaseLines` über `counterRows`), Abschnitte
   ohne Zuwachs fallen weg; sind alle Reihen Zähler, eigene Kopfzeile. Test `check-heizungsregler.php`.
 - **Status aus Wertebereichen** (`DeviceBackend::statusText`: nur Bereiche mit festem Text, Text von

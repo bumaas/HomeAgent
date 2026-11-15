@@ -969,6 +969,18 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   - Tests `check-zeitleiste-quellen.php`, `check-thermostat-verlauf.php`; angenommen sind der Thermostat ohne
     Ist-Temperatur (echte Zeile ohne `StateVariableID`), zehn Fenster im Raum eines Thermostats (Kopien einer echten
     Zeile), geänderte Sollwerte und die Position ohne Bereich.
+- **Nachreview der Builds 305 und 306** (15.11.2026, neun Befunde, 1, 3 und 4 behoben in build 307):
+  - Befund 1: Umfasst ein Wertebereich eines Status nur einen Wert, liefert `options()` ihn auch als Eintrag
+    (`intervalEntries`). `timelineOf()` nahm dann die Einträge als Farbfolge und fragte `statusLabels()` nie, die übrigen
+    Zustände bekamen ihre Farbe wieder nach dem Auftreten. Jetzt gehen die Wertebereiche den Einträgen vor.
+  - Befund 3: Ein Diagramm ohne Linien mit mehr als `TIMELINE_CHART_MAX` Zeitleisten wurde ganz abgelehnt, auch mit dem
+    Band eines Sollwerts (Thermostat ohne Ist-Temperatur). Abgelehnt wird nur noch, wenn sonst nichts übrig bliebe.
+  - Befund 4: Nur Sollwerte neben Zeitleisten anderer Geräte ergaben zwei Kopfzeilen, die erste zählte nur die Sollwerte.
+    Jetzt steht die Kopfzeile der Zeitleisten vorn und nennt die Sollwerte dazu, im Diagramm als Titel.
+  - Liegen geblieben: 2 (Cent oder Euro ohne Einheit bei einem kurzen, billigen Zeitraum, es fehlt eine Angabe der
+    Einheit), 5 und 6 hängen daran; 7 und 8 (doppelte Abfragen), 9 (Länge zweier Einträge der `CLAUDE.md`).
+  - Test `check-nachreview-zeitleiste.php`; angenommen sind der Einzelwert-Bereich (Eintrag am echten Status
+    nachgetragen) und der Thermostat nur mit Sollwert neben Kopien eines echten Fensters.
 
 ## Formular und Diagnose
 
