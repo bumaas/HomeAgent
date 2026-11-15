@@ -218,6 +218,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Klimagerät** (`thermostat` mit `mode`/`fan`): Ein/Aus nur über den Modus, `off` setzt den Eintrag `off`, `on` gibt es
   nicht (Heizen, Kühlen, Auto wären möglich), deshalb kein Schalter auf der Karte. Homematic-Wandthermostate gehen so
   nicht (keine Aktion an `CONTROL_MODE`). Test `check-klima.php`.
+- **Klimagerät mit Ein-Aus-Variable** (`switch`, `SwitchVariableID`, B116): aus zeigt „off (setpoint …)“ ohne Modus, zählt
+  bei `active_only` (`switchedOn`), `on`/`off` gehen über sie (`on` nur mit `type=thermostat`, Namen oder Karte), Stellen
+  schaltet nicht ein („stay off“), Zeitleiste an/aus im Verlauf (`switchLines`). Test `check-klima-ein-aus.php`.
 - **Leistung und Zähler** wahlweise an Thermostat und Mediaplayer; die Karte behält ihren Hauptwert, die Leistung ist
   nur Zustand, wenn das Gerät sonst nichts hat. Test `check-leistung-typen.php`.
 - **Mediaplayer** (`media`): `state`, `playback`, `volume`, `mute`, `title`, `artist` wie die Darstellung „Media

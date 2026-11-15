@@ -283,6 +283,30 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   Panasonic-Klimagerät über das HomeAssistant-Modul: Modus nach 1,2 bis 1,5 s bestätigt, Lüfterstufe erst nach 2,7 bis 3,2 s
   (nach der Wartezeit, also „noch nicht bestätigt“); Test `check-klima.php`. Homematic-Wandthermostate haben an
   `CONTROL_MODE` keine Aktion (Modus über `AUTO_MODE`, `MANU_MODE` …), das geht so nicht.
+- **Klimagerät mit eigener Ein-Aus-Variable** (B116, build 314, 15.11.2026): Das Modul Panasonic ComfortCloud führt
+  an/aus in „Betrieb“ (Ident `Operate`, Wahrheitswert mit Aktion) und die Betriebsart ohne „Aus“; sie behält die zuletzt
+  gewählte Art. An einer betreuten Anlage erschienen fünf seit Wochen ausgeschaltete Geräte deshalb als „Heizen“ bzw.
+  „Kühlen“, und `active_only` meldete „keins kennt an/aus“. Neu ist die wahlweise Rolle `switch` (`SwitchVariableID`) am
+  `thermostat`. Entscheidungen:
+  - Ausgeschaltet lautet die Zeile „off (setpoint 24 °C, currently 17.0 °C)“ ohne Betriebsart, Lüfter und Ventil.
+    Eingeschaltet bleibt sie, wie sie war.
+  - `on` schaltet nur mit `type=thermostat`, mit Namen oder von der Karte ein: „Büro an“ meint das Licht (wie bei der
+    Musik, B86). `off` nimmt das Klimagerät wie bisher mit, so war es auch über den Modus.
+  - Sollwert, Betriebsart und Lüfterstufe schalten ein ausgeschaltetes Gerät nicht ein, eine Schlusszeile sagt es.
+    Home Assistant schaltet beim Moduswechsel ein; verworfen, weil „stell auf Kühlen“ im Winter sonst ein Gerät startet.
+  - Mit der Variable entscheidet sie allein über an/aus, auch wenn die Betriebsart zusätzlich „Aus“ kennt. Die
+    Sonder-Sollwerte „On“/„Off“ gelten dann nicht.
+  - Verlauf mit Typ oder Namen: Zeitleiste an/aus neben Ist-Temperatur, Sollwert und Ventilen, im Diagramm ein Band, das
+    wie das des Sollwerts nicht gegen `TIMELINE_CHART_MAX` zählt. Bei `type=temperature` nicht.
+  - Selbsttest: Hinweis bei Betriebsart ohne Eintrag „Aus“ und ohne Ein-Aus-Variable (`modesWithoutOff`). Sind die
+    Einträge unbekannt, kommt kein Hinweis.
+  - „Umgekehrt“ gibt es am Thermostat nicht, `true` heißt an.
+  Fixture `betreut_2026-11-15_klima_ein_aus.json` aus einem lesenden Mitschnitt aller fünf Geräte (alle aus). Echt sind
+  Werte, Texte, Aktion ja/nein, Archivstatus und der Verlauf von „Betrieb“ zweier Geräte. Angenommen und im Test so
+  markiert: ein eingeschaltetes Gerät, die sofortige Rückmeldung nach dem Schalten, eine Aktion an Sollwert und
+  Betriebsart (im Mitschnitt hat nur „Betrieb“ eine) und die Einträge der Betriebsart (Profile nicht mitgeschnitten).
+  Noch nicht: ein Mitschnitt mit Schaltvorgang, die Karte im Bild geprüft (`devices.html` ist unverändert, der Schalter
+  ist der vorhandene), „Öko-Modus“ des Geräts.
 - **Lüftung** (Typ `fan`, build 90): `state`, `mode`, `fan`, wahlweise `power`/`energy`; Pflicht Ein/Aus oder
   Lüfterstufe. Zeile und Befehle wie beim Luftbe-/entfeuchter (`humidifierText`, `runOption`), hier mit Ganzzahlwerten aus
   den Profilzuordnungen. Gemessen an einer Ambientika (12.10.2026): `RequestAction` blockiert 2,2 bis 2,4 s, das Modul

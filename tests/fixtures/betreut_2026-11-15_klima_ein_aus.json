@@ -1,0 +1,307 @@
+{
+    "_quelle": "Betreute Anlage, 15.11.2026 16:38: fünf Innengeräte über das Modul Panasonic ComfortCloud (PanasonicCloudDevice), alle ausgeschaltet. Nur gelesen, nichts geschaltet. Echt sind Werte, formatierte Texte, Aktion ja/nein, Archivstatus und der Verlauf von „Betrieb“ zweier Geräte seit 01.10.2026. Die Einträge der Profile sind nicht mitgeschnitten. Die Zeilen der Freigabeliste sind angenommen (SwitchVariableID gibt es an der Anlage noch nicht), ein Raumname ist ersetzt.",
+    "zeitzone": "Europe/Berlin",
+    "jetzt": 1794757080,
+    "geraete": [
+        {
+            "Room": "Essen",
+            "Name": "Klimaanlage",
+            "Aliases": "",
+            "Type": "thermostat",
+            "ReadOnly": false,
+            "StateVariableID": 46658,
+            "SetpointVariableID": 15445,
+            "ModeVariableID": 19971,
+            "FanVariableID": 42636,
+            "SwitchVariableID": 51381
+        },
+        {
+            "Room": "Schlafzimmer",
+            "Name": "Klimaanlage",
+            "Aliases": "",
+            "Type": "thermostat",
+            "ReadOnly": false,
+            "StateVariableID": 17595,
+            "SetpointVariableID": 45805,
+            "ModeVariableID": 34218,
+            "FanVariableID": 43642,
+            "SwitchVariableID": 17759
+        },
+        {
+            "Room": "Büro DG",
+            "Name": "Klimaanlage",
+            "Aliases": "",
+            "Type": "thermostat",
+            "ReadOnly": false,
+            "StateVariableID": 38614,
+            "SetpointVariableID": 45955,
+            "ModeVariableID": 17527,
+            "FanVariableID": 56811,
+            "SwitchVariableID": 28158
+        },
+        {
+            "Room": "Kinderzimmer",
+            "Name": "Klimaanlage",
+            "Aliases": "",
+            "Type": "thermostat",
+            "ReadOnly": false,
+            "StateVariableID": 39500,
+            "SetpointVariableID": 13409,
+            "ModeVariableID": 21759,
+            "FanVariableID": 35281,
+            "SwitchVariableID": 14005
+        },
+        {
+            "Room": "Büro",
+            "Name": "Klimaanlage",
+            "Aliases": "",
+            "Type": "thermostat",
+            "ReadOnly": false,
+            "StateVariableID": 51984,
+            "SetpointVariableID": 22372,
+            "ModeVariableID": 42300,
+            "FanVariableID": 23027,
+            "SwitchVariableID": 49255
+        }
+    ],
+    "variablen": {
+        "46658": {
+            "name": "Essen: Temperatur",
+            "ident": "ActualTemperature",
+            "wert": 21,
+            "formatiert": "21.0 °C",
+            "aktion": false,
+            "geloggt": true,
+            "einheit": "°C"
+        },
+        "15445": {
+            "name": "Essen: Soll-Temperatur",
+            "ident": "TargetTemperature",
+            "wert": 23.5,
+            "formatiert": "23.5 °C",
+            "aktion": false,
+            "geloggt": true,
+            "einheit": "°C"
+        },
+        "19971": {
+            "name": "Essen: Betriebsart",
+            "ident": "OperationMode",
+            "wert": 3,
+            "formatiert": "Heizen",
+            "aktion": false,
+            "geloggt": true
+        },
+        "42636": {
+            "name": "Essen: Lüftergeschwindigkeit",
+            "ident": "FanSpeed",
+            "wert": 0,
+            "formatiert": "Automatisch",
+            "aktion": false,
+            "geloggt": true
+        },
+        "51381": {
+            "name": "Essen: Betrieb",
+            "ident": "Operate",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "geloggt": true,
+            "rohwerte": [
+                [
+                    1791471225,
+                    true
+                ],
+                [
+                    1791472019,
+                    false
+                ]
+            ]
+        },
+        "17595": {
+            "name": "Schlafzimmer: Temperatur",
+            "ident": "ActualTemperature",
+            "wert": 19,
+            "formatiert": "19.0 °C",
+            "aktion": false,
+            "geloggt": true,
+            "einheit": "°C"
+        },
+        "45805": {
+            "name": "Schlafzimmer: Soll-Temperatur",
+            "ident": "TargetTemperature",
+            "wert": 23.5,
+            "formatiert": "23.5 °C",
+            "aktion": false,
+            "geloggt": true,
+            "einheit": "°C"
+        },
+        "34218": {
+            "name": "Schlafzimmer: Betriebsart",
+            "ident": "OperationMode",
+            "wert": 2,
+            "formatiert": "Kühlen",
+            "aktion": false,
+            "geloggt": true
+        },
+        "43642": {
+            "name": "Schlafzimmer: Lüftergeschwindigkeit",
+            "ident": "FanSpeed",
+            "wert": 0,
+            "formatiert": "Automatisch",
+            "aktion": false,
+            "geloggt": true
+        },
+        "17759": {
+            "name": "Schlafzimmer: Betrieb",
+            "ident": "Operate",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "geloggt": true
+        },
+        "38614": {
+            "name": "Büro DG: Temperatur",
+            "ident": "ActualTemperature",
+            "wert": 20,
+            "formatiert": "20.0 °C",
+            "aktion": false,
+            "geloggt": true,
+            "einheit": "°C"
+        },
+        "45955": {
+            "name": "Büro DG: Soll-Temperatur",
+            "ident": "TargetTemperature",
+            "wert": 25,
+            "formatiert": "25.0 °C",
+            "aktion": false,
+            "geloggt": true,
+            "einheit": "°C"
+        },
+        "17527": {
+            "name": "Büro DG: Betriebsart",
+            "ident": "OperationMode",
+            "wert": 2,
+            "formatiert": "Kühlen",
+            "aktion": false,
+            "geloggt": true
+        },
+        "56811": {
+            "name": "Büro DG: Lüftergeschwindigkeit",
+            "ident": "FanSpeed",
+            "wert": 0,
+            "formatiert": "Automatisch",
+            "aktion": false,
+            "geloggt": true
+        },
+        "28158": {
+            "name": "Büro DG: Betrieb",
+            "ident": "Operate",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "geloggt": true
+        },
+        "39500": {
+            "name": "Kinderzimmer: Temperatur",
+            "ident": "ActualTemperature",
+            "wert": 19,
+            "formatiert": "19.0 °C",
+            "aktion": false,
+            "geloggt": true,
+            "einheit": "°C"
+        },
+        "13409": {
+            "name": "Kinderzimmer: Soll-Temperatur",
+            "ident": "TargetTemperature",
+            "wert": 26,
+            "formatiert": "26.0 °C",
+            "aktion": false,
+            "geloggt": true,
+            "einheit": "°C"
+        },
+        "21759": {
+            "name": "Kinderzimmer: Betriebsart",
+            "ident": "OperationMode",
+            "wert": 2,
+            "formatiert": "Kühlen",
+            "aktion": false,
+            "geloggt": true
+        },
+        "35281": {
+            "name": "Kinderzimmer: Lüftergeschwindigkeit",
+            "ident": "FanSpeed",
+            "wert": 0,
+            "formatiert": "Automatisch",
+            "aktion": false,
+            "geloggt": true
+        },
+        "14005": {
+            "name": "Kinderzimmer: Betrieb",
+            "ident": "Operate",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "geloggt": true
+        },
+        "51984": {
+            "name": "Büro: Temperatur",
+            "ident": "ActualTemperature",
+            "wert": 17,
+            "formatiert": "17.0 °C",
+            "aktion": false,
+            "geloggt": true,
+            "einheit": "°C"
+        },
+        "22372": {
+            "name": "Büro: Soll-Temperatur",
+            "ident": "TargetTemperature",
+            "wert": 24,
+            "formatiert": "24.0 °C",
+            "aktion": false,
+            "geloggt": true,
+            "einheit": "°C"
+        },
+        "42300": {
+            "name": "Büro: Betriebsart",
+            "ident": "OperationMode",
+            "wert": 3,
+            "formatiert": "Heizen",
+            "aktion": false,
+            "geloggt": true
+        },
+        "23027": {
+            "name": "Büro: Lüftergeschwindigkeit",
+            "ident": "FanSpeed",
+            "wert": 0,
+            "formatiert": "Automatisch",
+            "aktion": false,
+            "geloggt": true
+        },
+        "49255": {
+            "name": "Büro: Betrieb",
+            "ident": "Operate",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": true,
+            "geloggt": true,
+            "rohwerte": [
+                [
+                    1791890230,
+                    true
+                ],
+                [
+                    1791890291,
+                    false
+                ],
+                [
+                    1794393323,
+                    true
+                ],
+                [
+                    1794394731,
+                    false
+                ]
+            ]
+        }
+    }
+}

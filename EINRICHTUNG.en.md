@@ -160,6 +160,9 @@ How to proceed:
      Whether an access may fetch camera images (Images) I decide myself in the form.
    - For radiator thermostats also the valve positions, several actuators of a room on the same
      thermostat (up to three).
+   - If an air conditioner has a variable of its own for on/off next to the mode (Panasonic Comfort
+     Cloud: "Betrieb", ident Operate), enter it at the thermostat as SwitchVariableID. Without it a
+     switched-off device appears with its last mode.
    - For blinds also the moving state (MovingVariableID) where there is one. If with KNX the position
      instance has no feedback address, name that as an open question to me: its variable then only
      shows the value sent.

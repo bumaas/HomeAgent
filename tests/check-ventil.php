@@ -53,7 +53,7 @@ $geraet = static function (string $raum) use ($liste): array {
 /* --- Modell --------------------------------------------------------------------------------- */
 
 pruefe(array_intersect_key(DeviceIndex::ROLES, ['valve' => 1, 'valve2' => 1, 'valve3' => 1]) === ['valve' => 'ValveVariableID', 'valve2' => 'Valve2VariableID', 'valve3' => 'Valve3VariableID'], 'drei Fähigkeiten für Ventile: ' . json_encode(array_keys(DeviceIndex::ROLES)));
-pruefe((DeviceIndex::TYPE_ROLES['thermostat'] ?? null) === ['roles' => ['state', 'setpoint', 'mode', 'fan', 'power', 'energy', 'valve', 'valve2', 'valve3'], 'required' => ['setpoint']], 'Thermostat: Ventile wahlweise, Sollwert bleibt Pflicht: ' . json_encode(DeviceIndex::TYPE_ROLES['thermostat'] ?? null));
+pruefe((DeviceIndex::TYPE_ROLES['thermostat'] ?? null) === ['roles' => ['state', 'setpoint', 'mode', 'fan', 'power', 'energy', 'valve', 'valve2', 'valve3', 'switch'], 'required' => ['setpoint']], 'Thermostat: Ventile wahlweise, Sollwert bleibt Pflicht: ' . json_encode(DeviceIndex::TYPE_ROLES['thermostat'] ?? null));
 pruefe(!in_array('valve', DeviceIndex::TYPE_ROLES['humidifier']['roles'], true) && !in_array('valve', DeviceIndex::TYPE_ROLES['measurement']['roles'], true), 'Ventile nur am Thermostat');
 pruefe(DeviceIndex::rolesOf($geraet('Bad')) === ['state' => 45568, 'setpoint' => 16206, 'valve' => 55547, 'valve2' => 39353], 'rolesOf liest beide Ventile: ' . json_encode(DeviceIndex::rolesOf($geraet('Bad'))));
 pruefe(DeviceIndex::abilitiesOf($geraet('Bad')) === ['temperature'], 'ein Ventil bringt kein Feld in set_state: ' . json_encode(DeviceIndex::abilitiesOf($geraet('Bad'))));

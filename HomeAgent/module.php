@@ -497,6 +497,11 @@ class HomeAgent extends IPSModuleStrict
         foreach (DeviceIndex::yieldWithoutElectricity($list) as $index) {
             $lines[] = sprintf($this->Translate('Note: %s: the heat is the environmental yield, but without energy meter and power there is no electricity to add'), $this->entryLabel($list[$index]));
         }
+        // Klimagerät, dessen Betriebsart kein „Aus“ kennt und das keine Ein-Aus-Variable trägt (B116): Ausgeschaltet
+        // erschiene es als „Heizen“ oder „Kühlen“.
+        foreach ($this->deviceIndex()->modesWithoutOff() as [$name, $room]) {
+            $lines[] = sprintf($this->Translate('Note: %s has a mode without "off" and no on/off variable; switched off it still shows its last mode. If the device has a variable of its own for on/off, enter it as "On/off"'), $this->entryLabel(['Name' => $name, 'Room' => $room]));
+        }
         // Raumklima: temperature und humidity meinen das Klima des Raums. Stehen viele davon in einem Raum, sind es Werte
         // von Geräten und Anlagen, die als measurement gemeint sind (Blindtest nuc 12.11.2026: 17 Zeilen im Keller).
         foreach (DeviceIndex::crowdedClimate($list, $this->roomIndex()) as $crowd) {
@@ -1367,7 +1372,7 @@ class HomeAgent extends IPSModuleStrict
      * ein anderer Gerätetyp oder eine andere Variable gewählt wird. Die Felder folgen dem Typ, und
      * die Texte für die Spalten der Liste folgen den gewählten Variablen.
      */
-    public function UIDeviceChanged(string $Type, int $StateVariableID, int $LevelVariableID, int $MovingVariableID = 0, int $PowerVariableID = 0, int $EnergyVariableID = 0, int $StopVariableID = 0, int $SetpointVariableID = 0, int $ColorTempVariableID = 0, int $ColorVariableID = 0, int $PlaybackVariableID = 0, int $VolumeVariableID = 0, int $MuteVariableID = 0, int $TitleVariableID = 0, int $ArtistVariableID = 0, int $HumidityVariableID = 0, int $ModeVariableID = 0, int $FanVariableID = 0, int $HeatVariableID = 0, int $HeatPowerVariableID = 0, int $ValveVariableID = 0, int $Valve2VariableID = 0, int $Valve3VariableID = 0, int $ImageMediaID = 0, int $InsideVariableID = 0): void
+    public function UIDeviceChanged(string $Type, int $StateVariableID, int $LevelVariableID, int $MovingVariableID = 0, int $PowerVariableID = 0, int $EnergyVariableID = 0, int $StopVariableID = 0, int $SetpointVariableID = 0, int $ColorTempVariableID = 0, int $ColorVariableID = 0, int $PlaybackVariableID = 0, int $VolumeVariableID = 0, int $MuteVariableID = 0, int $TitleVariableID = 0, int $ArtistVariableID = 0, int $HumidityVariableID = 0, int $ModeVariableID = 0, int $FanVariableID = 0, int $HeatVariableID = 0, int $HeatPowerVariableID = 0, int $ValveVariableID = 0, int $Valve2VariableID = 0, int $Valve3VariableID = 0, int $ImageMediaID = 0, int $InsideVariableID = 0, int $SwitchVariableID = 0): void
     {
         $type = array_key_exists($Type, DeviceIndex::TYPES) ? $Type : array_key_first(DeviceIndex::TYPES);
         foreach ($this->deviceDialogFields($type) as $name => $field) {
@@ -1384,7 +1389,7 @@ class HomeAgent extends IPSModuleStrict
         foreach ($this->deviceLabels(['Type' => $type, 'StateVariableID' => $StateVariableID, 'LevelVariableID' => $LevelVariableID, 'MovingVariableID' => $MovingVariableID, 'PowerVariableID' => $PowerVariableID, 'EnergyVariableID' => $EnergyVariableID, 'StopVariableID' => $StopVariableID, 'SetpointVariableID' => $SetpointVariableID, 'ColorTempVariableID' => $ColorTempVariableID, 'ColorVariableID' => $ColorVariableID,
             'PlaybackVariableID' => $PlaybackVariableID, 'VolumeVariableID' => $VolumeVariableID, 'MuteVariableID' => $MuteVariableID, 'TitleVariableID' => $TitleVariableID, 'ArtistVariableID' => $ArtistVariableID, 'HumidityVariableID' => $HumidityVariableID, 'ModeVariableID' => $ModeVariableID, 'FanVariableID' => $FanVariableID,
             'HeatVariableID' => $HeatVariableID, 'HeatPowerVariableID' => $HeatPowerVariableID, 'ValveVariableID' => $ValveVariableID, 'Valve2VariableID' => $Valve2VariableID,
-            'Valve3VariableID' => $Valve3VariableID, 'ImageMediaID' => $ImageMediaID, 'InsideVariableID' => $InsideVariableID]) as $name => $label) {
+            'Valve3VariableID' => $Valve3VariableID, 'ImageMediaID' => $ImageMediaID, 'InsideVariableID' => $InsideVariableID, 'SwitchVariableID' => $SwitchVariableID]) as $name => $label) {
             $this->UpdateFormField($name, 'value', $label);
         }
     }
@@ -3864,7 +3869,7 @@ class HomeAgent extends IPSModuleStrict
             'volume' => $this->Translate('Volume'), 'mute' => $this->Translate('Mute'), 'title' => $this->Translate('Title'), 'artist' => $this->Translate('Artist'), 'humidity' => $this->Translate('Humidity'), 'mode' => $this->Translate('Mode'), 'fan' => $this->Translate('Fan speed'),
             'heat' => $this->Translate('Heat meter (archived as counter)'), 'heatpower' => $this->Translate('Heat output'),
             'valve' => $this->Translate('Valve position'), 'valve2' => $this->Translate('Valve position 2'), 'valve3' => $this->Translate('Valve position 3'),
-            'image' => $this->Translate('Image (media object with a still image)'), 'inside' => $this->Translate('Inside temperature')];
+            'image' => $this->Translate('Image (media object with a still image)'), 'inside' => $this->Translate('Inside temperature'), 'switch' => $this->Translate('On/off')];
     }
 
     /**

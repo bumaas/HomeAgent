@@ -161,6 +161,9 @@ So gehst du vor:
      Ob ein Zugang Kamerabilder abrufen darf (Images), entscheide ich selbst im Formular.
    - Bei Heizkörperthermostaten auch die Ventilstellungen, mehrere Antriebe eines Raums am selben
      Thermostat (bis zu drei).
+   - Hat ein Klimagerät eine eigene Variable für an/aus neben der Betriebsart (Panasonic Comfort
+     Cloud: „Betrieb“, Ident Operate), trägst du sie am thermostat als SwitchVariableID ein. Ohne sie
+     erscheint ein ausgeschaltetes Gerät mit seiner letzten Betriebsart.
    - Bei Rollläden auch den Fahrstatus (MovingVariableID), wo es ihn gibt. Hat bei KNX die Instanz der
      Position keine Rückmeldeadresse, nennst du mir das als offene Frage: Ihre Variable zeigt dann nur
      den gesendeten Wert.

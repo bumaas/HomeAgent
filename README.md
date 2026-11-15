@@ -231,7 +231,7 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 | Schalter, Steckdose | Schaltzustand, wahlweise Leistung, Zähler und Innentemperatur |
 | Gerät | Schaltzustand oder Leistung, wahlweise Zähler, Innentemperatur, Wärmezähler und Wärmeleistung. Ein Gerät nur mit Leistung, etwa eine Wärmepumpe, lässt sich abfragen, aber nicht schalten. |
 | Rollladen | Position, dazu wahlweise Fahrstatus und Stopp |
-| Thermostat | Sollwert, wahlweise die Ist-Temperatur, bis zu drei Ventile, Modus und Lüfterstufe (Klimagerät), Leistung und Zähler |
+| Thermostat | Sollwert, wahlweise die Ist-Temperatur, bis zu drei Ventile, Modus, Lüfterstufe und Ein/Aus (Klimagerät), Leistung und Zähler |
 | Mediaplayer | Ein/Aus, Wiedergabe oder Lautstärke, wahlweise Stumm, Titel, Interpret, Leistung und Zähler |
 | Luftbe-/entfeuchter | Ein/Aus oder Zielfeuchte, wahlweise Ist-Feuchte, Modus und Lüfterstufe |
 | Lüftung/Ventilator | Ein/Aus oder Lüfterstufe, wahlweise Modus |
@@ -263,7 +263,9 @@ Bei einigen Geräten braucht es mehr als die Variable des Typs:
 - **Licht nur mit Helligkeit:** Liegt die kleinste Stufe über 0 (bei Matter etwa 1 bis 254), lässt sich das Licht
   über die Helligkeit nicht ausschalten. Tragen Sie dann auch den Schaltzustand ein.
 - **Klimagerät:** Tragen Sie es als Thermostat ein, dazu Modus und Lüfterstufe. Beide Variablen brauchen eine Aktion
-  und eine Auswahl in der Darstellung oder im Profil.
+  und eine Auswahl in der Darstellung oder im Profil. Führt das Gerät an/aus in einer eigenen Variable und kennt sein
+  Modus kein „Aus“ (Panasonic Comfort Cloud: „Betrieb“), tragen Sie diese Variable als „Ein/Aus“ ein. Der Selbsttest
+  weist auf Klimageräte hin, bei denen beides fehlt.
 - **Mediaplayer des HomeAssistant-Moduls:** Dort ist die Wiedergabe nur eine Befehlsvariable. Tragen Sie als Ein/Aus
   den Statustext ein (`playing`, `paused`, `idle`, `off` …), dann kennt das Modul den Zustand trotzdem. Ohne beides
   steht dort nur der Titel, und der Player zählt bei den aktiven Geräten nicht mit.
@@ -448,6 +450,11 @@ Zu einigen Typen gibt es mehr zu sagen:
   Gerätekarte zeigt die Stellung neben dem Sollwert.
 - **Klimagerät:** Modus und Lüfterstufe stellt der Assistent per Name wie beim Luftentfeuchter. „Schalte das
   Klimagerät aus“ stellt den Modus auf Aus, eingeschaltet wird über einen Modus wie Kühlen oder Heizen.
+- **Klimagerät mit eigener Ein-Aus-Variable:** Ausgeschaltet steht „aus (Soll 24 °C, derzeit 17.0 °C)“ da, ohne
+  Modus und Lüfter, und das Gerät zählt bei „Was läuft noch?“ als aus. „Schalte das Klimagerät im Büro ein“ und „aus“
+  gehen über diese Variable, der Modus bleibt. „Büro an“ ohne das Gerät zu nennen schaltet es nicht mit ein. Sollwert,
+  Modus und Lüfterstufe lassen sich auch bei ausgeschaltetem Gerät stellen; es bleibt aus, und die Antwort sagt das.
+  Über einen Zeitraum kommt die Zeitleiste an/aus dazu, auf der Karte steht der Schalter.
 - **Luftentfeuchter, Lüftung, Mediaplayer:** Sie zählen als aktiv, solange sie laufen bzw. spielen.
 
 ### „Wie viel Strom haben wir letzten Monat verbraucht?“

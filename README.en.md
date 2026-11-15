@@ -224,7 +224,7 @@ Which variables a device needs depends on its type:
 | Switch, socket | Switching state, optionally power, energy meter and inside temperature |
 | Appliance | Switching state or power, optionally energy meter, inside temperature, heat meter and heat output. An appliance with power only, such as a heat pump, can be queried but not switched. |
 | Blind | Position, optionally moving state and stop |
-| Thermostat | Setpoint, optionally the current temperature, up to three valves, mode and fan speed (air conditioner), power and energy meter |
+| Thermostat | Setpoint, optionally the current temperature, up to three valves, mode, fan speed and on/off (air conditioner), power and energy meter |
 | Media player | On/off, playback or volume, optionally mute, title, artist, power and energy meter |
 | Humidifier | On/off or target humidity, optionally current humidity, mode and fan speed |
 | Ventilation/fan | On/off or fan speed, optionally mode |
@@ -256,7 +256,9 @@ Some devices need more than the variable of their type:
 - **Light with brightness only:** If the smallest level is above 0 (with Matter for example 1 to 254), the light
   cannot be switched off through the brightness. Enter the switch state as well.
 - **Air conditioner:** Add it as a thermostat together with mode and fan speed. Both variables need an action and a
-  selection in the presentation or the profile.
+  selection in the presentation or the profile. If the device keeps on/off in a variable of its own and its mode has
+  no "off" (Panasonic Comfort Cloud: "Betrieb"), enter that variable as "On/off". The self-test points out air
+  conditioners that have neither.
 - **Media players of the HomeAssistant module:** There playback is only a command variable. Enter its status text
   (`playing`, `paused`, `idle`, `off` …) as on/off, and the module knows the state anyway. Without either only the
   title is shown, and the player is not counted among the active devices.
@@ -439,6 +441,11 @@ Some types need a few more words:
   the position next to the setpoint.
 - **Air conditioner:** The assistant sets mode and fan speed by name as with the dehumidifier. "Turn off the air
   conditioner" sets the mode to off; to turn it on, choose a mode such as cool or heat.
+- **Air conditioner with its own on/off variable:** Switched off it reads "off (setpoint 24 °C, currently 17.0 °C)",
+  without mode and fan, and the device counts as off for "what is still running?". "Turn on the air conditioner in the
+  office" and "off" go through this variable, the mode stays. "Office on" without naming the device does not switch it
+  on. Setpoint, mode and fan speed can be set while the device is off; it stays off, and the answer says so. Over a
+  period the on/off timeline is added, and the card shows the switch.
 - **Dehumidifier, ventilation, media player:** They count as active while they run or play.
 
 ### "How much electricity did we use last month?"
