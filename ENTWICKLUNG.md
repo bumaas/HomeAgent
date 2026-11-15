@@ -969,7 +969,7 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   - Tests `check-zeitleiste-quellen.php`, `check-thermostat-verlauf.php`; angenommen sind der Thermostat ohne
     Ist-Temperatur (echte Zeile ohne `StateVariableID`), zehn Fenster im Raum eines Thermostats (Kopien einer echten
     Zeile), geänderte Sollwerte und die Position ohne Bereich.
-- **Nachreview der Builds 305 und 306** (15.11.2026, neun Befunde, 1, 3 und 4 behoben in build 307):
+- **Nachreview der Builds 305 und 306** (15.11.2026, neun Befunde, 1, 3 und 4 behoben in build 307, 2 in build 308):
   - Befund 1: Umfasst ein Wertebereich eines Status nur einen Wert, liefert `options()` ihn auch als Eintrag
     (`intervalEntries`). `timelineOf()` nahm dann die Einträge als Farbfolge und fragte `statusLabels()` nie, die übrigen
     Zustände bekamen ihre Farbe wieder nach dem Auftreten. Jetzt gehen die Wertebereiche den Einträgen vor.
@@ -977,8 +977,15 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
     Band eines Sollwerts (Thermostat ohne Ist-Temperatur). Abgelehnt wird nur noch, wenn sonst nichts übrig bliebe.
   - Befund 4: Nur Sollwerte neben Zeitleisten anderer Geräte ergaben zwei Kopfzeilen, die erste zählte nur die Sollwerte.
     Jetzt steht die Kopfzeile der Zeitleisten vorn und nennt die Sollwerte dazu, im Diagramm als Titel.
-  - Liegen geblieben: 2 (Cent oder Euro ohne Einheit bei einem kurzen, billigen Zeitraum, es fehlt eine Angabe der
-    Einheit), 5 und 6 hängen daran; 7 und 8 (doppelte Abfragen), 9 (Länge zweier Einträge der `CLAUDE.md`).
+  - Befund 2 (build 308): Ohne Einheit an der Preisvariable entschied das Mittel der Preise des abgefragten Zeitraums
+    über Cent oder Euro. Ein einzelner billiger Tag galt als Euro; am Mitschnitt (Preise des 30.09. durch 25 geteilt,
+    ohne Einheit) nannte die Zeile 4,86 € für 3,5 kWh, „im Mittel 140,5 ct/kWh bezahlt“. Entschieden (Burkhard
+    15.11.2026): Es zählt nur die Einheit der Variable (ct, Cent, € oder EUR). Ohne sie gibt es keine Kosten;
+    `get_state` und `show_chart` sagen es, der Selbsttest und die Zeile zur Bilanz ebenso, `costs` fehlt im Schema.
+    `priceInCent()` ist damit weg, die Befunde 5 und 6 (stiller Rückfall, zweite Preisabfrage) sind gegenstandslos.
+    Verworfen: eine Auswahl der Einheit im Formular (neue Property für etwas, das an der Variable steht) und ein festes
+    Fenster der letzten 30 Tage als Maßstab (riete weiter). Tests `check-kosten-zeitraum.php`, `check-module.php`.
+  - Liegen geblieben: 7 und 8 (doppelte Abfragen), 9 (Länge zweier Einträge der `CLAUDE.md`).
   - Test `check-nachreview-zeitleiste.php`; angenommen sind der Einzelwert-Bereich (Eintrag am echten Status
     nachgetragen) und der Thermostat nur mit Sollwert neben Kopien eines echten Fensters.
 

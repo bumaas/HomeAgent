@@ -124,46 +124,53 @@ pruefe(!str_contains($kostenzeile($kurz), 'No price'), 'der September hat für j
 pruefe($kostenzeile($r) === $kostenzeile($kurz) . ' No price for 720 hour(s).', 'August ohne Preis: Kosten des Septembers und 720 Stunden ohne Preis: ' . $kostenzeile($r));
 pruefe($laengste <= MONAT, 'auch dann keine Stundenabfrage über einen Monat hinaus: ' . $laengste . ' Tage');
 
-/* --- Review 15.11.2026, Befund 4: Cent oder Euro einmal für den ganzen Zeitraum ----------------- */
+/* --- Nachreview 15.11.2026, Befund 2: Cent oder Euro sagt nur die Einheit der Variable ----------- */
 
 /*
- * Ohne Einheit gelten Preise mit einem Mittel über 2 als Cent. Seit den Monatsscheiben fiel die Entscheidung je Scheibe,
- * eine kurze Scheibe mit niedrigen Preisen galt als Euro und kostete das Hundertfache. Echt sind Zähler und Preise.
- * Angenommen: Die Preisvariable trägt keine Einheit, der 30.09. liegt einen Tag später (01.10., eigene Scheibe) und
- * seine Preise sind durch 25 geteilt (um 1,4 ct, wie ein Börsenpreis an einem sonnigen Feiertag).
+ * Bis build 307 galten Preise ohne Einheit mit einem Mittel über 2 als Cent, zuletzt über den ganzen abgefragten Zeitraum
+ * (Review 15.11.2026, Befund 4). Ein kurzer Zeitraum mit niedrigen Preisen galt so weiter als Euro und kostete das
+ * Hundertfache. Jetzt rechnet das Modul nur mit einer Einheit an der Variable (ct, Cent, € oder EUR); ohne sie gibt es
+ * keine Kosten und einen Hinweis (Burkhard 15.11.2026). Echt sind Zähler und Preise, die Variable trägt „Cent“.
+ * Angenommen: die Preise des 30.09. durch 25 geteilt (um 1,4 ct, wie ein Börsenpreis an einem sonnigen Feiertag), die
+ * Variable ohne Einheit, und die Preise in Euro mit „€/kWh“.
  */
 $euro = static fn (string $zeile): float => preg_match('/^Costs ([0-9.]+) €/', $zeile, $m) === 1 ? (float)$m[1] : -1.0;
-[$bis29] = frage('get', ['from' => '2026-09-01', 'to' => '2026-09-29']);
-[$am30] = frage('get', ['from' => '2026-09-30', 'to' => '2026-09-30']);
+$tag = ['from' => '2026-09-30', 'to' => '2026-09-30'];
+[$am30] = frage('get', $tag);
 $grenze = strtotime('2026-09-30 00:00');
-$ohne = $original;
-$ohne['variablen'][$original['preis']]['einheit'] = '';
+$billig = $original;
 $hoechster = 0.0;
-foreach ($ohne['variablen'][$original['preis']]['verlauf']['0'] as &$zeile) {
+foreach ($billig['variablen'][$original['preis']]['verlauf']['0'] as &$zeile) {
     if ($zeile[0] >= $grenze) {
-        $zeile = [$zeile[0] + 86400, $zeile[1] / 25, $zeile[2] / 25, $zeile[3] / 25];
+        $zeile = [$zeile[0], $zeile[1] / 25, $zeile[2] / 25, $zeile[3] / 25];
         $hoechster = max($hoechster, $zeile[2]);
     }
 }
 unset($zeile);
-foreach ($original['bilanz'] as $zaehler) {
-    foreach ($ohne['variablen'][$zaehler]['aggregate']['0'] as &$a) {
-        if ($a['zeit'] >= $grenze) {
-            $a['zeit'] += 86400;
-        }
-    }
-    unset($a);
-}
+// Mit Einheit bleibt ein billiger Tag Cent, auch für sich allein abgefragt
+[$r] = frage('get', $tag, $billig);
+pruefe($hoechster > 0 && $hoechster <= 2 && $euro($kostenzeile($am30)) > 0.5, 'der billige Tag liegt unter 2 (höchstes Stundenmittel ' . round($hoechster, 2) . '), echt kostete der 30.09. ' . $euro($kostenzeile($am30)) . ' €');
+pruefe(abs($euro($kostenzeile($r)) - $euro($kostenzeile($am30)) / 25) < 0.02, 'mit Einheit „Cent“ bleibt der billige Tag Cent: ' . $kostenzeile($r));
+// Ohne Einheit: keine Kosten, weder das Hundertfache noch geraten, dafür ein Hinweis
+$hinweis = 'No costs: the electricity price has no unit. Its variable needs ct/kWh or €/kWh as suffix in Symcon.';
+$ohne = $billig;
+$ohne['variablen'][$original['preis']]['einheit'] = '';
+[$r] = frage('get', $tag, $ohne);
+pruefe(!$r['isError'] && $kostenzeile($r) === '' && in_array($hinweis, explode("\n", $r['text']), true), 'ohne Einheit am billigen Tag keine Kosten, mit Hinweis: ' . mb_substr($r['text'], 0, 400));
 $einheitlos = $original;
 $einheitlos['variablen'][$original['preis']]['einheit'] = '';
 [$r] = frage('get', ['from' => '2026-09-01', 'to' => '2026-09-30'], $einheitlos);
-pruefe($kostenzeile($r) === $kostenzeile($kurz), 'ohne Einheit gilt der September als Cent: ' . $kostenzeile($r));
-[$r] = frage('get', ['from' => '2026-09-01', 'to' => '2026-10-01'], $ohne);
-$erwartet = $euro($kostenzeile($bis29)) + $euro($kostenzeile($am30)) / 25;
-pruefe($hoechster > 0 && $hoechster <= 2 && $euro($kostenzeile($am30)) > 0.5, 'die Scheibe Oktober liegt für sich unter 2 (höchstes Stundenmittel ' . round($hoechster, 2) . '), der 30.09. kostete ' . $euro($kostenzeile($am30)) . ' €');
-pruefe(abs($euro($kostenzeile($r)) - $erwartet) < 0.03, 'kurze Scheibe mit niedrigen Preisen bleibt Cent: erwartet ' . round($erwartet, 2) . ' €, bekommen ' . $kostenzeile($r));
-[$r] = frage('chart', ['costs' => true, 'from' => '2026-09-01', 'to' => '2026-10-01'], $ohne);
-$netz = $reihe($r['structuredContent'] ?? [], 'grid');
-pruefe(abs(array_sum($netz) - $erwartet) < 0.03, 'im Kostendiagramm ebenso: ' . round(array_sum($netz), 2) . ' €');
+pruefe(!$r['isError'] && $kostenzeile($r) === '' && in_array($hinweis, explode("\n", $r['text']), true), 'ohne Einheit auch über den September keine Kosten: ' . mb_substr($r['text'], 0, 400));
+[$r] = frage('chart', ['costs' => true, 'from' => '2026-09-01', 'to' => '2026-09-30'], $einheitlos);
+pruefe($r['isError'] && $r['text'] === $hinweis, 'das Kostendiagramm sagt ab und nennt den Grund: ' . mb_substr($r['text'], 0, 300));
+// Preise in Euro mit „€/kWh“ ergeben dieselben Kosten
+$inEuro = $original;
+$inEuro['variablen'][$original['preis']]['einheit'] = '€/kWh';
+foreach ($inEuro['variablen'][$original['preis']]['verlauf']['0'] as &$zeile) {
+    $zeile = [$zeile[0], $zeile[1] / 100, $zeile[2] / 100, $zeile[3] / 100];
+}
+unset($zeile);
+[$r] = frage('get', ['from' => '2026-09-01', 'to' => '2026-09-30'], $inEuro);
+pruefe(abs($euro($kostenzeile($r)) - $euro($kostenzeile($kurz))) < 0.02, 'mit „€/kWh“ dieselben Kosten: ' . $kostenzeile($r));
 
 ende('Kosten über lange Zeiträume');

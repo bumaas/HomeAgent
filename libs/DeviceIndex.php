@@ -1839,7 +1839,7 @@ final class DeviceIndex
                 if ($shares !== null) {
                     $head[] = $shares;
                 }
-                $costs = $this->costLine($from, $to);
+                $costs = $this->priceUnitMissing() ? $this->t(self::NO_PRICE_UNIT) : $this->costLine($from, $to);
                 if ($costs !== null) {
                     $head[] = $costs;
                 }
@@ -6250,6 +6250,9 @@ final class DeviceIndex
             if ($this->priceVariable === 0 || $this->balance === []) {
                 return $this->fail($this->t('Costs need an electricity price in the energy balance.'));
             }
+            if ($this->priceUnitMissing()) {
+                return $this->fail($this->t(self::NO_PRICE_UNIT));
+            }
             foreach (['room', 'floor', 'type', 'name'] as $field) {
                 if (trim((string)($arguments[$field] ?? '')) !== '') {
                     return $this->fail($this->t('Costs are only available for the whole house, without room, floor, type or name.'));
@@ -7095,23 +7098,43 @@ final class DeviceIndex
     }
 
     /**
-     * Mittlerer Strompreis je Stunde in €/kWh aus dem Archiv. Die Einheit kommt aus der Variable (ct oder Cent, € oder EUR),
-     * ohne Angabe gelten Werte über 2 als Cent. Gerechnet wird mit Stundenmitteln, weil das Archiv nicht feiner aggregiert;
-     * an der Tibber-Rechnung September 2026 lagen die Kosten so 2,6 % höher (1,4 % Menge vom SMA Home Manager, 1,2 % Preis).
-     * $cent: Cent oder Euro steht schon fest (priceInCent), null = aus diesen Werten entscheiden.
+     * Mittlerer Strompreis je Stunde in €/kWh aus dem Archiv. Die Einheit kommt aus der Variable (ct oder Cent, € oder EUR);
+     * ohne Angabe gibt es keinen Preis (priceUnitMissing), geraten wird nicht. Gerechnet wird mit Stundenmitteln, weil das
+     * Archiv nicht feiner aggregiert; an der Tibber-Rechnung September 2026 lagen die Kosten so 2,6 % höher (1,4 % Menge vom
+     * SMA Home Manager, 1,2 % Preis).
      *
      * @return null|array<int, float>
      */
-    private function hourlyPrices(int $from, int $to, ?bool $cent = null): ?array
+    private function hourlyPrices(int $from, int $to): ?array
     {
         $history = $this->priceVariable > 0 ? $this->historyRows($this->priceVariable, 0, $from, $to) : null;
-        if ($history === null || $history['rows'] === []) {
+        $cent = $history === null ? null : self::centUnit($history['unit']);
+        if ($history === null || $cent === null || $history['rows'] === []) {
             return null;
         }
-        $values = array_column($history['rows'], 'avg', 'time');
-        $cent ??= self::centUnit($history['unit']) ?? array_sum($values) / count($values) > 2;
-        return array_map(static fn (float $v): float => $cent ? $v / 100 : $v, $values);
+        return array_map(static fn (float $v): float => $cent ? $v / 100 : $v, array_column($history['rows'], 'avg', 'time'));
     }
+
+    /** Absage und Hinweis, wenn die Variable des Strompreises keine Einheit trägt */
+    private const NO_PRICE_UNIT = 'No costs: the electricity price has no unit. Its variable needs ct/kWh or €/kWh as suffix in Symcon.';
+
+    /** Nennt die Einheit Cent oder Euro (ct, Cent, €, EUR)? Auch fürs Modul: Schema, Selbsttest und Zustand. */
+    public static function priceUnitKnown(string $unit): bool
+    {
+        return self::centUnit($unit) !== null;
+    }
+
+    /**
+     * Ist ein Strompreis eingetragen, dessen Variable keine Einheit trägt? Dann gibt es keine Kosten: Bis build 307 galt
+     * ohne Einheit ein Mittel über 2 als Cent, ein kurzer Zeitraum mit niedrigen Preisen deshalb als Euro, und die Kosten
+     * waren hundertfach (Nachreview 15.11.2026, Befund 2).
+     */
+    private function priceUnitMissing(): bool
+    {
+        return $this->priceUnitMissing ??= $this->priceVariable > 0 && $this->balance !== [] && self::centUnit($this->backend->unit($this->priceVariable)) === null;
+    }
+
+    private ?bool $priceUnitMissing = null;
 
     /** Sagt die Einheit, ob ein Preis in Cent (true) oder Euro (false) steht; null = keine Angabe. */
     private static function centUnit(string $unit): ?bool
@@ -7121,31 +7144,6 @@ final class DeviceIndex
             return true;
         }
         return str_contains($unit, '€') || str_contains($unit, 'eur') ? false : null;
-    }
-
-    /**
-     * Cent oder Euro für den ganzen Zeitraum, bevor die Kosten in Monatsscheiben gelesen werden: Ohne Einheit entscheidet
-     * das Mittel aller Stundenpreise des Zeitraums, nicht das einer Scheibe (Review 15.11.2026: ein einzelner Tag mit
-     * Preisen unter 2 ct am Monatsanfang galt als Euro und kostete das Hundertfache). Gelesen wird ebenfalls je Monat,
-     * behalten nur Summe und Anzahl. null = kein Preis im Zeitraum.
-     */
-    private function priceInCent(int $from, int $to): ?bool
-    {
-        $known = self::centUnit($this->backend->unit($this->priceVariable));
-        if ($known !== null) {
-            return $known;
-        }
-        $sum = 0.0;
-        $count = 0;
-        foreach ($this->monthSpans($from, $to) as [$start, $stop]) {
-            $history = $this->historyRows($this->priceVariable, 0, $start, $stop);
-            if ($history === null) {
-                return null;
-            }
-            $sum += array_sum(array_column($history['rows'], 'avg'));
-            $count += count($history['rows']);
-        }
-        return $count === 0 ? null : $sum / $count > 2;
     }
 
     /**
@@ -7167,20 +7165,20 @@ final class DeviceIndex
     /**
      * Kosten je Stunde: Netzbezug × Preis, Vergütung der Einspeisung, Hausverbrauch × Preis (ohne PV und Batterie). Stunden
      * ohne Preis zählen als fehlend, auch wenn der ganze Zeitraum keinen Preis hat (Preis später archiviert als die
-     * Zähler). null = kein Strompreis eingetragen oder keine Bilanz.
+     * Zähler). null = kein Strompreis eingetragen, Strompreis ohne Einheit oder keine Bilanz.
      *
      * @return null|array{0: array<int, array{kwh: float, import: float, revenue: float, house: float, price: float}>, 1: int}
      */
-    private function hourlyCosts(int $from, int $to, ?bool $cent = null): ?array
+    private function hourlyCosts(int $from, int $to): ?array
     {
-        if ($this->priceVariable === 0 || $this->balance === []) {
+        if ($this->priceVariable === 0 || $this->balance === [] || $this->priceUnitMissing()) {
             return null;
         }
         $parts = $this->balanceParts($this->balance, 0, $from, $to);
         if ($parts === null) {
             return null;
         }
-        $prices = $this->hourlyPrices($from, $to, $cent) ?? [];
+        $prices = $this->hourlyPrices($from, $to) ?? [];
         $rows = [];
         $missing = 0;
         foreach ($parts as $time => $part) {
@@ -7219,10 +7217,8 @@ final class DeviceIndex
             }
             return;
         }
-        // Cent oder Euro fällt einmal für den ganzen Zeitraum, jede Scheibe rechnet damit
-        $cent = $this->priceInCent($from, $to);
         foreach ($this->monthSpans($from, $to) as [$start, $stop]) {
-            $costs = $this->hourlyCosts($start, $stop, $cent);
+            $costs = $this->hourlyCosts($start, $stop);
             if ($costs !== null) {
                 yield $costs;
             }

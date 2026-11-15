@@ -340,7 +340,8 @@ Zähler in den letzten 30 Tagen mehr als 105 % seines eigenen Werts, weist der S
 
 Tragen Sie in der Energiebilanz den **Strompreis** ein, dann nennen die Antworten zum Hausverbrauch auch die Kosten.
 Der Strompreis ist eine archivierte Variable in ct/kWh oder €/kWh, als Suffix der Darstellung oder des Profils genügt
-„ct“. Bei einem dynamischen Tarif ist das etwa der aktuelle Preis aus dem Tibber-Modul. Daneben tragen Sie die
+„ct“. Trägt die Variable keine solche Einheit, rechnet Home Agent keine Kosten und der Selbsttest weist darauf hin. Bei
+einem dynamischen Tarif ist das etwa der aktuelle Preis aus dem Tibber-Modul. Daneben tragen Sie die
 Einspeisevergütung in ct/kWh ein. Gerechnet wird je
 Stunde Netzbezug mal Stundenmittel des Preises. Das sind reine Arbeitskosten ohne Grundgebühr. Gegen die Abrechnung
 des Versorgers weicht das um wenige Prozent ab, weil der eigene Zähler etwas anders misst und das Archiv nur

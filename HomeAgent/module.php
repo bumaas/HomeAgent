@@ -394,7 +394,10 @@ class HomeAgent extends IPSModuleStrict
         $names = array_map(fn (array $source): string => trim((string)($source['Name'] ?? '')) ?: $this->Translate(self::SOURCE_NAMES[(string)($source['Type'] ?? '')] ?? '?'), $sources);
         $line = sprintf($this->Translate('Energy balance: %s'), $this->countText(count($sources), '%d source', '%d sources') . ' (' . implode(', ', $names) . ')');
         $price = $this->priceVariable();
-        return $price > 0 ? $line . sprintf($this->Translate(', electricity price from "%s"'), IPS_GetName($price)) : $line;
+        if ($price === 0) {
+            return $line;
+        }
+        return $line . sprintf($this->Translate(', electricity price from "%s"'), IPS_GetName($price)) . ($this->priceUnitMissing() ? $this->Translate(' (no unit, no costs)') : '');
     }
 
     private function selfTest(): string
@@ -477,6 +480,10 @@ class HomeAgent extends IPSModuleStrict
             if ($heat === 0 && $output > 0 && IPS_VariableExists($output) && $backend->history($output, 3, 0, 0) === null) {
                 $lines[] = sprintf($this->Translate('Note: %s: the heat output %s is not archived, so there is no heat over periods'), $this->entryLabel($entry), $named($output));
             }
+        }
+        // Strompreis ohne Einheit: Cent oder Euro rät das Modul nicht, dann gibt es keine Kosten
+        if ($this->priceUnitMissing()) {
+            $lines[] = sprintf($this->Translate('Note: the electricity price %s has no unit, so there are no costs; its presentation or profile needs ct/kWh or €/kWh as suffix'), $named($this->priceVariable()));
         }
         // Umweltertrag ohne Strom: Die Wärme wäre zu niedrig, das Modul nennt dann nur den Ertrag
         foreach (DeviceIndex::yieldWithoutElectricity($list) as $index) {
@@ -2471,7 +2478,7 @@ class HomeAgent extends IPSModuleStrict
                         'period' => ['type' => 'string', 'enum' => array_merge($hasPowerBalance ? [DeviceIndex::NOW] : [], DeviceIndex::PERIODS), 'description' => 'Period of the chart, per hour for today and yesterday, per day for weeks and months, per month for years.'],
                         'from'   => ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD, or a start hour, YYYY-MM-DD HH:MM. Today is ' . date('Y-m-d') . '.'],
                         'to'     => ['type' => 'string', 'description' => 'Last day, inclusive, or the end hour, YYYY-MM-DD HH:MM, exclusive.'],
-                        ...($this->priceVariable() > 0 ? ['costs' => ['type' => 'boolean', 'description' => 'true: the house consumption as costs in euros (grid import times the hourly price, feed-in below), also as heatmap or cumulative. Only without room, floor, type and name.']] : []),
+                        ...($this->priceVariable() > 0 && !$this->priceUnitMissing() ? ['costs' => ['type' => 'boolean', 'description' => 'true: the house consumption as costs in euros (grid import times the hourly price, feed-in below), also as heatmap or cumulative. Only without room, floor, type and name.']] : []),
                         ...($parts === [] ? [] : ['part' => ['type' => 'string', 'enum' => $parts, 'description' => 'Only this meter of the energy balance instead of the house consumption, for example feed_in for the grid export; with costs=true grid in euros or feed_in as feed-in revenue. ' . ($hasPowerBalance ? 'With type=power its power over the period as a line with minimum and maximum. Only without room, floor and name.' : 'Only without room, floor, type and name.')]]),
                         'cumulative' => ['type' => 'boolean', 'description' => 'true: consumption (or costs) added up day by day with a projection to the end of the period, with compare also the comparison period. Without a period: this year.'],
                         'heatmap' => ['type' => 'boolean', 'description' => 'true: one value per hour as a heatmap of one device (without room, type or name the house consumption), a row per day up to 62 days, otherwise per weekday. Without a period: last month.'],
@@ -3158,6 +3165,13 @@ class HomeAgent extends IPSModuleStrict
         // Vor dem Neuladen der Bibliothek gibt es die Property bei bestehenden Instanzen noch nicht.
         $id = (int)@$this->ReadPropertyInteger('PriceVariableID');
         return $id > 1 && IPS_VariableExists($id) && $this->balanceKeys() !== [] ? $id : 0;
+    }
+
+    /** Ist ein Strompreis eingetragen, dessen Variable weder Cent noch Euro als Einheit trägt? Dann gibt es keine Kosten. */
+    private function priceUnitMissing(): bool
+    {
+        $id = $this->priceVariable();
+        return $id > 0 && !DeviceIndex::priceUnitKnown($this->backend()->unit($id));
     }
 
     /**

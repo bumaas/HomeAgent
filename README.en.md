@@ -332,7 +332,8 @@ days, the self-test points it out.
 
 If you enter the **electricity price** in the energy balance, the answers about the house consumption also name the
 costs. The price is an archived variable in ct/kWh or €/kWh, "ct" alone is enough as the suffix of the presentation
-or profile. For a dynamic tariff this is for example the current price from the Tibber module. Next to it you enter
+or profile. If the variable carries no such unit, Home Agent calculates no costs and the self-test points it out. For
+a dynamic tariff this is for example the current price from the Tibber module. Next to it you enter
 the feed-in tariff in ct/kWh. Each hour counts grid
 import times the hourly mean price. These are working costs only, without base fee. Against the supplier's bill they
 differ by a few percent, because your own meter measures slightly differently and the archive only knows hourly means.

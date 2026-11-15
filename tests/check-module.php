@@ -666,7 +666,7 @@ foreach ([
     // Store-Richtlinie 13 (28.10.2026): ApplyChanges füllt kein Token mehr nach
     'HAGT_AddAccess(int $InstanceID, string $Name, bool $ReadOnly, bool $InPath, string $DefaultRoom): string adds an access with a new token and applies it. A script that does not know the tokens adds accesses this way and never writes Accesses itself.' => 'HAGT_AddAccess(int $InstanceID, string $Name, bool $ReadOnly, bool $InPath, string $DefaultRoom): string legt einen Zugang mit neuem Token an und übernimmt ihn. Ein Skript, das die Tokens nicht kennt, legt Zugänge so an und schreibt Accesses nie selbst.',
     // Prompttest 23.10.2026: Neben „ct/kWh“ blieb offen, ob die Einheit „ct“ allein genügt
-    'PriceVariableID (electricity price, archived, in ct/kWh or €/kWh; a suffix containing ct or Cent means cents, ct alone is enough, with € or EUR euros, otherwise values above 2 count as cents)' => 'PriceVariableID (Strompreis, archiviert, in ct/kWh oder €/kWh; ein Suffix, das ct oder Cent enthält, bedeutet Cent, ct allein genügt, mit € oder EUR Euro, sonst zählen Werte über 2 als Cent)',
+    'PriceVariableID (electricity price, archived, in ct/kWh or €/kWh; a suffix containing ct or Cent means cents, ct alone is enough, with € or EUR euros; without one of them there are no costs)' => 'PriceVariableID (Strompreis, archiviert, in ct/kWh oder €/kWh; ein Suffix, das ct oder Cent enthält, bedeutet Cent, ct allein genügt, mit € oder EUR Euro; ohne eines davon gibt es keine Kosten)',
     'Other assistants such as ChatGPT, Codex or Claude Code use their own token, in the header or with InPath in the address.' => 'Andere Assistenten wie ChatGPT, Codex oder Claude Code nutzen ihr eigenes Token, im Header oder mit InPath in der Adresse.',
     // nuc 26.10.2026: Vaillant über ebusd zählt als Ertrag nur den Umweltertrag
     'HeatIsYield true if both count only the environmental yield without the electricity (Vaillant over ebusd: energy yield, yield power); the module then adds the electricity' => 'HeatIsYield true, wenn beide nur den Umweltertrag ohne den Strom zählen (Vaillant über ebusd: Energieertrag, Ertragsleistung); das Modul rechnet dann den Strom dazu',
@@ -3830,6 +3830,25 @@ IPS_SetProperty($qid, 'Sources', json_encode([$bilanzZeile('solar', 'Garage', $z
 IPS_ApplyChanges($qid);
 $werkzeugeQ = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(null, true), $q, HomeAgent::class)()), true), null, 'name');
 pruefe(in_array('pv', $werkzeugeQ['show_chart']['inputSchema']['properties']['part']['enum'] ?? [], true), 'eine PV-Anlage in der Liste: part=pv: ' . json_encode($werkzeugeQ['show_chart']['inputSchema']['properties']['part'] ?? null));
+// Nachreview 15.11.2026, Befund 2: Ein Strompreis ohne Einheit ergibt keine Kosten (vorher galt ein Mittel über 2 als
+// Cent, ein billiger Tag als Euro). Das Feld costs gibt es dann nicht, Selbsttest und Zustand sagen es.
+$preisQ = variable(VARIABLETYPE_FLOAT, 31.5);
+IPS_SetName($preisQ, 'Preis');
+IPS_SetProperty($qid, 'PriceVariableID', $preisQ);
+IPS_ApplyChanges($qid);
+$mitPreis = static fn (): array => array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(null, true), $q, HomeAgent::class)()), true), null, 'name');
+$testQ = $q->RunSelfTest();
+pruefe(str_contains($testQ, 'Note: the electricity price Preis (#' . $preisQ . ') has no unit, so there are no costs; its presentation or profile needs ct/kWh or €/kWh as suffix'), 'Selbsttest: Strompreis ohne Einheit: ' . $testQ);
+pruefe(str_contains($testQ, 'electricity price from "Preis" (no unit, no costs)'), 'die Zeile zur Bilanz sagt es auch: ' . $testQ);
+pruefe(!isset($mitPreis()['show_chart']['inputSchema']['properties']['costs']), 'ohne Einheit kein costs in show_chart');
+IPS_CreateVariableProfile('HomeAgentTest.ct', VARIABLETYPE_FLOAT);
+IPS_SetVariableProfileText('HomeAgentTest.ct', '', ' ct');
+IPS_SetVariableCustomProfile($preisQ, 'HomeAgentTest.ct');
+$testQ = $q->RunSelfTest();
+pruefe(!str_contains($testQ, 'has no unit') && !str_contains($testQ, 'no costs') && str_contains($testQ, 'electricity price from "Preis"'), 'mit „ct“ kein Hinweis: ' . $testQ);
+pruefe(isset($mitPreis()['show_chart']['inputSchema']['properties']['costs']), 'mit Einheit bietet show_chart costs an');
+IPS_SetProperty($qid, 'PriceVariableID', 0);
+IPS_ApplyChanges($qid);
 // Fehler: PV mit zweitem Zähler, gelöschte Variable; dann ist die Bilanz gesperrt
 IPS_SetProperty($qid, 'Sources', json_encode([$bilanzZeile('solar', 'Garage', $zaehlerQ, $zaehlerQ), $bilanzZeile('grid', 'Tibber', 69997)]));
 IPS_ApplyChanges($qid);
