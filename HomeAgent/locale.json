@@ -410,6 +410,7 @@
             "blind without position": "Rollladen ohne Position",
             "Too many measured values (%d) for a history (%s). Give a room or a name, at most %d at a time.": "Zu viele Messwerte (%d) für einen Verlauf (%s). Gib einen Raum oder einen Namen an, höchstens %d auf einmal.",
             "Too many measured values (%d) for a history (%s), at most %d per call. Ask for each device on its own with name: %s.": "Zu viele Messwerte (%d) für einen Verlauf (%s), höchstens %d je Aufruf. Frag jedes Gerät einzeln mit name ab: %s.",
+            "Too many measured values (%d) for a history (%s), at most %d per call. Ask for each device on its own with room=%s and name: %s.": "Zu viele Messwerte (%d) für einen Verlauf (%s), höchstens %d je Aufruf. Frag jedes Gerät einzeln mit room=%s und name ab: %s.",
             "%d further device(s) have a timeline, ask for them the same way: %s.": "%d weitere(s) Gerät(e) haben eine Zeitleiste, frag sie genauso ab: %s.",
             "Too many measured values (%d) for a history (%s), at most %d per call. room takes a single room, not a list. Make one call per room or give one device in name.": "Zu viele Messwerte (%d) für einen Verlauf (%s), höchstens %d je Aufruf. In room steht ein einzelner Raum, keine Liste. Frag je Raum einmal oder nenne ein Gerät in name.",
             "History of %d measured value(s) (%s), per %s: minimum / average / maximum.": "Verlauf von %d Messwert(en) (%s), je %s: Minimum / Mittel / Maximum.",

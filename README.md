@@ -568,7 +568,8 @@ Status, dessen Darstellung jeden Wert über Wertebereiche als Text zeigt (etwa 0
 „Heizbetrieb“), bekommt eine Zeitleiste mit diesen Texten: „Heizbetrieb 21 h 39 min, Warmwasserbereitung 1 h 22 min,
 Standby 59 min“ und die Abschnitte mit ihren Zeiten. Gibt man den Zeilen einer Anlage denselben Alias (etwa
 „Heizkreis“), liefert eine Abfrage mit diesem Namen alle ihre Werte auf einmal. Über einen Zeitraum kommen höchstens
-fünf Messwerte je Abfrage. Sind es mehr, nennt die Antwort die Werte beim Namen und der Assistent fragt sie einzeln ab.
+fünf Messwerte je Abfrage. Sind es mehr und liegen sie im selben Raum, nennt die Antwort die Werte beim Namen und der
+Assistent fragt sie einzeln ab. Aus mehreren Räumen fragt er zuerst je Raum.
 
 ### Für Skripte
 

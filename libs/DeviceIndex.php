@@ -1406,14 +1406,15 @@ final class DeviceIndex
         // Alle Zustände in fester Reihenfolge: bei Wörtern der aktive zuerst, bei einem Status die Texte seiner
         // Wertebereiche, bei einer Auswahl die Einträge. Der Status geht vor, wenn seine Texte die Einträge umfassen:
         // Umfasst einer seiner Bereiche nur einen Wert, hat die Variable auch einen Eintrag, und die übrigen Zustände
-        // bekämen ihre Farbe nach dem Auftreten. Eine Auswahl mit eigenen Einträgen bleibt bei diesen, auch wenn ihre
-        // Darstellung noch Wertebereiche einer früheren Variante trägt.
+        // bekämen ihre Farbe nach dem Auftreten. Sonst stehen die Einträge vorn und die übrigen Statustexte dahinter:
+        // Eine Darstellung trägt Parameter früherer Varianten weiter (Auswahl mit alten Wertebereichen, Status mit alten
+        // Einträgen), und welche gilt, sagt die Liste nicht. So hat jeder Text, den label() liefern kann, seine Stelle.
         $captions = array_column($options, 1);
         $status = $travel === null && $words === null ? $this->backend->statusLabels($variable) : [];
         $labels = match (true) {
             $travel !== null => $travelLabels,
             $words !== null  => [$this->t($words[0]), $this->t($words[1])],
-            default          => $status !== [] && array_diff($captions, $status) === [] ? $status : $captions,
+            default          => $status !== [] && array_diff($captions, $status) === [] ? $status : array_values(array_unique(array_merge($captions, $status))),
         };
         // „seit“ nennen nur fahrende Geräte: Dort ist der Beginn die Auskunft.
         return $this->sectionsOf($entry, $variable, $series, $label, $labels, $words, $travel !== null, $from, $to);
@@ -1648,6 +1649,9 @@ final class DeviceIndex
                 }
             }
         }
+        // Thermostate nur mit Sollwert: kein Messwert, ihr Sollwert kommt als Zeitleiste
+        $setpointOnly = array_values(array_filter(array_column(array_filter($rows, static fn (array $row): bool => $row['kind'] === 'setpoint'), 'entry'),
+            static fn (array $e): bool => !isset($e['roles']['state'])));
         $measured = array_column(array_values(array_filter($rows, static fn (array $row): bool => $row['kind'] === 'value')), 'entry');
         if (count($measured) > self::HISTORY_MAX) {
             // „Gib einen Raum oder einen Namen an, höchstens 5 auf einmal“ las ein Modell als fünf Räume in room; die
@@ -1655,13 +1659,22 @@ final class DeviceIndex
             // deshalb den Weg, den es gibt; im Diagramm bleibt der alte Satz. Ist schon ein Raum genannt, hilft „je Raum“
             // nicht, dann nennt sie die Geräte beim Namen (Code-Review 13.11.2026, Befund 5). Ebenso ohne room, wenn alle
             // im selben Raum liegen (gemeinsamer Alias „Heizkreis“, 15.11.2026): „je Raum“ führte in dieselbe Absage.
-            $oneRoom = $oneRoom || count(array_unique(array_map(static fn (array $e): string => self::normalize((string)$e['Room']), $measured))) === 1;
-            if ($this->chart === null && $oneRoom) {
+            // Die Absage verwirft auch die Zeitleisten der Abfrage (Status, Betriebsart) und Thermostate nur mit Sollwert;
+            // ohne ihre Namen fragte ein Assistent, der der Liste folgt, sie nicht ab.
+            $timelines = array_merge(array_column($timed, 'entry'), $setpointOnly);
+            // Stand der Raum nicht im Filter, gilt „selber Raum“ für alles, was die Absage nennt, und sie nennt ihn als
+            // Parameter mit: Die Namen sind nur im Raum eindeutig (Code-Review 15.11.2026, Befund 2).
+            $rooms = array_values(array_unique(array_map(static fn (array $e): string => self::normalize((string)$e['Room']), array_merge($measured, $timelines))));
+            $derived = !$oneRoom && count($rooms) === 1;
+            // Auch im Diagramm: Dort ist name ebenso der einzige Weg, „Gib einen Raum an“ führte mit dem Raum in dieselbe
+            // Absage (Befund 3). Die Kommaliste von show_chart hilft nur bei mehreren Räumen.
+            if ($oneRoom || $derived) {
                 $named = static fn (array $entries): array => array_map(static fn (array $e): array => [(string)$e['Name'], (string)$e['Room']], $entries);
-                // Die Absage verwirft auch die Zeitleisten der Abfrage (Status, Betriebsart); ohne ihre Namen fragte ein
-                // Assistent, der der Liste folgt, sie nicht ab.
-                $timelines = array_column($timed, 'entry');
-                return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s), at most %d per call. Ask for each device on its own with name: %s.'), count($measured), $filter, self::HISTORY_MAX, $this->nameList($named($measured)))
+                $room = trim((string)$measured[0]['Room']);
+                $text = $derived && $room !== ''
+                    ? sprintf($this->t('Too many measured values (%d) for a history (%s), at most %d per call. Ask for each device on its own with room=%s and name: %s.'), count($measured), $filter, self::HISTORY_MAX, $room, $this->nameList($named($measured)))
+                    : sprintf($this->t('Too many measured values (%d) for a history (%s), at most %d per call. Ask for each device on its own with name: %s.'), count($measured), $filter, self::HISTORY_MAX, $this->nameList($named($measured)));
+                return $this->fail($text
                     . ($timelines === [] ? '' : ' ' . sprintf($this->t('%d further device(s) have a timeline, ask for them the same way: %s.'), count($timelines), $this->nameList($named($timelines)))));
             }
             if ($this->chart === null) {
@@ -6364,7 +6377,12 @@ final class DeviceIndex
                 unset($chart['bands']);
             } elseif (($chart['series'] ?? []) === []) {
                 // Übrig sind nur Bänder von Sollwerten: Der Titel zählte sonst die Geräte, deren Zeitleisten eben wegfielen
-                $chart['title'] = sprintf($this->t('Timeline of %d setpoint(s) (%s).'), count($chart['bands']), (string)($chart['filter'] ?? ''));
+                // Der Filter stammt vom ersten Raum der Kommaliste, die Bänder aus allen
+                $filter = (string)($chart['filter'] ?? '');
+                if (count($rooms) > 1) {
+                    $filter = (string)preg_replace('/\broom=[^,]*/', 'room=' . implode(', ', $rooms), $filter, 1);
+                }
+                $chart['title'] = sprintf($this->t('Timeline of %d setpoint(s) (%s).'), count($chart['bands']), $filter);
             }
         } else {
             $droppedBands = 0;

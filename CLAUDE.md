@@ -139,9 +139,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   Ein Fehler bleibt es bei unbekanntem Raum oder unbekannter Etage (zweiter Versuch mit der Raumliste), bei `set_state`,
   `control_device` und `show_chart`. Test `check-kein-treffer.php`.
 - **Absagen nennen nur Wege des aufgerufenen Werkzeugs**, mit Parameternamen: `room` nimmt bei `get_state` einen Raum,
-  die Kommaliste gibt es nur bei `show_chart` (deshalb zwei Texte für „zu viele Messwerte“); mit genanntem Raum oder
-  wenn alle Messwerte im selben Raum liegen, nennt die Absage die Geräte beim Namen (`nameList`), auch die mit Zeitleiste. Tests `check-verlauf.php`,
-  `check-raumklima.php`, `check-heizungsregler.php`.
+  die Kommaliste gibt es nur bei `show_chart` (deshalb zwei Texte für „zu viele Messwerte“). Mit genanntem Raum oder wenn
+  alles im selben Raum liegt (dann mit `room=` in der Absage), nennt sie in beiden Werkzeugen die Geräte beim Namen
+  (`nameList`), auch die mit Zeitleiste. Tests `check-verlauf.php`, `check-raumklima.php`, `check-heizungsregler.php`.
 - **Namenssuche** in Stufen, nur die beste zählt: genauer Name oder Alias, Anfrage als Teil des Namens, Name in der
   Anfrage nur an einem Wortanfang. Genannte Geräte gehören in `name`, nicht in `type` (steht in der Beschreibung).
 - **Vokabular:** Die Beschreibung von `room` nennt die bekannten Räume, die von `mode`/`fan_speed` die Einträge der
@@ -292,9 +292,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   Summen je Zustand, Einzelabschnitte bis `TIMELINE_SECTIONS`/`TIMELINE_DETAIL`. Gerät mit Zähler: Verbrauch und Zeiten in
   einer Zeile. In `show_chart` als Bänder (`chartBands`, höchstens `TIMELINE_CHART_MAX`, neben Linien fallen zu viele weg
   und der Text nennt es), nur vorkommende Zustände, Farbe einer Auswahl nach der Stelle des Eintrags (`color`), eines
-  Status nach der seines Wertebereichs (`statusLabels`, vor den Einträgen, wenn seine Texte sie umfassen), eines Sollwerts
-  nach dem Wert. Jeder Wert wird
-  nur einmal beschriftet (Kernelaufrufe). Tests `check-zeitleiste.php`, `check-zeitleiste-quellen.php`,
+  Status nach der seines Wertebereichs (`statusLabels`, vor den Einträgen, wenn seine Texte sie umfassen, sonst dahinter),
+  eines Sollwerts nach dem Wert. Jeder Wert wird nur einmal beschriftet (Kernelaufrufe). Tests `check-zeitleiste.php`,
+  `check-zeitleiste-quellen.php`,
   `check-nachreview-zeitleiste.php`.
 - **Zeitleiste fahrender Geräte** (`travelTimed`: Rollladen, Fenster nur mit Antrieb): aus der Position offen, teilweise
   offen, geschlossen (`travelClass`), alle Abschnitte einzeln, im Band mit fester Farbe je Zustand (`color`); bis jetzt

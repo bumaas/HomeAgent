@@ -106,4 +106,29 @@ $alteBereiche[54678]['statustexte'] = [];
 $r = frage(['name' => 'Batteriemodus', 'period' => 'yesterday'], $auswahl, $alteBereiche, null, 'chart');
 pruefe($farben($r['structuredContent']['bands'][0] ?? []) === $echt, 'Auswahl mit übrig gebliebenen Wertebereichen: dieselben Farben: ' . json_encode($farben($r['structuredContent']['bands'][0] ?? []), JSON_UNESCAPED_UNICODE));
 
+/* --- Code-Review der Builds 310 bis 312 (15.11.2026) ---------------------------------------------- */
+
+// Befund 1, ANGENOMMEN (Spiegelbild des Falls darüber): ein echter Status, dessen Darstellung noch Einträge einer
+// früheren Variante trägt. Echt ist der Status der Wärmepumpe #17704 mit Rohwerten und Texten; angenommen sind die zwei
+// Einträge „Alt A“ und „Alt B“. Seit build 311 kamen die Farben dann nach dem Auftreten (Heizbetrieb 2, Standby 3), also
+// je Tag anders. Die feste Liste sind die Einträge und dahinter die Texte der Wertebereiche: Jeder Zustand hat seine
+// Stelle, um die zwei Einträge versetzt.
+$alteEintraege = $regler['variablen'];
+$alteEintraege[17704]['optionen'] = [[200, 'Alt A'], [201, 'Alt B']];
+$r = frage(['name' => 'Status Wärmepumpe', 'period' => 'yesterday'], $regler, $alteEintraege, null, 'chart');
+pruefe($farben($r['structuredContent']['bands'][0] ?? []) === ['Standby' => 2, 'Heizbetrieb' => 3, 'Warmwasserbereitung' => 6],
+    'Status mit übrig gebliebenen Einträgen: Farbe nach der Stelle des Wertebereichs, nicht nach dem Auftreten: ' . json_encode($farben($r['structuredContent']['bands'][0] ?? []), JSON_UNESCAPED_UNICODE));
+// Ein Zeitraum, der mit einem anderen Zustand beginnt, ändert die Farben nicht (ab 13:00 Warmwasserbereitung zuerst)
+$r = frage(['name' => 'Status Wärmepumpe', 'from' => '2026-11-14T13:00', 'to' => '2026-11-14T18:00'], $regler, $alteEintraege, null, 'chart');
+$spaeter = $farben($r['structuredContent']['bands'][0] ?? []);
+pruefe(($spaeter['Warmwasserbereitung'] ?? null) === 6 && ($spaeter['Heizbetrieb'] ?? null) === 3 && ($spaeter['Standby'] ?? null) === 2,
+    'dieselben Farben, wenn der Zeitraum mit einem anderen Zustand beginnt: ' . json_encode($spaeter, JSON_UNESCAPED_UNICODE));
+
+// Befund 5, ANGENOMMEN: zwei Räume mit Komma, je ein Thermostat nur mit Sollwert und sechs Fenster (Kopien wie oben, die
+// des zweiten Raums stehen im Flur). Die Zeitleisten der Fenster fallen weg, der Titel zählt zwei Sollwerte und nannte
+// nur den ersten Raum.
+$flur = array_map(static fn (array $z): array => ['Room' => 'Flur', 'Name' => $z['Name'] . ' Flur'] + $z, $mit(6));
+$r = frage(['room' => 'Musikzimmer, Flur'] + $ab, $thermostat, null, array_merge($mit(6), $flur), 'chart');
+pruefe(($r['structuredContent']['title'] ?? '') === 'Timeline of 2 setpoint(s) (room=Musikzimmer, Flur, from=2026-11-14, to=2026-11-15).', 'Titel über Sollwerten aus zwei Räumen nennt beide: ' . ($r['structuredContent']['title'] ?? $r['text']));
+
 ende('Nachreview Zeitleiste: Statusfarbe mit Einzelwert, Sollwertband ohne Linien, erste Zeile neben Zeitleisten');

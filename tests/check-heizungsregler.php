@@ -102,11 +102,11 @@ $kreis = $mitschnitt['variablen'];
 $zeilenKreis = $mitschnitt['geraete'];
 $namen = 'Vorlauf, Rücklauf, Vorlauf-Soll, Heizkurve, Heizgrenze, Modulation, Kompressorstarts, Tag-Soll, Nacht-Soll, Raum-Sollwert, Grundwert Wetterausgleich, Kompressor-Laufzeit, Status Heizkreis, Zeitprogramm Heizung';
 $r = frage(['name' => 'Heizkreis', 'period' => 'yesterday'], $kreis, $zeilenKreis);
-pruefe($r['isError'] && $r['text'] === 'Too many measured values (14) for a history (name=Heizkreis, period=yesterday), at most 5 per call. Ask for each device on its own with name: ' . $namen . '. 3 further device(s) have a timeline, ask for them the same way: Betriebsart Heizung, Status Wärmepumpe, Eigenverbrauchsoptimierung.',
-    'gemeinsamer Alias, alle in einem Raum: Absage nennt die Namen, auch die der Zeitleisten: ' . $r['text']);
+pruefe($r['isError'] && $r['text'] === 'Too many measured values (14) for a history (name=Heizkreis, period=yesterday), at most 5 per call. Ask for each device on its own with room=Keller and name: ' . $namen . '. 3 further device(s) have a timeline, ask for them the same way: Betriebsart Heizung, Status Wärmepumpe, Eigenverbrauchsoptimierung.',
+    'gemeinsamer Alias, alle in einem Raum: Absage nennt Raum und Namen, auch die der Zeitleisten: ' . $r['text']);
 pruefe(!str_contains($r['text'], 'per room'), 'kein Rat „je Raum“, wenn alle im selben Raum liegen: ' . $kurz($r));
 $r = frage(['name' => 'Heizkreis', 'period' => 'yesterday'], $kreis, $zeilenKreis, $de);
-pruefe(str_contains($r['text'], 'höchstens 5 je Aufruf. Frag jedes Gerät einzeln mit name ab: Vorlauf, Rücklauf, '), 'auf Deutsch: ' . $kurz($r));
+pruefe(str_contains($r['text'], 'höchstens 5 je Aufruf. Frag jedes Gerät einzeln mit room=Keller und name ab: Vorlauf, Rücklauf, '), 'auf Deutsch: ' . $kurz($r));
 pruefe(str_ends_with($r['text'], ' 3 weitere(s) Gerät(e) haben eine Zeitleiste, frag sie genauso ab: Betriebsart Heizung, Status Wärmepumpe, Eigenverbrauchsoptimierung.'), 'Zeitleisten auf Deutsch: ' . $r['text']);
 // Auch dieser Weg führt zum Ziel
 $r = frage(['name' => 'Betriebsart Heizung', 'period' => 'yesterday'], $kreis, $zeilenKreis);
@@ -121,4 +121,42 @@ $verteilt[0]['Room'] = 'Garten';
 $r = frage(['name' => 'Heizkreis', 'period' => 'yesterday'], $kreis, $verteilt);
 pruefe($r['isError'] && str_ends_with($r['text'], 'room takes a single room, not a list. Make one call per room or give one device in name.'), 'aus zwei Räumen bleibt der Rat „je Raum“: ' . $kurz($r));
 
-ende('Heizungsregler:Status aus Wertebereichen und Zähler als Messwert');
+/* --- Code-Review der Builds 310 bis 312 (15.11.2026), Befunde 2 bis 4 ----------------------------- */
+
+// Befund 2: Der Raum stand nicht im Filter, die Namen der Absage sind hausweit aber nicht eindeutig. Die Absage nennt
+// deshalb den Raum als Parameter mit (oben geprüft); der Folgeaufruf mit beiden trifft die eine Zeile. ANGENOMMEN ist
+// ein zweites Gerät „Vorlauf“ im Garten (Kopie der Zeile ohne den Alias): Nur mit name kämen beide.
+$doppelt = array_merge($zeilenKreis, [['Room' => 'Garten', 'Aliases' => '', 'StateVariableID' => 69990] + $zeilenKreis[0]]);
+$kreisDoppelt = $kreis + [69990 => $kreis[12155]];
+$r = frage(['name' => 'Heizkreis', 'period' => 'yesterday'], $kreisDoppelt, $doppelt);
+pruefe($r['isError'] && str_contains($r['text'], 'Ask for each device on its own with room=Keller and name: Vorlauf, Rücklauf, '), 'Absage mit Raum, auch wenn es „Vorlauf“ zweimal gibt: ' . $kurz($r));
+$r = frage(['room' => 'Keller', 'name' => 'Vorlauf', 'period' => 'yesterday'], $kreisDoppelt, $doppelt);
+pruefe(!$r['isError'] && ($zeilen($r)[0] ?? '') === 'History of 1 measured value(s) (room=Keller, name=Vorlauf, period=yesterday), per hour: minimum / average / maximum.', 'Folgeaufruf mit Raum und Name trifft genau die eine Zeile: ' . $kurz($r));
+// Mit genanntem Raum bleibt der Satz ohne Raum: Er steht schon im Filter
+$r = frage(['room' => 'Keller', 'period' => 'yesterday'], $kreis, $zeilenKreis);
+pruefe($r['isError'] && str_contains($r['text'], 'Ask for each device on its own with name: Vorlauf, Rücklauf, '), 'mit room im Filter nennt die Absage nur die Namen: ' . $kurz($r));
+
+// Befund 3: Über show_chart blieb der Rat „Give a room or a name“, und room=Keller führte in dieselbe Absage. Auch dort
+// ist name der einzige Weg, also nennt die Absage die Namen.
+$r = frage(['name' => 'Heizkreis', 'period' => 'yesterday'], $kreis, $zeilenKreis, null, 'chart');
+pruefe($r['isError'] && str_contains($r['text'], 'Ask for each device on its own with room=Keller and name: ' . $namen . '.'), 'show_chart über den Alias: Absage nennt Raum und Namen: ' . $kurz($r));
+$r = frage(['room' => 'Keller', 'period' => 'yesterday'], $kreis, $zeilenKreis, null, 'chart');
+pruefe($r['isError'] && str_contains($r['text'], 'Ask for each device on its own with name: ' . $namen . '.') && !str_contains($r['text'], 'Give a room'), 'show_chart mit Raum: Namen statt „Give a room or a name“: ' . $kurz($r));
+// Der genannte Weg führt auch im Diagramm zum Ziel
+$r = frage(['room' => 'Keller', 'name' => 'Vorlauf', 'period' => 'yesterday'], $kreis, $zeilenKreis, null, 'chart');
+pruefe(!$r['isError'] && count($r['structuredContent']['series'] ?? []) === 1, 'show_chart mit einem Namen aus der Absage zeichnet eine Reihe: ' . $kurz($r));
+// ANGENOMMEN (wie oben): aus zwei Räumen bleibt im Diagramm der alte Satz, dort nimmt room eine Kommaliste
+$r = frage(['name' => 'Heizkreis', 'period' => 'yesterday'], $kreis, $verteilt, null, 'chart');
+pruefe($r['isError'] && str_ends_with($r['text'], 'Give a room or a name, at most 5 at a time.'), 'show_chart aus zwei Räumen: der alte Satz bleibt: ' . $kurz($r));
+
+// Befund 4, ANGENOMMEN: ein Thermostat nur mit Sollwert (Pflicht ist nur der Sollwert) mit demselben Alias. Sein Sollwert
+// #69991 ist eine Kopie des echten Tag-Solls #11080. Er ist kein Messwert und hat keine Zeitleiste aus dem Zustand, die
+// Absage verwarf ihn stillschweigend; sein Sollwert käme als Zeitleiste, also steht er im zweiten Satz.
+$mitRegler = array_merge($zeilenKreis, [['Room' => 'Keller', 'Name' => 'Regler Keller', 'Aliases' => 'Heizkreis', 'Type' => 'thermostat', 'ReadOnly' => true, 'SetpointVariableID' => 69991]]);
+$kreisRegler = $kreis + [69991 => $kreis[11080]];
+$r = frage(['name' => 'Heizkreis', 'period' => 'yesterday'], $kreisRegler, $mitRegler);
+pruefe($r['isError'] && str_contains($r['text'], 'Too many measured values (14) ')
+    && str_ends_with($r['text'], ' 4 further device(s) have a timeline, ask for them the same way: Betriebsart Heizung, Status Wärmepumpe, Eigenverbrauchsoptimierung, Regler Keller.'),
+    'Thermostat nur mit Sollwert steht bei den Zeitleisten der Absage: ' . $r['text']);
+
+ende('Heizungsregler: Status aus Wertebereichen und Zähler als Messwert');

@@ -1018,6 +1018,25 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   - Befund 6, kein Fix: Der Hinweis „keine Kosten“ steht nur dort, wo sonst die Kostenzeile stünde, auch im Text zum
     Diagramm des Hausverbrauchs (der trägt die Kostenzeile ebenfalls). Die Annahme des Reviews, dort käme nie eine
     Kostenzeile, stimmte nicht; `check-kosten-zeitraum.php` hält es fest.
+- **Code-Review der Builds 310 bis 312** (15.11.2026, zehn Befunde, die ersten fünf behoben in build 313):
+  - Befund 1: Seit build 311 ging der Status nur vor, wenn seine Texte alle Einträge umfassten. Ein echter Status,
+    dessen Darstellung noch Einträge einer früheren Variante trägt, fiel damit auf die Einträge zurück, und seine Farben
+    kamen wieder nach dem Auftreten. Jetzt ist die feste Liste in diesem Fall „Einträge, dahinter die übrigen
+    Statustexte“: Jeder Text, den die Beschriftung liefern kann, hat eine Stelle, beim Status um die alten Einträge
+    versetzt. Verworfen: die gültige Variante im Backend an der Art der Darstellung festmachen. Welche Darstellungen
+    Wertebereiche tragen, ist nicht dokumentiert, und der Mitschnitt kennt die Art nicht. Beide Fälle sind an keiner
+    Anlage gefunden, im Test angenommen.
+  - Befund 2: Stand der Raum nicht im Filter (gemeinsamer Alias, Etage mit einem Raum), nannte die Absage Namen, die nur
+    im Raum eindeutig sind; `name=Vorlauf` hätte ein gleichnamiges Gerät aus einem anderen Raum mitgebracht. Sie nennt
+    jetzt `room=` mit. „Selber Raum“ gilt dabei für alles, was sie nennt, auch die Zeitleisten; sonst bleibt „je Raum“.
+  - Befund 3: Über `show_chart` blieb der Satz „Give a room or a name“, und der Raum führte in dieselbe Absage. Die
+    Namen kommen jetzt auch dort; der alte Satz bleibt für Treffer aus mehreren Räumen (Kommaliste).
+  - Befund 4: Ein Thermostat nur mit Sollwert stand in keiner der beiden Listen der Absage. Sein Sollwert käme als
+    Zeitleiste, also steht er im zweiten Satz.
+  - Befund 5: Der Titel „Timeline of %d setpoint(s)“ über Bändern aus mehreren Räumen nannte nur den ersten Raum
+    (der Filter stammt vom ersten Aufruf). Er nennt jetzt die Kommaliste.
+  - Liegen geblieben: 7 (Zeitleisten werden vor der Absage gelesen), 8 („selber Raum“ dreifach), 9 (Einheit des
+    Strompreises in Modul und Bibliothek). 6 (README) und 10 (Testtitel) sind mit erledigt.
 
 ## Formular und Diagnose
 
