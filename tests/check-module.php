@@ -3830,6 +3830,10 @@ IPS_SetProperty($qid, 'Sources', json_encode([$bilanzZeile('solar', 'Garage', $z
 IPS_ApplyChanges($qid);
 $werkzeugeQ = array_column(json_decode((string)json_encode(\Closure::bind(fn () => $this->tools(null, true), $q, HomeAgent::class)()), true), null, 'name');
 pruefe(in_array('pv', $werkzeugeQ['show_chart']['inputSchema']['properties']['part']['enum'] ?? [], true), 'eine PV-Anlage in der Liste: part=pv: ' . json_encode($werkzeugeQ['show_chart']['inputSchema']['properties']['part'] ?? null));
+// Nachreview 15.11.2026 (Builds 307 und 308), Befund 3: Ohne das Feld costs nennen es auch die Beschreibungen von part und
+// cumulative nicht („Angeboten wird nur, was es gibt“)
+$kostenGenannt = static fn (array $werkzeuge): array => array_keys(array_filter($werkzeuge['show_chart']['inputSchema']['properties'], static fn (array $feld): bool => str_contains((string)($feld['description'] ?? ''), 'costs')));
+pruefe($kostenGenannt($werkzeugeQ) === [], 'ohne Strompreis nennt keine Beschreibung von show_chart Kosten: ' . json_encode($kostenGenannt($werkzeugeQ)));
 // Nachreview 15.11.2026, Befund 2: Ein Strompreis ohne Einheit ergibt keine Kosten (vorher galt ein Mittel über 2 als
 // Cent, ein billiger Tag als Euro). Das Feld costs gibt es dann nicht, Selbsttest und Zustand sagen es.
 $preisQ = variable(VARIABLETYPE_FLOAT, 31.5);
@@ -3841,12 +3845,47 @@ $testQ = $q->RunSelfTest();
 pruefe(str_contains($testQ, 'Note: the electricity price Preis (#' . $preisQ . ') has no unit, so there are no costs; its presentation or profile needs ct/kWh or €/kWh as suffix'), 'Selbsttest: Strompreis ohne Einheit: ' . $testQ);
 pruefe(str_contains($testQ, 'electricity price from "Preis" (no unit, no costs)'), 'die Zeile zur Bilanz sagt es auch: ' . $testQ);
 pruefe(!isset($mitPreis()['show_chart']['inputSchema']['properties']['costs']), 'ohne Einheit kein costs in show_chart');
+pruefe($kostenGenannt($mitPreis()) === [], 'ohne Einheit nennt auch keine Beschreibung Kosten: ' . json_encode($kostenGenannt($mitPreis())));
 IPS_CreateVariableProfile('HomeAgentTest.ct', VARIABLETYPE_FLOAT);
 IPS_SetVariableProfileText('HomeAgentTest.ct', '', ' ct');
 IPS_SetVariableCustomProfile($preisQ, 'HomeAgentTest.ct');
 $testQ = $q->RunSelfTest();
 pruefe(!str_contains($testQ, 'has no unit') && !str_contains($testQ, 'no costs') && str_contains($testQ, 'electricity price from "Preis"'), 'mit „ct“ kein Hinweis: ' . $testQ);
 pruefe(isset($mitPreis()['show_chart']['inputSchema']['properties']['costs']), 'mit Einheit bietet show_chart costs an');
+pruefe($kostenGenannt($mitPreis()) === ['costs', 'part', 'cumulative'], 'mit Einheit nennen costs, part und cumulative die Kosten: ' . json_encode($kostenGenannt($mitPreis())));
+// Befund 1: Die Einheit kommt aus der wirksamen Darstellung, nicht nur aus dem Profil. Echt (Mitschnitt nuc 15.11.2026,
+// #10320): Profil mit Suffix „Liter“, eigene Darstellung mit Suffix „m³“ und Umrechnung 1000 je Wertebereich; Symcon zeigt
+// „358.926 m³“. Die Rohwerte bleiben Liter, deshalb gilt bei einer Umrechnung weiter das Profil.
+$darstellungQ = json_decode((string)file_get_contents(__DIR__ . '/fixtures/nuc_2026-11-15_profil-und-darstellung.json'), true)['variable'];
+$einheitQ = static fn (int $id): string => (string)oderNull(static fn () => \Closure::bind(fn () => $this->backend()->unit($id), $q, HomeAgent::class)());
+IPS_CreateVariableProfile('JCD.Liter', VARIABLETYPE_INTEGER);
+IPS_SetVariableProfileText('JCD.Liter', '', (string)$darstellungQ['ProfilSuffix']);
+$literQ = variable(VARIABLETYPE_INTEGER, 358926);
+IPS\VariableManager::setVariableProfile($literQ, 'JCD.Liter');
+IPS_SetVariableCustomPresentation($literQ, $darstellungQ['VariableCustomPresentation']);
+pruefe($einheitQ($literQ) === 'Liter', 'Darstellung mit Umrechnung: Die Rohwerte tragen die Einheit des Profils: ' . $einheitQ($literQ));
+// Dieselbe Darstellung ohne Umrechnung: Jetzt beschreibt ihr Suffix die Rohwerte (angenommen, an keiner Anlage so gefunden)
+$ohneUmrechnung = ['INTERVALS_ACTIVE' => false, 'INTERVALS' => '[]'] + $darstellungQ['VariableCustomPresentation'];
+IPS_SetVariableCustomPresentation($literQ, $ohneUmrechnung);
+pruefe($einheitQ($literQ) === 'm³', 'Darstellung ohne Umrechnung geht dem Profil vor: ' . $einheitQ($literQ));
+// Der Fall des Befunds (angenommen): Preisvariable mit einem Profil ohne Suffix, der Anwender trägt „ct/kWh“ in einer
+// eigenen Darstellung ein, wie es der Selbsttest nennt
+IPS_CreateVariableProfile('HomeAgentTest.ohne', VARIABLETYPE_FLOAT);
+IPS_SetVariableCustomProfile($preisQ, '');
+IPS\VariableManager::setVariableProfile($preisQ, 'HomeAgentTest.ohne');
+IPS_SetVariableCustomPresentation($preisQ, ['SUFFIX' => ' ct/kWh'] + $ohneUmrechnung);
+$testQ = $q->RunSelfTest();
+pruefe(!str_contains($testQ, 'no costs') && isset($mitPreis()['show_chart']['inputSchema']['properties']['costs']), 'Profil ohne Suffix, „ct/kWh“ in der Darstellung: Kosten gibt es: ' . $testQ);
+// Ein Suffix nur in der Darstellung, das Profil hat einen anderen: Es bleibt beim Profil, wenn die Darstellung keinen nennt
+IPS_SetVariableCustomPresentation($preisQ, ['SUFFIX' => ''] + $ohneUmrechnung);
+IPS_SetVariableProfileText('HomeAgentTest.ohne', '', ' ct');
+pruefe($einheitQ($preisQ) === 'ct', 'Darstellung ohne Suffix: Es gilt der Suffix des Profils: ' . $einheitQ($preisQ));
+// Befund 2: Eine Einheit, die weder Cent noch Euro ist, heißt nicht „keine Einheit“
+IPS_SetVariableProfileText('HomeAgentTest.ohne', '', ' Rp./kWh');
+$testQ = $q->RunSelfTest();
+pruefe(str_contains($testQ, 'Note: the electricity price Preis (#' . $preisQ . ') has the unit "Rp./kWh", which is neither cents nor euros, so there are no costs; its presentation or profile needs ct/kWh or €/kWh as suffix'), 'Selbsttest: Strompreis in Rappen: ' . $testQ);
+pruefe(str_contains($testQ, 'electricity price from "Preis" (unit "Rp./kWh", no costs)') && !str_contains($testQ, 'no unit'), 'die Zeile zur Bilanz nennt die Einheit: ' . $testQ);
+pruefe(!isset($mitPreis()['show_chart']['inputSchema']['properties']['costs']), 'in Rappen kein costs in show_chart');
 IPS_SetProperty($qid, 'PriceVariableID', 0);
 IPS_ApplyChanges($qid);
 // Fehler: PV mit zweitem Zähler, gelöschte Variable; dann ist die Bilanz gesperrt

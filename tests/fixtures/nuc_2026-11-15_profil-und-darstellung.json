@@ -1,0 +1,49 @@
+{
+    "_quelle": "Mitschnitt nuc 15.11.2026 (Symcon 9.1): eine Variable mit Profil und eigener Darstellung. Symcon zeigt den Suffix der Darstellung, nicht den des Profils.",
+    "variable": {
+        "id": 10320,
+        "VariableType": 1,
+        "VariableProfile": "JCD.Liter",
+        "VariableCustomProfile": "",
+        "ProfilSuffix": " Liter",
+        "VariableCustomPresentation": {
+            "COLOR": -1,
+            "ICON": "Wave",
+            "INTERVALS": "[{\"ColorDisplay\":-1,\"IntervalMinValue\":0,\"IntervalMaxValue\":999999999999,\"ConstantActive\":false,\"ConstantValue\":\"\",\"ConversionFactor\":1000,\"PrefixActive\":false,\"PrefixValue\":\"\",\"SuffixActive\":false,\"SuffixValue\":\"\",\"DigitsActive\":true,\"DigitsValue\":3,\"IconActive\":false,\"IconValue\":\"\",\"ColorActive\":false,\"ColorValue\":-1}]",
+            "INTERVALS_ACTIVE": true,
+            "MAX": 99999999,
+            "MIN": 0,
+            "PERCENTAGE": false,
+            "PREFIX": "",
+            "PRESENTATION": "{3319437D-7CDE-699D-750A-3C6A3841FA75}",
+            "SUFFIX": " m³",
+            "THOUSANDS_SEPARATOR": "Client",
+            "USAGE_TYPE": 0
+        },
+        "VariablePresentation": {
+            "PRESENTATION": "{4153A8D4-5C33-C65F-C1F3-7B61AAF99B1C}",
+            "PROFILE": "JCD.Liter"
+        },
+        "IPS_GetVariablePresentation": {
+            "COLOR": -1,
+            "CONTENT_COLOR": -1,
+            "DECIMAL_SEPARATOR": "Client",
+            "DIGITS": 0,
+            "DISPLAY_TYPE": 0,
+            "ICON": "Wave",
+            "INTERVALS": "[{\"ColorActive\":false,\"ColorDisplay\":-1,\"ColorValue\":-1,\"ConstantActive\":false,\"ConstantValue\":\"\",\"ContentColorActive\":false,\"ContentColorValue\":-1,\"ConversionFactor\":1000,\"DigitsActive\":true,\"DigitsValue\":3,\"IconActive\":false,\"IconValue\":\"\",\"IntervalMaxValue\":999999999999,\"IntervalMinValue\":0,\"PrefixActive\":false,\"PrefixValue\":\"\",\"SuffixActive\":false,\"SuffixValue\":\"\"}]",
+            "INTERVALS_ACTIVE": true,
+            "MAX": 99999999,
+            "MIN": 0,
+            "PERCENTAGE": false,
+            "PREFIX": "",
+            "PRESENTATION": "{3319437D-7CDE-699D-750A-3C6A3841FA75}",
+            "PREVIEW_STYLE": 1,
+            "SHOW_PREVIEW": true,
+            "SUFFIX": " m³",
+            "THOUSANDS_SEPARATOR": "Client",
+            "USAGE_TYPE": 0
+        },
+        "GetValueFormatted": "358.926 m³"
+    }
+}

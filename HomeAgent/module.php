@@ -397,7 +397,12 @@ class HomeAgent extends IPSModuleStrict
         if ($price === 0) {
             return $line;
         }
-        return $line . sprintf($this->Translate(', electricity price from "%s"'), IPS_GetName($price)) . ($this->priceUnitMissing() ? $this->Translate(' (no unit, no costs)') : '');
+        $unit = $this->priceUnitMissing() ? trim($this->backend()->unit($price)) : null;
+        return $line . sprintf($this->Translate(', electricity price from "%s"'), IPS_GetName($price)) . match (true) {
+            $unit === null => '',
+            $unit === ''   => $this->Translate(' (no unit, no costs)'),
+            default        => sprintf($this->Translate(' (unit "%s", no costs)'), $unit),
+        };
     }
 
     private function selfTest(): string
@@ -483,7 +488,10 @@ class HomeAgent extends IPSModuleStrict
         }
         // Strompreis ohne Einheit: Cent oder Euro rät das Modul nicht, dann gibt es keine Kosten
         if ($this->priceUnitMissing()) {
-            $lines[] = sprintf($this->Translate('Note: the electricity price %s has no unit, so there are no costs; its presentation or profile needs ct/kWh or €/kWh as suffix'), $named($this->priceVariable()));
+            $unit = trim($this->backend()->unit($this->priceVariable()));
+            $lines[] = $unit === ''
+                ? sprintf($this->Translate('Note: the electricity price %s has no unit, so there are no costs; its presentation or profile needs ct/kWh or €/kWh as suffix'), $named($this->priceVariable()))
+                : sprintf($this->Translate('Note: the electricity price %s has the unit "%s", which is neither cents nor euros, so there are no costs; its presentation or profile needs ct/kWh or €/kWh as suffix'), $named($this->priceVariable()), $unit);
         }
         // Umweltertrag ohne Strom: Die Wärme wäre zu niedrig, das Modul nennt dann nur den Ertrag
         foreach (DeviceIndex::yieldWithoutElectricity($list) as $index) {
@@ -2358,6 +2366,8 @@ class HomeAgent extends IPSModuleStrict
         $parts = array_keys(array_filter(DeviceIndex::PARTS, static fn (string $key): bool => isset($usableBalance[$key])));
         // Die Leistung jetzt (period=now) mit einem Gerät mit Leistung oder der Leistungsbilanz.
         $hasPowerBalance = $this->balanceKeys(true) !== [];
+        // Kosten gibt es nur mit einem Strompreis in Cent oder Euro; ohne das Feld nennt es auch keine Beschreibung
+        $hasCosts = $this->priceVariable() > 0 && !$this->priceUnitMissing();
         $hasPower = $hasPowerBalance || array_any($this->usableDevices(), static fn (array $row): bool => isset(DeviceIndex::rolesOf($row)['power']));
         // Verlauf von Messwerten (Temperatur, Feuchte …) über dieselben Zeiträume.
         $hasHistory = array_any($this->usableDevices(), static fn (array $row): bool => DeviceIndex::isMeasured($row));
@@ -2478,9 +2488,9 @@ class HomeAgent extends IPSModuleStrict
                         'period' => ['type' => 'string', 'enum' => array_merge($hasPowerBalance ? [DeviceIndex::NOW] : [], DeviceIndex::PERIODS), 'description' => 'Period of the chart, per hour for today and yesterday, per day for weeks and months, per month for years.'],
                         'from'   => ['type' => 'string', 'description' => 'Instead of period: first day, YYYY-MM-DD, or a start hour, YYYY-MM-DD HH:MM. Today is ' . date('Y-m-d') . '.'],
                         'to'     => ['type' => 'string', 'description' => 'Last day, inclusive, or the end hour, YYYY-MM-DD HH:MM, exclusive.'],
-                        ...($this->priceVariable() > 0 && !$this->priceUnitMissing() ? ['costs' => ['type' => 'boolean', 'description' => 'true: the house consumption as costs in euros (grid import times the hourly price, feed-in below), also as heatmap or cumulative. Only without room, floor, type and name.']] : []),
-                        ...($parts === [] ? [] : ['part' => ['type' => 'string', 'enum' => $parts, 'description' => 'Only this meter of the energy balance instead of the house consumption, for example feed_in for the grid export; with costs=true grid in euros or feed_in as feed-in revenue. ' . ($hasPowerBalance ? 'With type=power its power over the period as a line with minimum and maximum. Only without room, floor and name.' : 'Only without room, floor, type and name.')]]),
-                        'cumulative' => ['type' => 'boolean', 'description' => 'true: consumption (or costs) added up day by day with a projection to the end of the period, with compare also the comparison period. Without a period: this year.'],
+                        ...($hasCosts ? ['costs' => ['type' => 'boolean', 'description' => 'true: the house consumption as costs in euros (grid import times the hourly price, feed-in below), also as heatmap or cumulative. Only without room, floor, type and name.']] : []),
+                        ...($parts === [] ? [] : ['part' => ['type' => 'string', 'enum' => $parts, 'description' => 'Only this meter of the energy balance instead of the house consumption, for example feed_in for the grid export' . ($hasCosts ? '; with costs=true grid in euros or feed_in as feed-in revenue' : '') . '. ' . ($hasPowerBalance ? 'With type=power its power over the period as a line with minimum and maximum. Only without room, floor and name.' : 'Only without room, floor, type and name.')]]),
+                        'cumulative' => ['type' => 'boolean', 'description' => 'true: consumption' . ($hasCosts ? ' (or costs)' : '') . ' added up day by day with a projection to the end of the period, with compare also the comparison period. Without a period: this year.'],
                         'heatmap' => ['type' => 'boolean', 'description' => 'true: one value per hour as a heatmap of one device (without room, type or name the house consumption), a row per day up to 62 days, otherwise per weekday. Without a period: last month.'],
                         'versus'  => ['type' => 'string', 'description' => 'Name of a second device for a scatter chart: it goes on the x axis, the device chosen by room, type or name (without them the house consumption) on the y axis, for example versus=outdoor temperature with name=heat pump. Without a period: last month.'],
                         'compare' => ['type' => 'string', 'enum' => DeviceIndex::COMPARES, 'description' => 'Compare with the previous period (yesterday, last week, last month, last year) or the same period a year before; drawn as a dashed line or as marks on the bars.'],

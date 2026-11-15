@@ -258,12 +258,14 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Umweltertrag** (`HeatIsYield`): Zählen Wärmezähler und Wärmeleistung nur den Ertrag aus der Umwelt (Vaillant über ebusd),
   ist die Wärme Ertrag + Strom, ohne Strom nennt die Zeile nur den Ertrag (`yieldWithoutElectricity` im Selbsttest).
   Ohne Wärmeleistung jetzt (Stand-by) nur „heat 0 W“, keine Leistungszahl. Test `check-umweltertrag.php`.
-- **Kosten** (`PriceVariableID` mit Einheit ct, Cent, € oder EUR, ohne sie keine Kosten: `priceUnitMissing`, Hinweis in
+- **Kosten** (`PriceVariableID` mit Einheit ct, Cent, € oder EUR, ohne sie keine Kosten: `priceUnitMissing`, `priceUnitText` nennt eine fremde Einheit, Hinweis in
   `get_state`, Selbsttest und Zustand, kein `costs` im Schema, geraten wird nie; `FeedInTariff`, `setTariff`;
   nur mit Bilanz, nur fürs Haus, ohne Grundgebühr): `hourlyCosts` je Stunde, `costLine` in `get_state`, `costs=true` in
   `show_chart`. Test `check-kosten.php`. Über einen Zeitraum nur in Monatsscheiben (`costSlices`, `costValues`) und nur
   Summen behalten, Stundenwerte über Jahre sprengen 32M Speicher. Eine Scheibe ohne Preis zählt ihre Stunden als fehlend.
   Tests `check-kosten-zeitraum.php`, `check-module.php`.
+- **Einheit einer Variable** (`unitOf`): Suffix der wirksamen Darstellung, außer ihre Wertebereiche rechnen um oder tragen
+  einen eigenen Suffix (`convertingIntervals`), dann der des Profils (Rohwerte). Test `check-module.php`.
 - **Plausibilität der Zähler im Selbsttest** (`counterJumps`): erst die Gesamtprobe, dann je Monat Summe gegen Zuwachs des
   Zählerstands (`counterReadings`); die Schwellen (2 kWh, ein Fünftel des Medians, drei Viertel, zwei Mediane,
   `JUMP_KWH`, `JUMP_ABOVE`) sind an echten Fällen gemessen. Stand nach jetzt = Wert der Variable, wenn im letzten Tag

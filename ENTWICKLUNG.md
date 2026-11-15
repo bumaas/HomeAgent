@@ -573,7 +573,8 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   Energiezähler prüfte; seitdem auch Wärmezähler, mit eigenem Text („zählt als Wärme“). Eine Variable, die Energie- und
   Wärmezähler zugleich ist, zählt einmal als Energiezähler.
 - **Kosten in Euro** (B72, Burkhard 13.10.2026): Properties `PriceVariableID` (archivierte Variable in ct/kWh oder €/kWh,
-  Einheit aus dem Suffix, ohne Suffix gelten Werte über 2 als Cent) und `FeedInTariff` (ct/kWh), an den Index über
+  Einheit aus dem Suffix; ohne ct, Cent, € oder EUR darin gibt es seit build 308 keine Kosten, bis dahin galten ohne
+  Suffix Werte über 2 als Cent) und `FeedInTariff` (ct/kWh), an den Index über
   `setTariff`; nur mit Bilanz. `hourlyCosts` rechnet je Stunde Netzbezug × Stundenmittel, Einspeisung × Vergütung und
   Hausverbrauch × Preis (ohne PV und Batterie), `costLine` hängt die Zeile an den Hausverbrauch von get_state, show_chart
   mit `costs=true` zeichnet den Stapel in Euro (`costChart`, auch mit Vergleich) bzw. die Heatmap der Kosten; nur fürs
@@ -988,6 +989,23 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   - Liegen geblieben: 7 und 8 (doppelte Abfragen), 9 (Länge zweier Einträge der `CLAUDE.md`).
   - Test `check-nachreview-zeitleiste.php`; angenommen sind der Einzelwert-Bereich (Eintrag am echten Status
     nachgetragen) und der Thermostat nur mit Sollwert neben Kopien eines echten Fensters.
+- **Nachreview der Builds 307 und 308** (15.11.2026, zehn Befunde, 1, 2, 3 und 10 behoben in build 309):
+  - Befund 1: `unitOf()` nahm den Suffix des Profils, sobald die Variable eines hatte, und sah die Darstellung dann nicht
+    an. Seit build 308 hieß das: Profil ohne Suffix und „ct/kWh“ in einer eigenen Darstellung ergab keine Kosten, obwohl
+    der Selbsttest diesen Weg nennt. Am nuc belegt, dass Symcon die Darstellung zeigt (#10320: Profil „Liter“,
+    Darstellung „m³“, angezeigt „358.926 m³“; Mitschnitt `nuc_2026-11-15_profil-und-darstellung.json`). Derselbe
+    Mitschnitt zeigt die Grenze: Seine Wertebereiche rechnen mit 1000 um, die Rohwerte bleiben Liter. Deshalb geht der
+    Suffix der Darstellung nur vor, wenn kein Wertebereich umrechnet oder einen eigenen Suffix trägt
+    (`convertingIntervals`), sonst bleibt es beim Profil. Ohne Profil gilt der Suffix der Darstellung wie bisher, auch
+    mit Umrechnung (nicht angefasst, an keiner Anlage gesehen). Angenommen ist im Test das Profil ohne Suffix.
+  - Befund 2: Ein Preis in Rappen oder Öre bekam „hat keine Einheit“. Jetzt nennt die Absage die Einheit („weder Cent
+    noch Euro“), in `get_state`, `show_chart`, Selbsttest und Zustand. Verworfen: weitere Währungen aufnehmen (die Kosten
+    heißen überall Euro).
+  - Befund 3: Die Beschreibungen von `part` und `cumulative` nannten `costs`, auch wenn das Feld im Schema fehlte (ohne
+    Strompreis schon vor build 308). Jetzt nur noch mit dem Feld (`$hasCosts`).
+  - Liegen geblieben: 4 (Status vor Einträgen ohne Blick auf die Art der Darstellung), 5 (Diagrammtitel zählt
+    gestrichene Bänder), 6 (Hinweis in jeder Hausantwort), 7 bis 9 (gemerkter Wert, vierfache Prüfung, doppelte Regel
+    im Modul).
 
 ## Formular und Diagnose
 

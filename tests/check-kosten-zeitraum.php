@@ -163,6 +163,15 @@ $einheitlos['variablen'][$original['preis']]['einheit'] = '';
 pruefe(!$r['isError'] && $kostenzeile($r) === '' && in_array($hinweis, explode("\n", $r['text']), true), 'ohne Einheit auch über den September keine Kosten: ' . mb_substr($r['text'], 0, 400));
 [$r] = frage('chart', ['costs' => true, 'from' => '2026-09-01', 'to' => '2026-09-30'], $einheitlos);
 pruefe($r['isError'] && $r['text'] === $hinweis, 'das Kostendiagramm sagt ab und nennt den Grund: ' . mb_substr($r['text'], 0, 300));
+// Nachreview 15.11.2026 (Builds 307 und 308), Befund 2: Eine Einheit, die weder Cent noch Euro ist (Rappen; angenommen,
+// der Mitschnitt trägt „Cent“), heißt nicht „keine Einheit“
+$fremd = 'No costs: the unit "Rp./kWh" of the electricity price is neither cents nor euros. Its variable needs ct/kWh or €/kWh as suffix in Symcon.';
+$rappen = $original;
+$rappen['variablen'][$original['preis']]['einheit'] = ' Rp./kWh';
+[$r] = frage('get', ['from' => '2026-09-01', 'to' => '2026-09-30'], $rappen);
+pruefe(!$r['isError'] && $kostenzeile($r) === '' && in_array($fremd, explode("\n", $r['text']), true), 'in Rappen keine Kosten, der Hinweis nennt die Einheit: ' . mb_substr($r['text'], 0, 400));
+[$r] = frage('chart', ['costs' => true, 'from' => '2026-09-01', 'to' => '2026-09-30'], $rappen);
+pruefe($r['isError'] && $r['text'] === $fremd, 'das Kostendiagramm nennt die fremde Einheit: ' . mb_substr($r['text'], 0, 300));
 // Preise in Euro mit „€/kWh“ ergeben dieselben Kosten
 $inEuro = $original;
 $inEuro['variablen'][$original['preis']]['einheit'] = '€/kWh';

@@ -821,15 +821,42 @@ final class SymconDeviceBackend implements DeviceBackend
     }
 
     /** Einheit einer Variable: Suffix des Profils, sonst das der Darstellung. */
+    /**
+     * Einheit der Rohwerte einer Variable. Hat sie ein Profil und eine eigene Darstellung, zeigt Symcon den Suffix der
+     * Darstellung (nuc 15.11.2026: Profil „Liter“, Darstellung „m³“, angezeigt „358.926 m³“); bis build 308 galt hier nur
+     * das Profil, und „ct/kWh“ in der Darstellung über einem Profil ohne Suffix ergab keine Kosten. Rechnet die
+     * Darstellung um oder setzt sie je Wertebereich einen eigenen Suffix, beschreibt ihr Suffix die Rohwerte nicht (im
+     * Mitschnitt bleiben sie Liter): Dann gilt das Profil.
+     */
     private static function unitOf(int $variableId): string
     {
         $variable = IPS_GetVariable($variableId);
-        $profile = $variable['VariableCustomProfile'] !== '' ? $variable['VariableCustomProfile'] : $variable['VariableProfile'];
-        if ($profile !== '' && IPS_VariableProfileExists($profile)) {
-            return trim((string)IPS_GetVariableProfile($profile)['Suffix']);
-        }
         $presentation = function_exists('IPS_GetVariablePresentation') ? IPS_GetVariablePresentation($variableId) : [];
-        return trim((string)($presentation['SUFFIX'] ?? ''));
+        $suffix = trim((string)($presentation['SUFFIX'] ?? ''));
+        $profile = $variable['VariableCustomProfile'] !== '' ? $variable['VariableCustomProfile'] : $variable['VariableProfile'];
+        if ($profile === '' || !IPS_VariableProfileExists($profile)) {
+            return $suffix;
+        }
+        return $suffix !== '' && !self::convertingIntervals($presentation) ? $suffix : trim((string)IPS_GetVariableProfile($profile)['Suffix']);
+    }
+
+    /**
+     * Rechnet ein Wertebereich der Darstellung um oder trägt er einen eigenen Suffix?
+     *
+     * @param array<string, mixed> $presentation
+     */
+    private static function convertingIntervals(array $presentation): bool
+    {
+        if (!($presentation['INTERVALS_ACTIVE'] ?? false)) {
+            return false;
+        }
+        $intervals = json_decode((string)($presentation['INTERVALS'] ?? ''), true);
+        foreach (is_array($intervals) ? $intervals : [] as $interval) {
+            if (is_array($interval) && (abs((float)($interval['ConversionFactor'] ?? 1) - 1.0) > 1e-9 || ($interval['SuffixActive'] ?? false))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

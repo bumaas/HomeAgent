@@ -1839,7 +1839,7 @@ final class DeviceIndex
                 if ($shares !== null) {
                     $head[] = $shares;
                 }
-                $costs = $this->priceUnitMissing() ? $this->t(self::NO_PRICE_UNIT) : $this->costLine($from, $to);
+                $costs = $this->priceUnitMissing() ? $this->priceUnitText() : $this->costLine($from, $to);
                 if ($costs !== null) {
                     $head[] = $costs;
                 }
@@ -6251,7 +6251,7 @@ final class DeviceIndex
                 return $this->fail($this->t('Costs need an electricity price in the energy balance.'));
             }
             if ($this->priceUnitMissing()) {
-                return $this->fail($this->t(self::NO_PRICE_UNIT));
+                return $this->fail($this->priceUnitText());
             }
             foreach (['room', 'floor', 'type', 'name'] as $field) {
                 if (trim((string)($arguments[$field] ?? '')) !== '') {
@@ -7117,6 +7117,16 @@ final class DeviceIndex
 
     /** Absage und Hinweis, wenn die Variable des Strompreises keine Einheit trägt */
     private const NO_PRICE_UNIT = 'No costs: the electricity price has no unit. Its variable needs ct/kWh or €/kWh as suffix in Symcon.';
+
+    /** Dasselbe für eine Einheit, die weder Cent noch Euro ist (Rappen, Öre): „keine Einheit“ stimmte dort nicht */
+    private const FOREIGN_PRICE_UNIT = 'No costs: the unit "%s" of the electricity price is neither cents nor euros. Its variable needs ct/kWh or €/kWh as suffix in Symcon.';
+
+    /** Absage und Hinweis zum Strompreis, dessen Einheit fehlt oder weder Cent noch Euro ist */
+    private function priceUnitText(): string
+    {
+        $unit = trim($this->backend->unit($this->priceVariable));
+        return $unit === '' ? $this->t(self::NO_PRICE_UNIT) : sprintf($this->t(self::FOREIGN_PRICE_UNIT), $unit);
+    }
 
     /** Nennt die Einheit Cent oder Euro (ct, Cent, €, EUR)? Auch fürs Modul: Schema, Selbsttest und Zustand. */
     public static function priceUnitKnown(string $unit): bool
