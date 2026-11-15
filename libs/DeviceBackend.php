@@ -23,6 +23,13 @@ interface DeviceBackend
     public function options(int $variableId): ?array;
 
     /**
+     * Text eines Werts bei einer Statusvariable: Zeigt die Darstellung jeden Wert über Wertebereiche als festen Text
+     * (0 bis 8 „Standby“, 8 bis 11 „Heizbetrieb“), liefert das den Text, den Symcon für $value zeigt. null = die Variable
+     * ist kein solcher Status oder der Wert keine Zahl.
+     */
+    public function statusText(int $variableId, mixed $value): ?string;
+
+    /**
      * Löst die Aktion der Variable aus, ohne auf ihr Ende zu warten. null = ausgelöst, sonst der
      * Fehlertext. Ob die Aktion selbst gescheitert ist, sagt danach failure().
      */

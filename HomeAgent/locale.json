@@ -442,6 +442,8 @@
             "No energy is measured for the whole house (%s). For a history or a timeline give a room, a type or a name.": "Fürs ganze Haus wird keine Energie gemessen (%s). Für einen Verlauf oder eine Zeitleiste einen Raum, Typ oder Namen angeben.",
             "%d device(s) without archived history were left out. Not archived in Symcon: %s.": "%d Gerät(e) ohne archivierten Verlauf wurden ausgelassen. In Symcon nicht archiviert: %s.",
             "Not archived: %s.": "Nicht archiviert: %s.",
+            "increase %s": "Zuwachs %s",
+            "Increase of %d counted value(s) (%s), per %s.": "Zuwachs von %d gezählten Wert(en) (%s), je %s.",
             "state": "Zustand",
             "position": "Position",
             "actual temperature": "Ist-Temperatur",

@@ -548,6 +548,15 @@ change ("setpoint: 21.5 °C 16 h, 20.5 °C 6 h"), a special setpoint with the te
 is not logged, its line reads "no history archived". In a chart temperature and valves are lines, the setpoint is a
 band below them. A question about the room temperature still returns the temperature only.
 
+### "How often did the heat pump start yesterday?"
+
+A measured value that Symcon archives as a counter (compressor starts, operating hours) reports its increase over a
+period: "Kompressorstarts | measurement | increase 1" followed by the hours or days in which something was added. A
+status whose presentation shows every value as text through value ranges (for example 0 to 8 "Standby", 8 to 11
+"Heizbetrieb") gets a timeline with these texts: "Heizbetrieb 21 h 39 min, Warmwasserbereitung 1 h 22 min, Standby
+59 min" and the sections with their times. If the rows of one system share an alias (for example "Heizkreis"), a query
+with that name returns all their values at once.
+
 ### For scripts
 
 The state query is also available for scripts:

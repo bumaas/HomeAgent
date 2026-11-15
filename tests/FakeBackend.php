@@ -99,6 +99,13 @@ final class FakeBackend implements DeviceBackend
         return is_array($options) && $options !== [] ? array_map(static fn (array $o): array => [$o[0], (string)$o[1]], $options) : null;
     }
 
+    /** Text eines Statuswerts aus dem Mitschnitt: „statustexte“ als Wert => Text, wie GetValueFormattedEx ihn lieferte. */
+    public function statusText(int $variableId, mixed $value): ?string
+    {
+        $texts = $this->variables[$variableId]['statustexte'] ?? null;
+        return is_array($texts) && (is_int($value) || is_float($value)) && isset($texts[(string)$value]) ? (string)$texts[(string)$value] : null;
+    }
+
     /**
      * Wie an der Anlage läuft die Aktion in einem eigenen Skript: Der Aufruf kehrt sofort zurück,
      * ein Fehlschlag steht danach in failure().

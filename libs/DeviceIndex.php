@@ -1261,7 +1261,17 @@ final class DeviceIndex
     private function isTimed(array $entry): bool
     {
         return self::hasTimeline($entry)
-            || ($entry['Type'] === 'measurement' && isset($entry['roles']['state']) && $this->backend->options($entry['roles']['state']) !== null);
+            || ($entry['Type'] === 'measurement' && isset($entry['roles']['state'])
+                && ($this->backend->options($entry['roles']['state']) !== null || $this->isStatus($entry['roles']['state'])));
+    }
+
+    /**
+     * Messwert, dessen Darstellung jeden Wert über Wertebereiche als Text zeigt (Status einer Wärmepumpe): Er bekommt
+     * eine Zeitleiste; sein Verlauf als Zahlen („Minimum 0, Maximum 128“) sagte nichts (Heizungsanalyse 15.11.2026).
+     */
+    private function isStatus(int $variable): bool
+    {
+        return $this->backend->statusText($variable, $this->backend->read($variable)['value'] ?? null) !== null;
     }
 
     /**
@@ -1370,7 +1380,7 @@ final class DeviceIndex
         $options = $words === null && $travel === null && $caption === null ? ($this->backend->options($variable) ?? []) : [];
         // „seit“ nennen fahrende Geräte und Werte mit eigener Beschriftung (Sollwert): Dort ist der Beginn die Auskunft.
         $sinceWanted = $travel !== null || $caption !== null;
-        $label = function (mixed $value) use ($words, $options, $entry, $travel, $travelLabels, $caption): string {
+        $label = function (mixed $value) use ($words, $options, $entry, $travel, $travelLabels, $caption, $variable): string {
             if ($caption !== null) {
                 return $caption($value);
             }
@@ -1389,7 +1399,9 @@ final class DeviceIndex
                     return $caption;
                 }
             }
-            return is_int($value) || is_float($value) ? self::formatNumber((float)$value) : (string)$value;
+            // Status aus Wertebereichen: der Text, den Symcon für den Wert zeigt
+            return $this->backend->statusText($variable, $value)
+                ?? (is_int($value) || is_float($value) ? self::formatNumber((float)$value) : (string)$value);
         };
         $sections = [];
         $add = static function (string $state, int $begin, int $finish) use (&$sections): void {
@@ -1610,8 +1622,8 @@ final class DeviceIndex
             return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s). Give a room or a name, at most %d at a time.'), count($measured), $filter, self::HISTORY_MAX));
         }
         [$per, $format] = self::HISTORY_LEVELS[$level];
-        $lines = [sprintf($this->t('History of %d measured value(s) (%s), per %s: minimum / average / maximum.'), count(array_filter($rows, static fn (array $row): bool => $row['kind'] !== 'setpoint')), $filter, $this->t($per))];
-        $this->historyChart($lines[0], $per, $filter);
+        $lines = [];
+        $counted = 0;
         foreach ($rows as ['entry' => $entry, 'kind' => $kind, 'variable' => $variable, 'label' => $label]) {
             if ($kind === 'setpoint') {
                 $lines = array_merge($lines, $this->setpointLines($entry, $variable, $label, $from, $to, count($measured) > self::TIMELINE_DETAIL));
@@ -1619,10 +1631,24 @@ final class DeviceIndex
             }
             // Die Tabelle je Abschnitt bekommt der Messwert, das Ventil nur bei einem einzigen Gerät (Tokens)
             $history = $this->historyRows($variable, $level, $from, $to);
+            // Ein als Zähler archivierter Messwert (Kompressorstarts, Betriebsstunden) hat keinen Verlauf, aber einen Zuwachs
+            $counter = $history === null && $kind === 'value' ? $this->counterRows($variable, $level, $from, $to) : null;
+            if ($counter !== null) {
+                $lines = array_merge($lines, $this->increaseLines($entry, $counter, $format, $label));
+                $counted++;
+                continue;
+            }
             $lines = array_merge($lines, $kind === 'valve'
                 ? $this->historyLines($entry, $this->valvePercent($history, $variable), $format, $single, $label, true)
                 : $this->historyLines($entry, $history, $format, true, $label));
         }
+        // Sind alle Reihen Zähler, wäre „Minimum / Mittel / Maximum“ in der Kopfzeile falsch
+        $values = count(array_filter($rows, static fn (array $row): bool => $row['kind'] !== 'setpoint'));
+        $head = $counted > 0 && $counted === $values
+            ? sprintf($this->t('Increase of %d counted value(s) (%s), per %s.'), $counted, $filter, $this->t($per))
+            : sprintf($this->t('History of %d measured value(s) (%s), per %s: minimum / average / maximum.'), $values, $filter, $this->t($per));
+        $this->historyChart($head, $per, $filter);
+        $lines = array_merge([$head], $lines);
         if ($timed !== []) {
             $lines = array_merge($lines, $this->timelineLines($timed, $filter));
             $this->chartBands($timed);
@@ -2217,6 +2243,33 @@ final class DeviceIndex
         $lines = [$this->line($entry, $label . ': ' . ($brief ? $timeline['brief'] : $timeline['summary']))];
         if (!$brief && $timeline['sections'] !== null && $this->chart === null) {
             $lines[] = $timeline['sections'];
+        }
+        return $lines;
+    }
+
+    /**
+     * Zeilen eines als Zähler archivierten Messwerts: der Zuwachs im Zeitraum und je Abschnitt, Abschnitte ohne Zuwachs
+     * fallen weg. Im Diagramm eine Reihe mit dem Zuwachs je Abschnitt.
+     *
+     * @param array{rows: list<array{time: int, sum: float}>, unit: string} $counter
+     * @return list<string>
+     */
+    private function increaseLines(array $entry, array $counter, string $format, string $label): array
+    {
+        $unit = trim($counter['unit']);
+        $suffix = $unit === '' ? '' : ' ' . $unit;
+        $lines = [$this->line($entry, ($label === '' ? '' : $label . ': ') . sprintf($this->t('increase %s'), self::formatNumber(array_sum(array_column($counter['rows'], 'sum'))) . $suffix))];
+        if ($this->chart !== null) {
+            if ($counter['rows'] !== []) {
+                $this->chart['series'][] = ['room' => $entry['Room'], 'name' => $entry['Name'] . ($label === '' ? '' : ' (' . $label . ')'), 'unit' => $unit,
+                    'points' => array_map(static fn (array $row): array => [$row['time'], $row['sum'], $row['sum'], $row['sum']], $counter['rows'])];
+            }
+            return $lines;
+        }
+        foreach ($counter['rows'] as $row) {
+            if (self::formatNumber($row['sum']) !== '0') {
+                $lines[] = date($format, $row['time']) . ' ' . self::formatNumber($row['sum']);
+            }
         }
         return $lines;
     }

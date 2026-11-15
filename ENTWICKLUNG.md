@@ -914,6 +914,22 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   0 %, Sollwert seit 08.11. unverändert auf „On“. Noch nicht: Sollwert als Linie im Diagramm (er ist ein Band), der
   Verlauf des Sollwerts bei Luftentfeuchtern. Test `check-thermostat-verlauf.php`; echt sind die Werte, angenommen sind
   ein geänderter Sollwert, ein Ventil mit Bereich 0 bis 1 und ein Fenster mit Kontakt und Antrieb in einer Zeile.
+- **Zähler und Status eines Heizungsreglers** (Heizungsanalyse am System des Entwicklers, 15.11.2026): Zwei Fragen
+  gingen nicht. „Wie oft ist die Wärmepumpe gestern gestartet, wie lange lief sie“: Kompressorstarts und Betriebsstunden
+  sind Messwerte, die Symcon als Zähler archiviert; `history()` fragte nur Minimum, Mittel und Maximum ab und meldete
+  „kein Verlauf archiviert“. Jetzt nimmt es für solche Reihen `counterRows` und nennt den Zuwachs, je Abschnitt nur,
+  wo etwas dazukam (`increaseLines`). Der Status der Wärmepumpe ist eine Ganzzahl, deren Darstellung jeden Wert über
+  Wertebereiche als Text zeigt (0 bis 8 „Standby“, 8 bis 11 „Heizbetrieb“, 128 bis 130 „Warmwasserbereitung“);
+  `options()` kennt nur Einträge auf einem Wert, also kam ein Zahlenverlauf („Minimum 0, Maximum 128“). Der Wert 8 liegt
+  auf der Grenze zweier Bereiche und zeigt „Heizbetrieb“. Deshalb legt das Modul die Bereiche nicht selbst aus:
+  `statusText` erkennt nur, dass die Darstellung ausschließlich Bereiche mit festem Text hat (mindestens zwei, einer
+  davon ein echter Bereich, damit Sonder-Sollwerte am Rand nicht dazuzählen), und holt den Text mit
+  `GetValueFormattedEx` (laut `IPS_GetFunction` auf 9.0 C++ und 9.1 Rust vorhanden). Verworfen: ein eigener Gerätetyp
+  „Heizkreis“. Home Assistant führt die Werte einer Heizungsanlage ebenfalls als einzelne Sensoren; die Abfrage aller
+  Werte in einem Aufruf geht über einen gemeinsamen Alias der Zeilen (am Mitschnitt belegt, die Namenssuche liefert
+  alle Zeilen mit genau diesem Alias). Mit Zeitraum scheitert das an `HISTORY_MAX`, die Absage nennt dann noch den Weg
+  über den Raum statt die Namen. Noch nicht: Zuwachs als Balken im Diagramm (er ist eine Linie), ein Zeitprogramm.
+  Test `check-heizungsregler.php`, alle Werte echt, nur der Zähler ohne Archiv ist angenommen.
 
 ## Formular und Diagnose
 

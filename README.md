@@ -558,6 +558,15 @@ Zeitpunkt jeder Änderung („Sollwert: 21.5 °C 16 h, 20.5 °C 6 h“), ein Son
 Ist eine der Variablen nicht geloggt, steht in ihrer Zeile „kein Verlauf archiviert“. Im Diagramm sind Temperatur und
 Ventile Linien, der Sollwert ist ein Band darunter. Bei der Frage nach der Raumtemperatur bleibt es bei der Temperatur.
 
+### „Wie oft ist die Wärmepumpe gestern gestartet?“
+
+Ein Messwert, den Symcon als Zähler archiviert (Kompressorstarts, Betriebsstunden), nennt über einen Zeitraum seinen
+Zuwachs: „Kompressorstarts | measurement | Zuwachs 1“ und darunter die Stunden oder Tage, in denen etwas dazukam. Ein
+Status, dessen Darstellung jeden Wert über Wertebereiche als Text zeigt (etwa 0 bis 8 „Standby“, 8 bis 11
+„Heizbetrieb“), bekommt eine Zeitleiste mit diesen Texten: „Heizbetrieb 21 h 39 min, Warmwasserbereitung 1 h 22 min,
+Standby 59 min“ und die Abschnitte mit ihren Zeiten. Gibt man den Zeilen einer Anlage denselben Alias (etwa
+„Heizkreis“), liefert eine Abfrage mit diesem Namen alle ihre Werte auf einmal.
+
 ### Für Skripte
 
 Die Zustandsabfrage gibt es auch für Skripte:

@@ -1,0 +1,565 @@
+{
+    "_quelle": "nuc, nur gelesen am 15.11.2026 10:35 über das Backend des Moduls (read, unit, options, stateSeries, counterSeries). Fünf Zeilen der Freigabeliste im Raum Keller, unverändert. Zeitraum 14.11.2026 00:00 bis jetzt. rohwerte (Wert vor dem Zeitraum zuerst) für Status, Merker und Betriebsart; aggregate Stufe 0 und 1 mit summe für die beiden als Zähler archivierten Werte (Kompressor Starts, Kompressor Stunden). statustexte: was GetValueFormattedEx an der Anlage für jeden vorkommenden Wert der Statusvariable liefert; intervalle: die Wertebereiche ihrer Darstellung (Minimum, Maximum, fester Text aktiv, Text), intervalle_aktiv wie in IPS_GetVariablePresentation.",
+    "zeitzone": "Europe/Berlin",
+    "jetzt": 1794735300,
+    "geraete": [
+        {
+            "Room": "Keller",
+            "Name": "Kompressorstarts",
+            "Aliases": "Heizkreis",
+            "Type": "measurement",
+            "StateVariableID": 42061,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Keller",
+            "Name": "Betriebsart Heizung",
+            "Aliases": "Betriebsart Heizkreis, Heizkreis",
+            "Type": "measurement",
+            "StateVariableID": 48994,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Keller",
+            "Name": "Status Wärmepumpe",
+            "Aliases": "Heizungsstatus, Heizkreis",
+            "Type": "measurement",
+            "StateVariableID": 17704,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Keller",
+            "Name": "Eigenverbrauchsoptimierung",
+            "Aliases": "Heizkreis",
+            "Type": "measurement",
+            "StateVariableID": 27602,
+            "ReadOnly": true
+        },
+        {
+            "Room": "Keller",
+            "Name": "Kompressor-Laufzeit",
+            "Aliases": "Heizkreis",
+            "Type": "measurement",
+            "StateVariableID": 51204,
+            "ReadOnly": true
+        }
+    ],
+    "variablen": {
+        "42061": {
+            "name": "Kompressor Starts",
+            "wert": 5814,
+            "formatiert": "5814",
+            "aktion": false,
+            "einheit": "",
+            "geloggt": false,
+            "archiviert": true,
+            "aggregationstyp": 1,
+            "aggregate": [
+                [
+                    {
+                        "zeit": 1794610800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794614400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794618000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794621600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794625200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794628800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794632400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794636000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794639600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794643200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794646800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794650400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794654000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794657600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794661200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794664800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794668400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794672000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794675600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794679200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794682800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794686400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794690000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794693600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794700800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794704400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794708000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794711600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794715200,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794718800,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794722400,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794726000,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794729600,
+                        "summe": 0
+                    },
+                    {
+                        "zeit": 1794733200,
+                        "summe": 0
+                    }
+                ],
+                [
+                    {
+                        "zeit": 1794610800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "summe": 0
+                    }
+                ]
+            ]
+        },
+        "48994": {
+            "name": "Betriebsart Zone 1",
+            "wert": 2,
+            "formatiert": "day",
+            "aktion": true,
+            "einheit": "",
+            "optionen": [
+                [
+                    0,
+                    "off"
+                ],
+                [
+                    1,
+                    "auto"
+                ],
+                [
+                    2,
+                    "day"
+                ],
+                [
+                    3,
+                    "night"
+                ]
+            ],
+            "geloggt": true,
+            "rohwerte": [
+                [
+                    1794328016,
+                    2
+                ],
+                [
+                    1794670045,
+                    0
+                ],
+                [
+                    1794672153,
+                    2
+                ]
+            ]
+        },
+        "17704": {
+            "name": "state",
+            "wert": 8,
+            "formatiert": "Heizbetrieb",
+            "aktion": false,
+            "einheit": "",
+            "geloggt": true,
+            "rohwerte": [
+                [
+                    1794573781,
+                    8
+                ],
+                [
+                    1794611364,
+                    0
+                ],
+                [
+                    1794611964,
+                    8
+                ],
+                [
+                    1794634453,
+                    0
+                ],
+                [
+                    1794635012,
+                    8
+                ],
+                [
+                    1794657620,
+                    128
+                ],
+                [
+                    1794662561,
+                    8
+                ],
+                [
+                    1794670411,
+                    0
+                ],
+                [
+                    1794672173,
+                    8
+                ],
+                [
+                    1794690597,
+                    0
+                ],
+                [
+                    1794691212,
+                    8
+                ],
+                [
+                    1794701688,
+                    0
+                ],
+                [
+                    1794702205,
+                    8
+                ],
+                [
+                    1794717148,
+                    0
+                ],
+                [
+                    1794717683,
+                    8
+                ],
+                [
+                    1794730224,
+                    0
+                ],
+                [
+                    1794730799,
+                    8
+                ]
+            ],
+            "statustexte": {
+                "0": "Standby",
+                "8": "Heizbetrieb",
+                "128": "Warmwasserbereitung"
+            },
+            "intervalle_aktiv": true,
+            "intervalle": [
+                [
+                    0,
+                    8,
+                    true,
+                    "Standby"
+                ],
+                [
+                    8,
+                    11,
+                    true,
+                    "Heizbetrieb"
+                ],
+                [
+                    11,
+                    16,
+                    true,
+                    "Fehler"
+                ],
+                [
+                    16,
+                    128,
+                    true,
+                    "Kühlbetrieb"
+                ],
+                [
+                    128,
+                    130,
+                    true,
+                    "Warmwasserbereitung"
+                ]
+            ]
+        },
+        "27602": {
+            "name": "Eigenverbrauchsoptimierung",
+            "wert": false,
+            "formatiert": "Aus",
+            "aktion": false,
+            "einheit": "",
+            "optionen": [
+                [
+                    false,
+                    "Aus"
+                ],
+                [
+                    true,
+                    "An"
+                ]
+            ],
+            "geloggt": true,
+            "rohwerte": [
+                [
+                    1794578702,
+                    false
+                ],
+                [
+                    1794657902,
+                    true
+                ],
+                [
+                    1794668702,
+                    false
+                ]
+            ]
+        },
+        "51204": {
+            "name": "Kompressor Sunden",
+            "wert": 24171,
+            "formatiert": "24171 h",
+            "aktion": false,
+            "einheit": "h",
+            "geloggt": false,
+            "archiviert": true,
+            "aggregationstyp": 1,
+            "aggregate": [
+                [
+                    {
+                        "zeit": 1794610800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794614400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794618000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794621600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794625200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794628800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794632400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794636000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794639600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794643200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794646800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794650400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794654000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794657600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794661200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794664800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794668400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794672000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794675600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794679200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794682800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794686400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794690000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794693600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794700800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794704400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794708000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794711600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794715200,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794718800,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794722400,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794726000,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794729600,
+                        "summe": 1
+                    },
+                    {
+                        "zeit": 1794733200,
+                        "summe": 0
+                    }
+                ],
+                [
+                    {
+                        "zeit": 1794610800,
+                        "summe": 24
+                    },
+                    {
+                        "zeit": 1794697200,
+                        "summe": 10
+                    }
+                ]
+            ]
+        }
+    }
+}

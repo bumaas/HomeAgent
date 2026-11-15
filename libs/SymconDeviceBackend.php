@@ -197,6 +197,51 @@ final class SymconDeviceBackend implements DeviceBackend
         return $entries === [] ? null : $entries;
     }
 
+    /** @var array<int, bool> je Variable: zeigt die Darstellung jeden Wert über Wertebereiche als Text? */
+    private array $statusVariables = [];
+
+    public function statusText(int $variableId, mixed $value): ?string
+    {
+        if ($variableId <= 0 || (!is_int($value) && !is_float($value)) || !IPS_VariableExists($variableId) || !function_exists('GetValueFormattedEx')) {
+            return null;
+        }
+        $this->statusVariables[$variableId] ??= self::textRangesOnly(IPS_GetVariablePresentation($variableId));
+        if (!$this->statusVariables[$variableId]) {
+            return null;
+        }
+        // Den Text bildet Symcon selbst; wo ein Bereich beginnt und endet, legt das Modul nicht aus
+        try {
+            return (string)GetValueFormattedEx($variableId, $value);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Hat die Darstellung nur Wertebereiche mit festem Text, mindestens zwei, und darunter einen echten Bereich? Einzelne
+     * Werte mit Text am Rand eines Zahlenbereichs (Sonder-Sollwert) sind kein Status.
+     *
+     * @param array<string, mixed> $presentation
+     */
+    private static function textRangesOnly(array $presentation): bool
+    {
+        if (!($presentation['INTERVALS_ACTIVE'] ?? false)) {
+            return false;
+        }
+        $intervals = json_decode((string)($presentation['INTERVALS'] ?? ''), true);
+        if (!is_array($intervals) || count($intervals) < 2) {
+            return false;
+        }
+        $range = false;
+        foreach ($intervals as $interval) {
+            if (!is_array($interval) || !($interval['ConstantActive'] ?? false) || trim((string)($interval['ConstantValue'] ?? '')) === '') {
+                return false;
+            }
+            $range = $range || (float)($interval['IntervalMaxValue'] ?? 0) > (float)($interval['IntervalMinValue'] ?? 0);
+        }
+        return $range;
+    }
+
     /**
      * Einträge aus der Darstellung (OPTIONS, etwa beim HomeAssistant-Modul, oder feste Texte ihrer Intervalle), sonst aus dem
      * Profil.

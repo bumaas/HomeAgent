@@ -296,6 +296,10 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Verlauf des Thermostats** (nicht bei `type=temperature`): Ist-Temperatur und Ventile als Messwerte mit Namen des
   Teils, Sollwert als Zeitleiste aus Rohwerten (`setpointLines`, Sonderwert mit Text), weil Aggregate ihn verzögen.
   `HISTORY_MAX` zählt nur die Ist-Temperaturen, Ventilreihen tragen `extra`. Test `check-thermostat-verlauf.php`.
+- **Messwert mit Zähler-Archiv** nennt über einen Zeitraum den Zuwachs (`increaseLines` über `counterRows`), Abschnitte
+  ohne Zuwachs fallen weg; sind alle Reihen Zähler, eigene Kopfzeile. Test `check-heizungsregler.php`.
+- **Status aus Wertebereichen** (`DeviceBackend::statusText`: nur Bereiche mit festem Text, Text von
+  `GetValueFormattedEx`): Messwert mit Zeitleiste (`isStatus`), Bereichsgrenzen legt das Modul nicht aus. Test `check-heizungsregler.php`.
 - **`show_chart`** (`DeviceIndex::chart`): nur mit Gerät mit Verlauf oder mit Bilanz. Werte in `structuredContent`, das
   Modell bekommt nur Kopfzeile und Kennzahlen. `resourceUri` `ui://homeagent/chart/<Prüfsumme der Seite>` (claude.ai
   speichert Seiten lange), `readResource` liefert auch zu alten Prüfsummen die heutige Seite. Jede Art liefert `range`
