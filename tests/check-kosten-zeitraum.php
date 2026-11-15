@@ -21,11 +21,13 @@ require_once __DIR__ . '/FakeBackend.php';
 
 $mitschnitt = fixture('nuc_2026-10-13_kosten.json');
 date_default_timezone_set($mitschnitt['zeitzone']);
+$original = $mitschnitt;
 
 /** @return array{0: array, 1: FakeBackend} Antwort und die Anlage mit ihren Abfragen */
-function frage(string $werkzeug, array $argumente): array
+function frage(string $werkzeug, array $argumente, ?array $aufnahme = null): array
 {
     global $mitschnitt;
+    $mitschnitt = $aufnahme ?? $GLOBALS['original'];
     $anlage = new FakeBackend($mitschnitt['variablen'], null);
     $anlage->jetzt = $mitschnitt['jetzt'];
     $index = new DeviceIndex($mitschnitt['geraete'], $anlage, null, '', $mitschnitt['bilanz']);
@@ -102,5 +104,66 @@ pruefe(abs(array_sum($netz) - 38.21) < 0.01 && array_sum($ein) < 0, 'Summe der M
 pruefe(!$r['isError'] && $laengste <= MONAT, 'Heatmap der Kosten über drei Monate: längste Stundenabfrage ' . $laengste . ' Tage: ' . substr($r['text'], 0, 120));
 $summe = static fn (array $d): float => round(array_sum(array_map(static fn (array $zeile): float => array_sum(array_map('floatval', $zeile)), $d['cells'] ?? [])), 4);
 pruefe(!$einzeln['isError'] && ($einzeln['structuredContent']['kind'] ?? '') === 'heatmap' && $summe($einzeln['structuredContent']) > 0, 'Heatmap des Septembers hat Werte: ' . $summe($einzeln['structuredContent'] ?? []));
+
+/* --- Review 15.11.2026, Befund 1: Monate ganz ohne Preis --------------------------------------- */
+
+/*
+ * Seit den Monatsscheiben fiel eine Scheibe ohne einen einzigen Preis still weg, ihre Stunden fehlten in „No price for
+ * … hour(s)“ (Preis erst später archiviert als die Zähler). Echt sind die Zähler und Preise des Septembers. Angenommen
+ * ist der Monat davor: dieselben Zählerwerte, 30 Tage früher (02. bis 31.08.), ohne Preis.
+ */
+$frueher = $original;
+foreach ($original['bilanz'] as $zaehler) {
+    foreach ($original['variablen'][$zaehler]['aggregate']['0'] as $a) {
+        $frueher['variablen'][$zaehler]['aggregate']['0'][] = ['zeit' => $a['zeit'] - 30 * 86400] + $a;
+    }
+}
+[$r, $anlage] = frage('get', ['from' => '2026-08-01', 'to' => '2026-09-30'], $frueher);
+[$laengste] = stunden($anlage);
+pruefe(!str_contains($kostenzeile($kurz), 'No price'), 'der September hat für jede Stunde einen Preis');
+pruefe($kostenzeile($r) === $kostenzeile($kurz) . ' No price for 720 hour(s).', 'August ohne Preis: Kosten des Septembers und 720 Stunden ohne Preis: ' . $kostenzeile($r));
+pruefe($laengste <= MONAT, 'auch dann keine Stundenabfrage über einen Monat hinaus: ' . $laengste . ' Tage');
+
+/* --- Review 15.11.2026, Befund 4: Cent oder Euro einmal für den ganzen Zeitraum ----------------- */
+
+/*
+ * Ohne Einheit gelten Preise mit einem Mittel über 2 als Cent. Seit den Monatsscheiben fiel die Entscheidung je Scheibe,
+ * eine kurze Scheibe mit niedrigen Preisen galt als Euro und kostete das Hundertfache. Echt sind Zähler und Preise.
+ * Angenommen: Die Preisvariable trägt keine Einheit, der 30.09. liegt einen Tag später (01.10., eigene Scheibe) und
+ * seine Preise sind durch 25 geteilt (um 1,4 ct, wie ein Börsenpreis an einem sonnigen Feiertag).
+ */
+$euro = static fn (string $zeile): float => preg_match('/^Costs ([0-9.]+) €/', $zeile, $m) === 1 ? (float)$m[1] : -1.0;
+[$bis29] = frage('get', ['from' => '2026-09-01', 'to' => '2026-09-29']);
+[$am30] = frage('get', ['from' => '2026-09-30', 'to' => '2026-09-30']);
+$grenze = strtotime('2026-09-30 00:00');
+$ohne = $original;
+$ohne['variablen'][$original['preis']]['einheit'] = '';
+$hoechster = 0.0;
+foreach ($ohne['variablen'][$original['preis']]['verlauf']['0'] as &$zeile) {
+    if ($zeile[0] >= $grenze) {
+        $zeile = [$zeile[0] + 86400, $zeile[1] / 25, $zeile[2] / 25, $zeile[3] / 25];
+        $hoechster = max($hoechster, $zeile[2]);
+    }
+}
+unset($zeile);
+foreach ($original['bilanz'] as $zaehler) {
+    foreach ($ohne['variablen'][$zaehler]['aggregate']['0'] as &$a) {
+        if ($a['zeit'] >= $grenze) {
+            $a['zeit'] += 86400;
+        }
+    }
+    unset($a);
+}
+$einheitlos = $original;
+$einheitlos['variablen'][$original['preis']]['einheit'] = '';
+[$r] = frage('get', ['from' => '2026-09-01', 'to' => '2026-09-30'], $einheitlos);
+pruefe($kostenzeile($r) === $kostenzeile($kurz), 'ohne Einheit gilt der September als Cent: ' . $kostenzeile($r));
+[$r] = frage('get', ['from' => '2026-09-01', 'to' => '2026-10-01'], $ohne);
+$erwartet = $euro($kostenzeile($bis29)) + $euro($kostenzeile($am30)) / 25;
+pruefe($hoechster > 0 && $hoechster <= 2 && $euro($kostenzeile($am30)) > 0.5, 'die Scheibe Oktober liegt für sich unter 2 (höchstes Stundenmittel ' . round($hoechster, 2) . '), der 30.09. kostete ' . $euro($kostenzeile($am30)) . ' €');
+pruefe(abs($euro($kostenzeile($r)) - $erwartet) < 0.03, 'kurze Scheibe mit niedrigen Preisen bleibt Cent: erwartet ' . round($erwartet, 2) . ' €, bekommen ' . $kostenzeile($r));
+[$r] = frage('chart', ['costs' => true, 'from' => '2026-09-01', 'to' => '2026-10-01'], $ohne);
+$netz = $reihe($r['structuredContent'] ?? [], 'grid');
+pruefe(abs(array_sum($netz) - $erwartet) < 0.03, 'im Kostendiagramm ebenso: ' . round(array_sum($netz), 2) . ' €');
 
 ende('Kosten über lange Zeiträume');

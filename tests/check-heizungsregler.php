@@ -56,7 +56,7 @@ pruefe($hat($r, 'Keller | Status Wärmepumpe | measurement | Heizbetrieb'), 'Zus
 $r = frage(['name' => 'Status Wärmepumpe', 'period' => 'yesterday'], $echt, $liste, null, 'chart');
 $band = $r['structuredContent']['bands'][0] ?? [];
 pruefe(!$r['isError'] && ($r['structuredContent']['kind'] ?? '') === 'timeline' && count($band['sections'] ?? []) === 11
-    && array_column($band['states'] ?? [], 'label') === ['Heizbetrieb', 'Standby', 'Warmwasserbereitung'], 'Band mit elf Abschnitten: ' . json_encode($band['states'] ?? null, JSON_UNESCAPED_UNICODE) . ' ' . $kurz($r));
+    && array_column($band['states'] ?? [], 'label') === ['Standby', 'Heizbetrieb', 'Warmwasserbereitung'], 'Band mit elf Abschnitten, Zustände in der Reihenfolge der Wertebereiche: ' . json_encode($band['states'] ?? null, JSON_UNESCAPED_UNICODE) . ' ' . $kurz($r));
 
 /* --- echt: als Zähler archivierte Messwerte nennen den Zuwachs ------------------------------------ */
 

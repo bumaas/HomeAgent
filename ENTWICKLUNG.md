@@ -580,6 +580,15 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   ganze Haus, ohne Grundgebühr. Am Tibber-Preis (`act_price` = API `total`, brutto) gegen eine Monatsrechnung
   geprüft: Archiv 2,6 % über der Rechnung (1,4 % Menge vom eigenen Zähler, 1,2 % Preis aus Stundenmitteln).
   Test `check-kosten.php`.
+- **Kosten in Monatsscheiben, Nachtrag** (Code-Review 15.11.2026, Befunde 1 und 4): Mit den Scheiben fielen Monate ganz
+  ohne Preis still weg (Preis später archiviert als die Zähler), ihre Stunden fehlten in „No price for %d hour(s)“; und
+  die Entscheidung Cent oder Euro bei einer Preisvariable ohne Einheit fiel je Scheibe, ein einzelner Tag mit Preisen
+  unter 2 ct am Monatsanfang galt als Euro. Jetzt zählt `hourlyCosts()` die Stunden einer Scheibe ohne Preis als fehlend,
+  und `priceInCent()` entscheidet einmal für den ganzen Zeitraum: nach der Einheit, sonst nach dem Mittel aller
+  Stundenpreise, je Monat gelesen (`monthSpans`), behalten werden Summe und Anzahl. Das kostet ohne Einheit eine zweite
+  Stundenabfrage des Preises je Monat; an einer Anlage nicht gemessen. Test `check-kosten-zeitraum.php`: echt sind Zähler
+  und Preise des Septembers, angenommen ein August ohne Preis und ein Tag mit Preisen um 1,4 ct ohne Einheit (37,04 €
+  statt 41,85 €).
 - **Kosten in Monatsscheiben** (B113, 14.11.2026): An einer betreuten Anlage (Symcon 9.0, `memory_limit` 32M) endete
   `show_chart from=2023-10-01 to=2026-11-14 part=pv` ohne Antwort, über Connect als 502, ohne Zeile im Protokoll;
   einzelne Jahre gingen in 2,5 bis 3,4 s. Mit einem Strompreis hängt jeder Hausverbrauch die Kostenzeile an, und
@@ -930,6 +939,36 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   alle Zeilen mit genau diesem Alias). Mit Zeitraum scheitert das an `HISTORY_MAX`, die Absage nennt dann noch den Weg
   über den Raum statt die Namen. Noch nicht: Zuwachs als Balken im Diagramm (er ist eine Linie), ein Zeitprogramm.
   Test `check-heizungsregler.php`, alle Werte echt, nur der Zähler ohne Archiv ist angenommen.
+- **Code-Review der Builds 302 bis 304** (15.11.2026, zehn Befunde, neun behoben in build 306, der Umbau davor in 305):
+  - Umbau: `timelineOf()` hatte mit dem Sollwert eine vierte Betriebsart über eine gedachte Zeile und fünf Abfragen auf
+    `$caption`. Jetzt wählt es nur Quelle und Beschriftung, `sectionsOf()` rechnet Abschnitte, Summen, Band und Text, der
+    Sollwert ruft den Kern direkt auf. Zurückgestellt: `unarchivedList()` an `nameList()` anzugleichen (die Einträge sind
+    verschieden, das Vereinen wäre mehr Code als die Doppelung).
+  - Befund 2 und 3: Ein Thermostat ohne Ist-Temperatur kam mit Namen und Zeitraum nicht in den Verlauf („None of the
+    matching devices measures energy“), mit `type=thermostat` hieß die Kopfzeile „History of 0 measured value(s)“ über einer
+    Zeitleiste. Die Weiche in `getState()` kennt den Thermostat jetzt, die Kopfzeile zählt die Sollwerte, nur Sollwerte sind
+    eine Zeitleiste (auch im Diagramm, `chart.html` zeichnet ohne Reihen nur die Bänder).
+  - Befund 5: Die Zeitleiste eines Status holte den Text je Rohwert beim Backend (am Mitschnitt 13 Aufrufe für drei
+    verschiedene Werte, an der Anlage je zwei Kernelaufrufe). `sectionsOf()` merkt sich den Text je Wert, `isStatus()` das
+    Ergebnis je Variable; am Mitschnitt noch 4 Aufrufe.
+  - Befund 6: Das Band des Sollwerts zählte gegen `TIMELINE_CHART_MAX`; ein Raum mit zehn Zeitleisten und einem Thermostat
+    verlor im Diagramm alle Bänder, die er vor build 303 hatte. Es trägt jetzt `extra` wie die Ventilreihen und bleibt auch,
+    wenn die Zeitleisten wegfallen.
+  - Befund 7: Ein Fenster mit nicht archiviertem Kontakt nannte auch eine Position ohne lesbaren Bereich als „nicht
+    archiviert“. Verworfen: es zu den Geräten ohne offen und geschlossen zu zählen, denn das Archiv des Kontakts hilft
+    dem Anwender. Genannt wird jetzt nur der Kontakt.
+  - Befund 8: Status und Sollwert bekamen ihre Farbe nach der Reihenfolge des Auftretens. Der Status nimmt die Reihenfolge
+    der Wertebereiche (`DeviceBackend::statusLabels`, an der Anlage gegengeprüft: die Texte der Bereiche sind die von
+    `GetValueFormattedEx`). Für den Sollwert gibt es keine endliche Liste: Er wird nach dem Wert geordnet, der kälteste
+    zuerst. Verworfen: die Stelle im Raster des Sollwerts, weil bei fünf Farben Werte im Abstand von 2,5 °C dieselbe Farbe
+    bekämen (16 und 21 °C). Eine feste Farbe je Temperatur bräuchte eine Farbskala (`DESIGN.md`, Bekannte Abweichungen).
+  - Befund 9: `$brief` in `setpointLines()` war nie wahr (mehr als `TIMELINE_DETAIL` Ist-Temperaturen lehnt `HISTORY_MAX`
+    vorher ab). Jetzt zählt die Zahl der Sollwert-Reihen. Offen: Thermostate ohne Ist-Temperatur zählen nicht gegen
+    `HISTORY_MAX`; wer sie mitzählt, macht `$brief` wieder tot. Offen auch: Bei einem Diagramm über mehrere Räume gewinnt
+    die Art des ersten Raums (`$this->chart +=`), das gab es am Zeitleistenzweig schon vorher.
+  - Tests `check-zeitleiste-quellen.php`, `check-thermostat-verlauf.php`; angenommen sind der Thermostat ohne
+    Ist-Temperatur (echte Zeile ohne `StateVariableID`), zehn Fenster im Raum eines Thermostats (Kopien einer echten
+    Zeile), geänderte Sollwerte und die Position ohne Bereich.
 
 ## Formular und Diagnose
 

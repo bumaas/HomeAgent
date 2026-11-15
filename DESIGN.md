@@ -177,7 +177,9 @@ Feste Reihenfolge: Rollläden, Licht, Schalter und Steckdosen, Klima, Messwerte,
 - **Zeitleiste (Bänder):** je Gerät ein Streifen von 14 px, Abschnitte in der Farbe ihres Zustands, dahinter eine
   blasse Fläche für die Zeit mit bekanntem Wert. Tooltip mit Zustand, von, bis und Dauer. Die Legende nennt nur
   vorkommende Zustände. Bei einer Auswahl und bei Rollläden hängt die Farbe an der Stelle des Zustands unter allen
-  (`color`), ein Zustand hat also an jedem Tag und in jedem Band dieselbe Farbe.
+  (`color`), ein Zustand hat also an jedem Tag und in jedem Band dieselbe Farbe. Ein Status aus Wertebereichen nimmt die
+  Stelle seines Bereichs in der Darstellung, ein Sollwert die Stelle seines Werts unter den Werten des Zeitraums, der
+  kälteste zuerst.
 - **Punktwolke:** je Abschnitt ein Punkt (blau, halbtransparent, Radius 3), beide Achsen als Zahlen mit runden Schritten,
   die Einheit der x-Achse unten rechts. Darüber die Klassenmittel als Linie in `--fg` mit kleinen Punkten und die
   Modellkurve gestrichelt in Gelb (`SCATTER_TREND` #d29922, Knickpunkt als eigene Stützstelle). Legende „y (Einheit)
@@ -234,4 +236,6 @@ Feste Reihenfolge: Rollläden, Licht, Schalter und Steckdosen, Klima, Messwerte,
 
 ## Bekannte Abweichungen
 
-Keine.
+- **Farbe eines Sollwerts im Band:** Sie ist nur gleich, solange im Zeitraum dieselben Sollwerte vorkommen. Kommt an einem
+  Tag ein kälterer Wert dazu, rücken die übrigen eine Farbe weiter. Eine feste Zuordnung je Temperatur bräuchte eine
+  Farbskala statt der fünf Farben von `CHOICE_COLORS` (offen).

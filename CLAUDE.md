@@ -261,7 +261,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Kosten** (`PriceVariableID` in ct/kWh oder €/kWh, Werte ohne Suffix über 2 sind Cent; `FeedInTariff`, `setTariff`;
   nur mit Bilanz, nur fürs Haus, ohne Grundgebühr): `hourlyCosts` je Stunde, `costLine` in `get_state`, `costs=true` in
   `show_chart`. Test `check-kosten.php`. Über einen Zeitraum nur in Monatsscheiben (`costSlices`, `costValues`) und nur
-  Summen behalten, Stundenwerte über Jahre sprengen 32M Speicher. Test `check-kosten-zeitraum.php`.
+  Summen behalten, Stundenwerte über Jahre sprengen 32M Speicher. Cent oder Euro ohne Einheit fällt einmal für den ganzen
+  Zeitraum (`priceInCent`), nie je Scheibe; eine Scheibe ohne Preis zählt ihre Stunden als fehlend. Test
+  `check-kosten-zeitraum.php`.
 - **Plausibilität der Zähler im Selbsttest** (`counterJumps`): erst die Gesamtprobe, dann je Monat Summe gegen Zuwachs des
   Zählerstands (`counterReadings`); die Schwellen (2 kWh, ein Fünftel des Medians, drei Viertel, zwei Mediane,
   `JUMP_KWH`, `JUMP_ABOVE`) sind an echten Fällen gemessen. Stand nach jetzt = Wert der Variable, wenn im letzten Tag
@@ -286,17 +288,22 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
   `timelineOf`, Abschnitte, Summen und Band rechnet `sectionsOf`, auch für den Sollwert): gleiche Zustände zusammengefasst,
   Summen je Zustand, Einzelabschnitte bis `TIMELINE_SECTIONS`/`TIMELINE_DETAIL`. Gerät mit Zähler: Verbrauch und Zeiten in
   einer Zeile. In `show_chart` als Bänder (`chartBands`, höchstens `TIMELINE_CHART_MAX`, neben Linien fallen zu viele weg
-  und der Text nennt es), nur vorkommende Zustände, Farbe einer Auswahl nach der Stelle des Eintrags (`color`). Test
-  `check-zeitleiste.php`.
+  und der Text nennt es), nur vorkommende Zustände, Farbe einer Auswahl nach der Stelle des Eintrags (`color`), eines
+  Status nach der seines Wertebereichs (`statusLabels`), eines Sollwerts nach dem Wert. Jeder Wert wird nur einmal
+  beschriftet (Kernelaufrufe). Tests `check-zeitleiste.php`, `check-zeitleiste-quellen.php`.
 - **Zeitleiste fahrender Geräte** (`travelTimed`: Rollladen, Fenster nur mit Antrieb): aus der Position offen, teilweise
   offen, geschlossen (`travelClass`), alle Abschnitte einzeln, im Band mit fester Farbe je Zustand (`color`); bis jetzt
   nennt die Zeile „seit“, den Beginn des Zustands (`earlier`, `SINCE_ROWS`). Ohne Archiv und bei Lamellen oder unbekanntem
   Bereich (`unreadableTravel`) je eigene Absage, nie „misst Energie“. Test `check-fahrzeitleiste.php`.
 - **Ohne Archiv** nennt die Auslassung oder Absage Gerät und Variable (`unarchivedList`: Zustand, Position, mit ID).
-  Fenster mit Kontakt und Antrieb: Kontakt zuerst, ohne dessen Archiv die Position. Test `check-thermostat-verlauf.php`.
+  Fenster mit Kontakt und Antrieb: Kontakt zuerst, ohne dessen Archiv die Position; genannt wird sie nur, wenn sie offen
+  und geschlossen kennt (`positionReadable`). Tests `check-thermostat-verlauf.php`, `check-zeitleiste-quellen.php`.
 - **Verlauf des Thermostats** (nicht bei `type=temperature`): Ist-Temperatur und Ventile als Messwerte mit Namen des
   Teils, Sollwert als Zeitleiste aus Rohwerten (`setpointLines`, Sonderwert mit Text), weil Aggregate ihn verzögen.
-  `HISTORY_MAX` zählt nur die Ist-Temperaturen, Ventilreihen tragen `extra`. Test `check-thermostat-verlauf.php`.
+  `HISTORY_MAX` zählt nur die Ist-Temperaturen, Ventilreihen und das Band des Sollwerts tragen `extra` (es zählt nicht
+  gegen `TIMELINE_CHART_MAX`). Ohne Ist-Temperatur kommt der Verlauf auch mit Namen statt Typ. Die Kopfzeile nennt die
+  Sollwerte („%d setpoint(s) as timeline“), nur Sollwerte ergeben „Timeline of %d setpoint(s)“ und `kind: timeline`,
+  über `TIMELINE_DETAIL` Sollwerten die kurze Fassung. Tests `check-thermostat-verlauf.php`, `check-zeitleiste-quellen.php`.
 - **Messwert mit Zähler-Archiv** nennt über einen Zeitraum den Zuwachs (`increaseLines` über `counterRows`), Abschnitte
   ohne Zuwachs fallen weg; sind alle Reihen Zähler, eigene Kopfzeile. Test `check-heizungsregler.php`.
 - **Status aus Wertebereichen** (`DeviceBackend::statusText`: nur Bereiche mit festem Text, Text von

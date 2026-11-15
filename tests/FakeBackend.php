@@ -99,9 +99,20 @@ final class FakeBackend implements DeviceBackend
         return is_array($options) && $options !== [] ? array_map(static fn (array $o): array => [$o[0], (string)$o[1]], $options) : null;
     }
 
+    /** Wie oft statusText() gefragt wurde (an der Anlage kostet jeder Aufruf zwei Kernelaufrufe) */
+    public int $statusTextCalls = 0;
+
+    /** Texte der Wertebereiche einer Statusvariable in der Reihenfolge der Darstellung, aus „intervalle“ des Mitschnitts. */
+    public function statusLabels(int $variableId): array
+    {
+        $variable = $this->variables[$variableId] ?? [];
+        return is_array($variable['statustexte'] ?? null) ? array_values(array_map(static fn (array $i): string => (string)$i[3], $variable['intervalle'] ?? [])) : [];
+    }
+
     /** Text eines Statuswerts aus dem Mitschnitt: „statustexte“ als Wert => Text, wie GetValueFormattedEx ihn lieferte. */
     public function statusText(int $variableId, mixed $value): ?string
     {
+        $this->statusTextCalls++;
         $texts = $this->variables[$variableId]['statustexte'] ?? null;
         return is_array($texts) && (is_int($value) || is_float($value)) && isset($texts[(string)$value]) ? (string)$texts[(string)$value] : null;
     }

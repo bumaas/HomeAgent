@@ -30,6 +30,14 @@ interface DeviceBackend
     public function statusText(int $variableId, mixed $value): ?string;
 
     /**
+     * Alle Texte einer Statusvariable in der Reihenfolge ihrer Wertebereiche, für die Farbe im Band: Ein Zustand hat so
+     * jeden Tag dieselbe Farbe. Leer = kein Status aus Wertebereichen.
+     *
+     * @return list<string>
+     */
+    public function statusLabels(int $variableId): array;
+
+    /**
      * Löst die Aktion der Variable aus, ohne auf ihr Ende zu warten. null = ausgelöst, sonst der
      * Fehlertext. Ob die Aktion selbst gescheitert ist, sagt danach failure().
      */

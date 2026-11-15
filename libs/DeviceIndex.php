@@ -753,7 +753,9 @@ final class DeviceIndex
             && (($this->chart !== null && !$this->chartByDevice
                     && (array_any($matches, static fn (array $e): bool => self::isMeasured($e)) || !array_any($matches, static fn (array $e): bool => isset($e['roles']['energy']))))
                 || in_array($type, self::HISTORY_TYPES, true)
-                || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy']) || self::hasHeat($e)) && array_any($matches, fn (array $e): bool => self::isMeasured($e) || $this->isTimed($e))))) {
+                // Ein Thermostat hat auch ohne Ist-Temperatur einen Verlauf: Sollwert und Ventile (Pflicht ist nur der Sollwert)
+                || (!array_any($matches, static fn (array $e): bool => isset($e['roles']['energy']) || self::hasHeat($e))
+                    && array_any($matches, fn (array $e): bool => self::isMeasured($e) || $this->isTimed($e) || ($type !== 'temperature' && $e['Type'] === 'thermostat' && isset($e['roles']['setpoint'])))))) {
             // roomClimate() hat vor dem Verlauf gezählt; history() sucht nicht selbst und lässt die Zählung stehen
             if ($range !== null) {
                 [, $from, $to] = $range;
@@ -1251,11 +1253,14 @@ final class DeviceIndex
      */
     private function unreadableTravel(array $entry): bool
     {
-        if (!self::travelTimed($entry['Type'], $entry['roles'])) {
-            return false;
-        }
+        return self::travelTimed($entry['Type'], $entry['roles']) && !$this->positionReadable($entry);
+    }
+
+    /** Kennt die Position des Geräts „offen“ und „geschlossen“? Lamellen und ein unbekannter Bereich nicht. */
+    private function positionReadable(array $entry): bool
+    {
         $range = $this->backend->range($entry['roles']['level']);
-        return self::travelOf($entry, $range) === null || ($range['source'] ?? '') === 'rotation';
+        return self::travelOf($entry, $range) !== null && ($range['source'] ?? '') !== 'rotation';
     }
 
     private function isTimed(array $entry): bool
@@ -1271,8 +1276,11 @@ final class DeviceIndex
      */
     private function isStatus(int $variable): bool
     {
-        return $this->backend->statusText($variable, $this->backend->read($variable)['value'] ?? null) !== null;
+        return $this->statusVariables[$variable] ??= $this->backend->statusText($variable, $this->backend->read($variable)['value'] ?? null) !== null;
     }
+
+    /** @var array<int, bool> je Variable gemerkt, ob sie ein Status aus Wertebereichen ist (isTimed fragt mehrmals) */
+    private array $statusVariables = [];
 
     /**
      * Zeitleisten der Geräte, deren Zustand archiviert ist; die anderen fallen weg. Abschnitte gibt es nur bei höchstens
@@ -1395,8 +1403,14 @@ final class DeviceIndex
             return $this->backend->statusText($variable, $value)
                 ?? (is_int($value) || is_float($value) ? self::formatNumber((float)$value) : (string)$value);
         };
-        // Alle Zustände in fester Reihenfolge: bei Wörtern der aktive zuerst, bei einer Auswahl die Einträge
-        $labels = $travel !== null ? $travelLabels : ($words !== null ? [$this->t($words[0]), $this->t($words[1])] : array_column($options, 1));
+        // Alle Zustände in fester Reihenfolge: bei Wörtern der aktive zuerst, bei einer Auswahl die Einträge, bei einem
+        // Status die Texte seiner Wertebereiche
+        $labels = match (true) {
+            $travel !== null => $travelLabels,
+            $words !== null  => [$this->t($words[0]), $this->t($words[1])],
+            $options !== []  => array_column($options, 1),
+            default          => $this->backend->statusLabels($variable),
+        };
         // „seit“ nennen nur fahrende Geräte: Dort ist der Beginn die Auskunft.
         return $this->sectionsOf($entry, $variable, $series, $label, $labels, $words, $travel !== null, $from, $to);
     }
@@ -1420,6 +1434,14 @@ final class DeviceIndex
         $now = $this->backend->timestamp();
         $untilNow = $to === 0 || $to >= $now;
         $end = $untilNow ? $now : $to + 1;
+        // Jeder Wert wird nur einmal beschriftet: Ein Status holt seinen Text beim Backend, bei einer Zeitleiste über ein
+        // Jahr wären das sonst zwei Kernelaufrufe je Rohwert.
+        $texts = [];
+        $source = $label;
+        $label = static function (mixed $value) use (&$texts, $source): string {
+            $key = gettype($value) . ':' . (is_scalar($value) ? (string)$value : serialize($value));
+            return $texts[$key] ??= $source($value);
+        };
         $sections = [];
         $add = static function (string $state, int $begin, int $finish) use (&$sections): void {
             $last = count($sections) - 1;
@@ -1640,9 +1662,12 @@ final class DeviceIndex
         [$per, $format] = self::HISTORY_LEVELS[$level];
         $lines = [];
         $counted = 0;
+        // Sollwerte sind Zeitleisten: Abschnitte wie dort nur bei höchstens TIMELINE_DETAIL. Mehr werden es nur mit
+        // Thermostaten ohne Ist-Temperatur, die anderen begrenzt HISTORY_MAX.
+        $setpoints = count(array_filter($rows, static fn (array $row): bool => $row['kind'] === 'setpoint'));
         foreach ($rows as ['entry' => $entry, 'kind' => $kind, 'variable' => $variable, 'label' => $label]) {
             if ($kind === 'setpoint') {
-                $lines = array_merge($lines, $this->setpointLines($entry, $variable, $label, $from, $to, count($measured) > self::TIMELINE_DETAIL));
+                $lines = array_merge($lines, $this->setpointLines($entry, $variable, $label, $from, $to, $setpoints > self::TIMELINE_DETAIL));
                 continue;
             }
             // Die Tabelle je Abschnitt bekommt der Messwert, das Ventil nur bei einem einzigen Gerät (Tokens)
@@ -1659,11 +1684,25 @@ final class DeviceIndex
                 : $this->historyLines($entry, $history, $format, true, $label));
         }
         // Sind alle Reihen Zähler, wäre „Minimum / Mittel / Maximum“ in der Kopfzeile falsch
-        $values = count(array_filter($rows, static fn (array $row): bool => $row['kind'] !== 'setpoint'));
-        $head = $counted > 0 && $counted === $values
-            ? sprintf($this->t('Increase of %d counted value(s) (%s), per %s.'), $counted, $filter, $this->t($per))
-            : sprintf($this->t('History of %d measured value(s) (%s), per %s: minimum / average / maximum.'), $values, $filter, $this->t($per));
-        $this->historyChart($head, $per, $filter);
+        $values = count($rows) - $setpoints;
+        if ($values === 0 && $setpoints > 0) {
+            // Nur Sollwerte (Thermostat ohne Ist-Temperatur und Ventil): „Verlauf von 0 Messwert(en): Minimum / Mittel /
+            // Maximum“ über einer Zeitleiste las sich wie „nichts gefunden“. Im Diagramm eine Zeitleiste, kein Verlauf
+            // ohne Reihen.
+            $head = sprintf($this->t('Timeline of %d setpoint(s) (%s).'), $setpoints, $filter);
+            if ($this->chart !== null) {
+                $this->chart += ['kind' => 'timeline', 'title' => $head, 'filter' => $filter];
+            }
+        } else {
+            $head = $counted > 0 && $counted === $values
+                ? sprintf($this->t('Increase of %d counted value(s) (%s), per %s.'), $counted, $filter, $this->t($per))
+                : sprintf($this->t('History of %d measured value(s) (%s), per %s: minimum / average / maximum.'), $values, $filter, $this->t($per));
+            // Die Sollwerte stehen als Zeitleiste dazwischen; die erste Zeile nennt auch ihre Anzahl
+            if ($setpoints > 0) {
+                $head .= ' ' . sprintf($this->t('%d setpoint(s) as timeline.'), $setpoints);
+            }
+            $this->historyChart($head, $per, $filter);
+        }
         $lines = array_merge([$head], $lines);
         if ($timed !== []) {
             $lines = array_merge($lines, $this->timelineLines($timed, $filter));
@@ -2251,12 +2290,18 @@ final class DeviceIndex
         };
         // Der Sollwert nennt wie ein fahrendes Gerät den Beginn des jetzigen Werts („seit“)
         $series = $this->backend->stateSeries($variable, $from, $to);
-        $timeline = $series === null ? null : $this->sectionsOf($entry, $variable, $series, $caption, [], null, true, $from, $to);
+        // Farbe im Band nach dem Wert, der kälteste zuerst: Die Reihenfolge des Auftretens gäbe demselben Sollwert je nach
+        // Tagesbeginn eine andere Farbe.
+        $values = $series === null ? [] : array_values(array_unique(array_filter(array_merge([$series['start']], array_column($series['changes'], 1)), static fn (mixed $v): bool => is_int($v) || is_float($v))));
+        sort($values);
+        $labels = array_values(array_unique(array_map($caption, $values)));
+        $timeline = $series === null ? null : $this->sectionsOf($entry, $variable, $series, $caption, $labels, null, true, $from, $to);
         if ($timeline === null) {
             return [$this->line($entry, $label . ': ' . $this->t('no history archived'))];
         }
         if ($this->chart !== null && isset($timeline['band'])) {
-            $this->chart['bands'][] = ['name' => $entry['Name'] . ' (' . $label . ')'] + $timeline['band'];
+            // „extra“: Das Band gehört zum Thermostat und zählt wie seine Ventile nicht gegen die Grenze der Zeitleisten
+            $this->chart['bands'][] = ['name' => $entry['Name'] . ' (' . $label . ')', 'extra' => true] + $timeline['band'];
         }
         $lines = [$this->line($entry, $label . ': ' . ($brief ? $timeline['brief'] : $timeline['summary']))];
         if (!$brief && $timeline['sections'] !== null && $this->chart === null) {
@@ -2332,7 +2377,8 @@ final class DeviceIndex
             if (!$travel && isset($e['roles']['state'])) {
                 $variables[] = $this->t('state') . ' #' . $e['roles']['state'];
             }
-            if ($travel || ($e['Type'] === 'window' && isset($e['roles']['level']))) {
+            // Neben einem Kontakt zählt die Position nur, wenn sie „offen“ und „geschlossen“ kennt: Sonst hülfe ihr Archiv nicht
+            if ($travel || ($e['Type'] === 'window' && isset($e['roles']['level']) && $this->positionReadable($e))) {
                 $variables[] = $this->t('position') . ' #' . $e['roles']['level'];
             }
             $items[] = ($oneRoom ? $e['Name'] : $e['Name'] . ' (' . $e['Room'] . ')') . ': ' . implode(', ', $variables);
@@ -6281,15 +6327,20 @@ final class DeviceIndex
         if (($chart['kind'] ?? '') === 'history' && $counted > self::HISTORY_MAX) {
             return $this->fail(sprintf($this->t('Too many measured values (%d) for a history (%s). Give a room or a name, at most %d at a time.'), $counted, 'room=' . implode(', ', $rooms), self::HISTORY_MAX));
         }
-        $droppedBands = 0;
-        if (count($chart['bands'] ?? []) > self::TIMELINE_CHART_MAX) {
+        // Das Band des Sollwerts („extra“) zählt nicht mit und bleibt: Es gehört zu den Linien seines Thermostats
+        $droppedBands = count(array_filter($chart['bands'] ?? [], static fn (array $one): bool => !($one['extra'] ?? false)));
+        if ($droppedBands > self::TIMELINE_CHART_MAX) {
             if (($chart['series'] ?? []) === []) {
-                return $this->fail(sprintf($this->t('Too many devices (%d) for a timeline chart. Give a room or a name, at most %d at a time.'), count($chart['bands']), self::TIMELINE_CHART_MAX));
+                return $this->fail(sprintf($this->t('Too many devices (%d) for a timeline chart. Give a room or a name, at most %d at a time.'), $droppedBands, self::TIMELINE_CHART_MAX));
             }
             // Neben Linien (Temperaturen einer Etage) fallen nur die Bänder weg: Seit Rollläden eine Zeitleiste haben, wäre
             // sonst das ganze Diagramm einer Etage abgelehnt.
-            $droppedBands = count($chart['bands']);
-            unset($chart['bands']);
+            $chart['bands'] = array_values(array_filter($chart['bands'], static fn (array $one): bool => $one['extra'] ?? false));
+            if ($chart['bands'] === []) {
+                unset($chart['bands']);
+            }
+        } else {
+            $droppedBands = 0;
         }
         $result = ['text' => implode("\n", array_merge($texts, array_map(static fn (array $failure): string => (string)strtok($failure['text'], "\n"), $failures))), 'isError' => false];
         if ($droppedBands > 0) {
@@ -7036,37 +7087,89 @@ final class DeviceIndex
      * Mittlerer Strompreis je Stunde in €/kWh aus dem Archiv. Die Einheit kommt aus der Variable (ct oder Cent, € oder EUR),
      * ohne Angabe gelten Werte über 2 als Cent. Gerechnet wird mit Stundenmitteln, weil das Archiv nicht feiner aggregiert;
      * an der Tibber-Rechnung September 2026 lagen die Kosten so 2,6 % höher (1,4 % Menge vom SMA Home Manager, 1,2 % Preis).
+     * $cent: Cent oder Euro steht schon fest (priceInCent), null = aus diesen Werten entscheiden.
      *
      * @return null|array<int, float>
      */
-    private function hourlyPrices(int $from, int $to): ?array
+    private function hourlyPrices(int $from, int $to, ?bool $cent = null): ?array
     {
         $history = $this->priceVariable > 0 ? $this->historyRows($this->priceVariable, 0, $from, $to) : null;
         if ($history === null || $history['rows'] === []) {
             return null;
         }
-        $unit = strtolower($history['unit']);
         $values = array_column($history['rows'], 'avg', 'time');
-        $cent = str_contains($unit, 'ct') || str_contains($unit, 'cent') || (!str_contains($unit, '€') && !str_contains($unit, 'eur') && array_sum($values) / count($values) > 2);
+        $cent ??= self::centUnit($history['unit']) ?? array_sum($values) / count($values) > 2;
         return array_map(static fn (float $v): float => $cent ? $v / 100 : $v, $values);
+    }
+
+    /** Sagt die Einheit, ob ein Preis in Cent (true) oder Euro (false) steht; null = keine Angabe. */
+    private static function centUnit(string $unit): ?bool
+    {
+        $unit = strtolower($unit);
+        if (str_contains($unit, 'ct') || str_contains($unit, 'cent')) {
+            return true;
+        }
+        return str_contains($unit, '€') || str_contains($unit, 'eur') ? false : null;
+    }
+
+    /**
+     * Cent oder Euro für den ganzen Zeitraum, bevor die Kosten in Monatsscheiben gelesen werden: Ohne Einheit entscheidet
+     * das Mittel aller Stundenpreise des Zeitraums, nicht das einer Scheibe (Review 15.11.2026: ein einzelner Tag mit
+     * Preisen unter 2 ct am Monatsanfang galt als Euro und kostete das Hundertfache). Gelesen wird ebenfalls je Monat,
+     * behalten nur Summe und Anzahl. null = kein Preis im Zeitraum.
+     */
+    private function priceInCent(int $from, int $to): ?bool
+    {
+        $known = self::centUnit($this->backend->unit($this->priceVariable));
+        if ($known !== null) {
+            return $known;
+        }
+        $sum = 0.0;
+        $count = 0;
+        foreach ($this->monthSpans($from, $to) as [$start, $stop]) {
+            $history = $this->historyRows($this->priceVariable, 0, $start, $stop);
+            if ($history === null) {
+                return null;
+            }
+            $sum += array_sum(array_column($history['rows'], 'avg'));
+            $count += count($history['rows']);
+        }
+        return $count === 0 ? null : $sum / $count > 2;
+    }
+
+    /**
+     * Ein Zeitraum in Scheiben von einem Kalendermonat, jede als Beginn und Ende; die letzte endet mit $to (0 = bis jetzt).
+     *
+     * @return Generator<int, array{0: int, 1: int}>
+     */
+    private function monthSpans(int $from, int $to): Generator
+    {
+        $end = $to === 0 ? $this->backend->timestamp() : $to;
+        $start = $from;
+        while ($start <= $end) {
+            $next = (int)mktime(0, 0, 0, (int)date('n', $start) + 1, 1, (int)date('Y', $start));
+            yield [$start, $next > $end ? $to : $next - 1];
+            $start = $next;
+        }
     }
 
     /**
      * Kosten je Stunde: Netzbezug × Preis, Vergütung der Einspeisung, Hausverbrauch × Preis (ohne PV und Batterie). Stunden
-     * ohne Preis zählen als fehlend. null = kein Preis oder keine Bilanz.
+     * ohne Preis zählen als fehlend, auch wenn der ganze Zeitraum keinen Preis hat (Preis später archiviert als die
+     * Zähler). null = kein Strompreis eingetragen oder keine Bilanz.
      *
      * @return null|array{0: array<int, array{kwh: float, import: float, revenue: float, house: float, price: float}>, 1: int}
      */
-    private function hourlyCosts(int $from, int $to): ?array
+    private function hourlyCosts(int $from, int $to, ?bool $cent = null): ?array
     {
         if ($this->priceVariable === 0 || $this->balance === []) {
             return null;
         }
         $parts = $this->balanceParts($this->balance, 0, $from, $to);
-        $prices = $this->hourlyPrices($from, $to);
-        if ($parts === null || $prices === null) {
+        if ($parts === null) {
             return null;
         }
+        $prices = $this->hourlyPrices($from, $to, $cent) ?? [];
         $rows = [];
         $missing = 0;
         foreach ($parts as $time => $part) {
@@ -7097,22 +7200,21 @@ final class DeviceIndex
         if ($this->priceVariable === 0 || $this->balance === []) {
             return;
         }
-        $end = $to === 0 ? $this->backend->timestamp() : $to;
         // Ohne Beginn (von Anfang an) gibt es keinen ersten Monat; das kommt nur aus eigenen Aufrufen ohne Zeitraum
-        $start = $from > 0 ? $from : $end + 1;
         if ($from <= 0) {
             $costs = $this->hourlyCosts($from, $to);
             if ($costs !== null) {
                 yield $costs;
             }
+            return;
         }
-        while ($start <= $end) {
-            $next = (int)mktime(0, 0, 0, (int)date('n', $start) + 1, 1, (int)date('Y', $start));
-            $costs = $this->hourlyCosts($start, $next > $end ? $to : $next - 1);
+        // Cent oder Euro fällt einmal für den ganzen Zeitraum, jede Scheibe rechnet damit
+        $cent = $this->priceInCent($from, $to);
+        foreach ($this->monthSpans($from, $to) as [$start, $stop]) {
+            $costs = $this->hourlyCosts($start, $stop, $cent);
             if ($costs !== null) {
                 yield $costs;
             }
-            $start = $next;
         }
     }
 

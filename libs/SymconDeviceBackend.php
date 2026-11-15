@@ -217,6 +217,20 @@ final class SymconDeviceBackend implements DeviceBackend
         }
     }
 
+    public function statusLabels(int $variableId): array
+    {
+        if ($variableId <= 0 || !IPS_VariableExists($variableId)) {
+            return [];
+        }
+        $presentation = IPS_GetVariablePresentation($variableId);
+        if (!self::textRangesOnly($presentation)) {
+            return [];
+        }
+        // textRangesOnly() hat geprüft, dass jeder Bereich ein Array mit festem Text ist
+        $intervals = json_decode((string)$presentation['INTERVALS'], true);
+        return array_values(array_unique(array_map(static fn (array $interval): string => (string)$interval['ConstantValue'], $intervals)));
+    }
+
     /**
      * Hat die Darstellung nur Wertebereiche mit festem Text, mindestens zwei, und darunter einen echten Bereich? Einzelne
      * Werte mit Text am Rand eines Zahlenbereichs (Sonder-Sollwert) sind kein Status.

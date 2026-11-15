@@ -47,7 +47,7 @@ $ab = ['from' => '2026-11-14', 'to' => '2026-11-15'];
 /* --- echt: Musikzimmer, ein Ventil, Sollwert seit 08.11. auf dem Sonderwert „On“ ----------------- */
 
 $r = frage(['room' => 'Musikzimmer', 'type' => 'thermostat'] + $ab, $echt, $liste);
-pruefe(!$r['isError'] && ($zeilen($r)[0] ?? '') === 'History of 2 measured value(s) (room=Musikzimmer, type=thermostat, from=2026-11-14, to=2026-11-15), per hour: minimum / average / maximum.', 'Kopfzeile zählt Ist-Temperatur und Ventil: ' . ($zeilen($r)[0] ?? ''));
+pruefe(!$r['isError'] && ($zeilen($r)[0] ?? '') === 'History of 2 measured value(s) (room=Musikzimmer, type=thermostat, from=2026-11-14, to=2026-11-15), per hour: minimum / average / maximum. 1 setpoint(s) as timeline.', 'Kopfzeile zählt Ist-Temperatur und Ventil und nennt den Sollwert: ' . ($zeilen($r)[0] ?? ''));
 pruefe($hat($r, 'Musikzimmer | Heizung | thermostat | actual temperature: minimum 19.2 °C (2026-11-15 06:50), maximum 20.3 °C (2026-11-14 00:03)'), 'die Ist-Temperatur heißt so: ' . $r['text']);
 pruefe($hat($r, 'Musikzimmer | Heizung | thermostat | valve: minimum 0 % (2026-11-14 11:04), maximum 98 % (2026-11-14 00:00)'), 'Ventil mit dem Zeitpunkt, zu dem es zuging: ' . $r['text']);
 pruefe($hat($r, '2026-11-14 11:00 0 / 93.1 / 98') && $hat($r, '2026-11-15 08:00 0 / 94.5 / 98') && $stunden($r) === 70, 'bei einem Thermostat auch das Ventil je Stunde, 2 mal 35 Stunden: ' . $stunden($r));
@@ -157,5 +157,61 @@ pruefe($r['isError'] && str_contains($r['text'], 'Not archived: Fenster: state #
 $kontakt = array_map(static fn (array $z): array => $z['Room'] === 'Schlafen' ? $z + ['StateVariableID' => 17096] : $z, $liste);
 $r = frage(['room' => 'Schlafen'] + $ab, $echt, $kontakt);
 pruefe(!$r['isError'] && str_starts_with($zeilen($r)[0] ?? '', 'Timeline of 1 device(s) (') && str_starts_with($zeilen($r)[1] ?? '', 'Schlafen | Westfenster | window | open '), 'archivierter Kontakt geht vor: ' . $r['text']);
+
+/* --- ANGENOMMEN: Thermostat ohne Ist-Temperatur (Code-Review 15.11.2026, Befunde 2, 3 und 9) ------ */
+
+// Pflicht am Thermostat ist nur der Sollwert. Am nuc tragen alle drei eine Ist-Temperatur; hier fehlt der echten Zeile
+// des Musikzimmers die StateVariableID. Sollwert und Ventil samt Archiv sind die echten.
+$ohneIst = array_map(static function (array $z): array {
+    if ($z['Room'] === 'Musikzimmer') {
+        unset($z['StateVariableID']);
+    }
+    return $z;
+}, $liste);
+// Befund 2: mit Namen statt Typ kam „None of the matching devices measures energy“
+$r = frage(['room' => 'Musikzimmer', 'name' => 'Heizung'] + $ab, $echt, $ohneIst);
+pruefe(!$r['isError'] && $hat($r, 'Musikzimmer | Heizung | thermostat | setpoint: “On” (100 °C) 34 h 5 min, “On” (100 °C) since 08.11. 17:33')
+    && $hat($r, 'Musikzimmer | Heizung | thermostat | valve: minimum 0 % (2026-11-14 11:04), maximum 98 % (2026-11-14 00:00)'), 'ohne Ist-Temperatur mit Namen statt Typ: Verlauf von Sollwert und Ventil: ' . substr($r['text'], 0, 300));
+pruefe(($zeilen($r)[0] ?? '') === 'History of 1 measured value(s) (room=Musikzimmer, name=Heizung, from=2026-11-14, to=2026-11-15), per hour: minimum / average / maximum. 1 setpoint(s) as timeline.', 'die Kopfzeile zählt das Ventil und nennt den Sollwert: ' . ($zeilen($r)[0] ?? ''));
+// Mit dem Typ kam der Verlauf schon vorher; die Kopfzeile nennt jetzt auch dort den Sollwert
+$r = frage(['room' => 'Musikzimmer', 'type' => 'thermostat'] + $ab, $echt, $ohneIst);
+pruefe(!$r['isError'] && str_ends_with($zeilen($r)[0] ?? '', 'per hour: minimum / average / maximum. 1 setpoint(s) as timeline.'), 'mit Typ dieselbe Kopfzeile: ' . ($zeilen($r)[0] ?? ''));
+
+// Befund 3: nur der Sollwert (ANGENOMMEN: der Zeile fehlt auch das Ventil). Vorher „History of 0 measured value(s) …“
+$nurSoll = array_map(static function (array $z): array {
+    if ($z['Room'] === 'Musikzimmer') {
+        unset($z['StateVariableID'], $z['ValveVariableID']);
+    }
+    return $z;
+}, $liste);
+$r = frage(['room' => 'Musikzimmer', 'type' => 'thermostat'] + $ab, $echt, $nurSoll);
+pruefe(!$r['isError'] && $zeilen($r) === ['Timeline of 1 setpoint(s) (room=Musikzimmer, type=thermostat, from=2026-11-14, to=2026-11-15).', 'Musikzimmer | Heizung | thermostat | setpoint: “On” (100 °C) 34 h 5 min, “On” (100 °C) since 08.11. 17:33'], 'nur Sollwert: Kopfzeile zählt den Sollwert, kein Minimum/Mittel/Maximum: ' . substr($r['text'], 0, 300));
+$r = frage(['room' => 'Musikzimmer', 'name' => 'Heizung'] + $ab, $echt, $nurSoll, $de);
+pruefe(!$r['isError'] && ($zeilen($r)[0] ?? '') === 'Zeitleiste von 1 Sollwert(en) (room=Musikzimmer, name=Heizung, from=2026-11-14, to=2026-11-15).', 'auf Deutsch, mit Namen: ' . ($zeilen($r)[0] ?? ''));
+// Im Diagramm kein Verlauf mit 0 Reihen: ein Zeitleisten-Diagramm mit dem Band des Sollwerts
+$r = frage(['room' => 'Musikzimmer', 'type' => 'thermostat'] + $ab, $echt, $nurSoll, null, 'chart');
+$inhalt = $r['structuredContent'] ?? [];
+pruefe(!$r['isError'] && ($inhalt['kind'] ?? '') === 'timeline' && ($inhalt['series'] ?? []) === [] && array_column($inhalt['bands'] ?? [], 'name') === ['Heizung (setpoint)']
+    && ($inhalt['title'] ?? '') === 'Timeline of 1 setpoint(s) (room=Musikzimmer, type=thermostat, from=2026-11-14, to=2026-11-15).', 'Diagramm nur mit Sollwert ist eine Zeitleiste: ' . json_encode(['kind' => $inhalt['kind'] ?? null, 'title' => $inhalt['title'] ?? null, 'series' => count($inhalt['series'] ?? []), 'bands' => count($inhalt['bands'] ?? [])], JSON_UNESCAPED_UNICODE));
+// Die gemischte Kopfzeile bei allen drei echten Thermostaten: 7 Messwerte, 3 Sollwerte
+$r = frage(['type' => 'thermostat'] + $ab, $echt, $liste);
+pruefe(str_ends_with($zeilen($r)[0] ?? '', 'per hour: minimum / average / maximum. 3 setpoint(s) as timeline.'), 'die Kopfzeile nennt die Sollwerte neben den Messwerten: ' . ($zeilen($r)[0] ?? ''));
+
+// Befund 9: Ab mehr als fünf Sollwerten die kurze Fassung ohne Abschnitte. ANGENOMMEN sind drei weitere Thermostate ohne
+// Ist-Temperatur, deren Sollwerte Kopien der drei echten unter Platzhalter-IDs sind; der Sollwert im Wintergarten ist wie
+// oben im Zeitraum geändert (echt unverändert). Mit Ist-Temperatur wären sechs Thermostate an HISTORY_MAX gescheitert.
+$viele = $geaendert;
+$mehr = $liste;
+foreach ([48076 => [69991, 'Atelier'], 11093 => [69992, 'Gast'], 48140 => [69993, 'Büro']] as $quelle => [$kopie, $raum]) {
+    $viele[$kopie] = $echt[$quelle];
+    $mehr[] = ['Room' => $raum, 'Name' => 'Heizung', 'Aliases' => '', 'Type' => 'thermostat', 'SetpointVariableID' => $kopie, 'Invert' => false, 'ReadOnly' => false, 'Tilt' => false];
+}
+$r = frage(['type' => 'thermostat'] + $ab, $viele, $mehr);
+pruefe(!$r['isError'] && $hat($r, 'Wintergarten | Heizung | thermostat | setpoint: 21.5 °C 16 h (1 times), “Off” (4.5 °C) 12 h 5 min (1 times), 20.5 °C 6 h (1 times), “Off” (4.5 °C) since 14.11. 22:00')
+    && preg_grep('/^20\.5 °C 14\.11\. 00:00-/', $zeilen($r)) === [], 'sechs Sollwerte: kurze Fassung ohne Abschnitte: ' . implode(' / ', preg_grep('/setpoint|^20\.5/', $zeilen($r))));
+pruefe(str_ends_with($zeilen($r)[0] ?? '', '6 setpoint(s) as timeline.'), 'und die Kopfzeile zählt sechs: ' . ($zeilen($r)[0] ?? ''));
+// Bis fünf Sollwerte bleibt die lange Fassung (die Prüfung weiter oben mit einem Thermostat hält sie für einen fest)
+$r = frage(['type' => 'thermostat'] + $ab, $viele, array_slice($mehr, 0, count($liste) + 2));
+pruefe(!$r['isError'] && preg_grep('/^20\.5 °C 14\.11\. 00:00-/', $zeilen($r)) !== [], 'fünf Sollwerte: Abschnitte bleiben: ' . implode(' / ', preg_grep('/setpoint|^20\.5/', $zeilen($r))));
 
 ende('Verlauf des Thermostats und fehlendes Archiv der Fenster');
