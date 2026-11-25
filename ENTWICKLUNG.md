@@ -494,6 +494,25 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
   eingetragene Zeile genauso. Alle Namen statt der ersten fünf, weil eine Kürzung gerade den gesuchten Strang abschneiden
   kann und eine zweite Runde mehr kostet als rund 60 Tokens für 15 Namen; ab 20 Namen folgt nur die Anzahl. Aus mehreren
   Räumen trägt jeder Name seinen Raum.
+- **Hausgerät mit Betriebsstatus** (B117 Stufe 0, build 318, 25.11.2026): Anlass „starte die waschmaschine im programm
+  baumwolle“ (Burkhard); am nuc hingen Waschmaschine, Trockner und Spülmaschine nur als Homematic-Steckdosen mit Leistung
+  in der Liste, der Betriebsstatus von Home Connect stand daneben als Messwert. Stufe 0 bringt die wahlweisen Rollen
+  `operation` und `remaining` am `appliance`, Programmwahl und Start folgen in Stufe 1 (Material, Gerätevergleich und
+  Entscheidungen beim Entwickler). Entscheidungen:
+  - Der Status steht nur bei eingeschalteter Steckdose; ausgeschaltet ist er alt. Die Restlaufzeit nur, solange ein
+    Programm läuft: Die Spülmaschine meldete im Mitschnitt auf „Bereit“ noch 2:30:00.
+  - Laufend sind Run, Pause, DelayedStart, ActionRequired und Aborting (letztes Glied des Werts, `OPERATION_RUNNING`),
+    nicht laufend Ready, Finished, Inactive, Error. Ein Wahrheitswert gilt direkt. Ein unbekannter Wert ergibt null:
+    kein Schutz, „aktiv“ wie bisher nach der Steckdose.
+  - Aktiv heißt „ein Programm läuft“; die Steckdosen sind fast immer an, „Was läuft noch?“ zählte sonst alle drei.
+  - `off` ohne Namen oder Karte lässt ein Gerät mit laufendem Programm aus, wie `on` beim Klimagerät (B116): „Keller
+    aus“ meint das Licht, die Steckdose aus wäre ein Stromausfall mitten im Programm.
+  - Die Zeitleiste kommt aus dem archivierten Status, sonst wie bisher aus der Steckdose (am nuc ist die Steckdose der
+    Waschmaschine nicht archiviert, der Status schon).
+  Fixture `nuc_2026-11-25_hausgeraete.json` aus einem lesenden Mitschnitt über das echte Backend (Waschmaschine lief).
+  Angenommen und im Test so markiert: die Zeilen der Freigabeliste und die ausgeschaltete Steckdose des Trockners.
+  Noch nicht: Programm wählen, Start/Pause/Stop, Optionen, Startzeit, Karte mit Programmauswahl, Hinweis im Selbsttest
+  bei unbekannten Statuswerten.
 - **Innentemperatur am Gerät** (13.11.2026, dritte Stufe): Der Fühler in Kühlschrank oder Kühltruhe gehört zum Gerät,
   so wie Leistung und Zähler. An der Anlage des Anlasses stehen drei Kühlgeräte als Messsteckdosen im Keller, ihre
   1-Wire-Fühler standen daneben als eigene Zeilen. Mit `InsideVariableID` lautet die Zeile „off (0.0 W, inside

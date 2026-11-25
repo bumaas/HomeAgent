@@ -154,6 +154,10 @@ So gehst du vor:
      Steckdose oder Gerät in der Liste steht, trägst du dort als InsideVariableID ein statt als
      eigene Zeile. Für alles, was schalten soll, nur Variablen mit Aktion
      (HasAction(<VariablenID>) liefert true); Messwerte ohne Aktion sind in Ordnung.
+   - Waschmaschine, Trockner, Spülmaschine und ähnliche Hausgeräte als appliance: die Steckdose mit
+     Schaltzustand und Leistung, dazu aus der Instanz des Geräts (etwa Home Connect) den Betriebsstatus
+     als OperationVariableID und die Restlaufzeit als RemainingVariableID, in derselben Zeile statt
+     als eigene Messwerte.
    - Melder zum Abfragen: Wassermelder als water_leak, Rauchmelder als measurement.
    - Kameras als Typ camera, wenn es zu ihnen ein Medienobjekt vom Typ Bild mit einem Standbild gibt
      (IPS_GetMediaListByType(1), etwa unter einem Image Grabber); das ist ImageMediaID. Streams

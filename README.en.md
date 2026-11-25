@@ -222,7 +222,7 @@ Which variables a device needs depends on its type:
 |---|---|
 | Light | Switching state, brightness or both. A dimmer without a separate switch only has the brightness. Optionally power, energy meter, colour temperature and colour. |
 | Switch, socket | Switching state, optionally power, energy meter and inside temperature |
-| Appliance | Switching state or power, optionally energy meter, inside temperature, heat meter and heat output. An appliance with power only, such as a heat pump, can be queried but not switched. |
+| Appliance | Switching state or power, optionally energy meter, inside temperature, heat meter, heat output, operating state and remaining time. An appliance with power only, such as a heat pump, can be queried but not switched. |
 | Blind | Position, optionally moving state and stop |
 | Thermostat | Setpoint, optionally the current temperature, up to three valves, mode, fan speed and on/off (air conditioner), power and energy meter |
 | Media player | On/off, playback or volume, optionally mute, title, artist, power and energy meter |
@@ -447,6 +447,12 @@ Some types need a few more words:
   on. Setpoint, mode and fan speed can be set while the device is off; it stays off, and the answer says so. Over a
   period the on/off timeline is added, and the card shows the switch.
 - **Dehumidifier, ventilation, media player:** They count as active while they run or play.
+- **Washing machine, dryer, dishwasher:** Enter the socket as an appliance and add the **operating state** and the
+  **remaining time** from the instance of the device (such as Home Connect). The row then reads "on, Running, 2:50:00
+  left (4.7 W)"; the remaining time is only shown while a program runs. For "what is still running?" the device counts
+  when a program runs, not just because the socket is on. "Basement off" leaves a device with a running program on and
+  says so; it can then only be switched off with its name or from its card. Over a period the timeline comes from the
+  operating state if it is archived.
 
 ### "How much electricity did we use last month?"
 
@@ -756,6 +762,8 @@ available. **Show protocol** shows the last 200 lines, **Download protocol** dow
 
 ## Limits
 
+- The assistant cannot yet choose or start a program on a washing machine, dryer or dishwasher. The protection when
+  switching off only works with operating state values the module knows (Home Connect, a boolean for "running").
 - Colour as text is not supported yet. The operating mode of a thermostat only works through a variable with an
   action; on Homematic wall thermostats `CONTROL_MODE` has none.
 - A camera gives its stored still image, no live view and no stream. Scaling an image down needs memory, about 45 MB

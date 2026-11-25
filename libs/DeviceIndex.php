@@ -81,7 +81,20 @@ final class DeviceIndex
         'inside'    => 'InsideVariableID',
         // Ein/Aus eines Klimageräts, dessen Modul an/aus von der Betriebsart trennt (B116)
         'switch'    => 'SwitchVariableID',
+        // Betriebsstatus und Restlaufzeit eines Hausgeräts (B117, Home Connect: Waschmaschine, Trockner, Spülmaschine)
+        'operation' => 'OperationVariableID',
+        'remaining' => 'RemainingVariableID',
     ];
+
+    /**
+     * Werte eines Betriebsstatus, bei denen ein Programm läuft bzw. keins (B117). Verglichen wird das letzte Glied des
+     * Werts ohne Satzzeichen, klein: Home Connect meldet `BSH.Common.EnumType.OperationState.Run` usw. (Mitschnitt nuc
+     * 25.11.2026, alle neun Einträge). Auch Pause, verzögerter Start, „Aktion erforderlich“ und Abbrechen zählen als
+     * laufend: Dann steckt Wasser oder Wäsche im Gerät, und „aus“ wäre ein Stromausfall mitten im Programm.
+     */
+    private const OPERATION_RUNNING = ['run', 'running', 'pause', 'paused', 'delayedstart', 'actionrequired', 'aborting'];
+
+    private const OPERATION_IDLE = ['ready', 'finished', 'inactive', 'off', 'idle', 'error'];
 
     /**
      * Farben, die „set_state“ mit „color“ annimmt, als RGB (0xRRGGBB). Eine feste Liste wie bei Home
@@ -141,7 +154,8 @@ final class DeviceIndex
         'switch'      => ['roles' => ['state', 'power', 'energy', 'inside'], 'required' => ['state']],
         'socket'      => ['roles' => ['state', 'power', 'energy', 'inside'], 'required' => ['state']],
         // Wärmepumpe (B83): Wärmezähler und Wärmeleistung wahlweise, daraus Arbeitszahl und Leistungszahl
-        'appliance'   => ['roles' => ['state', 'power', 'energy', 'heat', 'heatpower', 'inside'], 'required' => ['state', 'power']],
+        // Hausgerät mit Programm (B117): Betriebsstatus und Restlaufzeit wahlweise
+        'appliance'   => ['roles' => ['state', 'power', 'energy', 'heat', 'heatpower', 'inside', 'operation', 'remaining'], 'required' => ['state', 'power']],
         'blind'       => ['roles' => ['level', 'moving', 'stop'], 'required' => ['level']],
         // Klimagerät und AV-Receiver nehmen Strom auf (B85): Leistung und Zähler wahlweise. Bis zu drei Ventile (B101,
         // Burkhard 25.10.2026: drei feste Felder), ein Raum hat oft mehrere Heizkörper an einem Thermostat.
@@ -1365,7 +1379,14 @@ final class DeviceIndex
         $travelLabels = [];
         $series = null;
         $byPosition = self::travelTimed($entry['Type'], $entry['roles']);
-        if (!$byPosition) {
+        // Hausgerät mit archiviertem Betriebsstatus (B117): Er sagt, wann ein Programm lief; die Steckdose ist meist immer an
+        $byOperation = false;
+        if (!$byPosition && $entry['Type'] === 'appliance' && isset($entry['roles']['operation'])) {
+            $variable = $entry['roles']['operation'];
+            $series = $this->backend->stateSeries($variable, $from, $to);
+            $byOperation = $series !== null;
+        }
+        if (!$byPosition && !$byOperation) {
             $variable = $entry['roles']['state'];
             $series = $this->backend->stateSeries($variable, $from, $to);
             // Fenster mit Kontakt und Antrieb: Ist der Kontakt nicht archiviert, zählt die Position (Heizungsanalyse
@@ -1386,7 +1407,7 @@ final class DeviceIndex
         if ($series === null) {
             return null;
         }
-        $words = $travel !== null ? null : (self::TYPES[$entry['Type']] ?? null);
+        $words = $travel !== null || $byOperation ? null : (self::TYPES[$entry['Type']] ?? null);
         $options = $words === null && $travel === null ? ($this->backend->options($variable) ?? []) : [];
         $label = function (mixed $value) use ($words, $options, $entry, $travel, $travelLabels, $variable): string {
             if ($travel !== null) {
@@ -3495,12 +3516,22 @@ final class DeviceIndex
             ? array_filter($understand, static fn (array $e): bool => $e['Type'] === 'thermostat' && isset($e['roles']['switch']))
             : [];
         $understand = array_diff_key($understand, $switchOnly);
-        $skipped = count($selection['entries']) - count($understand) - count($specialOnly) - count($switchOnly) + ($selection['windowsWithoutDrive'] ?? 0);
+        // Ein Hausgerät mit laufendem Programm schaltet „off“ nur mit Namen oder von der Karte aus: Die Steckdose aus wäre
+        // ein Stromausfall mitten in der Wäsche, und „Keller aus“ meint das Licht (B117, Burkhard 25.11.2026).
+        $runningOnly = $command === 'off' && $name === '' && $this->onlyKey === null
+            ? array_filter($understand, fn (array $e): bool => $this->programRunning($e) === true)
+            : [];
+        $understand = array_diff_key($understand, $runningOnly);
+        $skipped = count($selection['entries']) - count($understand) - count($specialOnly) - count($switchOnly) - count($runningOnly) + ($selection['windowsWithoutDrive'] ?? 0);
         if ($understand === [] && $resumeOnly !== []) {
             $this->problem = 'not_understood';
             return $this->fail(sprintf($this->t('Nothing was changed: "on" resumes a media player without power switch only with type=media (%s).'), $filter));
         }
         $namesOf = fn (array $entries, int $max = self::NOTE_NAMES_MAX): string => $this->nameList(array_map(static fn (array $e): array => [(string)$e['Name'], (string)$e['Room']], array_values($entries)), $max);
+        if ($understand === [] && $runningOnly !== []) {
+            $this->problem = 'not_understood';
+            return $this->fail(sprintf($this->t('Nothing was changed: a program is running (%s). "off" switches such a device off only with its name.'), $namesOf($runningOnly, self::CLOSING_NAMES_MAX)));
+        }
         // Vor der Absage zum Sonder-Sollwert: Stehen Klimagerät und Heizkörper im selben Raum, ist das Klimagerät gemeint
         if ($understand === [] && $switchOnly !== []) {
             $this->problem = 'not_understood';
@@ -3559,6 +3590,9 @@ final class DeviceIndex
         }
         if ($switchOnly !== []) {
             $closing[] = sprintf($this->t('%d air conditioner(s) left out: "on" switches one on only with its name (%s).'), count($switchOnly), $namesOf($switchOnly, self::CLOSING_NAMES_MAX));
+        }
+        if ($runningOnly !== []) {
+            $closing[] = sprintf($this->t('%d device(s) left out: a program is running (%s). "off" switches such a device off only with its name.'), count($runningOnly), $namesOf($runningOnly, self::CLOSING_NAMES_MAX));
         }
         // Sollwert, Betriebsart und Lüfterstufe schalten ein ausgeschaltetes Klimagerät nicht ein; die Antwort sagt es,
         // sonst läse ein Modell „auf Kühlen gestellt“ als „kühlt jetzt“ (B116).
@@ -5681,6 +5715,21 @@ final class DeviceIndex
             return $insideText === null || $power === null ? $state : $append($state, $insideText);
         }
         $state = $this->mainStateOf($entry);
+        // Hausgerät mit Betriebsstatus (B117): Bei eingeschalteter Steckdose steht er hinter „on“, solange ein Programm
+        // läuft auch die Restlaufzeit (die Spülmaschine meldete auf „Bereit“ noch 2:30:00). Aktiv heißt dann „ein Programm
+        // läuft“, sonst zählte jede Steckdose, die immer an ist. Bei ausgeschalteter Steckdose ist der Status alt.
+        if ($entry['Type'] === 'appliance' && isset($entry['roles']['operation']) && $state['active'] === true) {
+            $operation = $this->backend->read($entry['roles']['operation']);
+            if ($operation !== null && $operation['formatted'] !== '') {
+                $running = $this->programRunning($entry);
+                $state['text'] .= ', ' . $operation['formatted'];
+                $remaining = $running === true && isset($entry['roles']['remaining']) ? $this->backend->read($entry['roles']['remaining']) : null;
+                if ($remaining !== null && (is_int($remaining['value']) || is_float($remaining['value'])) && $remaining['value'] > 0 && $remaining['formatted'] !== '') {
+                    $state['text'] .= ', ' . sprintf($this->t('%s left'), $remaining['formatted']);
+                }
+                $state['active'] = $running ?? $state['active'];
+            }
+        }
         // Die Farbtemperatur nur bei eingeschaltetem Licht; ausgeschaltet meldet etwa das
         // HomeAssistant-Modul 0 K. Mit bekanntem Farbmodus nur der gültige Wert: Ein weißes Licht nannte sonst die
         // umgerechnete Farbe („2732 K, gelb“), ein farbiges eine alte Farbtemperatur (betreute Anlage 16.10.2026).
@@ -5723,6 +5772,35 @@ final class DeviceIndex
             return ($value > 0) !== ($entry['Invert'] && !in_array($entry['Type'], self::CONTROLLABLE, true));
         }
         return null;
+    }
+
+    /**
+     * Läuft an einem Hausgerät ein Programm (B117)? Nur mit Betriebsstatus und eingeschalteter Steckdose. Ein
+     * Wahrheitswert gilt direkt, ein Text nach OPERATION_RUNNING und OPERATION_IDLE. null = unbekannt (kein
+     * Betriebsstatus, Steckdose aus oder ein Wert, den das Modul nicht kennt); dann gilt der Schutz bei „off“ nicht.
+     */
+    private function programRunning(array $entry): ?bool
+    {
+        if ($entry['Type'] !== 'appliance' || !isset($entry['roles']['operation'])) {
+            return null;
+        }
+        if (isset($entry['roles']['state']) && self::activeValue($entry, $this->backend->read($entry['roles']['state'])['value'] ?? null) !== true) {
+            return null;
+        }
+        $value = $this->backend->read($entry['roles']['operation'])['value'] ?? null;
+        if (is_bool($value)) {
+            return $value;
+        }
+        if (!is_string($value)) {
+            return null;
+        }
+        $parts = explode('.', $value);
+        $word = (string)preg_replace('/[^a-z]/', '', strtolower((string)end($parts)));
+        return match (true) {
+            in_array($word, self::OPERATION_RUNNING, true) => true,
+            in_array($word, self::OPERATION_IDLE, true)    => false,
+            default                                        => null,
+        };
     }
 
     /** @return array{text: string, active: ?bool} */

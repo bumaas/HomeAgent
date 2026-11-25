@@ -1,0 +1,344 @@
+{
+    "_quelle": "nuc 25.11.2026 13:07, nur gelesen über SymconDeviceBackend (read, hasAction, unit, options, stateSeries der letzten sieben Tage). Echt sind Werte, Texte, Einträge, Aktion ja/nein, Archivstatus und Rohwerte. Die Waschmaschine lief (gestartet an der Maschine um 12:55). ANGENOMMEN sind die Zeilen der Freigabeliste: an der Anlage stehen Steckdose (switch) und Betriebsstatus (measurement) getrennt, OperationVariableID und RemainingVariableID gibt es noch nicht.",
+    "zeitzone": "Europe/Berlin",
+    "jetzt": 1795608479,
+    "geraete": [
+        {
+            "Room": "Keller",
+            "Name": "Waschmaschine",
+            "Aliases": "",
+            "Type": "appliance",
+            "ReadOnly": false,
+            "StateVariableID": 41006,
+            "PowerVariableID": 29351,
+            "OperationVariableID": 54360,
+            "RemainingVariableID": 17384
+        },
+        {
+            "Room": "Keller",
+            "Name": "Trockner",
+            "Aliases": "",
+            "Type": "appliance",
+            "ReadOnly": false,
+            "StateVariableID": 40179,
+            "PowerVariableID": 46928,
+            "OperationVariableID": 52800,
+            "RemainingVariableID": 58379
+        },
+        {
+            "Room": "Küche",
+            "Name": "Spülmaschine",
+            "Aliases": "",
+            "Type": "appliance",
+            "ReadOnly": false,
+            "StateVariableID": 23567,
+            "PowerVariableID": 42418,
+            "OperationVariableID": 52297,
+            "RemainingVariableID": 42148
+        }
+    ],
+    "variablen": {
+        "41006": {
+            "name": "Keller.Energie.Waschmaschine:3: STATE",
+            "wert": true,
+            "formatiert": "An",
+            "aktion": true,
+            "einheit": "",
+            "optionen": [
+                [
+                    false,
+                    "Aus"
+                ],
+                [
+                    true,
+                    "An"
+                ]
+            ],
+            "geloggt": false
+        },
+        "29351": {
+            "name": "Keller.Energie.Waschmaschine:6: POWER",
+            "wert": 4.66,
+            "formatiert": "4.7 W",
+            "aktion": false,
+            "einheit": "W"
+        },
+        "54360": {
+            "name": "Waschmaschine: Betriebsstatus",
+            "wert": "BSH.Common.EnumType.OperationState.Run",
+            "formatiert": "Läuft",
+            "aktion": false,
+            "einheit": "",
+            "optionen": [
+                [
+                    "BSH.Common.EnumType.OperationState.Ready",
+                    "Bereit"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Run",
+                    "Läuft"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Finished",
+                    "Fertig"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Pause",
+                    "Pause"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Aborting",
+                    "Abbrechen"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Inactive",
+                    "Inaktiv"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Error",
+                    "Fehler"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.DelayedStart",
+                    "Verzögerter Start"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.ActionRequired",
+                    "Aktion erforderlich"
+                ]
+            ],
+            "geloggt": true,
+            "rohwerte": [
+                [
+                    1794922176,
+                    "BSH.Common.EnumType.OperationState.Inactive"
+                ],
+                [
+                    1795600027,
+                    "BSH.Common.EnumType.OperationState.Run"
+                ],
+                [
+                    1795605062,
+                    "BSH.Common.EnumType.OperationState.Finished"
+                ],
+                [
+                    1795605177,
+                    "BSH.Common.EnumType.OperationState.Ready"
+                ],
+                [
+                    1795607755,
+                    "BSH.Common.EnumType.OperationState.Run"
+                ]
+            ]
+        },
+        "17384": {
+            "name": "Waschmaschine: Verbleibende Laufzeit",
+            "wert": 10200,
+            "formatiert": "2:50:00",
+            "aktion": false,
+            "einheit": "Sekunden"
+        },
+        "40179": {
+            "name": "Keller.Energie.Wäschetrockner:3: STATE",
+            "wert": true,
+            "formatiert": "An",
+            "aktion": true,
+            "einheit": "",
+            "optionen": [
+                [
+                    false,
+                    "Aus"
+                ],
+                [
+                    true,
+                    "An"
+                ]
+            ],
+            "geloggt": false
+        },
+        "46928": {
+            "name": "Keller.Energie.Wäschetrockner:6: POWER",
+            "wert": 0.01,
+            "formatiert": "0.0 W",
+            "aktion": false,
+            "einheit": "W"
+        },
+        "52800": {
+            "name": "Trockner: Betriebsstatus",
+            "wert": "BSH.Common.EnumType.OperationState.Inactive",
+            "formatiert": "Inaktiv",
+            "aktion": false,
+            "einheit": "",
+            "optionen": [
+                [
+                    "BSH.Common.EnumType.OperationState.Ready",
+                    "Bereit"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Run",
+                    "Läuft"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Finished",
+                    "Fertig"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Pause",
+                    "Pause"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Aborting",
+                    "Abbrechen"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Inactive",
+                    "Inaktiv"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Error",
+                    "Fehler"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.DelayedStart",
+                    "Verzögerter Start"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.ActionRequired",
+                    "Aktion erforderlich"
+                ]
+            ],
+            "geloggt": true,
+            "rohwerte": [
+                [
+                    1794159575,
+                    "BSH.Common.EnumType.OperationState.Inactive"
+                ]
+            ]
+        },
+        "58379": {
+            "name": "Trockner: Verbleibende Laufzeit",
+            "wert": 0,
+            "formatiert": "0:00:00",
+            "aktion": false,
+            "einheit": "Sekunden"
+        },
+        "23567": {
+            "name": "Küche.Energie.Spülmaschine:1: STATE",
+            "wert": true,
+            "formatiert": "An",
+            "aktion": true,
+            "einheit": "",
+            "optionen": [
+                [
+                    false,
+                    "Aus"
+                ],
+                [
+                    true,
+                    "An"
+                ]
+            ],
+            "geloggt": true,
+            "rohwerte": [
+                [
+                    1762843863,
+                    true
+                ]
+            ]
+        },
+        "42418": {
+            "name": "Küche.Energie.Spülmaschine:2: POWER",
+            "wert": 1.19,
+            "formatiert": "1.2 W",
+            "aktion": false,
+            "einheit": "W"
+        },
+        "52297": {
+            "name": "Geschirrspüler: Betriebsstatus",
+            "wert": "BSH.Common.EnumType.OperationState.Ready",
+            "formatiert": "Bereit",
+            "aktion": false,
+            "einheit": "",
+            "optionen": [
+                [
+                    "BSH.Common.EnumType.OperationState.Ready",
+                    "Bereit"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Run",
+                    "Läuft"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Finished",
+                    "Fertig"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Pause",
+                    "Pause"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Aborting",
+                    "Abbrechen"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Inactive",
+                    "Inaktiv"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.Error",
+                    "Fehler"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.DelayedStart",
+                    "Verzögerter Start"
+                ],
+                [
+                    "BSH.Common.EnumType.OperationState.ActionRequired",
+                    "Aktion erforderlich"
+                ]
+            ],
+            "geloggt": true,
+            "rohwerte": [
+                [
+                    1794998929,
+                    "BSH.Common.EnumType.OperationState.Ready"
+                ],
+                [
+                    1795005596,
+                    "BSH.Common.EnumType.OperationState.Inactive"
+                ],
+                [
+                    1795005708,
+                    "BSH.Common.EnumType.OperationState.Ready"
+                ],
+                [
+                    1795168811,
+                    "BSH.Common.EnumType.OperationState.Run"
+                ],
+                [
+                    1795175507,
+                    "BSH.Common.EnumType.OperationState.Finished"
+                ],
+                [
+                    1795175567,
+                    "BSH.Common.EnumType.OperationState.Ready"
+                ],
+                [
+                    1795435695,
+                    "BSH.Common.EnumType.OperationState.Inactive"
+                ],
+                [
+                    1795435702,
+                    "BSH.Common.EnumType.OperationState.Ready"
+                ]
+            ]
+        },
+        "42148": {
+            "name": "Geschirrspüler: Verbleibende Laufzeit",
+            "wert": 9000,
+            "formatiert": "2:30:00",
+            "aktion": false,
+            "einheit": "Sekunden"
+        }
+    }
+}

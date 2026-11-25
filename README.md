@@ -229,7 +229,7 @@ Welche Variablen ein Gerät braucht, hängt vom Typ ab:
 |---|---|
 | Licht | Schaltzustand, Helligkeit oder beides. Ein Dimmer ohne eigenen Schalter hat nur die Helligkeit. Wahlweise Leistung, Zähler, Farbtemperatur und Farbe. |
 | Schalter, Steckdose | Schaltzustand, wahlweise Leistung, Zähler und Innentemperatur |
-| Gerät | Schaltzustand oder Leistung, wahlweise Zähler, Innentemperatur, Wärmezähler und Wärmeleistung. Ein Gerät nur mit Leistung, etwa eine Wärmepumpe, lässt sich abfragen, aber nicht schalten. |
+| Gerät | Schaltzustand oder Leistung, wahlweise Zähler, Innentemperatur, Wärmezähler, Wärmeleistung, Betriebsstatus und Restlaufzeit. Ein Gerät nur mit Leistung, etwa eine Wärmepumpe, lässt sich abfragen, aber nicht schalten. |
 | Rollladen | Position, dazu wahlweise Fahrstatus und Stopp |
 | Thermostat | Sollwert, wahlweise die Ist-Temperatur, bis zu drei Ventile, Modus, Lüfterstufe und Ein/Aus (Klimagerät), Leistung und Zähler |
 | Mediaplayer | Ein/Aus, Wiedergabe oder Lautstärke, wahlweise Stumm, Titel, Interpret, Leistung und Zähler |
@@ -456,6 +456,12 @@ Zu einigen Typen gibt es mehr zu sagen:
   Modus und Lüfterstufe lassen sich auch bei ausgeschaltetem Gerät stellen; es bleibt aus, und die Antwort sagt das.
   Über einen Zeitraum kommt die Zeitleiste an/aus dazu, auf der Karte steht der Schalter.
 - **Luftentfeuchter, Lüftung, Mediaplayer:** Sie zählen als aktiv, solange sie laufen bzw. spielen.
+- **Waschmaschine, Trockner, Spülmaschine:** Tragen Sie die Steckdose als Gerät ein und dazu aus der Instanz des
+  Geräts (etwa Home Connect) den **Betriebsstatus** und die **Restlaufzeit**. Die Zeile lautet dann „an, Läuft, noch
+  2:50:00 (4.7 W)“, die Restlaufzeit steht nur, solange ein Programm läuft. Bei „Was läuft noch?“ zählt das Gerät, wenn
+  ein Programm läuft, nicht schon, weil die Steckdose an ist. „Keller aus“ lässt ein Gerät mit laufendem Programm an
+  und sagt das; ausschalten lässt es sich dann nur mit seinem Namen oder von der Karte. Über einen Zeitraum kommt die
+  Zeitleiste aus dem Betriebsstatus, wenn er archiviert ist.
 
 ### „Wie viel Strom haben wir letzten Monat verbraucht?“
 
@@ -772,6 +778,9 @@ sie. Tokens und Kopplungscodes stehen nie darin. Abgewiesene Anfragen ohne Anmel
 
 ## Grenzen
 
+- Ein Programm wählen oder starten kann der Assistent an Waschmaschine, Trockner und Spülmaschine noch nicht. Den
+  Schutz beim Ausschalten gibt es nur bei Betriebsstatus-Werten, die das Modul kennt (Home Connect, ein Wahrheitswert
+  für „läuft“).
 - Farbe als Text geht noch nicht. Die Betriebsart eines Thermostats geht nur über eine Variable mit Aktion;
   bei Homematic-Wandthermostaten hat `CONTROL_MODE` keine.
 - Von einer Kamera gibt es das gespeicherte Standbild, kein Livebild und keinen Stream. Zum Verkleinern braucht ein Bild

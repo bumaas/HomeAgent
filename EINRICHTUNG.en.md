@@ -153,6 +153,10 @@ How to proceed:
      of its own. For everything that should switch, only
      variables with an action (HasAction(<VariableID>) returns true); measurements without an
      action are fine.
+   - Washing machine, dryer, dishwasher and similar appliances as appliance: the socket with
+     switching state and power, plus from the instance of the device (such as Home Connect) the
+     operating state as OperationVariableID and the remaining time as RemainingVariableID, in the
+     same row instead of separate measurements.
    - Detectors for querying: water detectors as water_leak, smoke detectors as measurement.
    - Cameras as type camera if there is a media object of type image with a still image for them
      (IPS_GetMediaListByType(1), for example below an Image Grabber); that is ImageMediaID. Leave out

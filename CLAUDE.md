@@ -202,6 +202,9 @@ Alle tragen `openWorldHint: false`. Regeln, die nicht offensichtlich sind:
 - **Ventile** (B101): `valve`, `valve2`, `valve3` am `thermostat`, im Dialog nebeneinander (`ValveRow`); es zählt das offenste
   in Prozent des Bereichs (`valveOf`). Aktiv nur mit Ventil über 0 und nie auf einem Sonder-Sollwert (`heatingActive`); der
   Selbsttest nennt Ventilvariablen mit nur benannten Einträgen (HmIP `VALVE_STATE`). Test `check-ventil.php`.
+- **Hausgerät mit Betriebsstatus** (`operation`, `remaining` am `appliance`, B117): Status hinter „on“, Restlaufzeit nur bei
+  laufendem Programm, aktiv heißt „Programm läuft“ (`programRunning`, `OPERATION_RUNNING`); `off` lässt es dann ohne Namen
+  oder Karte aus (Strom weg mitten in der Wäsche), Zeitleiste aus dem Status. Test `check-hausgeraete.php`.
 - **Kamera** (`camera`, B102): Fähigkeit `image` = Medienobjekt vom Typ Bild (`ImageMediaID`, die einzige Fähigkeit ohne
   Variable, nur über `DeviceBackend::image()`). `get_state` nennt die Aufnahmezeit (`cameraText`), das Modul frischt nie auf
   und fasst Streams nicht an (Zugangsdaten in der Adresse). Test `check-kamera.php`.
