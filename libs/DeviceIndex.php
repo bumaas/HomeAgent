@@ -3507,12 +3507,17 @@ final class DeviceIndex
             // name nimmt ein einziges Gerät: Bei mehreren sagt die Absage „je Gerät ein Aufruf“, und der Raum in Klammern
             // gehört nach room (Nachreview 15.11.2026, Befund 1).
             $rooms = count(array_unique(array_map(static fn (array $e): string => self::normalize((string)$e['Room']), $switchOnly)));
+            // Stand kein Raum im Filter (floor=), nennt sie den Raum als Parameter: Ein Name ist oft nur im Raum eindeutig,
+            // wie bei der Absage beim Verlauf (Nachreview von af87f1c, 25.11.2026, Befund 1).
+            $room = $rooms === 1 && ($selection['room'] ?? '') === '' ? trim((string)array_values($switchOnly)[0]['Room']) : '';
             $text = match (true) {
-                count($switchOnly) === 1 => $this->t('Nothing was changed: "on" switches an air conditioner on only with its name (%s). Call again with name: %s.'),
-                $rooms === 1             => $this->t('Nothing was changed: "on" switches an air conditioner on only with its name (%s). Make one call per device with its name in name: %s.'),
-                default                  => $this->t('Nothing was changed: "on" switches an air conditioner on only with its name (%s). Make one call per device with its name in name and the room in brackets in room: %s.'),
+                count($switchOnly) === 1 && $room !== '' => sprintf($this->t('Nothing was changed: "on" switches an air conditioner on only with its name (%s). Call again with room=%s and name: %s.'), $filter, $room, $namesOf($switchOnly)),
+                count($switchOnly) === 1 => sprintf($this->t('Nothing was changed: "on" switches an air conditioner on only with its name (%s). Call again with name: %s.'), $filter, $namesOf($switchOnly)),
+                $room !== ''             => sprintf($this->t('Nothing was changed: "on" switches an air conditioner on only with its name (%s). Make one call per device with room=%s and its name in name: %s.'), $filter, $room, $namesOf($switchOnly)),
+                $rooms === 1             => sprintf($this->t('Nothing was changed: "on" switches an air conditioner on only with its name (%s). Make one call per device with its name in name: %s.'), $filter, $namesOf($switchOnly)),
+                default                  => sprintf($this->t('Nothing was changed: "on" switches an air conditioner on only with its name (%s). Make one call per device with its name in name and the room in brackets in room: %s.'), $filter, $namesOf($switchOnly)),
             };
-            return $this->fail(sprintf($text, $filter, $namesOf($switchOnly)));
+            return $this->fail($text);
         }
         if ($understand === [] && $specialOnly !== []) {
             $this->problem = 'not_understood';
@@ -4917,7 +4922,7 @@ final class DeviceIndex
         if ($name === '' && array_any($entries, static fn (array $e): bool => $e['Type'] === 'window')) {
             $windowsWithoutDrive = count($this->find($room, $type, $name, $floor, static fn (array $e): bool => $e['Type'] === 'window' && !isset($e['roles']['level']) && !$e['ReadOnly']));
         }
-        return ['entries' => $entries, 'filter' => $filter, 'windowsWithoutDrive' => $windowsWithoutDrive];
+        return ['entries' => $entries, 'filter' => $filter, 'room' => $room, 'windowsWithoutDrive' => $windowsWithoutDrive];
     }
 
     /**

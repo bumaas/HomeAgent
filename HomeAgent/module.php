@@ -2654,11 +2654,12 @@ class HomeAgent extends IPSModuleStrict
                 $airConditioners = array_any($devices, static fn (array $e): bool => !$e['ReadOnly'] && $e['Type'] === 'thermostat' && isset($e['roles']['switch']));
                 $parts = array_filter([
                     in_array('on', $commands, true) ? 'on/off switch a device' : '',
-                    $airConditioners ? 'on switches an air conditioner on only with its name' : '',
-                    // Neben einem Klimagerät mit Ein-Aus-Variable schaltet on mit type=thermostat auch dieses ein
-                    // (Nachreview 15.11.2026, Befund 2)
-                    $specials ? 'on/off set a thermostat to its special setpoint On/Off, only with type=thermostat or its name'
-                        . ($airConditioners ? '; for on prefer the name, type=thermostat also switches air conditioners on' : '') : '',
+                    // type=thermostat schaltet ein Klimagerät auch ein; neben einem Sonder-Sollwert stellt es dabei Heizkörper
+                    // auf „On“, deshalb dann der Rat zum Namen (Nachreview 15.11.2026, Befund 2; Nachreview von af87f1c,
+                    // Befund 4: „only with its name“ allein widersprach dem)
+                    $airConditioners ? 'on switches an air conditioner on only with its name or type=thermostat'
+                        . ($specials ? '; prefer the name, type=thermostat also sets radiator thermostats to their special setpoint On' : '') : '',
+                    $specials ? 'on/off set a thermostat to its special setpoint On/Off, only with type=thermostat or its name' : '',
                     $pausesOnOff ? 'off pauses a media player without power switch, on with type=media resumes it' : '',
                     $hasBlinds ? 'open/close move a blind or window all the way' : '',
                     $hasStop && $hasBlinds ? ($hasMedia ? 'stop halts a moving blind or window and ends playback of a media player' : 'stop halts a moving blind or window') : ($hasMedia ? 'stop ends playback' : ''),

@@ -4473,7 +4473,9 @@ $schaltSchema = static function () use ($m): string {
 };
 IPS_SetProperty($iid, 'Devices', json_encode([['ReadOnly' => false] + $schaltZeile + ['SwitchVariableID' => $schaltBetrieb]]));
 IPS_ApplyChanges($iid);
-pruefe(str_contains($schaltSchema(), 'on switches an air conditioner on only with its name'), 'command nennt die Regel für das Einschalten eines Klimageräts: ' . $schaltSchema());
+// Nachreview von af87f1c (25.11.2026), Befund 4: „only with its name“ stimmte nicht, type=thermostat schaltet es auch ein
+pruefe(str_contains($schaltSchema(), 'on switches an air conditioner on only with its name or type=thermostat') && !str_contains($schaltSchema(), 'special setpoint'),
+    'command nennt die Regel für das Einschalten eines Klimageräts mit beiden Wegen: ' . $schaltSchema());
 // Nachreview 15.11.2026, Befund 2: Neben einem Klimagerät mit Ein-Aus-Variable schaltet on mit type=thermostat auch
 // dieses ein; die Beschreibung des Sonder-Sollwerts sagt es. Das Thermostat „Heizung“ von oben trägt 30,5 „On“.
 $schaltHeizung = ['Room' => 'Gast', 'Name' => 'Heizung', 'Aliases' => '', 'Type' => 'thermostat', 'StateVariableID' => $ist, 'SetpointVariableID' => $soll, 'Invert' => false];
@@ -4482,7 +4484,12 @@ IPS_ApplyChanges($iid);
 pruefe(str_contains($schaltSchema(), 'special setpoint On/Off, only with type=thermostat or its name') && !str_contains($schaltSchema(), 'air conditioner'), 'nur Sonder-Sollwert: Beschreibung wie bisher (schon vorher richtig): ' . $schaltSchema());
 IPS_SetProperty($iid, 'Devices', json_encode([['ReadOnly' => false] + $schaltZeile + ['SwitchVariableID' => $schaltBetrieb], $schaltHeizung]));
 IPS_ApplyChanges($iid);
-pruefe(str_contains($schaltSchema(), 'only with type=thermostat or its name; for on prefer the name, type=thermostat also switches air conditioners on'), 'Sonder-Sollwert neben Klimagerät: die Beschreibung warnt vor on mit type=thermostat: ' . $schaltSchema());
+// Nachreview von af87f1c, Befund 4: Die Warnung stand hinter „on … only with its name“ und widersprach ihm. Jetzt steht beim
+// Klimagerät, dass type=thermostat auch Heizkörper auf „On“ stellt; kein Satzteil sagt mehr „nur mit Namen“ allein.
+pruefe(str_contains($schaltSchema(), 'on switches an air conditioner on only with its name or type=thermostat; prefer the name, type=thermostat also sets radiator thermostats to their special setpoint On')
+    && str_contains($schaltSchema(), 'special setpoint On/Off, only with type=thermostat or its name')
+    && preg_match('/only with its name(?! or type=thermostat)/', $schaltSchema()) === 0,
+    'Sonder-Sollwert neben Klimagerät: die Beschreibung widerspricht sich nicht und rät zum Namen: ' . $schaltSchema());
 IPS_SetProperty($iid, 'Devices', json_encode([['ReadOnly' => false] + $schaltZeile]));
 IPS_ApplyChanges($iid);
 pruefe(!str_contains($schaltSchema(), 'air conditioner'), 'ohne Ein-Aus-Variable steht die Regel nicht in command (schon vorher richtig): ' . $schaltSchema());

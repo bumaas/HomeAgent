@@ -304,6 +304,11 @@ Ergänzt wird jeder Eintrag beim Abschnitt seines Themas. Namen aus dem Forum si
     Neben einem Klimagerät nennen Schlusszeile und Beschreibung von `command` beim Sonder-Sollwert für `on` nur den
     Namen, weil `type=thermostat` das Klimagerät mit einschaltet (Befund 2). Schlusszeilen von `set_state` nennen
     höchstens `CLOSING_NAMES_MAX` (5) Namen, sie hängen an jeder Antwort (Befund 5).
+  - Nachreview von af87f1c, build 317 (25.11.2026): Ohne Raum im Filter (`floor=`) nennt die Absage zu `on` den Raum als
+    `room=`, wenn alle ausgelassenen Klimageräte in einem Raum stehen (Befund 1, am Mitschnitt nachgestellt: alle fünf
+    Geräte heißen „Klimaanlage“, `name` allein ergab eine Kandidatenliste; Vorbild ist die Absage beim Verlauf). Die
+    Beschreibung von `command` sagte „on … only with its name“ und gleich danach, dass `type=thermostat` es auch
+    einschaltet. Jetzt nennt sie beide Wege und rät neben einem Sonder-Sollwert zum Namen (Befund 4).
   - Sollwert, Betriebsart und Lüfterstufe schalten ein ausgeschaltetes Gerät nicht ein, eine Schlusszeile sagt es.
     Home Assistant schaltet beim Moduswechsel ein; verworfen, weil „stell auf Kühlen“ im Winter sonst ein Gerät startet.
   - Mit der Variable entscheidet sie allein über an/aus, auch wenn die Betriebsart zusätzlich „Aus“ kennt. Die

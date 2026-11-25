@@ -167,6 +167,30 @@ $anlage = new FakeBackend($werte, null);
 $r = (new DeviceIndex($liste, $anlage, $etage))->setState(['floor' => 'Erdgeschoss', 'command' => 'on']);
 pruefe($r['isError'] && $anlage->requests === [] && str_ends_with($r['text'], 'Make one call per device with its name in name and the room in brackets in room: Klimaanlage (Essen), Klimaanlage (Schlafzimmer).'),
     'Klimageräte in zwei Räumen: Name nach name, Raum nach room: ' . $r['text']);
+// Nachreview von af87f1c (25.11.2026), Befund 1: Ohne Raum im Filter nannte die Absage nur den Namen. Im Mitschnitt heißen
+// alle fünf Geräte „Klimaanlage“, name allein ergibt eine Kandidatenliste. Die Absage nennt deshalb room= mit, wie die
+// Absage beim Verlauf. ECHT sind Geräte und Namen, ANGENOMMEN die Etage „Dachgeschoss“ mit nur dem Büro DG.
+$dach = new RoomIndex([['Name' => 'Büro DG', 'Aliases' => '', 'Floor' => 'Dachgeschoss']]);
+$anlage = new FakeBackend($werte, null);
+$r = (new DeviceIndex($liste, $anlage, $dach))->setState(['floor' => 'Dachgeschoss', 'command' => 'on']);
+pruefe($r['isError'] && $anlage->requests === [] && $r['text'] === 'Nothing was changed: "on" switches an air conditioner on only with its name (floor=Dachgeschoss). Call again with room=Büro DG and name: Klimaanlage.',
+    'ein Klimagerät, Etage statt Raum: die Absage nennt room= mit: ' . $r['text']);
+$anlage = new FakeBackend($werte, $de);
+$r = (new DeviceIndex($liste, $anlage, $dach))->setState(['floor' => 'Dachgeschoss', 'command' => 'on']);
+pruefe($r['text'] === 'Nichts geändert: „on“ schaltet ein Klimagerät nur mit seinem Namen ein (floor=Dachgeschoss). Ruf noch einmal mit room=Büro DG und name auf: Klimaanlage.', 'dasselbe auf Deutsch: ' . $r['text']);
+// Der empfohlene Aufruf trifft genau das Gerät aus dem Büro DG und schaltet es ein
+$anlage = new FakeBackend($werte, null);
+$r = (new DeviceIndex($liste, $anlage, $dach))->setState(['room' => 'Büro DG', 'name' => 'Klimaanlage', 'command' => 'on']);
+pruefe(!$r['isError'] && count($anlage->requests) === 1, 'der empfohlene Aufruf schaltet genau ein Gerät: ' . $r['text'] . ' ' . json_encode($anlage->requests));
+// ANGENOMMEN: zwei Klimageräte im Büro (wie oben „Klimaanlage Nord“), das Büro auf der Etage „Erdgeschoss“
+$bueroEtage = new RoomIndex([['Name' => 'Büro', 'Aliases' => '', 'Floor' => 'Erdgeschoss']]);
+$anlage = new FakeBackend($werte, null);
+$r = (new DeviceIndex($zweiImBuero, $anlage, $bueroEtage))->setState(['floor' => 'Erdgeschoss', 'command' => 'on']);
+pruefe($r['isError'] && $anlage->requests === [] && $r['text'] === 'Nothing was changed: "on" switches an air conditioner on only with its name (floor=Erdgeschoss). Make one call per device with room=Büro and its name in name: Klimaanlage, Klimaanlage Nord.',
+    'zwei Klimageräte in einem Raum, Etage statt Raum: je Gerät ein Aufruf mit room=: ' . $r['text']);
+$anlage = new FakeBackend($werte, $de);
+$r = (new DeviceIndex($zweiImBuero, $anlage, $bueroEtage))->setState(['floor' => 'Erdgeschoss', 'command' => 'on']);
+pruefe($r['text'] === 'Nichts geändert: „on“ schaltet ein Klimagerät nur mit seinem Namen ein (floor=Erdgeschoss). Je Gerät ein Aufruf mit room=Büro und seinem Namen in name: Klimaanlage, Klimaanlage Nord.', 'dasselbe auf Deutsch: ' . $r['text']);
 // Nachreview 15.11.2026, Befund 5: Die Schlusszeile hängt an jeder Antwort; sie nennt höchstens fünf Namen. ANGENOMMEN:
 // sechs Klimageräte und ein Licht im Büro (die fünf aus dem Mitschnitt umbenannt, das sechste erfunden).
 $viele = [];
